@@ -1,0 +1,48 @@
+# Backend
+__pycache__/
+*.pyc
+*.pyo
+*.db
+.env
+.python*
+
+# Frontend
+node_modules/
+build/
+
+# Docker
+*.pid
+*.seed
+*.pid.lock
+
+# General
+*.swp
+.DS_Store
+.vscode/
+.idea/
+*venv
+.pytest_cache
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Output directories
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Editor directories and files
+.vscode/
+.idea/
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

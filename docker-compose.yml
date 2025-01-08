@@ -1,0 +1,31 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: backend
+    networks:
+      - app_network  # Rede compartilhada com o frontend
+    env_file:
+      - .env
+    #volumes:
+    #  - ./backend:/app  # Remova essa linha em produção, se não quiser persistir o código-fonte 
+    expose:
+      - "8000"  # A porta 8000 será acessível apenas entre contêineres
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    ports:
+      - "80:80"  # Expondo a porta 80 para o host, se você usar Nginx no frontend
+    networks:
+      - app_network  # Rede compartilhada com o backend
+    depends_on:
+      - backend  # Garante que o backend esteja rodando antes de iniciar o frontend
+    #volumes:
+    #  - ./frontend:/app   #Manter estas linhas comentadas na produção 
+
+networks:
+  app_network:
+    name: app_network
+    driver: bridge  # Rede interna compartilhada entre os contêineres
