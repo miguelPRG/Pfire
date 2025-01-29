@@ -1,6 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from routes.example import router as example_router
+from routes.user import router as user_router
 
 app = FastAPI()
 
@@ -8,7 +9,7 @@ app = FastAPI()
 origins = [
     "http://frontend:80",
     "http://frontend:443",
-    "http://localhost:3000",  # Origem do front-end
+    "http://localhost:3000",
 ]
 
 app.add_middleware(
@@ -20,7 +21,14 @@ app.add_middleware(
 )
 
 # Registrar as rotas
-app.include_router(example_router)
+app.include_router(user_router)
+
+@app.exception_handler(HTTPException)
+async def custom_http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"message": f"Error: {exc.detail}"},
+    )
 
 @app.get("/")
 async def root():

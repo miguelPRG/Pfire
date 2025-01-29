@@ -1,23 +1,24 @@
-import React, { useState } from 'react';
-
+import { lazy, useState } from 'react';
 import Sidebar from '../partials/Sidebar';
 import Header from '../partials/Header';
 import FilterButton from '../components/DropdownFilter';
-import Datepicker from '../components/Datepicker';
-import DashboardCard01 from '../partials/dashboard/DashboardCard01';
-import DashboardCard02 from '../partials/dashboard/DashboardCard02';
-import DashboardCard03 from '../partials/dashboard/DashboardCard03';
-import DashboardCard04 from '../partials/dashboard/DashboardCard04';
-import DashboardCard05 from '../partials/dashboard/DashboardCard05';
-import DashboardCard06 from '../partials/dashboard/DashboardCard06';
-import DashboardCard07 from '../partials/dashboard/DashboardCard07';
-import DashboardCard08 from '../partials/dashboard/DashboardCard08';
-import DashboardCard09 from '../partials/dashboard/DashboardCard09';
-import DashboardCard10 from '../partials/dashboard/DashboardCard10';
-import DashboardCard11 from '../partials/dashboard/DashboardCard11';
-import DashboardCard12 from '../partials/dashboard/DashboardCard12';
-import DashboardCard13 from '../partials/dashboard/DashboardCard13';
-import Banner from '../partials/Banner';
+const Datepicker = lazy(() => import('../components/Datepicker'));
+const Banner = lazy(() => import('../partials/Banner'));
+
+
+const DashboardCard01 = lazy(() => import('../partials/dashboard/DashboardCard01'));
+const DashboardCard02 = lazy(() => import('../partials/dashboard/DashboardCard02'));
+const DashboardCard03 = lazy(() => import('../partials/dashboard/DashboardCard03'));
+const DashboardCard04 = lazy(() => import('../partials/dashboard/DashboardCard04'));
+const DashboardCard05 = lazy(() => import('../partials/dashboard/DashboardCard05'));
+const DashboardCard06 = lazy(() => import('../partials/dashboard/DashboardCard06'));
+const DashboardCard07 = lazy(() => import('../partials/dashboard/DashboardCard07'));
+const DashboardCard08 = lazy(() => import('../partials/dashboard/DashboardCard08'));
+const DashboardCard09 = lazy(() => import('../partials/dashboard/DashboardCard09'));
+const DashboardCard10 = lazy(() => import('../partials/dashboard/DashboardCard10'));
+const DashboardCard11 = lazy(() => import('../partials/dashboard/DashboardCard11'));
+const DashboardCard12 = lazy(() => import('../partials/dashboard/DashboardCard12'));
+const DashboardCard13 = lazy(() => import('../partials/dashboard/DashboardCard13'));
 
 function Dashboard() {
 

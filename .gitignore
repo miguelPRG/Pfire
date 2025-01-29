@@ -46,3 +46,6 @@ dist-ssr/
 *.njsproj
 *.sln
 *.sw?
+
+#Chaves criptográficas
+chaves

@@ -1,27 +1,36 @@
-
-# Etapa 1: Build da imagem com o Node.js
+# Etapa 1: Build com Node.js
 FROM node:22.13-alpine AS builder
 
 WORKDIR /app
 
-# Copiar arquivos do projeto para o container
+# Copiar apenas os arquivos essenciais
 COPY package*.json ./
-RUN npm install
-RUN apk add --no-cache curl
+RUN npm install --omit=dev
+
+# Copiar o restante do projeto
 COPY . .
 
 # Construir o projeto
 RUN npm run build
 
-# Etapa 2: Servir com nginx
+# Etapa 2: Servir com Nginx
 FROM nginx:stable-alpine
+
+# Variáveis de ambiente
+ENV NODE_ENV production
+
+# Copiar arquivos construídos para o Nginx
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copiar configuração customizada do nginx, se necessário
+# Copiar configuração customizada do Nginx
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expor a porta usada pelo nginx
+# Configurar healthcheck
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:80 || exit 1
+
+# Expor a porta usada pelo Nginx
 EXPOSE 80
 
-# Iniciar o servidor nginx
+# Iniciar o servidor Nginx
 CMD ["nginx", "-g", "daemon off;"]
