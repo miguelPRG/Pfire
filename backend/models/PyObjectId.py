@@ -1,18 +1,16 @@
 from bson import ObjectId
 
-class PyObjectId(ObjectId):
-    """Classe para validar e converter ObjectId para string no Pydantic"""
+class PyObjectId(str):
     @classmethod
     def __get_validators__(cls):
-        yield cls.validate
+        yield cls.validate  # Corrigido para passar apenas o valor a ser validado
 
     @classmethod
     def validate(cls, v, field=None):
-        if isinstance(v, ObjectId):
-            return str(v)  # Converte para string ao serializar
-        if isinstance(v, str) and ObjectId.is_valid(v):
-            return ObjectId(v)  # Mantém compatibilidade na deserialização
-        raise ValueError("ID inválido")
+        # Verifica se o valor é um ObjectId válido
+        if not ObjectId.is_valid(v):
+            raise ValueError("Invalid ObjectId")
+        return str(v)  # Converte para string
 
     @classmethod
     def __get_pydantic_json_schema__(cls, field_schema):
