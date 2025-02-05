@@ -6,4 +6,3 @@ dist
 .dockerignore
 Dockerfile
 .gitignore
-README.md

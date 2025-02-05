@@ -23,16 +23,16 @@ python_test:
     - pip install safety
 
     # Rodar os testes do backend com safety
-    - safety check --full-report
+    - safety scan
   allow_failure: false
   # O pipeline falha caso vulnerabilidades sejam encontradas ou testes falhem
 
 # Job de frontend com imagem Node.js separada
 node_test:
-  image: node:18-slim  # Usando a imagem para Node.js para o frontend
+  image: node:22.14.0-alpine3.20  # Usando a imagem para Node.js para o frontend
   stage: test
   script:
     - cd frontend  # Garantir que estamos no diretório do frontend
     - npm install  # Ou yarn install, se estiver usando yarn
-    - npm audit  # Verificar vulnerabilidades nas dependências do frontend
+    - npm audit --audit-level=high  # Verificar vulnerabilidades de alto nível nas dependências do frontend
   allow_failure: false

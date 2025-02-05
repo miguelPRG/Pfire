@@ -1,12 +1,11 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from routes import user
+from routes import users
 from slowapi.errors import RateLimitExceeded
 
 app = FastAPI()
-
-# Configuração de CORS
+# Configuração de CORS(Cross Origin Request Security)
 origins = [
     "http://frontend:80",
     "http://frontend:443",
@@ -22,13 +21,13 @@ app.add_middleware(
 )
 
 # Registrar as rotas
-app.include_router(user.routerUser)
+app.include_router(users.routerUser)
 
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(
         status_code=exc.status_code,
-        content={"message": f"Error: {exc.detail}"},
+        content={"message": f"Erro: {exc.detail}"},
     )
 
 @app.exception_handler(RateLimitExceeded)
@@ -37,6 +36,7 @@ async def rate_limit_error(request, exc):
         status_code=429,
         content={"message": "Limite de requisições excedido. Tente novamente mais tarde."},
     )
+
 
 
 @app.get("/")

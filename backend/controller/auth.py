@@ -7,7 +7,6 @@ from database import db
 from datetime import datetime, timedelta
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
-from slowapi import Limiter
 
 load_dotenv()
 
@@ -17,7 +16,7 @@ PRIVATE_KEY = Path(__file__).parent / "../chaves/private.pem"
 PRIVATE_KEY_PASSWORD = os.getenv("PRIVATE_KEY_PASSWORD")
 ALGORITHM = "RS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
-ACCESS_TOKEN_EXPIRE_DAYS_ADMIN = 30
+ACCESS_TOKEN_EXPIRE_DAYS_ADMIN = 7
 
 def load_public_key():
     with open(PUBLIC_KEY, "rb") as key_file:
@@ -50,51 +49,25 @@ def get_client_ip(request: Request):
         ip = request.client.host  # Se não tiver proxy, pega o IP direto
     return ip
 
-limiter = Limiter(key_func=get_client_ip)
-
-CAPTCHA_SECRET = os.getenv("RECAPTCHA_KEY")
-
-def verify_captcha(token: str, request: Request):
-    """Valida o token do reCAPTCHA com os servidores do Google"""
-    response = request.post("https://www.google.com/recaptcha/api/siteverify", data={
-        "secret": CAPTCHA_SECRET,
-        "response": token
-    }).json()
-
-    if not response.get("success"):
-        raise HTTPException(status_code=400, detail="Falha na verificação do CAPTCHA")
-
-    score = response.get("score")  # Pode ser None se for um reCAPTCHA v2
-
-    if score is None or score < 0.7:
-        # Se não houver score, refaz a verificação enviando o IP para evitar riscos
-        client_ip = get_client_ip(request)
-        response = request.post("https://www.google.com/recaptcha/api/siteverify", data={
-            "secret": CAPTCHA_SECRET,
-            "response": token,
-            "remoteip": client_ip  # Envia o IP porque o score não foi fornecido
-        }).json()
-
-        if not response.get("success"):
-            raise HTTPException(status_code=400, detail="Verificação do CAPTCHA falhou.")
-
-        # Verifica novamente se o score é baixo após o IP
-        score = response.get("score")
-
-    if score is not None and score < 0.7:
-        raise HTTPException(status_code=400, detail="Captcha suspeito, tente novamente.")
-
 def verify_jwt(request: Request):
     try:
-        token = request.cookies.get("access_token")  # Aqui você pega o cookie
+        token = request.cookies.get("_fp")  # Aqui você pega o cookie
+
+        if not token:
+            raise HTTPException(status_code=400, detail="Token não encontrado!")
+        
         payload = jwt.decode(token, public_key ,algorithms=[ALGORITHM])
         return payload
+    except  jwt.InvalidTokenError:
+        raise HTTPException(status_code=400, detail="Falha de Autenticação!")
+    
     except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expirado")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=401, detail="Token inválido")
+        raise HTTPException(status_code=400, detail="A sua sessão foi expirada, faça login novamente.")
+    
+    except jwt.DecodeError:
+        raise HTTPException(status_code=400, detail="Token inválido!")
 
-def generate_jwt(user_email: str, is_admin: bool = False):
+def generate_jwt(user_name: str,user_email: str, is_admin: bool = False):
     if is_admin:
         expire_delta = ACCESS_TOKEN_EXPIRE_DAYS_ADMIN * 24 * 60 * 60  # Expiração em segundos
         role = "Admin"
@@ -106,14 +79,15 @@ def generate_jwt(user_email: str, is_admin: bool = False):
     expire = datetime.now().timestamp() + expire_delta  # expire_delta já está em segundos
 
     to_encode = {
-        "user_email": user_email,
+        "name": user_name,
+        "email": user_email,
         "role": role,
+        "iat": datetime.now().timestamp(),  # A data de criação do token
         "exp": expire  # A data de expiração corrigida
     }
 
     # Gerando o token JWT
     encoded_jwt = jwt.encode(to_encode, private_key, algorithm=ALGORITHM)
-    print(expire)
     return encoded_jwt
 
 def verify_admin(token: str = Depends(verify_jwt)):

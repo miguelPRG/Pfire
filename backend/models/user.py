@@ -10,23 +10,26 @@ class UserCreate(BaseModel):
     password: str  # Deve ser armazenado com hash
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
+    last_login: datetime = Field(default_factory=datetime.now)
     isAdmin: bool = Field(default=False)
     isActive: bool = Field(default=False)
 
     @model_validator(mode='before')
     @classmethod
     def set_default_values(cls, values):
-        """Força os valores padrão independentemente do que o cliente enviar."""
+        #Força os valores padrão independentemente do que o cliente enviar.
         current_time = datetime.now()
 
         # Sempre sobrescreve os valores, mesmo que o cliente tenha enviado algo diferente
         values['created_at'] = current_time
         values['updated_at'] = current_time
+        values["last_login"] = None
         values['isAdmin'] = False
         values['isActivated'] = False
 
         return values
 
+#Provavelmente este modelo terá que ser adaptado, podem não ser necessários todos estes campos numa operação de leitura
 class UserRead(BaseModel):
     id: PyObjectId = Field(default_factory=ObjectId, alias="_id")  # Tipo str para representação do ObjectId
     name: str
