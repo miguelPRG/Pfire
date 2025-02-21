@@ -1,0 +1,6 @@
+exclude_dirs:
+  - tests
+  - migrations
+  - venv
+  - docs
+  - __pycache__

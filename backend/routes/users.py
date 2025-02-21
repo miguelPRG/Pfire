@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
-from controller.auth import verify_jwt, verify_admin, generate_jwt, get_client_ip, verify_captcha
+from controller.auth import verify_jwt, verify_admin, generate_jwt, get_client_ip
 from slowapi import Limiter
 from passlib.context import CryptContext
 from models.user import UserCreate, UserRead, UserLogin
@@ -52,9 +52,7 @@ async def create_user(request: Request, user: UserCreate, captcha_token:str = No
 
 @routerUser.post("/login", response_class=UserLogin)
 @limiter.limit("5 per 120 seconds")  
-async def login_user(request: Request, user: UserLogin, captcha_token: str = None):
-    # Verificação do JWT
-    # verify_captcha(captcha_token, request)
+async def login_user(request: Request, user: UserLogin):
     
     db_user = await collection.find_one({"email": user.email})
 
@@ -69,6 +67,7 @@ async def login_user(request: Request, user: UserLogin, captcha_token: str = Non
     update_task = collection.update_one({"email": user.email}, {"$set": {"last_login": last_login_time}})
 
     # Gerar o token em paralelo
+    print("Cozinhando JWT")
     token_task = to_thread(generate_jwt, db_user["name"],db_user["email"], db_user["isAdmin"])
 
     # Executar as duas tarefas em paralelo e aguardar ambas terminarem
