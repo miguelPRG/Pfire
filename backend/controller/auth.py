@@ -11,8 +11,8 @@ from cryptography.hazmat.backends import default_backend
 load_dotenv()
 
 # Ingredientes necessários para cozinhar o JWT Token
-PUBLIC_KEY = Path(__file__).parent / "../chaves/public.pem"
-PRIVATE_KEY = Path(__file__).parent / "../chaves/private.pem"
+PUBLIC_KEY = Path(__file__).parent / "../chaves/publica.pem"
+PRIVATE_KEY = Path(__file__).parent / "../chaves/privada.pem"
 PRIVATE_KEY_PASSWORD = os.getenv("PRIVATE_KEY_PASSWORD")
 ALGORITHM = "RS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
