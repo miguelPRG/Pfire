@@ -1,4 +1,5 @@
 import { createContext, useState, useContext, ReactNode, useEffect } from "react";
+import { FirebaseLogin, FirebaseLogout} from "../firebase"; // Importando as funções do Firebase
 
 interface User {
     name: string;
@@ -8,7 +9,9 @@ interface User {
 interface AuthContextType {
     user: User | null;
     login: (email: string | undefined, pwd: string | undefined) => void;
+    loginWithOAuth: (provider: "google" | "facebook" | "microsoft") => void; // Função para login via Firebase
     logout: () => void;
+    logoutWithOAuth: () => void; // Função para logout via Firebase
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -36,8 +39,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         checkAuth();
     }, []);
 
+    // Login via Backend
     async function login(email: string | undefined, password: string | undefined) {
-        const response = await fetch("backend/users/login", { //backend = http://localhost:8000
+        const response = await fetch("backend/users/login", { // backend = http://localhost:8000
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ email, password }),
@@ -54,6 +58,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser({ name: data.name, email: data.email });
     }
 
+    // Login via Firebase OAuth
+    async function loginWithOAuth(provider: "google" | "facebook" | "microsoft") {
+        try {
+            const user = await FirebaseLogin(provider);
+            setUser({ name: user.displayName || "", email: user.email || "" });
+        } catch (error) {
+            console.error("Erro no login com o Firebase:", error);
+            throw error;
+        }
+    }
+
+    // Logout via Backend
     async function logout() {
         await fetch("backend/users/logout", {
             method: "POST",
@@ -63,8 +79,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
     }
 
+    // Logout via Firebase
+    async function logoutWithOAuth() {
+        try {
+            await FirebaseLogout();
+            setUser(null);
+        } catch (error) {
+            console.error("Erro ao deslogar do Firebase:", error);
+        }
+    }
+
     return (
-        <AuthContext.Provider value={{ user, login, logout }}>
+        <AuthContext.Provider value={{ user, login, loginWithOAuth, logout, logoutWithOAuth }}>
             {children}
         </AuthContext.Provider>
     );

@@ -7,7 +7,7 @@ function LoginPage() {
     const passwordRef = useRef<HTMLInputElement>(null);
     const [isLoading, setLoading] = useState(false);
     const [authError, setAuthError] = useState(false);
-    const { login } = useAuth();
+    const { login, loginWithOAuth} = useAuth();
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault(); // Evita o recarregamento da página
@@ -30,6 +30,19 @@ function LoginPage() {
             setLoading(false);
         }
     };
+
+    const handleOAuthLogin = async (provider: "google" | "facebook" | "microsoft") => {
+        try {
+            setLoading(true);
+            setAuthError(false);
+            await loginWithOAuth(provider);
+        } catch (error) {
+            console.error(`Erro no login com ${provider}:`, error);
+            setAuthError(true);
+        } finally {
+            setLoading(false);
+        }
+      };    
 
     return (
         <Container maxWidth="sm" sx={{ textAlign: 'center', mt: 4 }}>
