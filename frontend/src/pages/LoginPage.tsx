@@ -21,7 +21,7 @@ function LoginPage() {
         setLoading(true);
 
         try {
-            await new Promise((resolve) => setTimeout(resolve, 2000)); // Simular atraso
+            await new Promise((resolve) => setTimeout(resolve, 1000)); // Simular atraso
             await login(email, password);
         } catch (error) {
             console.error(error);
@@ -35,6 +35,7 @@ function LoginPage() {
         try {
             setLoading(true);
             setAuthError(false);
+            await new Promise((resolve) => setTimeout(resolve, 1000));
             await loginWithOAuth(provider);
         } catch (error) {
             console.error(`Erro no login com ${provider}:`, error);

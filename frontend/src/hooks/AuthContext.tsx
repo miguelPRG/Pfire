@@ -1,105 +1,112 @@
 import { createContext, useState, useContext, ReactNode, useEffect } from "react";
-import { FirebaseLogin, FirebaseLogout} from "../firebase"; // Importando as funções do Firebase
+import { FirebaseLogin, FirebaseLogout } from "../firebase"; // Importando as funções do Firebase
 
 interface User {
-    name: string;
-    email: string;
+  name: string;
+  email: string;
 }
 
 interface AuthContextType {
-    user: User | null;
-    login: (email: string | undefined, pwd: string | undefined) => void;
-    loginWithOAuth: (provider: "google" | "facebook" | "microsoft") => void; // Função para login via Firebase
-    logout: () => void;
-    logoutWithOAuth: () => void; // Função para logout via Firebase
+  user: User | null;
+  loading: boolean;
+  login: (email: string | undefined, pwd: string | undefined) => void;
+  loginWithOAuth: (provider: "google" | "facebook" | "microsoft") => void; // Função para login via Firebase
+  logout: () => void;
+  logoutWithOAuth: () => void; // Função para logout via Firebase
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-    const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true); // Inicializa como true até a verificação de autenticação ser concluída
 
-    useEffect(() => {
-        async function checkAuth() {
-            try {
-                const response = await fetch("backend/users/auth", {
-                    method: "GET",
-                    credentials: "include",
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    setUser({ name: data.name, email: data.email });
-                }
-            } catch (error) {
-                console.error("Erro ao verificar autenticação:", error);
-            }
-        }
-
-        checkAuth();
-    }, []);
-
-    // Login via Backend
-    async function login(email: string | undefined, password: string | undefined) {
-        const response = await fetch("backend/users/login", { // backend = http://localhost:8000
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
-            credentials: "include",
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const response = await fetch("backend/users/auth", {
+          method: "GET",
+          credentials: "include",
         });
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            setUser(null);
-            throw data.message || Error("Erro desconhecido do backend");
+        if (response.ok) {
+          const data = await response.json();
+          setUser({ name: data.name, email: data.email });
+        } else {
+          setUser(null);
         }
-
-        setUser({ name: data.name, email: data.email });
-    }
-
-    // Login via Firebase OAuth
-    async function loginWithOAuth(provider: "google" | "facebook" | "microsoft") {
-        try {
-            const user = await FirebaseLogin(provider);
-            setUser({ name: user.displayName || "", email: user.email || "" });
-        } catch (error) {
-            console.error("Erro no login com o Firebase:", error);
-            throw error;
-        }
-    }
-
-    // Logout via Backend
-    async function logout() {
-        await fetch("backend/users/logout", {
-            method: "POST",
-            credentials: "include",
-        });
-
+      } catch (error) {
+        console.error("Erro ao verificar autenticação:", error);
         setUser(null);
+      } finally {
+        setLoading(false); // Após a verificação (sucesso ou falha), setLoading deve ser false
+      }
     }
 
-    // Logout via Firebase
-    async function logoutWithOAuth() {
-        try {
-            await FirebaseLogout();
-            setUser(null);
-        } catch (error) {
-            console.error("Erro ao deslogar do Firebase:", error);
-        }
+    checkAuth();
+  }, []);
+
+  // Login via Backend
+  async function login(email: string | undefined, password: string | undefined) {
+    const response = await fetch("backend/users/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      setUser(null);
+      throw data.message || Error("Erro desconhecido do backend");
     }
 
-    return (
-        <AuthContext.Provider value={{ user, login, loginWithOAuth, logout, logoutWithOAuth }}>
-            {children}
-        </AuthContext.Provider>
-    );
+    setUser({ name: data.name, email: data.email });
+  }
+
+  // Login via Firebase OAuth
+  async function loginWithOAuth(provider: "google" | "facebook" | "microsoft") {
+    try {
+      const user = await FirebaseLogin(provider);
+      setUser({ name: user.displayName || "", email: user.email || "" });
+    } catch (error) {
+      console.error("Erro no login com o Firebase:", error);
+      throw error;
+    }
+  }
+
+  // Logout via Backend
+  async function logout() {
+    await fetch("backend/users/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+
+    setUser(null);
+  }
+
+  // Logout via Firebase
+  async function logoutWithOAuth() {
+    try {
+      await FirebaseLogout();
+      setUser(null);
+    } catch (error) {
+      console.error("Erro ao deslogar do Firebase:", error);
+    }
+  }
+
+  return (
+    <AuthContext.Provider value={{ user, login, loading, loginWithOAuth, logout, logoutWithOAuth }}>
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {
-    const context = useContext(AuthContext);
-    if (context === undefined) {
-        throw new Error("useAuth must be used within an AuthProvider");
-    }
-    return context;
+  const context = useContext(AuthContext);
+  if (context === undefined) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
 }

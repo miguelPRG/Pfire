@@ -23,7 +23,7 @@ class UserCreate(BaseModel):
         # Sempre sobrescreve os valores, mesmo que o cliente tenha enviado algo diferente
         values['created_at'] = current_time
         values['updated_at'] = current_time
-        values["last_login"] = None
+        values['last_login'] = current_time
         values['isAdmin'] = False
         values['isActivated'] = False
 
