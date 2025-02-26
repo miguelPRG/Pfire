@@ -1,7 +1,9 @@
 from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
-from controller.auth import verify_jwt, verify_admin, generate_jwt, get_client_ip
+from controller.jwt import verify_jwt, verify_admin, generate_jwt
+from controller.clientIP import get_client_ip
 from slowapi import Limiter
+from controller.recaptcha import verify_recaptcha
 from passlib.context import CryptContext
 from models.user import UserCreate, UserRead, UserLogin
 from datetime import datetime
@@ -29,9 +31,10 @@ async def client_ip_endpoint(request: Request):  # Renomeando a função para ev
     return {"client_ip": client_ip}"""
 
 @routerUser.post("/register", response_model=UserCreate)
-@limiter.limit("5 per 120 seconds")  # 5 requisições a cada 8 horas (28.800 segundos)
-async def create_user(request: Request, user: UserCreate, captcha_token:str = None):
-    #verify_captcha(captcha_token, request)  # Verifica o CAPTCHA
+@limiter.limit("5 per 120 seconds")  # Limite de requisições
+async def create_user(user: UserCreate, request:Request,captcha_token: str = None):
+    # Verificar o CAPTCHA DESCOMENTAR QUANDO ESTIVER PRONTO
+    #await verify_recaptcha(captcha_token, "register")
 
     # Verificar se o usuário já existe
     existing_user = await collection.find_one({"email": user.email})  
@@ -42,38 +45,40 @@ async def create_user(request: Request, user: UserCreate, captcha_token:str = No
     user.password = pwd_context.hash(user.password)
 
     # Inserir usuário no MongoDB
-    user_data = user.model_dump(by_alias=True)
+    user_data = user.model_dump(by_alias=True)  # Usar .dict() para converter em dict com aliases
     result = await collection.insert_one(user_data)
 
     if not result.inserted_id:
         raise HTTPException(status_code=400, detail="Falha ao criar o usuário!")
 
+    # Sucesso: Retorna resposta de sucesso com mensagem
     return JSONResponse({"message": "Conta criada! Verifique seu email para ativação."})
 
 @routerUser.post("/login", response_class=UserLogin)
-@limiter.limit("5 per 120 seconds")  
-async def login_user(request: Request, user: UserLogin):
-    
-    db_user = await collection.find_one({"email": user.email})
+@limiter.limit("5 per 120 seconds")
+async def login(user: UserLogin,request:Request ,captcha_token: str = None):
+    # Verificar o CAPTCHA antes de proceder com a autenticação DESCOMENTAR QUANDO ESTIVER PRONTO
+    #await verify_recaptcha(captcha_token, "login")
 
+    # Buscar usuário no banco
+    db_user = await collection.find_one({"email": user.email})
     if not db_user or not pwd_context.verify(user.password, db_user["password"]):
-        raise HTTPException(status_code=400, detail="Password ou Email Inválida!")
+        raise HTTPException(status_code=400, detail="Email ou Senha Inválidos!")
 
     if not db_user.get("isActive", True):
-        raise HTTPException(status_code=400, detail="A sua conta foi desativada recentemente!")
+        raise HTTPException(status_code=403, detail="A sua conta foi desativada recentemente!")
 
-    # Atualizar last_login no banco
+    # Atualizar o horário do último login
     last_login_time = datetime.now()
     update_task = collection.update_one({"email": user.email}, {"$set": {"last_login": last_login_time}})
 
-    # Gerar o token em paralelo
-    print("Cozinhando JWT")
-    token_task = to_thread(generate_jwt, db_user["name"],db_user["email"], db_user["isAdmin"])
+    # Gerar o token JWT
+    token_task = to_thread(generate_jwt, db_user["name"], db_user["email"], db_user["isAdmin"])
 
-    # Executar as duas tarefas em paralelo e aguardar ambas terminarem
+    # Executar as duas tarefas em paralelo
     _, token = await gather(update_task, token_task)
 
-    # Criar a resposta com cookie de autenticação
+    # Criar resposta com o token JWT no cookie
     response = JSONResponse({"name": db_user["name"], "email": db_user["email"]})
     response.set_cookie(
         key="_fp",

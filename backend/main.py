@@ -2,7 +2,10 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from routes import users
+from dotenv import load_dotenv
 from slowapi.errors import RateLimitExceeded
+
+load_dotenv()
 
 app = FastAPI()
 # Configuração de CORS(Cross Origin Request Security)
