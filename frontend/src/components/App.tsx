@@ -1,4 +1,4 @@
-import { lazy, ReactElement, Suspense, useEffect } from "react";
+import { lazy, ReactElement, Suspense} from "react";
 import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
 import { useAuth } from "../hooks/AuthContext";
 import CircularProgress from "@mui/material/CircularProgress";
