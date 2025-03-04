@@ -2,8 +2,8 @@ import { createContext, useState, useContext, ReactNode, useEffect } from "react
 import { FirebaseLogin, FirebaseLogout } from "../firebase"; // Importando as funções do Firebase
 
 interface User {
-  name: string;
-  email: string;
+  name: string | null;
+  email: string | null;
 }
 
 interface AuthContextType {
@@ -68,8 +68,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Login via Firebase OAuth
   async function loginWithOAuth(provider: "google" | "facebook" | "microsoft") {
     try {
-      const user = await FirebaseLogin(provider);
-      setUser({ name: user.displayName || "", email: user.email || "" });
+      const { user, idToken } = await FirebaseLogin(provider);
+
+      const response = await fetch("backend/users/login-oauth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({email: user.email,username: user.displayName, firebase_token: idToken})      
+      })
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setUser(null);
+        throw data.message || Error("Erro desconhecido do backend");
+      }  
+      
+      setUser({ name: user.displayName, email: user.email});
+
     } catch (error) {
       console.error("Erro no login com o Firebase:", error);
       throw error;

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from routes import users
+from backend.routes import usersRoutes
 from dotenv import load_dotenv
 from slowapi.errors import RateLimitExceeded
 
@@ -24,7 +24,7 @@ app.add_middleware(
 )
 
 # Registrar as rotas
-app.include_router(users.routerUser)
+app.include_router(usersRoutes.routerUser)
 
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):

@@ -33,12 +33,19 @@ const FirebaseLogin = async (providerName: "google" | "facebook" | "microsoft") 
       throw new Error("Provedor não suportado!");
   }
 
-  return signInWithPopup(auth, provider)
-    .then((result) => result.user)
-    .catch((error) => { throw error; });
-  
-  
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
+
+    // Obtém o ID Token do Firebase
+    const idToken = await user.getIdToken();
+
+    return { user, idToken }; // Retorna o usuário e o token
+  } catch (error) {
+    throw error;
+  }
 };
+
 
 const FirebaseLogout = async () => {
   return signOut(auth)

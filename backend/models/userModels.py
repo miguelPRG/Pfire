@@ -1,0 +1,57 @@
+from pydantic import BaseModel, EmailStr, Field, model_validator
+from datetime import datetime
+from bson import ObjectId
+from typing import Optional, Literal
+from .PyObjectId import PyObjectId  # Certifique-se de que está importado corretamente
+
+class UserCreate(BaseModel):
+    name: str = Field(min_length=2, max_length=100)
+    email: EmailStr
+    password: Optional[str] = None  # Senha opcional para login via Firebase
+    auth_provider: Literal["email", "firebase"] = "email"  # Define o provedor de autenticação
+    created_at: datetime = Field(default_factory=datetime.now)
+    updated_at: datetime = Field(default_factory=datetime.now)
+    last_login: datetime = Field(default_factory=datetime.now)
+    isAdmin: bool = Field(default=False)
+    isActive: bool = Field(default=False)
+
+    @model_validator(mode='before')
+    @classmethod
+    def set_default_values(cls, values):
+        current_time = datetime.now()
+
+        values['created_at'] = current_time
+        values['updated_at'] = current_time
+        values['last_login'] = current_time
+        values['isAdmin'] = False
+        values['isActive'] = False  # Corrigindo "isActivated" para "isActive"
+
+        return values
+
+class UserRead(BaseModel):
+    id: PyObjectId = Field(default_factory=ObjectId, alias="_id")
+    name: str
+    email: EmailStr
+    auth_provider: str  # Indica se o usuário usou "email" ou "firebase" para autenticação
+    created_at: datetime
+    updated_at: datetime
+    isAdmin: bool
+    isActive: bool
+
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str  # Login via JWT requer senha
+
+
+class FirebaseLogin(BaseModel):
+    id_token: str  # Token do Firebase enviado pelo frontend
+
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = Field(None, min_length=2, max_length=100)
+    email: Optional[EmailStr] = None
+    password: Optional[str] = None  # Deve ser armazenada com hash
+    isAdmin: Optional[bool] = None
+    isActive: Optional[bool] = None
+    updated_at: datetime = Field(default_factory=datetime.now)
