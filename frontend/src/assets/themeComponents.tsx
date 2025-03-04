@@ -46,6 +46,9 @@ const commonComponents: Components = {
                 padding: '10px 20px',
                 fontWeight: 'bold',
                 transition: '0.3s',
+                '&:hover': {
+                    backgroundColor: '#1565C0',
+                },
             },
         },
     },
@@ -89,6 +92,15 @@ const commonComponents: Components = {
             }
         },
     },
+    MuiIconButton: {
+        styleOverrides: {
+            root: {
+                backgroundColor: "primary.main",
+                color: "white",
+                boxShadow: "0px 3px 6px rgba(0, 0, 0, 0.2)"
+            }
+        }
+    }
 };
 
 export default commonComponents;
