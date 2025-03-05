@@ -1,13 +1,14 @@
 from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
-from controller.jwt import verify_jwt, verify_admin, generate_jwt, revoke_user_tokens
+from controller.jwt import verify_jwt, verify_admin, generate_jwt
 from controller.clientIP import get_client_ip
+from pathlib import Path
 import firebase_admin
 from firebase_admin import credentials, auth, initialize_app
 from slowapi import Limiter
 from controller.recaptcha import verify_recaptcha
 from passlib.context import CryptContext
-from backend.models.userModels import UserCreate, UserRead, UserLogin
+from models.userModels import UserCreate, UserRead, UserLogin
 from datetime import datetime
 from database import db
 from asyncio import to_thread, gather
@@ -24,8 +25,12 @@ pwd_context = CryptContext(
 collection = db["users"]
 limiter = Limiter(key_func=get_client_ip)
 
-cred = credentials.Certificate("caminho/para/seu/serviceAccountKey.json")
-initialize_app(cred)
+BASE_DIR = Path(__file__).resolve().parent.parent  # Sobe um nível na árvore de diretórios
+SERVICE_ACCOUNT_PATH = BASE_DIR / "chaves" / "serviceAccountKey.json"  # Caminho correto
+
+# Inicializa o Firebase com o caminho ajustado
+cred = credentials.Certificate(str(SERVICE_ACCOUNT_PATH))
+firebase_admin.initialize_app(cred)
 
 # 🚀 Login via Firebase OAuth
 @routerUser.post("/login-oauth")
@@ -121,7 +126,7 @@ async def create_user(user: UserCreate, request: Request, captcha_token: str = N
 # 🚀 Buscar Usuários
 @routerUser.get("/")
 @limiter.limit("5 per 120 seconds")
-async def get_users(email: str = None, jwt: str = Depends(verify_admin)):
+async def get_users(request:Request, jwt: str = Depends(verify_admin), email: str = None):
     if email:
         user = await collection.find_one({"email": email})
         if not user:
@@ -146,6 +151,7 @@ async def logout_user():
 
 
 # 🚀 Logout Global (Todos os Dispositivos) Ainda está em desenvolvimento
+"""
 @routerUser.post("/logout-all")
 async def logout_all_users(email: str, jwt: str = Depends(verify_jwt)):
     try:
@@ -154,3 +160,4 @@ async def logout_all_users(email: str, jwt: str = Depends(verify_jwt)):
         return JSONResponse({"message": "Sessões encerradas em todos os dispositivos."})
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro ao deslogar: {str(e)}")
+"""

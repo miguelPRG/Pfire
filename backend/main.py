@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from backend.routes import usersRoutes
+from routes import usersRoutes
 from dotenv import load_dotenv
 from slowapi.errors import RateLimitExceeded
 
