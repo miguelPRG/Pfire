@@ -5,7 +5,7 @@ import { useTema } from "../hooks/TemaContext";
 import CircularProgress from "@mui/material/CircularProgress";
 import { Box, IconButton } from "@mui/material";
 //import Footer from "./Footer";
-import { MdBrightness4, MdBrightness7 } from "react-icons/md";
+//import { MdBrightness4, MdBrightness7 } from "react-icons/md";
 
 // Carregar as páginas e os componentes de forma lazy
 const Login = lazy(() => import("../pages/LoginPage"));
@@ -72,7 +72,7 @@ const ThemeToggleButton = () => {
         "&:hover": { backgroundColor: (theme) => theme.palette.primary.dark },
       }}
     >
-      {darkMode ? <MdBrightness7 /> : <MdBrightness4 />}
+      {/*darkMode ? <MdBrightness7 /> : <MdBrightness4 />*/}
     </IconButton>
   );
 };
