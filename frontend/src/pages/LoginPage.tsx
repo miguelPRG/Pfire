@@ -103,10 +103,9 @@ function LoginPage() {
                             component="a" 
                             href="#" 
                             sx={{ 
-                                color: '#1976D2', 
+                                color: 'primary.main', 
                                 textDecoration: 'none', 
-                                fontSize: '0.900rem', 
-                                fontWeight: 500, 
+                                fontSize: '0.900rem',  
                                 cursor: 'pointer',
                                 '&:hover': { textDecoration: 'underline' } 
                             }}>
@@ -142,27 +141,6 @@ function LoginPage() {
                         }}>
                         Login com Google
                     </Button>
-                    <Button
-                    fullWidth
-                    variant="contained"
-                    startIcon={<GoogleIcon />}
-                    sx={{
-                        background: '#000000',
-                        color: 'white',
-                        fontWeight: 'bold',
-                        padding: '10px 20px',
-                        borderRadius: '6px',
-                        transition: '0.3s',
-                        mt: 2,
-                        '&:hover': {
-                            background: '#1976D2'
-                        },
-                        width: { xs: '250px', sm: '300px', md: '350px' },
-                    }}
-                >
-                    Login com Google
-                </Button>
-
                 </form>
             </Paper>
         </Container>
