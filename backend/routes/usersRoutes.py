@@ -3,7 +3,8 @@ from fastapi.responses import JSONResponse
 from controller.jwt import verify_jwt, verify_admin, generate_jwt
 from controller.clientIP import get_client_ip
 from pathlib import Path
-import firebase_admin
+from secrets import choice
+from string import ascii_letters, punctuation, digits
 from firebase_admin import credentials, auth, initialize_app
 from slowapi import Limiter
 from controller.recaptcha import verify_recaptcha
@@ -30,7 +31,7 @@ SERVICE_ACCOUNT_PATH = BASE_DIR / "chaves" / "serviceAccountKey.json"  # Caminho
 
 # Inicializa o Firebase com o caminho ajustado
 cred = credentials.Certificate(str(SERVICE_ACCOUNT_PATH))
-firebase_admin.initialize_app(cred)
+initialize_app(cred)
 
 # 🚀 Login via Firebase OAuth
 @routerUser.post("/login-oauth")
@@ -49,7 +50,8 @@ async def login_oauth(request: Request, firebase_token: str):
 
         if not db_user:
             #Criar um novo utilizador
-            new_user = UserCreate(name=username, email=email, password="", auth_provider="firebase")
+            random_string = "".join(choice(ascii_letters + digits + punctuation) for _ in range(15))
+            new_user = UserCreate(name=username, email=email, password=random_string, auth_provider="firebase")
             user_task = create_user(new_user, request, isOAuth=True)
 
         else:

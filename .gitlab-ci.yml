@@ -18,10 +18,10 @@ python_test:
     - . .venv/bin/activate
     - pip install --upgrade pip
     - pip install -r requirements.txt
-    - pip install safety bandit
+    - pip install bandit
 
+    #analisar vulnerabilidades no código python
     - bandit -r . -c bandit.yml
-    - safety scan --full-report --severity=high --api-key=$SAFETY_API_KEY || true  # Permite falhas
   allow_failure: true  # Continua o pipeline mesmo com falhas
 
 # Frontend Security Check
