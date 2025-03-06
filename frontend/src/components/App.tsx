@@ -4,6 +4,9 @@ import { useAuth } from "../hooks/AuthContext";
 import { useTema } from "../hooks/TemaContext";
 import CircularProgress from "@mui/material/CircularProgress";
 import { Box, IconButton } from "@mui/material";
+//import Footer from "./Footer";
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import LightModeIcon from '@mui/icons-material/LightMode';
 
 const Login = lazy(() => import("../pages/LoginPage"));
 const Home = lazy(() => import("../pages/HomePage"));
@@ -12,31 +15,24 @@ const Header = lazy(() => import("./Header"));
 interface RouteProps {
   user: unknown;
   element: ReactElement;
-  loading?: boolean;
 }
 
-const ProtectedRoute = ({ user, element, loading }: RouteProps) => {
-  if (loading) {
-    return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-        <CircularProgress />
-      </Box>
-    );
-  }
+const ProtectedRoute = ({ user, element }: RouteProps) => {
   return user ? element : <Navigate to="/login" />;
 };
 
-const PublicRoute = ({ user, element }: Omit<RouteProps, "loading">) => {
+const PublicRoute = ({ user, element }: RouteProps) => {
   return user ? <Navigate to="/" /> : element;
 };
 
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
+  const { user, loading } = useAuth();
   const isLoginPage = location.pathname === "/login";
 
   return (
     <>
-      {!isLoginPage && <Header />}
+      {!isLoginPage && !loading && user && <Header />}
       <Box component="main">{children}</Box>
     </>
   );
@@ -46,7 +42,9 @@ const ThemeToggleButton = () => {
   const { darkMode, toggleTheme } = useTema();
 
   const handleThemeChange = () => {
-    // Alterna o tema
+    requestAnimationFrame(() => {
+      document.documentElement.classList.toggle("dark-mode", !darkMode);
+    });
     toggleTheme();
   };
 
@@ -62,7 +60,9 @@ const ThemeToggleButton = () => {
         boxShadow: 3,
         "&:hover": { backgroundColor: (theme) => theme.palette.primary.dark },
       }}
-    />
+    >
+     {darkMode ? <LightModeIcon /> : <DarkModeIcon />} {/*Modificado para MUI*/}
+    </IconButton>
   );
 };
 
@@ -78,24 +78,18 @@ function App() {
   }
 
   return (
-    <Suspense
-      fallback={
-        <Box display="flex" justifyContent="center" alignItems="center">
-          <CircularProgress />
-        </Box>
-      }
-    >
-      <Router>
+    <Router>
+      <Suspense>
         <Layout>
           <Routes>
             <Route path="/login" element={<PublicRoute user={user} element={<Login />} />} />
-            <Route path="/" element={<ProtectedRoute user={user} element={<Home />} loading={loading} />} />
+            <Route path="/" element={<ProtectedRoute user={user} element={<Home />} />} />
             <Route path="*" element={<Navigate to={user ? "/" : "/login"} />} />
           </Routes>
         </Layout>
-      </Router>
+      </Suspense>
       <ThemeToggleButton />
-    </Suspense>
+    </Router>
   );
 }
 
