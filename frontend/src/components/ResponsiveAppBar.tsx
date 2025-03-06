@@ -1,4 +1,4 @@
-import * as React from "react";
+import { useState } from "react";
 import { useTheme, useMediaQuery } from "@mui/material";
 import { AppBar, Box, Toolbar, IconButton, Menu, Avatar, Tooltip, MenuItem, Typography, Button, Container} from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -9,9 +9,9 @@ const navigationPages = ["Products", "Pricing", "Blog"];
 const userSettings = ["Profile", "Account", "Dashboard", "Logout"];
 
 function ResponsiveAppBar() {
-  const { user, logout } = useAuth();
-  const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(null);
-  const [anchorElUser, setAnchorElUser] = React.useState<null | HTMLElement>(null);
+  const { logout } = useAuth();
+  const [anchorElNav, setAnchorElNav] = useState<null | HTMLElement>(null);
+  const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md")); // Detecta se a tela é pequena
 

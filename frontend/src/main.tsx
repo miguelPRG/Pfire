@@ -6,10 +6,10 @@ import App from './components/App';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <TemaProvider>{/*Provedor do Tema! Responsável por configurar o tema. Light ou Dark */}
-      <AuthProvider>{/*Provedor de Autenticação! Responsável por verificar login do utilizador*/}
+    <AuthProvider>{/*Provedor de Autenticação! Responsável por verificar login do utilizador*/}
+      <TemaProvider>{/*Provedor do Tema! Responsável por configurar o tema. Light ou Dark */}
         <App/>
-      </AuthProvider>
-    </TemaProvider>
+      </TemaProvider>
+    </AuthProvider>
   </React.StrictMode>,
 );

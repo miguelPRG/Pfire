@@ -4,13 +4,10 @@ import { useAuth } from "../hooks/AuthContext";
 import { useTema } from "../hooks/TemaContext";
 import CircularProgress from "@mui/material/CircularProgress";
 import { Box, IconButton } from "@mui/material";
-//import Footer from "./Footer";
-//import { MdBrightness4, MdBrightness7 } from "react-icons/md";
 
-// Carregar as páginas e os componentes de forma lazy
 const Login = lazy(() => import("../pages/LoginPage"));
 const Home = lazy(() => import("../pages/HomePage"));
-const Header = lazy(() => import("./Header"))
+const Header = lazy(() => import("./Header"));
 
 interface RouteProps {
   user: unknown;
@@ -41,7 +38,6 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
     <>
       {!isLoginPage && <Header />}
       <Box component="main">{children}</Box>
-      {/*!isLoginPage && <Footer />*/}
     </>
   );
 };
@@ -50,12 +46,7 @@ const ThemeToggleButton = () => {
   const { darkMode, toggleTheme } = useTema();
 
   const handleThemeChange = () => {
-    // Usa requestAnimationFrame para melhorar o desempenho da alteração visual
-    requestAnimationFrame(() => {
-      document.documentElement.classList.toggle("dark-mode", !darkMode);
-    });
-
-    // Alterna o tema no estado React
+    // Alterna o tema
     toggleTheme();
   };
 
@@ -71,9 +62,7 @@ const ThemeToggleButton = () => {
         boxShadow: 3,
         "&:hover": { backgroundColor: (theme) => theme.palette.primary.dark },
       }}
-    >
-      {/*darkMode ? <MdBrightness7 /> : <MdBrightness4 />*/}
-    </IconButton>
+    />
   );
 };
 
@@ -89,27 +78,24 @@ function App() {
   }
 
   return (
-    <>
-      <Suspense
-        fallback={
-          <Box display="flex" justifyContent="center" alignItems="center">
-            <CircularProgress />
-          </Box>
-        }
-      >
-        <Router>
-          <Layout>
-            <Routes>
-              <Route path="/login" element={<PublicRoute user={user} element={<Login />} />} />
-              <Route path="/" element={<ProtectedRoute user={user} element={<Home />} loading={loading} />} />
-              <Route path="*" element={<Navigate to={user ? "/" : "/login"} />} />
-            </Routes>
-          </Layout>
-        </Router>
-      </Suspense>
-      {/* Botão de alternância de tema, fora do Router para evitar re-renderizações */}
+    <Suspense
+      fallback={
+        <Box display="flex" justifyContent="center" alignItems="center">
+          <CircularProgress />
+        </Box>
+      }
+    >
+      <Router>
+        <Layout>
+          <Routes>
+            <Route path="/login" element={<PublicRoute user={user} element={<Login />} />} />
+            <Route path="/" element={<ProtectedRoute user={user} element={<Home />} loading={loading} />} />
+            <Route path="*" element={<Navigate to={user ? "/" : "/login"} />} />
+          </Routes>
+        </Layout>
+      </Router>
       <ThemeToggleButton />
-    </>
+    </Suspense>
   );
 }
 
