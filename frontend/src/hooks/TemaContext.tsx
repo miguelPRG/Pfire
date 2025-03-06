@@ -1,5 +1,5 @@
 import { createContext, useState, useContext, ReactNode, useEffect, useMemo } from "react";
-import { ThemeProvider, CssBaseline } from "@mui/material";
+import { ThemeProvider, CssBaseline, createTheme } from "@mui/material";
 import { lightTheme, darkTheme } from "../assets/Theme";
 
 interface TemaContextProps {
@@ -18,30 +18,44 @@ export const useTema = () => {
 };
 
 export function TemaProvider({ children }: { children: ReactNode }) {
-  const [darkMode, setDarkMode] = useState<boolean>(() => {
-    return localStorage.getItem("darkMode") === "true"; // Recupera do localStorage
-  });
+  const getInitialDarkMode = () => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("darkMode") === "true";
+    }
+    return false;
+  };
+
+  const [darkMode, setDarkMode] = useState<boolean>(getInitialDarkMode);
+  const [isChangingTheme, setIsChangingTheme] = useState(false);
 
   // Memoriza o tema para evitar recriações desnecessárias
-  const theme = useMemo(() => (darkMode ? darkTheme : lightTheme), [darkMode]);
+  const theme = useMemo(() => createTheme(darkMode ? darkTheme : lightTheme), [darkMode]);
+
+  // Aplica a cor do fundo diretamente no body para evitar flash branco
+  useEffect(() => {
+    document.body.style.backgroundColor = darkMode
+      ? darkTheme.palette.background.default
+      : lightTheme.palette.background.default;
+  }, [darkMode]);
 
   useEffect(() => {
-    // Sempre que darkMode mudar, salva no localStorage
     localStorage.setItem("darkMode", String(darkMode));
-    // Aplica a classe no HTML para customização global
-    document.documentElement.classList.toggle("dark-mode", darkMode);
   }, [darkMode]);
 
   const toggleTheme = () => {
+    setIsChangingTheme(true);
     setDarkMode((prevMode) => !prevMode);
+    setTimeout(() => setIsChangingTheme(false), 5);// Delay para evitar flash. Mais conforto para o utilizador.
   };
 
   return (
     <TemaContext.Provider value={{ darkMode, toggleTheme }}>
-      <ThemeProvider theme={theme}>
-        <CssBaseline /> {/* Força a aplicação do tema imediatamente */}
-        {children}
-      </ThemeProvider>
+      {!isChangingTheme && (
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          {children}
+        </ThemeProvider>
+      )}
     </TemaContext.Provider>
   );
 }
