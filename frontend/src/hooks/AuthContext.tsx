@@ -17,30 +17,49 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Função genérica para fazer requisições ao backend
+async function fetchBackend(url: string, method: string, body: any = null) {
+  try {
+    const response = await fetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: body ? JSON.stringify(body) : null,
+      credentials: "include",
+    });
+
+    if (!response.ok) {
+      throw new Error("Erro no backend");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Erro ao fazer chamada ao backend:", error);
+    throw error;
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true); // Inicializa como true até a verificação de autenticação ser concluída
 
   useEffect(() => {
     async function checkAuth() {
-      try {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        const response = await fetch("backend/users/auth", {
-          method: "GET",
-          credentials: "include",
-        });
+      const storedUser = localStorage.getItem("user");
 
-        if (response.ok) {
-          const data = await response.json();
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
+        setLoading(false);
+      } else {
+        try {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          const data = await fetchBackend("backend/users/auth", "GET");
           setUser({ name: data.name, email: data.email });
-        } else {
+          localStorage.setItem("user", JSON.stringify({ name: data.name, email: data.email }));
+        } catch (error) {
           setUser(null);
+        } finally {
+          setLoading(false);
         }
-      } catch (error) {
-        console.error("Erro ao verificar autenticação:", error);
-        setUser(null);
-      } finally {
-        setLoading(false); // Após a verificação (sucesso ou falha), setLoading deve ser false
       }
     }
 
@@ -49,42 +68,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Login via Backend
   async function login(email: string | undefined, password: string | undefined) {
-    const response = await fetch("backend/users/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
+    try {
+      const data = await fetchBackend("backend/users/login", "POST", { email, password });
+      setUser({ name: data.name, email: data.email });
+      localStorage.setItem("user", JSON.stringify({ name: data.name, email: data.email }));
+    } catch (error) {
       setUser(null);
-      throw data.message || Error("Erro desconhecido do backend");
+      throw new Error("Erro ao realizar login no backend");
     }
-
-    setUser({ name: data.name, email: data.email });
   }
 
   // Login via Firebase OAuth
   async function loginWithOAuth(provider: "google" | "facebook" | "microsoft") {
     try {
       const { user, idToken } = await FirebaseLogin(provider);
+      const data = await fetchBackend("backend/users/login-oauth", "POST", {
+        email: user.email,
+        username: user.displayName,
+        firebase_token: idToken,
+      });
 
-      const response = await fetch("backend/users/login-oauth", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({email: user.email,username: user.displayName, firebase_token: idToken})      
-      })
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setUser(null);
-        throw data.message || Error("Erro desconhecido do backend");
-      }  
-      
-      setUser({ name: user.displayName, email: user.email});
-
+      setUser({ name: user.displayName, email: user.email });
+      localStorage.setItem("user", JSON.stringify({ name: user.displayName, email: user.email }));
     } catch (error) {
       console.error("Erro no login com o Firebase:", error);
       throw error;
@@ -93,12 +98,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Logout via Backend
   async function logout() {
-    await fetch("backend/users/logout", {
-      method: "POST",
-      credentials: "include",
-    });
-
-    setUser(null);
+    try {
+      await fetchBackend("backend/users/logout", "POST");
+      setUser(null);
+      localStorage.removeItem("user");
+    } catch (error) {
+      console.error("Erro ao realizar logout no backend:", error);
+    }
   }
 
   // Logout via Firebase
@@ -106,6 +112,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await FirebaseLogout();
       setUser(null);
+      localStorage.removeItem("user");
     } catch (error) {
       console.error("Erro ao deslogar do Firebase:", error);
     }
