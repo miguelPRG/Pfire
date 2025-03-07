@@ -1,10 +1,15 @@
-import { Container, Typography, Paper, TextField, Button, Alert, Fade, InputAdornment } from '@mui/material';
+import { Container, Typography, Paper, TextField, Button, Alert, Fade, Box } from '@mui/material';
 import { useRef, useState } from 'react';
 import { useAuth } from '../hooks/AuthContext';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
-import { Box } from "@mui/material";
 import GoogleIcon from '@mui/icons-material/Google';
 
+// Importa a imagem da logo
+import logo from "../assets/images/logo.png"; // ou use o caminho correto
+
+declare const grecaptcha: {
+    execute(siteKey: string, options: { action: string }): Promise<string>;
+};
 
 function LoginPage() {
     const emailRef = useRef<HTMLInputElement>(null);
@@ -25,11 +30,12 @@ function LoginPage() {
         setLoading(true);
 
         try {
-            await new Promise((resolve) => setTimeout(resolve, 1000));
             await login(email, password);
         } catch (error) {
-            console.error(error);
+            console.error("Error during login:", error);
             setAuthError(true);
+            if (emailRef.current) emailRef.current.value = "";
+            if (passwordRef.current) passwordRef.current.value = "";
         } finally {
             setLoading(false);
         }
@@ -47,67 +53,94 @@ function LoginPage() {
         } finally {
             setLoading(false);
         }
-      };    
-
-
+    };
 
     return (
         <Container maxWidth="sm" sx={{ textAlign: 'center', mt: 4, backgroundColor: "background.default", padding: 4, borderRadius: 2 }}>
+            {/* Logo e nome da aplicação no topo */}
+            <Box sx={{
+                position: "absolute",
+                top: 16,
+                left: 16,
+                display: "flex",
+                alignItems: "center"
+            }}>                <img src={logo} alt="Logo" style={{ width: 80, height: 80, marginRight: 10 }} />
+                <Typography
+                    variant="h6"
+                    noWrap
+                    component="a"
+                    href="/"
+                    sx={{
+                        mr: 2,
+                        display: "flex",
+                        fontFamily: "monospace",
+                        fontWeight: 700,
+                        letterSpacing: ".3rem",
+                        color: "inherit",
+                        textDecoration: "none",
+                    }}
+                >
+                    PFIRE
+                </Typography>
+            </Box>
+
             <Fade in={authError}>
                 <Alert variant="filled" severity="error" sx={{ mt: 2 }}>
                     Email ou Password Inválidos
                 </Alert>
             </Fade>
+
             <Box sx={{
-                position: "relative",  
+                position: "relative",
                 marginBottom: 3 // Ajusta conforme necessário
             }}>
-                <Box sx={{ 
+                <Box sx={{
                     backgroundColor: "primary.main",
-                    borderRadius: "50%", 
+                    borderRadius: "50%",
                     width: 70, // Tamanho fixo para garantir que seja circular
-                    height: 70, 
-                    position: "absolute", 
-                    top: "-15px", // Move para cima do Paper
+                    height: 70,
+                    position: "absolute",
+                    top: "10px", // Move para cima do Paper
                     zIndex: 1 // Garante que fique sobre o Paper
                 }}>
                     <PersonOutlineOutlinedIcon sx={{ fontSize: 48, color: "#FFFFFF" }} />
                 </Box>
             </Box>
-            <Paper elevation={6} sx={{ 
+
+            <Paper elevation={6} sx={{
                 maxWidth: '400px', // Define uma largura máxima
             }}>
-                <Typography 
-                    variant="h1" 
+                <Typography
+                    variant="h1"
                     sx={{ marginBottom: 2, marginTop: 2 }}>
                     INICIAR SESSÃO
                 </Typography>
 
                 <form onSubmit={handleSubmit}>
-                    <TextField  
-                        required 
-                        id="email" 
-                        label="Email" 
-                        type="email" 
-                        inputRef={emailRef} 
+                    <TextField
+                        required
+                        id="email"
+                        label="Email"
+                        type="email"
+                        inputRef={emailRef}
                     />
-                    <TextField 
-                        required 
-                        id="password" 
-                        label="Password" 
-                        type="password" 
-                        inputRef={passwordRef} 
+                    <TextField
+                        required
+                        id="password"
+                        label="Password"
+                        type="password"
+                        inputRef={passwordRef}
                     />
                     <Box >
                         <Typography
-                            component="a" 
-                            href="#" 
-                            sx={{ 
-                                color: 'primary.main', 
-                                textDecoration: 'none', 
-                                fontSize: '0.900rem',  
+                            component="a"
+                            href="#"
+                            sx={{
+                                color: 'primary.main',
+                                textDecoration: 'none',
+                                fontSize: '0.900rem',
                                 cursor: 'pointer',
-                                '&:hover': { textDecoration: 'underline' } 
+                                '&:hover': { textDecoration: 'underline' }
                             }}>
                             Esqueceste-te da tua palavra-passe?
                         </Typography>

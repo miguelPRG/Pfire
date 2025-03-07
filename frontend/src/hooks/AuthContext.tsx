@@ -1,6 +1,8 @@
 import { createContext, useState, useContext, ReactNode, useEffect } from "react";
 import { FirebaseLogin, FirebaseLogout } from "../firebase"; // Importando as funções do Firebase
 
+declare var grecaptcha: any;
+
 interface User {
   name: string | null;
   email: string | null;
@@ -9,7 +11,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string | undefined, pwd: string | undefined) => void;
+  login: (email: string | undefined, pwd: string) => void;
   loginWithOAuth: (provider: "google" | "facebook" | "microsoft") => void; // Função para login via Firebase
   logout: () => void;
   logoutWithOAuth: () => void; // Função para logout via Firebase
@@ -17,49 +19,30 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Função genérica para fazer requisições ao backend
-async function fetchBackend(url: string, method: string, body: any = null) {
-  try {
-    const response = await fetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: body ? JSON.stringify(body) : null,
-      credentials: "include",
-    });
-
-    if (!response.ok) {
-      throw new Error("Erro no backend");
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error("Erro ao fazer chamada ao backend:", error);
-    throw error;
-  }
-}
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true); // Inicializa como true até a verificação de autenticação ser concluída
 
   useEffect(() => {
     async function checkAuth() {
-      const storedUser = localStorage.getItem("user");
+      try {
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const response = await fetch("backend/users/auth", {
+          method: "GET",
+          credentials: "include",
+        });
 
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-        setLoading(false);
-      } else {
-        try {
-          await new Promise((resolve) => setTimeout(resolve, 1000));
-          const data = await fetchBackend("backend/users/auth", "GET");
+        if (response.ok) {
+          const data = await response.json();
           setUser({ name: data.name, email: data.email });
-          localStorage.setItem("user", JSON.stringify({ name: data.name, email: data.email }));
-        } catch (error) {
+        } else {
           setUser(null);
-        } finally {
-          setLoading(false);
         }
+      } catch (error) {
+        console.error("Erro ao verificar autenticação:", error);
+        setUser(null);
+      } finally {
+        setLoading(false); // Após a verificação (sucesso ou falha), setLoading deve ser false
       }
     }
 
@@ -68,13 +51,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Login via Backend
   async function login(email: string | undefined, password: string | undefined) {
+    if (!email || !password) {
+      console.error("Email e senha são obrigatórios!");
+      return;
+    }
+
     try {
-      const data = await fetchBackend("backend/users/login", "POST", { email, password });
+      const token = await grecaptcha.enterprise.execute('6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4', { action: 'login' });
+      const response = await fetch("http://localhost:8000/users/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: email.trim(),
+          password: password.trim(),
+          recaptcha_token: token
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setUser(null);
+        console.log(data)
+        throw new Error(data.detail || "Erro desconhecido do backend");
+      }
+
       setUser({ name: data.name, email: data.email });
-      localStorage.setItem("user", JSON.stringify({ name: data.name, email: data.email }));
     } catch (error) {
-      setUser(null);
-      throw new Error("Erro ao realizar login no backend");
+      console.error("Erro no login:", error);
+      throw error;
     }
   }
 
@@ -82,14 +87,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function loginWithOAuth(provider: "google" | "facebook" | "microsoft") {
     try {
       const { user, idToken } = await FirebaseLogin(provider);
-      const data = await fetchBackend("backend/users/login-oauth", "POST", {
-        email: user.email,
-        username: user.displayName,
-        firebase_token: idToken,
-      });
+
+      const response = await fetch("backend/users/login-oauth", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: user.email, username: user.displayName, firebase_token: idToken })
+      })
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setUser(null);
+        throw data.message || Error("Erro desconhecido do backend");
+      }
 
       setUser({ name: user.displayName, email: user.email });
-      localStorage.setItem("user", JSON.stringify({ name: user.displayName, email: user.email }));
     } catch (error) {
       console.error("Erro no login com o Firebase:", error);
       throw error;
@@ -98,13 +110,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Logout via Backend
   async function logout() {
-    try {
-      await fetchBackend("backend/users/logout", "POST");
-      setUser(null);
-      localStorage.removeItem("user");
-    } catch (error) {
-      console.error("Erro ao realizar logout no backend:", error);
-    }
+    await fetch("backend/users/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+
+    setUser(null);
   }
 
   // Logout via Firebase
@@ -112,7 +123,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await FirebaseLogout();
       setUser(null);
-      localStorage.removeItem("user");
     } catch (error) {
       console.error("Erro ao deslogar do Firebase:", error);
     }

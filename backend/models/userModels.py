@@ -42,7 +42,7 @@ class UserRead(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str  # Login via JWT requer senha
-
+    recaptcha_token: str
 
 class FirebaseLogin(BaseModel):
     id_token: str  # Token do Firebase enviado pelo frontend

@@ -7,7 +7,7 @@ from secrets import choice
 from string import ascii_letters, punctuation, digits
 from firebase_admin import credentials, auth, initialize_app
 from slowapi import Limiter
-from controller.recaptcha import verify_recaptcha
+from controller.recaptchaValidation import validar_recaptcha_token
 from passlib.context import CryptContext
 from models.userModels import UserCreate, UserRead, UserLogin
 from datetime import datetime
@@ -78,7 +78,13 @@ async def login_oauth(request: Request, firebase_token: str):
 # 🚀 Login via Email e Senha
 @routerUser.post("/login", response_model=UserLogin)
 @limiter.limit("5 per 120 seconds")
-async def login(user: UserLogin, request: Request, captcha_token: str = None):
+async def login(user: UserLogin, request:Request):
+    
+    print(user.recaptcha_token)
+
+    # Validate the reCAPTCHA token
+    await validar_recaptcha_token(user.recaptcha_token)
+    
     db_user = await collection.find_one({"email": user.email})
 
     if not db_user:
@@ -101,12 +107,14 @@ async def login(user: UserLogin, request: Request, captcha_token: str = None):
 
     return response
 
-
 # 🚀 Criar Novo Usuário
 @routerUser.post("/register", response_model=UserCreate)
 @limiter.limit("5 per 120 seconds")
-async def create_user(user: UserCreate, request: Request, captcha_token: str = None, isOAuth: bool = False):
+async def create_user(user: UserCreate, request: Request, recaptchaToken: str, isOAuth: bool = False):
     
+    # Validate the reCAPTCHA token
+    await validar_recaptcha_token(recaptchaToken, "login")
+
     if not isOAuth:
     
         existing_user = await collection.find_one({"email": user.email})  

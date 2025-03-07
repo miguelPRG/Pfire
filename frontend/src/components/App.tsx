@@ -77,7 +77,15 @@ function App() {
     );
   }
 
-  return (
+  return ( 
+  <>
+<style>
+    {`
+      .grecaptcha-badge {
+        visibility: hidden !important;
+      }
+    `}
+  </style>
     <Router>
       <Suspense>
         <Layout>
@@ -90,6 +98,7 @@ function App() {
       </Suspense>
       <ThemeToggleButton />
     </Router>
+  </>
   );
 }
 
