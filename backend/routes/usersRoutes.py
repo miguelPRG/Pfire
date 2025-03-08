@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
-from controller.jwt import verify_jwt, verify_admin, generate_jwt
+from controller.jwtValidation import verify_jwt, verify_admin, generate_jwt
 from controller.clientIP import get_client_ip
 from pathlib import Path
 from secrets import choice
@@ -79,9 +79,6 @@ async def login_oauth(request: Request, firebase_token: str):
 @routerUser.post("/login", response_model=UserLogin)
 @limiter.limit("5 per 120 seconds")
 async def login(user: UserLogin, request:Request):
-    
-    print(user.recaptcha_token)
-
     # Validate the reCAPTCHA token
     await validar_recaptcha_token(user.recaptcha_token)
     

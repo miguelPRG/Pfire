@@ -26,7 +26,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     async function checkAuth() {
       try {
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        //Esta função poderá ser descomentada para verificar a animação de carregamento, mas não deve ser incluida na produção
+        //await new Promise((resolve) => setTimeout(resolve, 1000));
         const response = await fetch("backend/users/auth", {
           method: "GET",
           credentials: "include",
@@ -34,6 +35,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (response.ok) {
           const data = await response.json();
+          console.log(data)
           setUser({ name: data.name, email: data.email });
         } else {
           setUser(null);
@@ -61,19 +63,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await fetch("http://localhost:8000/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           email: email.trim(),
           password: password.trim(),
           recaptcha_token: token
         }),
+        
       });
 
       const data = await response.json();
-
+   
       if (!response.ok) {
         setUser(null);
         console.log(data)
-        throw new Error(data.detail || "Erro desconhecido do backend");
+        throw new Error(data.message || "Erro desconhecido do backend");
       }
 
       setUser({ name: data.name, email: data.email });

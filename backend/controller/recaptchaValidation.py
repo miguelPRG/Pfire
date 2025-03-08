@@ -25,7 +25,7 @@ async def validar_recaptcha_token(token: str):
     async with httpx.AsyncClient() as client:
         response = await client.post(url, json=payload, headers=headers)
 
-    print(response.text)
+    print("Resposta do reCAPTCHA: \n"+ response.text)
 
     if response.status_code != 200:
         raise HTTPException(status_code=400, detail="Erro na API do reCAPTCHA.")
