@@ -19,8 +19,11 @@ A primeira coisa a fazer é clonar o repositório, utilizando estes comandos no 
 Crie o ficheiro `.env` no diretório raiz do projeto, exatamente com este nome. De seguida, guarde os seguintes dados:
 
 - `MONGO_URL = 'mongodb+srv://<db_username>:<db_password>@pfire.c9mvo.mongodb.net/?retryWrites=true&w=majority&appName=pfire'`
+- `PRIVATE_KEY_PASSWORD='password'`
+- `PROJECT_ID= 'projeto_id'`
+- `API_KEY='api_key'`
 
-Substitua pelo seu `username` e `password`.
+Os dados aqui indicados deverão ser substituidos pelos respetivos dados verdadeiros de cada desenvolvedor
 
 **AVISO**: Para fins de desenvolvimento, será necessário criar a sua própria base de dados em MongoDB. A base de dados utilizada em produção encontra-se sob o mais restrito acesso. 
 
@@ -31,14 +34,8 @@ Este projeto utiliza um sistema de autenticação baseado em JWT no `backend`, t
 1. `cd /backend`
 2. `mkdir chaves`
 3. `openssl genpkey -algorithm RSA -aes-256-cbc -out privada.pem`
-4. Crie uma password para proteger a chave privada
+4. Crie uma password para proteger a chave privada(deverá ser **EXATAMENTE** igual a **PRIVATE_KEY_PASSWORD** que foi definido no ficheiro `.env`)
 5. `openssl rsa -in privada.pem -pubout -out publica.pem`
-
-É importante incluir a password que criou no ficheiro `.env` para que tudo funcione corretamente. Inclua desta maneira:
-
-1. `PRIVATE_KEY_PASSWORD='<password>'`
-
-Substitua `<password>` pela password correta.
 
 ### Como Executar Servidores para Desenvolvimento
 
