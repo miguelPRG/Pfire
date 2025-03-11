@@ -6,7 +6,7 @@ from os import getenv
 PROJECT_ID = getenv("PROJECT_ID")  # ID do seu projeto no Google Cloud
 API_KEY = getenv("API_KEY")  # Chave da API do Google Cloud
 
-async def validar_recaptcha_token(token: str):
+async def validar_recaptcha_token(token: str, action:str):
     if not token:
         raise HTTPException(status_code=400, detail="Token reCAPTCHA ausente.")
 
@@ -16,7 +16,7 @@ async def validar_recaptcha_token(token: str):
         "event": {
             "token": token,
             "siteKey": "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",  # Chave do site (frontend)
-            "expectedAction": "login"  # Nome da ação definida no frontend
+            "expectedAction": action  # Nome da ação definida no frontend
         }
     }
 

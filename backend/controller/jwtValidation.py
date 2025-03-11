@@ -12,8 +12,8 @@ PUBLIC_KEY = Path(__file__).parent / "../chaves/publica.pem"
 PRIVATE_KEY = Path(__file__).parent / "../chaves/privada.pem"
 PRIVATE_KEY_PASSWORD = os.getenv("PRIVATE_KEY_PASSWORD")
 ALGORITHM = "RS256"
-ACCESS_TOKEN_EXPIRE_HOURS = 24
-ACCESS_TOKEN_EXPIRE_DAYS_ADMIN = 7
+USER_HOURS = 24
+SUPER_ADMIN = 1
 
 def load_public_key():
     with open(PUBLIC_KEY, "rb") as key_file:
@@ -57,10 +57,10 @@ def verify_jwt(request: Request):
 
 def generate_jwt(user_name: str,user_email: str, is_admin: bool = False):
     if is_admin:
-        expire_delta = ACCESS_TOKEN_EXPIRE_DAYS_ADMIN * 24 * 60 * 60  # Expiração em segundos
+        expire_delta = SUPER_ADMIN * 60 * 60  # Expiração em segundos
         role = "Admin"
     else:
-        expire_delta = ACCESS_TOKEN_EXPIRE_HOURS * 60 * 60  # Expiração em segundos
+        expire_delta = USER_HOURS * 60 * 60  # Expiração em segundos
         role = "User"
 
     # Usando o timezone UTC corretamente
@@ -78,8 +78,8 @@ def generate_jwt(user_name: str,user_email: str, is_admin: bool = False):
     encoded_jwt = jwt.encode(to_encode, private_key, algorithm=ALGORITHM)
     return encoded_jwt
 
-def verify_admin(token: str = Depends(verify_jwt)):
-    if token.get("role") != "Admin":
+def verify_super_admin(token: str = Depends(verify_jwt)):
+    if token.get("role") != "isSuperAdmin":
         raise HTTPException(status_code=403, detail="Access Denied!")
     else: 
         return True

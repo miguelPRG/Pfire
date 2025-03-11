@@ -60,14 +60,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const token = await grecaptcha.enterprise.execute('6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4', { action: 'login' });
-      const response = await fetch("http://localhost:8000/users/login", {
+      const response = await fetch(`http://localhost:8000/users/login?recaptchaToken=${token}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           email: email.trim(),
           password: password.trim(),
-          recaptcha_token: token
         }),
         
       });

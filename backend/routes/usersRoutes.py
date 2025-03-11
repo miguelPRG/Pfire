@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
-from controller.jwtValidation import verify_jwt, verify_admin, generate_jwt
+from controller.jwtValidation import verify_jwt, verify_super_admin, generate_jwt
 from controller.clientIP import get_client_ip
 from pathlib import Path
 from secrets import choice
@@ -9,7 +9,7 @@ from firebase_admin import credentials, auth, initialize_app
 from slowapi import Limiter
 from controller.recaptchaValidation import validar_recaptcha_token
 from passlib.context import CryptContext
-from models.userModels import UserCreate, UserRead, UserLogin
+from models.userModels import UserCreate, UserLogin
 from datetime import datetime
 from database import db
 from asyncio import to_thread, gather
@@ -78,9 +78,9 @@ async def login_oauth(request: Request, firebase_token: str):
 # 🚀 Login via Email e Senha
 @routerUser.post("/login", response_model=UserLogin)
 @limiter.limit("5 per 120 seconds")
-async def login(user: UserLogin, request:Request):
+async def login(user: UserLogin, request:Request, recaptchaToken: str):
     # Validate the reCAPTCHA token
-    await validar_recaptcha_token(user.recaptcha_token)
+    await validar_recaptcha_token(recaptchaToken, "login")
     
     db_user = await collection.find_one({"email": user.email})
 
@@ -95,7 +95,7 @@ async def login(user: UserLogin, request:Request):
 
     last_login_time = datetime.now()
     update_task = collection.update_one({"email": user.email}, {"$set": {"last_login": last_login_time}})
-    token_task = to_thread(generate_jwt, db_user["name"], db_user["email"], db_user["isAdmin"])
+    token_task = to_thread(generate_jwt, db_user["name"], db_user["email"], db_user["isSuperAdmin"])
 
     _, token = await gather(update_task, token_task)
 
@@ -110,7 +110,7 @@ async def login(user: UserLogin, request:Request):
 async def create_user(user: UserCreate, request: Request, recaptchaToken: str, isOAuth: bool = False):
     
     # Validate the reCAPTCHA token
-    await validar_recaptcha_token(recaptchaToken, "login")
+    await validar_recaptcha_token(recaptchaToken, "register")
 
     if not isOAuth:
     
@@ -133,7 +133,7 @@ async def create_user(user: UserCreate, request: Request, recaptchaToken: str, i
 # 🚀 Buscar Usuários
 @routerUser.get("/")
 @limiter.limit("5 per 120 seconds")
-async def get_users(request:Request, jwt: str = Depends(verify_admin), email: str = None):
+async def get_users(request:Request, jwt: str = Depends(verify_super_admin), email: str = None):
     if email:
         user = await collection.find_one({"email": email})
         if not user:

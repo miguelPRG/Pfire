@@ -79,13 +79,7 @@ function App() {
 
   return ( 
   <>
-<style>
-    {`
-      .grecaptcha-badge {
-        visibility: hidden !important;
-      }
-    `}
-  </style>
+
     <Router>
       <Suspense>
         <Layout>
