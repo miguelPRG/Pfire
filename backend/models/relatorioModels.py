@@ -1,22 +1,14 @@
 from datetime import datetime
 from pydantic import BaseModel, Field
+from bson import ObjectId
 from typing import Dict, Any
+from .PyObjectId import PyObjectId
 
-class CustomFieldsCreate(BaseModel):
-    empresa_nome: str
-    tipo: str  # Ex: "extintores", "para-raios", "bocas de incêndio"
-    campos: Dict[str, Dict[str, Any]]  # Campos personalizados (ex: { "numero_extintor": {"tipo": "str", "obrigatorio": true} , "fabricante: {"tipo: "str", "obrigatirio": true}"})
-    created_by: str # Aqui vamos ter o UserID que vem do MongoDB e que será convertido para string
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_by: str
-    updated_at: datetime = Field(default_factory=datetime.now)  
-    isActive: bool
-
-class RelatorioCreateSchema(BaseModel):
+class RelatorioCreate(BaseModel):
     campos_dinamicos: Dict[str, Any]  # Os dados reais preenchidos
-    campo_modelo_id: str  # Referência para o modelo de campos
-    created_by: str  # ID do usuário que está criando o relatório
+    campo_modelo_id: PyObjectId = Field(default_factory=ObjectId, alias="_id")  # Id do modelo de campos
+    created_by: PyObjectId = Field(default_factory=ObjectId, alias="_id")  # ID do usuário que está criando o relatório
     created_at: datetime = Field(default_factory=datetime.now)
-    updated_by: str
+    updated_by: PyObjectId = Field(default_factory=ObjectId, alias="_id") # ID do usuário que está atualizando o relatório
     updated_at: datetime = Field(default_factory=datetime.now)
     isActive: bool

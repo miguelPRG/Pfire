@@ -1,4 +1,5 @@
 from fastapi import Request
+from slowapi import Limiter
 
 def get_client_ip(request: Request):
     """Obtém o IP real do cliente considerando proxy reverso (Nginx)"""
@@ -8,3 +9,5 @@ def get_client_ip(request: Request):
     else:
         ip = request.client.host  # Se não tiver proxy, pega o IP direto
     return ip
+
+limiter = Limiter(key_func=get_client_ip)

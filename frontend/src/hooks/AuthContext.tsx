@@ -6,6 +6,7 @@ declare var grecaptcha: any;
 interface User {
   name: string | null;
   email: string | null;
+  isSuperAdmin: boolean;
 }
 
 interface AuthContextType {
@@ -36,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (response.ok) {
           const data = await response.json();
           console.log(data)
-          setUser({ name: data.name, email: data.email });
+          setUser({ name: data.name, email: data.email , isSuperAdmin: data.isSuperAdmin});
         } else {
           setUser(null);
         }
@@ -79,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.message || "Erro desconhecido do backend");
       }
 
-      setUser({ name: data.name, email: data.email });
+      setUser({ name: data.name, email: data.email, isSuperAdmin: data.isSuperAdmin });
     } catch (error) {
       console.error("Erro no login:", error);
       throw error;
@@ -104,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw data.message || Error("Erro desconhecido do backend");
       }
 
-      setUser({ name: user.displayName, email: user.email });
+      setUser({ name: user.displayName, email: user.email, isSuperAdmin: data.isSuperAdmin });
     } catch (error) {
       console.error("Erro no login com o Firebase:", error);
       throw error;

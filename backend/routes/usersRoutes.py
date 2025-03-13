@@ -1,15 +1,14 @@
 from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
 from controller.jwtValidation import verify_jwt, verify_super_admin, generate_jwt
-from controller.clientIP import get_client_ip
+from controller.clientIP import limiter
 from pathlib import Path
 from secrets import choice
 from string import ascii_letters, punctuation, digits
 from firebase_admin import credentials, auth, initialize_app
-from slowapi import Limiter
 from controller.recaptchaValidation import validar_recaptcha_token
 from passlib.context import CryptContext
-from models.userModels import UserCreate, UserLogin
+from models.userModels import UserCreate, UserLogin, UserUpdate
 from datetime import datetime
 from database import db
 from asyncio import to_thread, gather
@@ -24,7 +23,6 @@ pwd_context = CryptContext(
 )
 
 collection = db["users"]
-limiter = Limiter(key_func=get_client_ip)
 
 BASE_DIR = Path(__file__).resolve().parent.parent  # Sobe um nível na árvore de diretórios
 SERVICE_ACCOUNT_PATH = BASE_DIR / "chaves" / "serviceAccountKey.json"  # Caminho correto
@@ -52,7 +50,8 @@ async def login_oauth(request: Request, firebase_token: str):
             #Criar um novo utilizador
             random_string = "".join(choice(ascii_letters + digits + punctuation) for _ in range(15))
             new_user = UserCreate(name=username, email=email, password=random_string, auth_provider="firebase")
-            user_task = create_user(new_user, request, isOAuth=True)
+            user_data = new_user.model_dump(by_alias=True)
+            user_task = collection.insert_one(user_data)
 
         else:
             # Verificar se o utilizdor está ativado
@@ -62,12 +61,12 @@ async def login_oauth(request: Request, firebase_token: str):
             user_task = collection.update_one({"email": email}, {"$set": {"last_login": datetime.now()}})
 
         # Gerar JWT
-        token_task = to_thread(generate_jwt, db_user["name"], db_user["email"], db_user["isAdmin"])
+        token_task = to_thread(generate_jwt, db_user["name"], db_user["email"], db_user["isSuperAdmin"])
 
         _,token = await gather(user_task, token_task)
 
         response = JSONResponse({"name": db_user["name"], "email": db_user["email"]})
-        response.set_cookie(key="_fp", value=token, httponly=True, samesite="Strict")
+        response.set_cookie(key="_fp", value=token, httponly=True, samesite="Strict", secure=True)
 
         return response
 
@@ -84,10 +83,7 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str):
     
     db_user = await collection.find_one({"email": user.email})
 
-    if not db_user:
-        raise HTTPException(status_code=400, detail="Email ou senha inválidos.")
-
-    if not user.password or not pwd_context.verify(user.password, db_user["password"]):
+    if not db_user or not pwd_context.verify(user.password, db_user["password"]):
         raise HTTPException(status_code=400, detail="Email ou senha inválidos.")
 
     if not db_user.get("isActive", True):
@@ -99,7 +95,7 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str):
 
     _, token = await gather(update_task, token_task)
 
-    response = JSONResponse({"name": db_user["name"], "email": db_user["email"]})
+    response = JSONResponse({"name": db_user["name"], "email": db_user["email"], "isSuperAdmin": db_user["isSuperAdmin"]})
     response.set_cookie(key="_fp", value=token, httponly=True, samesite="Strict")
 
     return response
@@ -107,21 +103,19 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str):
 # 🚀 Criar Novo Usuário
 @routerUser.post("/register", response_model=UserCreate)
 @limiter.limit("5 per 120 seconds")
-async def create_user(user: UserCreate, request: Request, recaptchaToken: str, isOAuth: bool = False):
+async def create_user(user: UserCreate, request: Request, recaptchaToken: str):
     
     # Validate the reCAPTCHA token
     await validar_recaptcha_token(recaptchaToken, "register")
+    #Verificar se o utilizador com aquele email já existe    
+    existing_user = await collection.find_one({"email": user.email})  
 
-    if not isOAuth:
-    
-        existing_user = await collection.find_one({"email": user.email})  
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email já registado.")
 
-        if existing_user:
-            raise HTTPException(status_code=400, detail="Email já registado.")
-
-    if user.password:
-        user.password = pwd_context.hash(user.password)
-
+    #Criptografar password
+    user.password = pwd_context.hash(user.password)
+    #Formatação dos dados   
     user_data = user.model_dump(by_alias=True)
     result = await collection.insert_one(user_data)
 
@@ -133,29 +127,71 @@ async def create_user(user: UserCreate, request: Request, recaptchaToken: str, i
 # 🚀 Buscar Usuários
 @routerUser.get("/")
 @limiter.limit("5 per 120 seconds")
-async def get_users(request:Request, jwt: str = Depends(verify_super_admin), email: str = None):
+async def get_users(request:Request, jwt: str = Depends(verify_super_admin), email: str = None, limit: int = 100):
     if email:
         user = await collection.find_one({"email": email})
         if not user:
             raise HTTPException(status_code=404, detail="Usuário não encontrado.")
         return user
 
-    return await collection.find().to_list(100)
+    return await collection.find().to_list(limit)
 
+# 🚀 Atualizar Usuário
+@routerUser.put("/", response_model=UserUpdate)
+@limiter.limit("5 per 120 seconds")
+async def update_user(user: UserUpdate, request:Request, jwt: str = Depends(verify_jwt)):
+
+    if user.password:
+        user.password = pwd_context.hash(user.password)
+
+    novo_token = None
+    user_data = user.model_dump(by_alias=True)
+    result = await collection.update_one({"email": jwt.email}, {"$set": user_data})
+
+    if user.email or user.name or user.isSuperAdmin:
+        user_updated = await collection.find_one({"email": user.email})
+        novo_token = generate_jwt(user_updated.name, user_updated.email, user_updated.isSuperAdmin)
+
+    if not result.modified_count:
+        raise HTTPException(status_code=400, detail="Erro ao atualizar usuário.")
+
+    if not result.modified_count:
+        raise HTTPException(status_code=400, detail="Erro ao atualizar usuário.")
+
+    response =  JSONResponse({"message": "Usuário atualizado!"})
+
+    if novo_token:
+        response.delete_cookie("_fp", httponly=True, samesite="Strict", secure=True)
+        response.set_cookie(key="_fp", value=novo_token, httponly=True, samesite="Strict", secure=True)
+
+    return response
 
 # 🚀 Autenticação do Usuário (Verificar JWT)
 @routerUser.get("/auth")
 async def auth_user(request: Request, token: str = Depends(verify_jwt)):
     return {"name": token["name"], "email": token["email"]}
 
-
 # 🚀 Logout
 @routerUser.post("/logout")
 async def logout_user():
     response = JSONResponse({"message": "Logout bem-sucedido!"})
-    response.delete_cookie("_fp", httponly=True, samesite="Lax", secure=True)
+    response.delete_cookie("_fp", httponly=True, samesite="Strict", secure=True)
     return response
 
+# 🚀 Apagar Usuário
+@routerUser.delete("/{email}")
+@limiter.limit("5 per 120 seconds")
+async def soft_delete_user(email: str, request:Request, jwt: str = Depends(verify_jwt)):
+    
+    if jwt.email != email and not jwt.isSuperAdmin:
+        raise HTTPException(status_code=403, detail="Acesso negado!")
+
+    result = await collection.update_one({"email": email}, {"$set": {"isActive": False}})
+
+    if not result.modified_count:
+        raise HTTPException(status_code=400, detail="Usuário não encontrado.")
+
+    return JSONResponse({"message": "Utilizador apagado!"})
 
 # 🚀 Logout Global (Todos os Dispositivos) Ainda está em desenvolvimento
 """

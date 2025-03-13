@@ -2,13 +2,13 @@ from pydantic import BaseModel, EmailStr, Field, model_validator
 from datetime import datetime
 from bson import ObjectId
 from typing import Optional, Literal
-from .PyObjectId import PyObjectId  # Certifique-se de que está importado corretamente
+from .PyObjectId import PyObjectId 
 
 class UserCreate(BaseModel):
     name: str = Field(min_length=2, max_length=100)
     email: EmailStr
     phone_number: Optional[str] = None
-    password: Optional[str] = None  # Senha opcional para login via Firebase
+    password: str
     auth_provider: Literal["email", "firebase"] = "email"  # Define o provedor de autenticação
     empresa_id: PyObjectId = Field(default_factory=ObjectId, alias="_id")
     created_at: datetime = Field(default_factory=datetime.now)
@@ -34,13 +34,11 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str  # Login via JWT requer senha
 
-class FirebaseLogin(BaseModel):
-    id_token: str  # Token do Firebase enviado pelo frontend
-
 class UserUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=100)
     email: Optional[EmailStr] = None
     password: Optional[str] = None  # Deve ser armazenada com hash
-    isAdmin: Optional[bool] = None
+    phone_number: Optional[str] = None
+    empresa_id: Optional[PyObjectId] = None
+    isSuperAdmin: Optional[bool] = None
     isActive: Optional[bool] = None
-    updated_at: datetime = Field(default_factory=datetime.now)
