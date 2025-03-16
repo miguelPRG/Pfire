@@ -103,10 +103,10 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str):
 # 🚀 Criar Novo Usuário
 @routerUser.post("/register", response_model=UserCreate)
 @limiter.limit("5 per 120 seconds")
-async def create_user(user: UserCreate, request: Request, recaptchaToken: str):
+async def create_user(user: UserCreate, request: Request, recaptchaToken: str = None):
     
     # Validate the reCAPTCHA token
-    await validar_recaptcha_token(recaptchaToken, "register")
+    #await validar_recaptcha_token(recaptchaToken, "register")
     #Verificar se o utilizador com aquele email já existe    
     existing_user = await collection.find_one({"email": user.email})  
 
@@ -127,42 +127,51 @@ async def create_user(user: UserCreate, request: Request, recaptchaToken: str):
 # 🚀 Buscar Usuários
 @routerUser.get("/")
 @limiter.limit("5 per 120 seconds")
-async def get_users(request:Request, jwt: str = Depends(verify_super_admin), email: str = None, limit: int = 100):
-    if email:
+async def get_users(request: Request, email: str = None, jwt: str = Depends(verify_jwt), limit: int = 100):
+
+    if email and jwt["email"] == email:
         user = await collection.find_one({"email": email})
         if not user:
-            raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+            raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
+        
+        user["_id"] = str(user["_id"])  # Só tenta converter se o usuário existir
         return user
 
-    return await collection.find().to_list(limit)
+    elif jwt["isSuperAdmin"]:
+        users = await collection.find().to_list(limit)
+        for user in users:
+            user["_id"] = str(user["_id"])
+        return users
+
+    raise HTTPException(status_code=403, detail="Acesso negado!")
 
 # 🚀 Atualizar Usuário
-@routerUser.put("/", response_model=UserUpdate)
+@routerUser.put("/{email}", response_model=UserUpdate)
 @limiter.limit("5 per 120 seconds")
-async def update_user(user: UserUpdate, request:Request, jwt: str = Depends(verify_jwt)):
+async def update_user(user: UserUpdate, email: str, request: Request, jwt: str = Depends(verify_jwt),recaptchaToken: str = None):
+    
+    # Validate the reCAPTCHA token
+    #await validar_recaptcha_token(recaptchaToken, "update")
+    print(jwt)
+    # Confirmamos se o email do JWT é igual ao email do utilizador
+    if jwt["email"] != email or not jwt["isSuperAdmin"]:
+        raise HTTPException(status_code=403, detail="Acesso Negado!")
 
     if user.password:
         user.password = pwd_context.hash(user.password)
 
-    novo_token = None
-    user_data = user.model_dump(by_alias=True)
-    result = await collection.update_one({"email": jwt.email}, {"$set": user_data})
+    user_data = user.model_dump(exclude_unset=True)
+    user_data["update_date"] = datetime.now()  # Atualiza a data de atualização
+
+    result = await collection.update_one({"email": email}, {"$set": user_data})
+
+    if not result.modified_count:
+        raise HTTPException(status_code=400, detail="Utilizador não encontrado!")
+
+    response = JSONResponse({"message": "Usuário atualizado!"})
 
     if user.email or user.name or user.isSuperAdmin:
-        user_updated = await collection.find_one({"email": user.email})
-        novo_token = generate_jwt(user_updated.name, user_updated.email, user_updated.isSuperAdmin)
-
-    if not result.modified_count:
-        raise HTTPException(status_code=400, detail="Erro ao atualizar usuário.")
-
-    if not result.modified_count:
-        raise HTTPException(status_code=400, detail="Erro ao atualizar usuário.")
-
-    response =  JSONResponse({"message": "Usuário atualizado!"})
-
-    if novo_token:
         response.delete_cookie("_fp", httponly=True, samesite="Strict", secure=True)
-        response.set_cookie(key="_fp", value=novo_token, httponly=True, samesite="Strict", secure=True)
 
     return response
 
@@ -181,9 +190,12 @@ async def logout_user():
 # 🚀 Apagar Usuário
 @routerUser.delete("/{email}")
 @limiter.limit("5 per 120 seconds")
-async def soft_delete_user(email: str, request:Request, jwt: str = Depends(verify_jwt)):
+async def soft_delete_user(email: str, request:Request, jwt: str = Depends(verify_jwt), recaptchaToken: str = None):
     
-    if jwt.email != email and not jwt.isSuperAdmin:
+    # Validar o reCAPTCHA token
+    #await validar_recaptcha_token(recaptchaToken, "delete")
+
+    if jwt["email"] != email and not jwt["isSuperAdmin"]:
         raise HTTPException(status_code=403, detail="Acesso negado!")
 
     result = await collection.update_one({"email": email}, {"$set": {"isActive": False}})

@@ -58,10 +58,8 @@ def verify_jwt(request: Request):
 def generate_jwt(user_name: str,user_email: str, is_admin: bool = False):
     if is_admin:
         expire_delta = SUPER_ADMIN * 60 * 60  # Expiração em segundos
-        role = "Admin"
     else:
         expire_delta = USER_HOURS * 60 * 60  # Expiração em segundos
-        role = "User"
 
     # Usando o timezone UTC corretamente
     expire = datetime.now().timestamp() + expire_delta  # expire_delta já está em segundos
@@ -69,7 +67,7 @@ def generate_jwt(user_name: str,user_email: str, is_admin: bool = False):
     to_encode = {
         "name": user_name,
         "email": user_email,
-        "role": role,
+        "isSuperAdmin": is_admin,
         "iat": datetime.now().timestamp(),  # A data de criação do token
         "exp": expire  # A data de expiração corrigida
     }

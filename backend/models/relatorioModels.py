@@ -1,14 +1,19 @@
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from bson import ObjectId
-from typing import Dict, Any
 from .PyObjectId import PyObjectId
 
 class RelatorioCreate(BaseModel):
-    campos_dinamicos: Dict[str, Any]  # Os dados reais preenchidos
-    campo_modelo_id: PyObjectId = Field(default_factory=ObjectId, alias="_id")  # Id do modelo de campos
-    created_by: PyObjectId = Field(default_factory=ObjectId, alias="_id")  # ID do usuário que está criando o relatório
+    campo_modelo_id: PyObjectId = Field(default_factory=ObjectId)
+    cliente_id: PyObjectId = Field(default_factory=ObjectId)
+    created_by: PyObjectId = Field(default_factory=ObjectId)
     created_at: datetime = Field(default_factory=datetime.now)
-    updated_by: PyObjectId = Field(default_factory=ObjectId, alias="_id") # ID do usuário que está atualizando o relatório
+    updated_by: PyObjectId = Field(default_factory=ObjectId)
     updated_at: datetime = Field(default_factory=datetime.now)
-    isActive: bool
+    isActive: bool = True  # Valor padrão
+    campos_personalizados = ConfigDict(extra="allow")  # Permitir campos personalizados
+
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {ObjectId: str}  # Para conversão de ObjectId para string
+

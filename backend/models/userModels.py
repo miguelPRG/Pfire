@@ -1,16 +1,15 @@
 from pydantic import BaseModel, EmailStr, Field, model_validator
 from datetime import datetime
 from bson import ObjectId
-from typing import Optional, Literal
+from typing import Optional
 from .PyObjectId import PyObjectId 
 
 class UserCreate(BaseModel):
     name: str = Field(min_length=2, max_length=100)
     email: EmailStr
-    phone_number: Optional[str] = None
+    telefone: Optional[str] = None
     password: str
-    auth_provider: Literal["email", "firebase"] = "email"  # Define o provedor de autenticação
-    empresa_id: PyObjectId = Field(default_factory=ObjectId, alias="_id")
+    empresa_id: Optional[PyObjectId] = None
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
     last_login: datetime = Field(default_factory=datetime.now)
