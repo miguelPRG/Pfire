@@ -91,7 +91,7 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str):
 
     last_login_time = datetime.now()
     update_task = collection.update_one({"email": user.email}, {"$set": {"last_login": last_login_time}})
-    token_task = to_thread(generate_jwt, db_user["name"], db_user["email"], db_user["isSuperAdmin"])
+    token_task = to_thread(generate_jwt, str(db_user["_id"]),db_user["name"], db_user["email"], db_user["isSuperAdmin"])
 
     _, token = await gather(update_task, token_task)
 
@@ -152,7 +152,7 @@ async def update_user(user: UserUpdate, email: str, request: Request, jwt: str =
     
     # Validate the reCAPTCHA token
     #await validar_recaptcha_token(recaptchaToken, "update")
-    print(jwt)
+   
     # Confirmamos se o email do JWT é igual ao email do utilizador
     if jwt["email"] != email or not jwt["isSuperAdmin"]:
         raise HTTPException(status_code=403, detail="Acesso Negado!")

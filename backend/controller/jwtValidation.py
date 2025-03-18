@@ -45,6 +45,9 @@ def verify_jwt(request: Request):
             raise HTTPException(status_code=400, detail="Token não encontrado!")
         
         payload = jwt.decode(token, public_key ,algorithms=[ALGORITHM])
+        
+        print(payload)
+
         return payload
     except  jwt.InvalidTokenError:
         raise HTTPException(status_code=400, detail="Falha de Autenticação!")
@@ -55,8 +58,8 @@ def verify_jwt(request: Request):
     except jwt.DecodeError:
         raise HTTPException(status_code=400, detail="Token inválido!")
 
-def generate_jwt(user_name: str,user_email: str, is_admin: bool = False):
-    if is_admin:
+def generate_jwt(user_id:str,user_name: str,user_email: str, is_super_admin: bool = False):
+    if is_super_admin:
         expire_delta = SUPER_ADMIN * 60 * 60  # Expiração em segundos
     else:
         expire_delta = USER_HOURS * 60 * 60  # Expiração em segundos
@@ -65,9 +68,10 @@ def generate_jwt(user_name: str,user_email: str, is_admin: bool = False):
     expire = datetime.now().timestamp() + expire_delta  # expire_delta já está em segundos
 
     to_encode = {
+        "id": user_id,
         "name": user_name,
         "email": user_email,
-        "isSuperAdmin": is_admin,
+        "isSuperAdmin": is_super_admin,
         "iat": datetime.now().timestamp(),  # A data de criação do token
         "exp": expire  # A data de expiração corrigida
     }
