@@ -78,9 +78,9 @@ async def login_oauth(request: Request, firebase_token: str):
 # 🚀 Login via Email e Senha
 @routerUser.post("/login")
 @limiter.limit("5 per 120 seconds")
-async def login(user: UserLogin, request:Request, recaptchaToken: str = None):
+async def login(user: UserLogin, request:Request, recaptchaToken: str):
     # Validate the reCAPTCHA token
-    #await validar_recaptcha_token(recaptchaToken, "login")
+    await validar_recaptcha_token(recaptchaToken, "login")
     
     db_user = await collection.find_one({"email": user.email})
 
@@ -104,10 +104,10 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str = None):
 # 🚀 Criar Novo Usuário
 @routerUser.post("/register")
 @limiter.limit("5 per 120 seconds")
-async def create_user(user: UserCreate, request: Request, recaptchaToken: str = None):
+async def create_user(user: UserCreate, request: Request, recaptchaToken: str):
     
     # Validate the reCAPTCHA token
-    #await validar_recaptcha_token(recaptchaToken, "register")
+    await validar_recaptcha_token(recaptchaToken, "register")
     #Verificar se o utilizador com aquele email já existe    
     existing_user = await collection.find_one({"email": user.email})  
 
@@ -157,10 +157,10 @@ async def get_users(request: Request, id:str= None, email:str = None ,jwt: str =
 # 🚀 Atualizar Usuário
 @routerUser.put("/")
 @limiter.limit("5 per 120 seconds")
-async def update_user(user: UserUpdate, request: Request, id: str = None, email: str = None, jwt: str = Depends(verify_jwt), recaptchaToken: str = None):
+async def update_user(user: UserUpdate, request: Request, recaptchaToken: str, id: str = None, email: str = None, jwt: str = Depends(verify_jwt)):
     
     # Validate the reCAPTCHA token
-    #await validar_recaptcha_token(recaptchaToken, "update")
+    await validar_recaptcha_token(recaptchaToken, "update")
     
     user_found = None
 
@@ -214,10 +214,10 @@ async def logout_user():
 # 🚀 Apagar Usuário
 @routerUser.delete("/")
 @limiter.limit("5 per 120 seconds")
-async def soft_delete_user(request:Request, recaptchaToken: str = None,id:str = None, email:str = None ,jwt: str = Depends(verify_jwt)):
+async def soft_delete_user(request:Request, recaptchaToken: str,id:str = None, email:str = None ,jwt: str = Depends(verify_jwt)):
     
     # Validar o reCAPTCHA token
-    #await validar_recaptcha_token(recaptchaToken, "delete")
+    await validar_recaptcha_token(recaptchaToken, "delete")
     
     if not jwt["isSuperAdmin"]:
         raise HTTPException(status_code=403, detail="Acesso negado!")
