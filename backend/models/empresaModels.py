@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, model_validator
 from datetime import datetime
-from bson import ObjectId, Binary
+from bson import Binary
 from typing import Optional
 
 class EmpresaCreate(BaseModel):
@@ -11,9 +11,9 @@ class EmpresaCreate(BaseModel):
     codigo_postal: str
     telefone: str
     logo: Optional[Binary] = None
-    created_by: Optional[ObjectId] = None # Id do usuário que está criando a empresa
+    created_by: Optional[str] = None # Id do usuário que está criando a empresa
     created_at: datetime = Field(default_factory=datetime.now)
-    updated_by: Optional[ObjectId] = None # Id do usuário que está atualizando a empresa
+    updated_by: Optional[str] = None # Id do usuário que está atualizando a empresa
     updated_at: datetime = Field(default_factory=datetime.now)
     isActive: bool
 
@@ -27,12 +27,3 @@ class EmpresaCreate(BaseModel):
         values['isActive'] = False  # Corrigindo "isActivated" para "isActive"
 
         return values
-
-
-class EmpresaRead(BaseModel):
-    id: Optional[ObjectId] = None
-    nif: Optional[str] = None 
-
-    class Config:
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}

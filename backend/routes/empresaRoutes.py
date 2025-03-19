@@ -1,17 +1,18 @@
 from fastapi import APIRouter, HTTPException, Request, Depends
 from controller.jwtValidation import verify_jwt
-from models.empresaModels import EmpresaCreate, EmpresaRead 
+from controller.recaptchaValidation import validar_recaptcha_token
+from models.empresaModels import EmpresaCreate,EmpresaUpdate 
 from controller.clientIP import limiter
 from database import db
 from bson import ObjectId
+from datetime import datetime
 
 routerEmpresa = APIRouter(prefix="/empresa")
 collection = db["empresa"]
 
-#Criar empresa
-@routerEmpresa.post("/", response_model=EmpresaCreate)
-@limiter.limit("5 per 120 seconds")
-async def create_empresa(request: Request, empresa: EmpresaCreate, jwt: dict = Depends(verify_jwt)):
+#Criar empresa depois no registo de conta
+
+async def create_empresa(empresa: EmpresaCreate, jwt: dict = Depends(verify_jwt)):
     
     empresa_data = empresa.model_dump(by_alias=True)
     empresa_data["created_by"] = ObjectId(jwt["id"])
@@ -24,28 +25,91 @@ async def create_empresa(request: Request, empresa: EmpresaCreate, jwt: dict = D
     
     return empresa
 
-@routerEmpresa.get("/", response_model=EmpresaRead)
-@limiter.limit("5 per 120 seconds")
-async def get_empresas(request: Request,empresa: EmpresaRead,jwt: dict = Depends(verify_jwt), limit: int = 100):
+@routerEmpresa.get("/")
+@limiter.limit("3 per 30 seconds")
+async def get_empresas(request: Request, id:str = None, nif:str = None,jwt: str= Depends(verify_jwt), limit: int = 100):
     
-    if jwt["isSuperAdmin"]:
+    if not jwt["isSuperAdmin"]:
+        raise HTTPException(status_code=403, detail="Acesso negado!")
 
-        if empresa.id:
-            empresa = await collection.find_one({"_id": ObjectId(empresa.id)})
-            if not empresa:
-                raise HTTPException(status_code=404, detail="Empresa não encontrada.")
-            
-            return empresa
+    if id:
+        empresa_found = await collection.find_one({"_id": ObjectId(id)})
+        if not empresa_found:
+            raise HTTPException(status_code=404, detail="Empresa não encontrada.")
+        empresa_found["_id"] = str(empresa_found["_id"])
+        return empresa_found
+    
+    if nif:
+        empresa_found = await collection.find_one({"nif": nif})
+        if not empresa_found:
+            raise HTTPException(status_code=404, detail="Empresa não encontrada.")
+        empresa_found["_id"] = str(empresa_found["_id"])
+        return empresa_found
+    
+    else:
+        result = await collection.find().limit(limit).to_list(limit)
+        for r in result:
+            r["_id"] = str(r["_id"])
+        return result
 
-        if empresa.nif:
-            empresa = await collection.find_one({"nif": empresa.nif})
-            if not empresa:
-                raise HTTPException(status_code=404, detail="Empresa não encontrada.")
-            
-            return empresa
 
-        empresas = await collection.find().to_list(limit)
-       
-        return empresas
+@routerEmpresa.put("/")
+@limiter.limit("5 per 120 seconds")
+async def update_empresa(empresa: EmpresaUpdate, request: Request, recaptchaToken: str, id: str = None, nif: str = None, jwt: dict = Depends(verify_jwt)):
 
-    raise HTTPException(status_code=403, detail="Acesso negado!")
+    if not jwt["isSuperAdmin"]:
+        raise HTTPException(status_code=403, detail="Acesso negado!")
+
+    # Validate the reCAPTCHA token
+    await validar_recaptcha_token(recaptchaToken, "update")
+
+    empresa_found = None
+
+    if id:
+        empresa_found = await collection.find_one({"_id": ObjectId(id)})
+    
+    elif nif:  
+        empresa_found = await collection.find_one({"nif": nif})
+
+    if not empresa_found:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada.")
+    
+    empresa_data = {k: v for k, v in empresa.model_dump(exclude_unset=True).items()}
+    
+    empresa_data["updated_by"] = ObjectId(jwt["id"])
+    empresa_data["updated_at"] = datetime.now()
+
+    if id:
+        result = await collection.update_one({"_id": ObjectId(id)}, {"$set": empresa_data})
+    
+    else:
+        result = await collection.update_one({"nif": nif}, {"$set": empresa_data})
+
+    if not result.modified_count:
+        raise HTTPException(status_code=400, detail="Erro ao atualizar empresa.")
+    
+    return empresa_data
+
+@routerEmpresa.delete("/")
+@limiter.limit("5 per 120 seconds")
+async def delete_empresa(request: Request, id: str = None, nif: str = None, jwt: dict = Depends(verify_jwt)):
+
+    if not jwt["isSuperAdmin"]:
+        raise HTTPException(status_code=403, detail="Acesso negado!")
+
+    empresa_found = None
+
+    if id:
+        empresa_found = await collection.update_one({"_id": ObjectId(id)}, {"$set": {"isActive": False}})
+
+    elif nif:
+        empresa_found = await collection.find_one({"nif": nif}, {"$set": {"isActive": False}})
+    
+    if not empresa_found:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada.")
+
+
+    if not empresa_found:
+        raise HTTPException(status_code=400, detail="Erro ao apagar empresa.")
+
+    return {"message": "Empresa excluída com sucesso!"} 

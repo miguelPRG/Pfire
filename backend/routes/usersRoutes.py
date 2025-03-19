@@ -1,11 +1,13 @@
 from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
 from controller.jwtValidation import verify_jwt,generate_jwt
+from controller.jwtValidation import verify_jwt,generate_jwt
 from controller.clientIP import limiter
 from pathlib import Path
 from secrets import choice
 from string import ascii_letters, punctuation, digits
 from firebase_admin import credentials, auth, initialize_app
+from bson import ObjectId
 from bson import ObjectId
 from controller.recaptchaValidation import validar_recaptcha_token
 from passlib.context import CryptContext
@@ -108,6 +110,7 @@ async def create_user(user: UserCreate, request: Request, recaptchaToken: str):
     
     # Validate the reCAPTCHA token
     await validar_recaptcha_token(recaptchaToken, "register")
+
     #Verificar se o utilizador com aquele email já existe    
     existing_user = await collection.find_one({"email": user.email})  
 
@@ -216,7 +219,7 @@ async def logout_user():
 @limiter.limit("5 per 120 seconds")
 async def soft_delete_user(request:Request, recaptchaToken: str,id:str = None, email:str = None ,jwt: str = Depends(verify_jwt)):
     
-    # Validar o reCAPTCHA token
+    # Validate the reCAPTCHA token
     await validar_recaptcha_token(recaptchaToken, "delete")
     
     if not jwt["isSuperAdmin"]:
@@ -229,6 +232,8 @@ async def soft_delete_user(request:Request, recaptchaToken: str,id:str = None, e
 
     if email:
         result = await collection.update_one({"email": email}, {"$set": {"isActive": False}})
+    result = None
+    
 
     if not result.modified_count:
         raise HTTPException(status_code=400, detail="Usuário não encontrado.")

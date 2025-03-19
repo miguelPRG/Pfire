@@ -1,5 +1,4 @@
 from pydantic import BaseModel, EmailStr, Field
-from bson import ObjectId
 from datetime import datetime
 
 class Cliente(BaseModel):
