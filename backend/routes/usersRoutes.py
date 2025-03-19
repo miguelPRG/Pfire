@@ -1,11 +1,12 @@
 from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
-from controller.jwtValidation import verify_jwt, verify_super_admin, generate_jwt
+from controller.jwtValidation import verify_jwt,generate_jwt
 from controller.clientIP import limiter
 from pathlib import Path
 from secrets import choice
 from string import ascii_letters, punctuation, digits
 from firebase_admin import credentials, auth, initialize_app
+from bson import ObjectId
 from controller.recaptchaValidation import validar_recaptcha_token
 from passlib.context import CryptContext
 from models.userModels import UserCreate, UserLogin, UserUpdate
@@ -75,11 +76,11 @@ async def login_oauth(request: Request, firebase_token: str):
 
 
 # 🚀 Login via Email e Senha
-@routerUser.post("/login", response_model=UserLogin)
+@routerUser.post("/login")
 @limiter.limit("5 per 120 seconds")
-async def login(user: UserLogin, request:Request, recaptchaToken: str):
+async def login(user: UserLogin, request:Request, recaptchaToken: str = None):
     # Validate the reCAPTCHA token
-    await validar_recaptcha_token(recaptchaToken, "login")
+    #await validar_recaptcha_token(recaptchaToken, "login")
     
     db_user = await collection.find_one({"email": user.email})
 
@@ -101,7 +102,7 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str):
     return response
 
 # 🚀 Criar Novo Usuário
-@routerUser.post("/register", response_model=UserCreate)
+@routerUser.post("/register")
 @limiter.limit("5 per 120 seconds")
 async def create_user(user: UserCreate, request: Request, recaptchaToken: str = None):
     
@@ -126,54 +127,77 @@ async def create_user(user: UserCreate, request: Request, recaptchaToken: str = 
 
 # 🚀 Buscar Usuários
 @routerUser.get("/")
-@limiter.limit("5 per 120 seconds")
-async def get_users(request: Request, email: str = None, jwt: str = Depends(verify_jwt), limit: int = 100):
+@limiter.limit("5 per 30 seconds")
+async def get_users(request: Request, id:str= None, email:str = None ,jwt: str = Depends(verify_jwt), begin: int = 0, limit: int = 100):
 
-    if email and jwt["email"] == email:
-        user = await collection.find_one({"email": email})
-        if not user:
-            raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
+    if jwt["isSuperAdmin"] or jwt["email"] == email or jwt["id"] == id:
         
-        user["_id"] = str(user["_id"])  # Só tenta converter se o usuário existir
-        return user
+        if id:
+            user_found = await collection.find_one({"_id": ObjectId(id)})
+            if not user_found:
+                raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+            user_found["_id"] = str(user_found["_id"])
+            return user_found
 
-    elif jwt["isSuperAdmin"]:
-        users = await collection.find().to_list(limit)
-        for user in users:
-            user["_id"] = str(user["_id"])
-        return users
+        if email:
+            user_found = await collection.find_one({"email": email})
+            if not user_found:
+                raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+            user_found["_id"] = str(user_found["_id"])
+            return user_found
+        
+        else:
+            result = await collection.find().limit(limit).to_list(limit)
+            for r in result:
+                r["_id"] = str(r["_id"])
+            return result
 
     raise HTTPException(status_code=403, detail="Acesso negado!")
 
 # 🚀 Atualizar Usuário
-@routerUser.put("/{email}", response_model=UserUpdate)
+@routerUser.put("/")
 @limiter.limit("5 per 120 seconds")
-async def update_user(user: UserUpdate, email: str, request: Request, jwt: str = Depends(verify_jwt),recaptchaToken: str = None):
+async def update_user(user: UserUpdate, request: Request, id: str = None, email: str = None, jwt: str = Depends(verify_jwt), recaptchaToken: str = None):
     
     # Validate the reCAPTCHA token
     #await validar_recaptcha_token(recaptchaToken, "update")
-   
-    # Confirmamos se o email do JWT é igual ao email do utilizador
-    if jwt["email"] != email or not jwt["isSuperAdmin"]:
-        raise HTTPException(status_code=403, detail="Acesso Negado!")
+    
+    user_found = None
+
+    if id:
+        user_found = await collection.find_one({"_id": ObjectId(id)})
+    
+    elif email:
+        user_found = await collection.find_one({"email": email})
+
+    if not user_found:
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
+    
+    # Verificar se o utilizador tem permissão para atualizar
+    if not jwt["isSuperAdmin"] and jwt["email"] != user_found["email"] and jwt["id"] != str(user_found["_id"]):
+        raise HTTPException(status_code=403, detail="Acesso negado!")
+    
+    # Atualizar os dados
 
     if user.password:
-        user.password = pwd_context.hash(user.password)
+        if jwt["email"] == email:
+            user.password = pwd_context.hash(user.password)
+        else:
+            raise HTTPException(status_code=403, detail="Apenas o próprio utilizador pode alterar a sua password!")
 
-    user_data = user.model_dump(exclude_unset=True)
-    user_data["update_date"] = datetime.now()  # Atualiza a data de atualização
+    update_data = {k: v for k, v in user.model_dump(exclude_unset=True).items()}
+    result = None
 
-    result = await collection.update_one({"email": email}, {"$set": user_data})
+    if id:
+        result = await collection.update_one({"_id": ObjectId(id)}, {"$set": update_data})
+    
+    elif email:
+        result = await collection.update_one({"email": email}, {"$set": update_data})
 
     if not result.modified_count:
-        raise HTTPException(status_code=400, detail="Utilizador não encontrado!")
-
-    response = JSONResponse({"message": "Usuário atualizado!"})
-
-    if user.email or user.name or user.isSuperAdmin:
-        response.delete_cookie("_fp", httponly=True, samesite="Strict", secure=True)
-
-    return response
+        raise HTTPException(status_code=400, detail="Erro ao atualizar.")
+    
+    return JSONResponse({"message": "Utilizador atualizado!"})
 
 # 🚀 Autenticação do Usuário (Verificar JWT)
 @routerUser.get("/auth")
@@ -188,22 +212,28 @@ async def logout_user():
     return response
 
 # 🚀 Apagar Usuário
-@routerUser.delete("/{email}")
+@routerUser.delete("/")
 @limiter.limit("5 per 120 seconds")
-async def soft_delete_user(email: str, request:Request, jwt: str = Depends(verify_jwt), recaptchaToken: str = None):
+async def soft_delete_user(request:Request, recaptchaToken: str = None,id:str = None, email:str = None ,jwt: str = Depends(verify_jwt)):
     
     # Validar o reCAPTCHA token
     #await validar_recaptcha_token(recaptchaToken, "delete")
-
-    if jwt["email"] != email and not jwt["isSuperAdmin"]:
+    
+    if not jwt["isSuperAdmin"]:
         raise HTTPException(status_code=403, detail="Acesso negado!")
 
-    result = await collection.update_one({"email": email}, {"$set": {"isActive": False}})
+    result = None
+    
+    if id:
+        result = await collection.update_one({"_id": ObjectId(id)}, {"$set": {"isActive": False}})
+
+    if email:
+        result = await collection.update_one({"email": email}, {"$set": {"isActive": False}})
 
     if not result.modified_count:
         raise HTTPException(status_code=400, detail="Usuário não encontrado.")
 
-    return JSONResponse({"message": "Utilizador apagado!"})
+    return JSONResponse({"message": "Utilizador desativado!"})
 
 # 🚀 Logout Global (Todos os Dispositivos) Ainda está em desenvolvimento
 """

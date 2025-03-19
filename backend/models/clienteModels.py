@@ -1,6 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
 from bson import ObjectId
-from .PyObjectId import PyObjectId
 from datetime import datetime
 
 class Cliente(BaseModel):
@@ -11,9 +10,9 @@ class Cliente(BaseModel):
     cidade: str
     morada: str
     codigo_postal: str
-    empresa_id: PyObjectId = Field(default_factory=ObjectId)
-    created_by: PyObjectId = Field(default_factory=ObjectId)
+    empresa_id: str 
+    created_by: str
     created_at: datetime = Field(default_factory=datetime.now)
-    updated_by: PyObjectId = Field(default_factory=ObjectId)
+    updated_by: str 
     updated_at: datetime = Field(default_factory=datetime.now)
     isActive: bool

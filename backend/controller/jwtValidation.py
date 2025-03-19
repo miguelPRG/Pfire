@@ -50,13 +50,16 @@ def verify_jwt(request: Request):
 
         return payload
     except  jwt.InvalidTokenError:
-        raise HTTPException(status_code=400, detail="Falha de Autenticação!")
+        raise HTTPException(status_code=400, detail="Token inválido!")
     
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=400, detail="A sua sessão foi expirada, faça login novamente.")
     
     except jwt.DecodeError:
-        raise HTTPException(status_code=400, detail="Token inválido!")
+        raise HTTPException(status_code=400, detail="Erro de descodificação!")
+    
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Erro desconhecido: {str(e)}")
 
 def generate_jwt(user_id:str,user_name: str,user_email: str, is_super_admin: bool = False):
     if is_super_admin:
@@ -79,9 +82,3 @@ def generate_jwt(user_id:str,user_name: str,user_email: str, is_super_admin: boo
     # Gerando o token JWT
     encoded_jwt = jwt.encode(to_encode, private_key, algorithm=ALGORITHM)
     return encoded_jwt
-
-def verify_super_admin(token: str = Depends(verify_jwt)):
-    if token.get("role") != "isSuperAdmin":
-        raise HTTPException(status_code=403, detail="Access Denied!")
-    else: 
-        return True
