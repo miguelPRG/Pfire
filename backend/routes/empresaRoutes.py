@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request, Depends
 from controller.jwtValidation import verify_jwt
 from controller.recaptchaValidation import validar_recaptcha_token
-from models.empresaModels import EmpresaCreate,EmpresaUpdate 
+from models.empresaModels import EmpresaUpdate 
 from controller.clientIP import limiter
 from database import db
 from bson import ObjectId

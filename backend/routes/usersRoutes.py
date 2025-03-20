@@ -16,7 +16,6 @@ from models.userEmpresaModels import UserEmpresaCreate
 from datetime import datetime
 from database import db
 from asyncio import to_thread, gather
-from .empresaRoutes import create_empresa
 
 routerUser = APIRouter(prefix="/users")
 
