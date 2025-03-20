@@ -10,21 +10,6 @@ from datetime import datetime
 routerEmpresa = APIRouter(prefix="/empresa")
 collection = db["empresa"]
 
-#Criar empresa depois no registo de conta
-
-async def create_empresa(empresa: EmpresaCreate, jwt: dict = Depends(verify_jwt)):
-    
-    empresa_data = empresa.model_dump(by_alias=True)
-    empresa_data["created_by"] = ObjectId(jwt["id"])
-    empresa_data["updated_by"] = ObjectId(jwt["id"])
-
-    empresa_task = await collection.insert_one(empresa_data)
-
-    if not empresa_task.inserted_id:
-        raise HTTPException(status_code=400, detail="Erro ao criar empresa!")
-    
-    return empresa
-
 @routerEmpresa.get("/")
 @limiter.limit("3 per 30 seconds")
 async def get_empresas(request: Request, id:str = None, nif:str = None,jwt: str= Depends(verify_jwt), limit: int = 100):

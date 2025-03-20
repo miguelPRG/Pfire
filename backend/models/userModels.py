@@ -1,14 +1,14 @@
 from pydantic import BaseModel, EmailStr, Field, model_validator
 from datetime import datetime
 from typing import Optional
-from bson import ObjectId
+from .empresaModels import EmpresaCreate
+from .userEmpresaModels import UserEmpresaCreate
 
 class UserCreate(BaseModel):
-    name: str = Field(min_length=2, max_length=100)
+    nome: str = Field(min_length=2, max_length=100)
     email: EmailStr
     telefone: Optional[str] = None
     password: str
-    empresa_id: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.now)
     updated_at: datetime = Field(default_factory=datetime.now)
     last_login: datetime = Field(default_factory=datetime.now)
@@ -35,10 +35,22 @@ class UserRead(BaseModel):
     email: Optional[EmailStr] = None
 
 class UserUpdate(BaseModel):
-    name: Optional[str] = Field(None, min_length=2, max_length=100)
+    nome: Optional[str] = Field(None, min_length=2, max_length=100)
     email: Optional[EmailStr] = None
     password: Optional[str] = None
     telefone: Optional[str] = None
     empresa_id: Optional[str] = None
     isSuperAdmin: Optional[bool] = None
     isActive: Optional[bool] = None
+
+    @model_validator(mode='before')
+    @classmethod
+    def set_default_values(cls, values):
+        current_time = datetime.now()
+        values['updated_at'] = current_time
+        return values
+
+class RegisterUser(BaseModel):
+    user: UserCreate
+    empresa: EmpresaCreate
+    user_empresa: Optional[UserEmpresaCreate] = None #Será gerado automaticamente após a criação do utilizador
