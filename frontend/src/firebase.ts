@@ -1,5 +1,12 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, signInWithPopup, GoogleAuthProvider, FacebookAuthProvider, OAuthProvider, signOut } from "firebase/auth";
+import {
+  getAuth,
+  signInWithPopup,
+  GoogleAuthProvider,
+  FacebookAuthProvider,
+  OAuthProvider,
+  signOut,
+} from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDzDDGXjyNXOzCT62GVL2kEwMBIrBCUJEM",
@@ -16,9 +23,11 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 // Funções para login
-const FirebaseLogin = async (providerName: "google" | "facebook" | "microsoft") => {
+const FirebaseLogin = async (
+  providerName: "google" | "facebook" | "microsoft",
+) => {
   let provider;
-  
+
   switch (providerName.toLowerCase()) {
     case "google":
       provider = new GoogleAuthProvider();
@@ -46,11 +55,12 @@ const FirebaseLogin = async (providerName: "google" | "facebook" | "microsoft") 
   }
 };
 
-
 const FirebaseLogout = async () => {
   return signOut(auth)
     .then(() => "Deslogado com sucesso")
-    .catch((error) => { throw error; });
+    .catch((error) => {
+      throw error;
+    });
 };
 
 export { auth, FirebaseLogin, FirebaseLogout };

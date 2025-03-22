@@ -1,23 +1,23 @@
-import * as React from 'react';
-import Box from '@mui/material/Box';
-import Drawer from '@mui/material/Drawer';
-import List from '@mui/material/List';
-import Divider from '@mui/material/Divider';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemIcon from '@mui/material/ListItemIcon';
-import ListItemText from '@mui/material/ListItemText';
-import Collapse from '@mui/material/Collapse';
-import WorkIcon from '@mui/icons-material/Work';
-import DescriptionIcon from '@mui/icons-material/Description';
-import StarIcon from '@mui/icons-material/Star';
-import LayersIcon from '@mui/icons-material/Layers';
-import InfoIcon from '@mui/icons-material/Info';
-import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import ExpandLess from '@mui/icons-material/ExpandLess';
-import ExpandMore from '@mui/icons-material/ExpandMore';
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
+import * as React from "react";
+import Box from "@mui/material/Box";
+import Drawer from "@mui/material/Drawer";
+import List from "@mui/material/List";
+import Divider from "@mui/material/Divider";
+import ListItem from "@mui/material/ListItem";
+import ListItemButton from "@mui/material/ListItemButton";
+import ListItemIcon from "@mui/material/ListItemIcon";
+import ListItemText from "@mui/material/ListItemText";
+import Collapse from "@mui/material/Collapse";
+import WorkIcon from "@mui/icons-material/Work";
+import DescriptionIcon from "@mui/icons-material/Description";
+import StarIcon from "@mui/icons-material/Star";
+import LayersIcon from "@mui/icons-material/Layers";
+import InfoIcon from "@mui/icons-material/Info";
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import ExpandLess from "@mui/icons-material/ExpandLess";
+import ExpandMore from "@mui/icons-material/ExpandMore";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -39,10 +39,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const DrawerList = (
     <Box
       sx={{
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        justifyContent: 'space-between',
+        display: "flex",
+        flexDirection: "column",
+        height: "100vh",
+        justifyContent: "space-between",
       }}
       role="presentation"
     >
@@ -73,9 +73,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         <Collapse in={openReports} timeout="auto" unmountOnExit>
           <List component="div" disablePadding>
             <ListItem disablePadding>
-              <ListItemButton sx={{ width: '90%', pl: 4 }}>
+              <ListItemButton sx={{ width: "90%", pl: 4 }}>
                 <ListItemIcon>
-                <ArrowForwardIosIcon sx={{ marginRight: 2, fontSize: 'small' }} />
+                  <ArrowForwardIosIcon
+                    sx={{ marginRight: 2, fontSize: "small" }}
+                  />
                 </ListItemIcon>
                 <ListItemText primary="Extintores" />
               </ListItemButton>
@@ -98,9 +100,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         <Collapse in={openModels} timeout="auto" unmountOnExit>
           <List component="div" disablePadding>
             <ListItem disablePadding>
-              <ListItemButton sx={{ width: '90%', pl: 4 }}>
+              <ListItemButton sx={{ width: "90%", pl: 4 }}>
                 <ListItemIcon>
-                <ArrowForwardIosIcon sx={{ marginRight: 2, fontSize: 'small' }} />
+                  <ArrowForwardIosIcon
+                    sx={{ marginRight: 2, fontSize: "small" }}
+                  />
                 </ListItemIcon>
                 <ListItemText primary="Extintores" />
               </ListItemButton>
@@ -122,7 +126,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       <Divider />
 
       {/* Parte inferior - Utilizadores e Suporte */}
-      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+      <Box sx={{ display: "flex", flexDirection: "column" }}>
         {/* Utilizadores */}
         <ListItem disablePadding>
           <ListItemButton>

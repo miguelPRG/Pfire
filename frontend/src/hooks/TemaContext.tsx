@@ -1,4 +1,11 @@
-import { createContext, useState, useContext, ReactNode, useEffect, useMemo } from "react";
+import {
+  createContext,
+  useState,
+  useContext,
+  ReactNode,
+  useEffect,
+  useMemo,
+} from "react";
 import { ThemeProvider, CssBaseline, createTheme } from "@mui/material";
 import { lightTheme, darkTheme } from "../assets/Theme";
 
@@ -29,7 +36,10 @@ export function TemaProvider({ children }: { children: ReactNode }) {
   const [isChangingTheme, setIsChangingTheme] = useState(false);
 
   // Memoriza o tema para evitar recriações desnecessárias
-  const theme = useMemo(() => createTheme(darkMode ? darkTheme : lightTheme), [darkMode]);
+  const theme = useMemo(
+    () => createTheme(darkMode ? darkTheme : lightTheme),
+    [darkMode],
+  );
 
   // Aplica a cor do fundo diretamente no body para evitar flash branco
   useEffect(() => {
@@ -45,7 +55,7 @@ export function TemaProvider({ children }: { children: ReactNode }) {
   const toggleTheme = () => {
     setIsChangingTheme(true);
     setDarkMode((prevMode) => !prevMode);
-    setTimeout(() => setIsChangingTheme(false), 5);// Delay para evitar flash. Mais conforto para o utilizador.
+    setTimeout(() => setIsChangingTheme(false), 5); // Delay para evitar flash. Mais conforto para o utilizador.
   };
 
   return (

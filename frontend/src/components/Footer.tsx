@@ -1,7 +1,26 @@
 import React, { useState } from "react";
-import { Box, Container, Typography, TextField, Button, IconButton, Tooltip, useTheme, useMediaQuery } from "@mui/material";
+import {
+  Box,
+  Container,
+  Typography,
+  TextField,
+  Button,
+  IconButton,
+  Tooltip,
+  useTheme,
+  useMediaQuery,
+} from "@mui/material";
 import { styled } from "@mui/system";
-import { ArrowUpward as ArrowUpwardIcon, FacebookOutlined as FacebookOutlinedIcon, Instagram as InstagramIcon, LinkedIn as LinkedInIcon, LocalPhoneOutlined as LocalPhoneOutlinedIcon, LocationOnOutlined as LocationOnOutlinedIcon, MailOutline as MailOutlineIcon, X as XIcon } from "@mui/icons-material";
+import {
+  ArrowUpward as ArrowUpwardIcon,
+  FacebookOutlined as FacebookOutlinedIcon,
+  Instagram as InstagramIcon,
+  LinkedIn as LinkedInIcon,
+  LocalPhoneOutlined as LocalPhoneOutlinedIcon,
+  LocationOnOutlined as LocationOnOutlinedIcon,
+  MailOutline as MailOutlineIcon,
+  X as XIcon,
+} from "@mui/icons-material";
 
 const FooterContainer = styled("footer")(({ theme }) => ({
   backgroundColor: theme.palette.primary.main,
@@ -9,7 +28,7 @@ const FooterContainer = styled("footer")(({ theme }) => ({
   paddingTop: theme.spacing(6),
   paddingBottom: theme.spacing(4),
   position: "relative",
-  overflowX: "hidden", 
+  overflowX: "hidden",
 }));
 
 const SocialIconButton = styled(IconButton)(({ theme }) => ({
@@ -18,20 +37,20 @@ const SocialIconButton = styled(IconButton)(({ theme }) => ({
   transition: "transform 0.2s",
   "&:hover": {
     transform: "scale(1.1)",
-    color: theme.palette.secondary.main
-  }
+    color: theme.palette.secondary.main,
+  },
 }));
 
 const ScrollToTopButton = styled(IconButton)(({ theme }) => ({
   position: "fixed",
-  left: theme.spacing(2), 
-  bottom: theme.spacing(2), 
+  left: theme.spacing(2),
+  bottom: theme.spacing(2),
   backgroundColor: theme.palette.secondary.main,
   color: theme.palette.common.white,
-  zIndex: 9999, 
+  zIndex: 9999,
   "&:hover": {
-    backgroundColor: theme.palette.secondary.dark
-  }
+    backgroundColor: theme.palette.secondary.dark,
+  },
 }));
 
 const Footer = () => {
@@ -55,7 +74,14 @@ const Footer = () => {
     <FooterContainer>
       <Container>
         <Box display="flex" flexWrap="wrap" gap={4}>
-          <Box component="nav" sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
+          <Box
+            component="nav"
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "flex-start",
+            }}
+          >
             {["About", "Services", "Contact", "Privacy Policy"].map((link) => (
               <Typography
                 key={link}
@@ -64,7 +90,7 @@ const Footer = () => {
                 sx={{
                   mb: 1,
                   cursor: "pointer",
-                  "&:hover": { color: theme.palette.secondary.main }
+                  "&:hover": { color: theme.palette.secondary.main },
                 }}
               >
                 {link}
@@ -100,17 +126,13 @@ const Footer = () => {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               sx={{
-                backgroundColor: "transparent", 
-                input: { color: "black" }, 
-                paddingRight: "8px", 
-                mb: 2
+                backgroundColor: "transparent",
+                input: { color: "black" },
+                paddingRight: "8px",
+                mb: 2,
               }}
             />
-            <Button
-              type="submit"
-              variant="contained"
-              color="secondary"
-            >
+            <Button type="submit" variant="contained" color="secondary">
               Send
             </Button>
           </Box>

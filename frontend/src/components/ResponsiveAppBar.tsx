@@ -1,6 +1,18 @@
 import { useState } from "react";
 import { useTheme, useMediaQuery } from "@mui/material";
-import { AppBar, Box, Toolbar, IconButton, Menu, Avatar, Tooltip, MenuItem, Typography, Button, Container } from "@mui/material";
+import {
+  AppBar,
+  Box,
+  Toolbar,
+  IconButton,
+  Menu,
+  Avatar,
+  Tooltip,
+  MenuItem,
+  Typography,
+  Button,
+  Container,
+} from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import { useAuth } from "../hooks/AuthContext";
 import logo from "../assets/images/logo.png";
@@ -68,7 +80,11 @@ function ResponsiveAppBar() {
             </IconButton>
 
             {/* Logo */}
-            <img src={logo} alt="Logo" style={{ width: 80, height: 80, marginRight: 10 }} />
+            <img
+              src={logo}
+              alt="Logo"
+              style={{ width: 80, height: 80, marginRight: 10 }}
+            />
 
             {/* Nome da aplicação - aparece apenas em telas grandes */}
             <Typography
