@@ -63,6 +63,7 @@ const commonComponents: Components = {
         defaultProps: {
             margin: 'normal',
             fullWidth: true,
+            variant: 'filled',
         },
         styleOverrides: {
             root: {

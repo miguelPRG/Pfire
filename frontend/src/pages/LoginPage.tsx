@@ -1,11 +1,15 @@
-import { Container, Typography, Paper, TextField, Button, Alert, Fade, Box } from '@mui/material';
+import { Container, Typography, Paper, TextField, Button, Alert, Fade, Box , Divider } from '@mui/material';
 import { useRef, useState } from 'react';
 import { useAuth } from '../hooks/AuthContext';
-import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
-import GoogleIcon from '@mui/icons-material/Google';
+import { Link } from "react-router-dom"; // Importa o Link do react-router-dom
+
+
+import microsoft from '../assets/images/microsoft.png';
+import facebook from '../assets/images/facebook.png';
+import google from '../assets/images/google.png';
+import logo from '../assets/images/logo.png';
 
 // Importa a imagem da logo
-import logo from "../assets/images/logo.png"; // ou use o caminho correto
 
 declare const grecaptcha: {
     execute(siteKey: string, options: { action: string }): Promise<string>;
@@ -58,32 +62,7 @@ function LoginPage() {
     return (
         <Container maxWidth="sm" sx={{ textAlign: 'center', mt: 4, backgroundColor: "background.default", padding: 4, borderRadius: 2 }}>
             {/* Logo e nome da aplicação no topo */}
-            <Box sx={{
-                position: "absolute",
-                top: 16,
-                left: 16,
-                display: "flex",
-                alignItems: "center"
-            }}>                <img src={logo} alt="Logo" style={{ width: 80, height: 80, marginRight: 10 }} />
-                <Typography
-                    variant="h6"
-                    noWrap
-                    component="a"
-                    href="/"
-                    sx={{
-                        mr: 2,
-                        display: "flex",
-                        fontFamily: "monospace",
-                        fontWeight: 700,
-                        letterSpacing: ".3rem",
-                        color: "inherit",
-                        textDecoration: "none",
-                    }}
-                >
-                    PFIRE
-                </Typography>
-            </Box>
-
+        
             <Fade in={authError}>
                 <Alert variant="filled" severity="error" sx={{ mt: 2 }}>
                     Email ou Password Inválidos
@@ -103,7 +82,14 @@ function LoginPage() {
                     top: "10px", // Move para cima do Paper
                     zIndex: 1 // Garante que fique sobre o Paper
                 }}>
-                    <PersonOutlineOutlinedIcon sx={{ fontSize: 48, color: "#FFFFFF" }} />
+                <img
+      src={logo} // Imagem importada da logo
+      alt="Logo"
+      style={{
+        width: "100px", // Ajuste o tamanho da logo
+        height: "100px",
+      }}
+    />
                 </Box>
             </Box>
 
@@ -160,20 +146,114 @@ function LoginPage() {
                             },
                         }}>
                         INICIAR SESSÃO
-                    </Button>
-                    <Button
-                        startIcon={<GoogleIcon />}
-                        sx={{
-                            backgroundColor: '#000000',
-                            color: 'white',
-                            transition: '0.3s',
-                            mt: 2,
-                            '&:hover': {
-                                backgroundColor: 'primary.main'
-                            },
-                        }}>
-                        Login com Google
-                    </Button>
+                   </Button>
+
+                     {/* Linha Horizontal */}
+                  <Divider sx={{ width: "100%", my: 2 }} />
+                  <Typography
+                    variant="h3">
+                    ou
+                </Typography>
+                   <Box
+                     sx={{
+                     display: "flex", // Garante que os botões fiquem na mesma linha
+                      justifyContent: "center", // Centraliza os botões horizontalmente
+                      gap: 1, // Espaçamento entre os botões
+                      mt: 0.5, // Margem superior
+                     }}
+                           >
+  {/* Botão do Google */}
+  <Button
+   
+    sx={{
+      display: "flex", // Garante que o conteúdo interno seja flexível
+      alignItems: "center", // Centraliza verticalmente o conteúdo
+      backgroundColor: "#FFFFFF",
+      color: "white",
+      transition: "0.3s",
+      px: 2, // Padding horizontal
+      py: 1.1, // Padding vertical
+      width: "200px", // Largura padronizada
+      border: "1px solid #B0B0B0",
+      "&:hover": { backgroundColor: "background.default" },
+    }}
+  >
+        <img
+      src={google} // Imagem importada do Facebook
+    alt="Google Logo"
+      style={{
+        width: 21, // Tamanho padronizado da imagem
+        height: 21,
+        marginRight: 8, // Espaçamento entre a imagem e o texto
+      }}
+    />
+  
+  </Button>
+
+  {/* Botão do Facebook */}
+  <Button
+    sx={{
+      display: "flex", // Garante que o conteúdo interno seja flexível
+      alignItems: "center", // Centraliza verticalmente o conteúdo
+      backgroundColor: "primary.main",
+      color: "white",
+      transition: "0.3s",
+      px: 1, // Padding horizontal
+      py: 0.57, // Padding vertical
+      width: "200px", // Largura padronizada
+      "&:hover": {
+        backgroundColor: "primary.dark",
+      },
+    }}
+  >
+    <img
+      src={facebook} // Imagem importada do Facebook
+      alt="Facebook Logo"
+      style={{
+        width: 37, // Aumenta a largura da imagem
+        height: 32.5, // Aumenta a altura da imagem
+        marginRight: 2, // Espaçamento entre a imagem e o texto
+      }}
+    />
+  
+  </Button>
+
+  {/* Botão do Microsoft */}
+  <Button
+    sx={{
+      display: "flex", // Garante que o conteúdo interno seja flexível
+      alignItems: "center", // Centraliza verticalmente o conteúdo
+      backgroundColor: "#FFFFFF",
+      color: "white",
+      transition: "0.3s",
+      px: 1.7, // Padding horizontal
+      py: 0.9, // Padding vertical
+      width: "200px", // Largura padronizada
+      border: "1px solid #B0B0B0", // Borda cinza ao redor do botão
+      "&:hover": {
+        backgroundColor: "background.default",
+      },
+    }}
+  >
+    <img
+      src={microsoft} // Imagem importada do Microsoft
+      alt="Microsoft Logo"
+      style={{
+        width: 24, // Tamanho padronizado da imagem
+        height: 24,
+        marginRight: 8, // Espaçamento entre a imagem e o texto
+      }}
+    />
+   
+  </Button>
+</Box>
+<Typography
+                    variant="h4"
+                    sx={{ marginBottom: 0.5 , fontSize: '0.900rem'}}>
+                    Não tens uma conta? <Link to="/register" style={{ color: "#1976D2", textDecoration: "none" }}>
+    Regista-te
+  </Link>
+                </Typography>
                 </form>
             </Paper>
         </Container>
