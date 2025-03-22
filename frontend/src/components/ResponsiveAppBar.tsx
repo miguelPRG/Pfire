@@ -18,7 +18,7 @@ import { useAuth } from "../hooks/AuthContext";
 import logo from "../assets/images/logo.png";
 
 // Importe o Sidebar
-import Sidebar from "../components/Sidebar";
+import Sidebar from "./Sidebar";
 
 const navigationPages = ["Products", "Pricing", "Blog"];
 const userSettings = ["Profile", "Account", "Dashboard", "Logout"];
