@@ -8,7 +8,6 @@ from secrets import choice
 from string import ascii_letters, punctuation, digits
 from firebase_admin import credentials, auth, initialize_app
 from bson import ObjectId
-from bson import ObjectId
 from controller.recaptchaValidation import validar_recaptcha_token
 from passlib.context import CryptContext
 from models.userModels import UserCreate, UserLogin, UserUpdate, RegisterUser
@@ -97,11 +96,11 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str):
 
     last_login_time = datetime.now()
     update_task = user_collection.update_one({"email": user.email}, {"$set": {"last_login": last_login_time}})
-    token_task = to_thread(generate_jwt, str(db_user["_id"]),db_user["name"], db_user["email"], db_user["isSuperAdmin"])
+    token_task = to_thread(generate_jwt, str(db_user["_id"]),db_user["nome"], db_user["email"], db_user["isSuperAdmin"])
 
     _, token = await gather(update_task, token_task)
 
-    response = JSONResponse({"name": db_user["name"], "email": db_user["email"], "isSuperAdmin": db_user["isSuperAdmin"]})
+    response = JSONResponse({"nome": db_user["nome"], "email": db_user["email"], "isSuperAdmin": db_user["isSuperAdmin"]})
     response.set_cookie(key="_fp", value=token, httponly=True, samesite="Strict")
 
     return response
@@ -112,7 +111,7 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str):
 async def register_user(data: RegisterUser, request: Request, recaptchaToken: str = None):
 
     # Validate the reCAPTCHA token
-    #await validar_recaptcha_token(recaptchaToken, "register")
+    await validar_recaptcha_token(recaptchaToken, "register")
 
     # Verificar se o email já está registado
     existing_user = await user_collection.find_one({"email": data.user.email})

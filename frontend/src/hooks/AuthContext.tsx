@@ -4,7 +4,7 @@ import { FirebaseLogin, FirebaseLogout } from "../firebase"; // Importando as fu
 declare var grecaptcha: any;
 
 interface User {
-  name: string | null;
+  nome: string | null;
   email: string | null;
   isSuperAdmin: boolean;
 }
@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (response.ok) {
           const data = await response.json();
           console.log(data)
-          setUser({ name: data.name, email: data.email , isSuperAdmin: data.isSuperAdmin});
+          setUser({ nome: data.nome, email: data.email , isSuperAdmin: data.isSuperAdmin});
         } else {
           setUser(null);
         }
@@ -100,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.message || "Erro desconhecido do backend");
       }
 
-      setUser({ name: data.name, email: data.email, isSuperAdmin: data.isSuperAdmin });
+      setUser({ nome: data.nome, email: data.email, isSuperAdmin: data.isSuperAdmin });
     } catch (error) {
       console.error("Erro no login:", error);
       throw error;
@@ -125,7 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }) {
     const { recaptchaToken, ...restPayload } = payload;
   
-    const response = await fetch(`http://localhost:8000/users/register?recaptchaToken=${recaptchaToken}`, {
+    const response = await fetch(`backend/users/register?recaptchaToken=${recaptchaToken}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -161,7 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw data.message || Error("Erro desconhecido do backend");
       }
 
-      setUser({ name: user.displayName, email: user.email, isSuperAdmin: data.isSuperAdmin });
+      setUser({ nome: user.displayName, email: user.email, isSuperAdmin: data.isSuperAdmin });
     } catch (error) {
       console.error("Erro no login com o Firebase:", error);
       throw error;
