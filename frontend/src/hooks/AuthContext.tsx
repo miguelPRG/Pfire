@@ -13,10 +13,30 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string | undefined, pwd: string) => void;
-  loginWithOAuth: (provider: "google" | "facebook" | "microsoft") => void; // Função para login via Firebase
+
+  registerUser: (payload: {
+    user: {
+      nome: string;
+      email: string;
+      telefone?: string;
+      password: string;
+    };
+    empresa: {
+      nome: string;
+      nif?: string;
+      localidade?: string;
+      morada?: string;
+      codigo_postal?: string;
+      telefone?: string;
+    };
+    recaptchaToken: string; // ✅ Adicione este campo aqui
+  }) => Promise<void>;
+
+  loginWithOAuth: (provider: "google" | "facebook" | "microsoft") => void;
   logout: () => void;
-  logoutWithOAuth: () => void; // Função para logout via Firebase
+  logoutWithOAuth: () => void;
 }
+
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -86,7 +106,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw error;
     }
   }
-
+  async function registerUser(payload: {
+    user: {
+      nome: string;
+      email: string;
+      telefone?: string;
+      password: string;
+    };
+    empresa: {
+      nome: string;
+      nif?: string;
+      localidade?: string;
+      morada?: string;
+      codigo_postal?: string;
+      telefone?: string;
+    };
+    recaptchaToken: string;
+  }) {
+    const { recaptchaToken, ...restPayload } = payload;
+  
+    const response = await fetch(`http://localhost:8000/users/register?recaptchaToken=${recaptchaToken}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(restPayload), // agora só vai user e empresa
+    });
+  
+    const data = await response.json();
+  
+    if (!response.ok) {
+      throw new Error(data.detail || "Erro desconhecido do backend");
+    }
+  
+    return data;
+  }
+  
+  
+  
   // Login via Firebase OAuth
   async function loginWithOAuth(provider: "google" | "facebook" | "microsoft") {
     try {
@@ -133,7 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, loading, loginWithOAuth, logout, logoutWithOAuth }}>
+    <AuthContext.Provider value={{ user, login, registerUser, loading, loginWithOAuth, logout, logoutWithOAuth }}>
       {children}
     </AuthContext.Provider>
   );
