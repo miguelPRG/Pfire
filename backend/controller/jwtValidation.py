@@ -72,7 +72,7 @@ def generate_jwt(user_id:str,user_name: str,user_email: str, is_super_admin: boo
 
     to_encode = {
         "id": user_id,
-        "name": user_name,
+        "nome": user_name,
         "email": user_email,
         "isSuperAdmin": is_super_admin,
         "iat": datetime.now().timestamp(),  # A data de criação do token

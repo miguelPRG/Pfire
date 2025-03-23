@@ -82,9 +82,9 @@ async def login_oauth(request: Request, firebase_token: str):
 # 🚀 Login via Email e Senha
 @routerUser.post("/login")
 @limiter.limit("5 per 120 seconds")
-async def login(user: UserLogin, request:Request, recaptchaToken: str):
+async def login(user: UserLogin, request:Request, recaptchaToken: str = None):
     # Validate the reCAPTCHA token
-    await validar_recaptcha_token(recaptchaToken, "login")
+    #await validar_recaptcha_token(recaptchaToken, "login")
     
     db_user = await user_collection.find_one({"email": user.email})
 
@@ -108,7 +108,7 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str):
 # Registar um novo User
 @routerUser.post("/register")
 @limiter.limit("5 per 120 seconds")
-async def register_user(data: RegisterUser, request: Request, recaptchaToken: str = None):
+async def register_user(data: RegisterUser, request: Request, recaptchaToken: str):
 
     # Validate the reCAPTCHA token
     await validar_recaptcha_token(recaptchaToken, "register")
@@ -163,7 +163,7 @@ async def register_user(data: RegisterUser, request: Request, recaptchaToken: st
 # 🚀 Autenticação do Usuário (Verificar JWT)
 @routerUser.get("/auth")
 async def auth_user(request: Request, token: str = Depends(verify_jwt)):
-    return {"name": token["name"], "email": token["email"]}
+    return {"nome": token["nome"], "email": token["email"], "isSuperAdmin": token["isSuperAdmin"]}
 
 # 🚀 Logout
 @routerUser.post("/logout")

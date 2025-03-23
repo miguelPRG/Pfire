@@ -71,18 +71,9 @@ function RegisterPage() {
     try {
       setLoading(true);
 
-      // ✅ Executa o reCAPTCHA antes de enviar os dados
-      const token = await window.grecaptcha.enterprise.execute(
-        "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",
-        {
-          action: "register",
-        },
-      );
-
       const payload = {
         user,
         empresa,
-        recaptchaToken: token,
       };
 
       await registerUser(payload);

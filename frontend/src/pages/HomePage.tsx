@@ -3,6 +3,7 @@ import { Paper, Typography, Button, Container } from "@mui/material";
 
 function HomePage() {
   const { user, logout } = useAuth();
+
   return (
     <Container maxWidth="lg">
       <Paper elevation={3}>
