@@ -2,7 +2,6 @@ from pydantic import BaseModel, EmailStr, Field, model_validator
 from datetime import datetime
 from typing import Optional
 from .empresaModels import EmpresaCreate
-from .userEmpresaModels import UserEmpresaCreate
 
 class UserCreate(BaseModel):
     nome: str = Field(min_length=2, max_length=100)
@@ -26,14 +25,6 @@ class UserCreate(BaseModel):
         values['isActive'] = False
         return values
 
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
-
-class UserRead(BaseModel):
-    id: Optional[str] = None
-    email: Optional[EmailStr] = None
-
 class UserUpdate(BaseModel):
     nome: Optional[str] = Field(None, min_length=2, max_length=100)
     email: Optional[EmailStr] = None
@@ -53,4 +44,7 @@ class UserUpdate(BaseModel):
 class RegisterUser(BaseModel):
     user: UserCreate
     empresa: EmpresaCreate
-    user_empresa: Optional[UserEmpresaCreate] = None #Será gerado automaticamente após a criação do utilizador
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str

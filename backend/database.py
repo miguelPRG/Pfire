@@ -33,3 +33,8 @@ except Exception as e:
 
 # Acesso ao banco de dados
 db = client["pfire"]  # Substitua pelo nome do banco de dados desejado
+
+# Coleções
+user_collection = db["users"]
+empresa_collection = db["empresa"]
+user_empresa_collection = db["user_empresa"]

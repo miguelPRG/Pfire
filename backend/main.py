@@ -3,7 +3,9 @@ from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from routes import usersRoutes
 from dotenv import load_dotenv
+from models.graphQL.schemas import graphql_router
 from slowapi.errors import RateLimitExceeded
+import strawberry
 
 load_dotenv()
 
@@ -23,8 +25,13 @@ app.add_middleware(
     allow_headers=["*"],  # Permitir todos os cabeçalhos
 )
 
-# Registrar as rotas
+"""Registar as rotas do tipo REST"""
+
+# Rotas do user
 app.include_router(usersRoutes.routerUser)
+
+#Rotas GraphQL
+app.include_router(graphql_router, prefix="/graphql")
 
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
@@ -39,8 +46,6 @@ async def rate_limit_error(request, exc):
         status_code=429,
         content={"message": "Limite de requisições excedido. Tente novamente mais tarde."},
     )
-
-
 
 @app.get("/")
 async def root():

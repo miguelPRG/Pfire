@@ -61,7 +61,7 @@ def verify_jwt(request: Request):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro desconhecido: {str(e)}")
 
-def generate_jwt(user_id:str,user_name: str,user_email: str, is_super_admin: bool = False):
+def generate_jwt(user_name: str,user_email: str, is_super_admin: bool = False):
     if is_super_admin:
         expire_delta = SUPER_ADMIN * 60 * 60  # Expiração em segundos
     else:
@@ -71,7 +71,6 @@ def generate_jwt(user_id:str,user_name: str,user_email: str, is_super_admin: boo
     expire = datetime.now().timestamp() + expire_delta  # expire_delta já está em segundos
 
     to_encode = {
-        "id": user_id,
         "nome": user_name,
         "email": user_email,
         "isSuperAdmin": is_super_admin,

@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
 from controller.jwtValidation import verify_jwt,generate_jwt
-from controller.jwtValidation import verify_jwt,generate_jwt
 from controller.clientIP import limiter
 from pathlib import Path
 from secrets import choice
@@ -13,8 +12,10 @@ from passlib.context import CryptContext
 from models.userModels import UserCreate, UserLogin, UserUpdate, RegisterUser
 from models.userEmpresaModels import UserEmpresaCreate
 from datetime import datetime
-from database import db
 from asyncio import to_thread, gather
+from database import user_collection, empresa_collection, user_empresa_collection
+import strawberry
+from strawberry.fastapi import GraphQLRouter
 
 routerUser = APIRouter(prefix="/users")
 
@@ -25,16 +26,135 @@ pwd_context = CryptContext(
     argon2__time_cost=3,
 )
 
-user_collection = db["users"]
-empresa_collection = db["empresa"]
-user_empresa_collection = db["user_empresa"]
-
 BASE_DIR = Path(__file__).resolve().parent.parent  # Sobe um nível na árvore de diretórios
 SERVICE_ACCOUNT_PATH = BASE_DIR / "chaves" / "serviceAccountKey.json"  # Caminho correto
 
 # Inicializa o Firebase com o caminho ajustado
 cred = credentials.Certificate(str(SERVICE_ACCOUNT_PATH))
 initialize_app(cred)
+
+"""OPERAÇÕES CRUD DO USER"""
+
+# 🚀 Administrador Criar Novo Usuário
+@routerUser.post("/")
+@limiter.limit("5 per 120 seconds")
+async def create_user(user: UserCreate, request: Request, recaptchaToken: str, jwt: str = Depends(verify_jwt)):
+    
+    # Validate the reCAPTCHA token
+    await validar_recaptcha_token(recaptchaToken, "register")
+
+    #Verificar se o utilizador com aquele email já existe    
+    existing_user = await user_collection.find_one({"email": user.email})  
+
+    if existing_user:
+        raise HTTPException(status_code=400, detail="Email já registado.")
+
+    #Criptografar password
+    user.password = pwd_context.hash(user.password)
+    #Formatação dos dados   
+    user_data = user.model_dump(by_alias=True)
+    result = await user_collection.insert_one(user_data)
+
+    if not result.inserted_id:
+        raise HTTPException(status_code=400, detail="Erro ao criar conta.")
+
+    return JSONResponse({"message": "Conta criada! Verifique seu email para ativação."})
+
+# 🚀 Atualizar Usuário
+@routerUser.put("/")
+@limiter.limit("5 per 120 seconds")
+async def update_user(user: UserUpdate, request: Request, recaptchaToken: str, id: str = None, email: str = None, jwt: str = Depends(verify_jwt)):
+    
+    # Validate the reCAPTCHA token
+    await validar_recaptcha_token(recaptchaToken, "update")
+    
+    user_found = None
+
+    if id:
+        user_found = await user_collection.find_one({"_id": ObjectId(id)})
+    
+    elif email:
+        user_found = await user_collection.find_one({"email": email})
+
+    if not user_found:
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
+    
+    # Verificar se o utilizador tem permissão para atualizar
+    if not jwt["isSuperAdmin"] and jwt["email"] != user_found["email"] and jwt["id"] != str(user_found["_id"]):
+        raise HTTPException(status_code=403, detail="Acesso negado!")
+    
+    # Atualizar os dados
+
+    if user.password:
+        if jwt["email"] == email:
+            user.password = pwd_context.hash(user.password)
+        else:
+            raise HTTPException(status_code=403, detail="Apenas o próprio utilizador pode alterar a sua password!")
+
+    update_data = {k: v for k, v in user.model_dump(exclude_unset=True).items()}
+    result = None
+
+    if id:
+        result = await user_collection.update_one({"_id": ObjectId(id)}, {"$set": update_data})
+    
+    elif email:
+        result = await user_collection.update_one({"email": email}, {"$set": update_data})
+
+    if not result.modified_count:
+        raise HTTPException(status_code=400, detail="Erro ao atualizar.")
+    
+    return JSONResponse({"message": "Utilizador atualizado!"})
+
+# 🚀 Apagar Usuário
+@routerUser.delete("/")
+@limiter.limit("5 per 120 seconds")
+async def soft_delete_user(request:Request, recaptchaToken: str,id:str = None, email:str = None ,jwt: str = Depends(verify_jwt)):
+    
+    # Validate the reCAPTCHA token
+    await validar_recaptcha_token(recaptchaToken, "delete")
+    
+    if not jwt["isSuperAdmin"]:
+        raise HTTPException(status_code=403, detail="Acesso negado!")
+
+    result = None
+    
+    if id:
+        result = await user_collection.update_one({"_id": ObjectId(id)}, {"$set": {"isActive": False,"updated_at": datetime.now()}})
+
+    if email:
+        result = await user_collection.update_one({"email": email}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
+    result = None
+    
+
+    if not result.modified_count:
+        raise HTTPException(status_code=400, detail="Usuário não encontrado.")
+
+    return JSONResponse({"message": "Utilizador desativado!"})
+
+@routerUser.put("/activate")
+@limiter.limit("5 per 120 seconds")
+async def activate_user(request:Request, recaptchaToken: str,id:str = None, email:str = None ,jwt: str = Depends(verify_jwt)):
+        
+        # Validate the reCAPTCHA token
+        await validar_recaptcha_token(recaptchaToken, "activate")
+        
+        if not jwt["isSuperAdmin"]:
+            raise HTTPException(status_code=403, detail="Acesso negado!")
+    
+        result = None
+        
+        if id:
+            result = await user_collection.update_one({"_id": ObjectId(id)}, {"$set": {"isActive": True,"updated_at": datetime.now()}})
+    
+        if email:
+            result = await user_collection.update_one({"email": email}, {"$set": {"isActive": True, "updated_at": datetime.now()}})
+        result = None
+        
+    
+        if not result.modified_count:
+            raise HTTPException(status_code=400, detail="Usuário não encontrado.")
+    
+        return JSONResponse({"message": "Utilizador ativado!"})
 
 # 🚀 Login via Firebase OAuth
 @routerUser.post("/login-oauth")
@@ -96,7 +216,7 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str = None):
 
     last_login_time = datetime.now()
     update_task = user_collection.update_one({"email": user.email}, {"$set": {"last_login": last_login_time}})
-    token_task = to_thread(generate_jwt, str(db_user["_id"]),db_user["nome"], db_user["email"], db_user["isSuperAdmin"])
+    token_task = to_thread(generate_jwt,db_user["nome"], db_user["email"], db_user["isSuperAdmin"])
 
     _, token = await gather(update_task, token_task)
 
@@ -171,158 +291,6 @@ async def logout_user():
     response = JSONResponse({"message": "Logout bem-sucedido!"})
     response.delete_cookie("_fp", httponly=True, samesite="Strict", secure=True)
     return response
-
-"""OPERAÇÕES CRUD DO USER"""
-
-# 🚀 Administrador Criar Novo Usuário
-@routerUser.post("/")
-@limiter.limit("5 per 120 seconds")
-async def create_user(user: UserCreate, request: Request, recaptchaToken: str, jwt: str = Depends(verify_jwt)):
-    
-    # Validate the reCAPTCHA token
-    await validar_recaptcha_token(recaptchaToken, "register")
-
-    #Verificar se o utilizador com aquele email já existe    
-    existing_user = await user_collection.find_one({"email": user.email})  
-
-    if existing_user:
-        raise HTTPException(status_code=400, detail="Email já registado.")
-
-    #Criptografar password
-    user.password = pwd_context.hash(user.password)
-    #Formatação dos dados   
-    user_data = user.model_dump(by_alias=True)
-    result = await user_collection.insert_one(user_data)
-
-    if not result.inserted_id:
-        raise HTTPException(status_code=400, detail="Erro ao criar conta.")
-
-    return JSONResponse({"message": "Conta criada! Verifique seu email para ativação."})
-
-# 🚀 Buscar Usuários
-@routerUser.get("/")
-@limiter.limit("5 per 30 seconds")
-async def get_users(request: Request, id:str= None, email:str = None ,jwt: str = Depends(verify_jwt), begin: int = 0, limit: int = 100):
-
-    if jwt["isSuperAdmin"] or jwt["email"] == email or jwt["id"] == id:
-        
-        if id:
-            user_found = await user_collection.find_one({"_id": ObjectId(id)})
-            if not user_found:
-                raise HTTPException(status_code=404, detail="Usuário não encontrado.")
-            user_found["_id"] = str(user_found["_id"])
-            return user_found
-
-        if email:
-            user_found = await user_collection.find_one({"email": email})
-            if not user_found:
-                raise HTTPException(status_code=404, detail="Usuário não encontrado.")
-            user_found["_id"] = str(user_found["_id"])
-            return user_found
-        
-        else:
-            result = await user_collection.find().limit(limit).to_list(limit)
-            for r in result:
-                r["_id"] = str(r["_id"])
-            return result
-
-    raise HTTPException(status_code=403, detail="Acesso negado!")
-
-# 🚀 Atualizar Usuário
-@routerUser.put("/")
-@limiter.limit("5 per 120 seconds")
-async def update_user(user: UserUpdate, request: Request, recaptchaToken: str, id: str = None, email: str = None, jwt: str = Depends(verify_jwt)):
-    
-    # Validate the reCAPTCHA token
-    await validar_recaptcha_token(recaptchaToken, "update")
-    
-    user_found = None
-
-    if id:
-        user_found = await user_collection.find_one({"_id": ObjectId(id)})
-    
-    elif email:
-        user_found = await user_collection.find_one({"email": email})
-
-    if not user_found:
-        raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
-    
-    # Verificar se o utilizador tem permissão para atualizar
-    if not jwt["isSuperAdmin"] and jwt["email"] != user_found["email"] and jwt["id"] != str(user_found["_id"]):
-        raise HTTPException(status_code=403, detail="Acesso negado!")
-    
-    # Atualizar os dados
-
-    if user.password:
-        if jwt["email"] == email:
-            user.password = pwd_context.hash(user.password)
-        else:
-            raise HTTPException(status_code=403, detail="Apenas o próprio utilizador pode alterar a sua password!")
-
-    update_data = {k: v for k, v in user.model_dump(exclude_unset=True).items()}
-    result = None
-
-    if id:
-        result = await user_collection.update_one({"_id": ObjectId(id)}, {"$set": update_data})
-    
-    elif email:
-        result = await user_collection.update_one({"email": email}, {"$set": update_data})
-
-    if not result.modified_count:
-        raise HTTPException(status_code=400, detail="Erro ao atualizar.")
-    
-    return JSONResponse({"message": "Utilizador atualizado!"})
-
-# 🚀 Apagar Usuário
-@routerUser.delete("/")
-@limiter.limit("5 per 120 seconds")
-async def soft_delete_user(request:Request, recaptchaToken: str,id:str = None, email:str = None ,jwt: str = Depends(verify_jwt)):
-    
-    # Validate the reCAPTCHA token
-    await validar_recaptcha_token(recaptchaToken, "delete")
-    
-    if not jwt["isSuperAdmin"]:
-        raise HTTPException(status_code=403, detail="Acesso negado!")
-
-    result = None
-    
-    if id:
-        result = await user_collection.update_one({"_id": ObjectId(id)}, {"$set": {"isActive": False,"updated_at": datetime.now()}})
-
-    if email:
-        result = await user_collection.update_one({"email": email}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
-    result = None
-    
-
-    if not result.modified_count:
-        raise HTTPException(status_code=400, detail="Usuário não encontrado.")
-
-    return JSONResponse({"message": "Utilizador desativado!"})
-
-@routerUser.post("/activate")
-@limiter.limit("5 per 120 seconds")
-async def activate_user(request:Request, recaptchaToken: str,id:str = None, email:str = None ,jwt: str = Depends(verify_jwt)):
-        
-        # Validate the reCAPTCHA token
-        await validar_recaptcha_token(recaptchaToken, "activate")
-        
-        if not jwt["isSuperAdmin"]:
-            raise HTTPException(status_code=403, detail="Acesso negado!")
-    
-        result = None
-        
-        if id:
-            result = await user_collection.update_one({"_id": ObjectId(id)}, {"$set": {"isActive": True,"updated_at": datetime.now()}})
-    
-        if email:
-            result = await user_collection.update_one({"email": email}, {"$set": {"isActive": True, "updated_at": datetime.now()}})
-        result = None
-        
-    
-        if not result.modified_count:
-            raise HTTPException(status_code=400, detail="Usuário não encontrado.")
-    
-        return JSONResponse({"message": "Utilizador ativado!"})
 
 # 🚀 Logout Global (Todos os Dispositivos) Ainda está em desenvolvimento
 """
