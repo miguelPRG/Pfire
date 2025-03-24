@@ -1,4 +1,5 @@
 import * as React from "react";
+import { useNavigate } from "react-router-dom";
 import Box from "@mui/material/Box";
 import Drawer from "@mui/material/Drawer";
 import List from "@mui/material/List";
@@ -16,7 +17,6 @@ import InfoIcon from "@mui/icons-material/Info";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import ExpandLess from "@mui/icons-material/ExpandLess";
 import ExpandMore from "@mui/icons-material/ExpandMore";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 
 interface SidebarProps {
@@ -25,6 +25,7 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
+  const navigate = useNavigate();
   const [openReports, setOpenReports] = React.useState(false);
   const [openModels, setOpenModels] = React.useState(false);
 
@@ -34,6 +35,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
 
   const handleToggleModels = () => {
     setOpenModels(!openModels);
+  };
+
+  const handleNavigation = (path: string) => {
+    navigate(path);
+    toggleSidebar(); // Fecha o Sidebar ao navegar
   };
 
   const DrawerList = (
@@ -75,9 +81,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             <ListItem disablePadding>
               <ListItemButton sx={{ width: "90%", pl: 4 }}>
                 <ListItemIcon>
-                  <ArrowForwardIosIcon
-                    sx={{ marginRight: 2, fontSize: "small" }}
-                  />
+                  <ArrowForwardIosIcon sx={{ marginRight: 2, fontSize: "small" }} />
                 </ListItemIcon>
                 <ListItemText primary="Extintores" />
               </ListItemButton>
@@ -102,9 +106,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             <ListItem disablePadding>
               <ListItemButton sx={{ width: "90%", pl: 4 }}>
                 <ListItemIcon>
-                  <ArrowForwardIosIcon
-                    sx={{ marginRight: 2, fontSize: "small" }}
-                  />
+                  <ArrowForwardIosIcon sx={{ marginRight: 2, fontSize: "small" }} />
                 </ListItemIcon>
                 <ListItemText primary="Extintores" />
               </ListItemButton>
@@ -129,7 +131,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       <Box sx={{ display: "flex", flexDirection: "column" }}>
         {/* Utilizadores */}
         <ListItem disablePadding>
-          <ListItemButton>
+          <ListItemButton onClick={() => handleNavigation("/UserManagementTable")}>
             <ListItemIcon>
               <AccountCircleIcon />
             </ListItemIcon>

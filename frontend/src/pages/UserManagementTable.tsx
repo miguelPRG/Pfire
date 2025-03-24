@@ -15,15 +15,29 @@ import {
   Pagination,
   TableSortLabel,
   InputAdornment,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Button,
+  FormControlLabel,
+  Checkbox
 } from "@mui/material";
 import { Edit, Delete, Search } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 
+// Atualize a interface User com os novos campos
 interface User {
   name: string;
   phone: string;
   date: string;
   status: string;
+  email: string;
+  dataCriacao: string;
+  dataUltimaAtualizacao: string;
+  ultimoLogin: string;
+  superAdministrador: boolean;
+  roleEmpresa: string;
 }
 
 const rows: User[] = [
@@ -32,30 +46,60 @@ const rows: User[] = [
     phone: "(11) 99999-9999",
     date: "01/01/2022",
     status: "Ativo",
+    email: "joao.silva@email.com",
+    dataCriacao: "01/01/2022",
+    dataUltimaAtualizacao: "01/01/2023",
+    ultimoLogin: "25/03/2025",
+    superAdministrador: false,
+    roleEmpresa: "Gerente de TI",
   },
   {
     name: "Maria Souza",
     phone: "(21) 98888-8888",
     date: "15/03/2021",
     status: "Inativo",
+    email: "maria.souza@email.com",
+    dataCriacao: "15/03/2021",
+    dataUltimaAtualizacao: "01/02/2023",
+    ultimoLogin: "20/03/2025",
+    superAdministrador: true,
+    roleEmpresa: "Diretora de Marketing",
   },
   {
     name: "Carlos Pereira",
     phone: "(31) 97777-7777",
     date: "07/07/2020",
     status: "Ativo",
+    email: "carlos.pereira@email.com",
+    dataCriacao: "07/07/2020",
+    dataUltimaAtualizacao: "05/03/2025",
+    ultimoLogin: "25/03/2025",
+    superAdministrador: false,
+    roleEmpresa: "Analista de Sistemas",
   },
   {
     name: "Ana Lima",
     phone: "(41) 96666-6666",
     date: "23/09/2019",
     status: "Inativo",
+    email: "ana.lima@email.com",
+    dataCriacao: "23/09/2019",
+    dataUltimaAtualizacao: "15/02/2024",
+    ultimoLogin: "19/03/2025",
+    superAdministrador: true,
+    roleEmpresa: "CEO",
   },
   {
     name: "Pedro Santos",
     phone: "(51) 95555-5555",
     date: "12/11/2018",
     status: "Ativo",
+    email: "pedro.santos@email.com",
+    dataCriacao: "12/11/2018",
+    dataUltimaAtualizacao: "10/01/2024",
+    ultimoLogin: "24/03/2025",
+    superAdministrador: false,
+    roleEmpresa: "Coordenador de Projetos",
   },
 ];
 
@@ -65,7 +109,28 @@ export default function UserManagementTable() {
   const [search, setSearch] = React.useState<string>("");
   const [orderBy, setOrderBy] = React.useState<keyof User | null>(null);
   const [order, setOrder] = React.useState<"asc" | "desc">("asc");
-  const theme = useTheme(); // Para acessar o tema (modo claro ou escuro)
+  const [openEditModal, setOpenEditModal] = React.useState<boolean>(false);
+  const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
+  const theme = useTheme();
+
+  const [openConfirmDialog, setOpenConfirmDialog] = React.useState<boolean>(false);
+
+// Função para abrir o dialog de confirmação
+const handleDeleteClick = () => {
+  setOpenConfirmDialog(true);
+};
+
+// Função para confirmar a exclusão
+const handleConfirmDelete = () => {
+  console.log("Usuário deletado");
+  setOpenConfirmDialog(false);
+  // Lógica para deletar o usuário
+};
+
+// Função para cancelar a exclusão
+const handleCancelDelete = () => {
+  setOpenConfirmDialog(false);
+};
 
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
@@ -80,6 +145,23 @@ export default function UserManagementTable() {
     const isAscending = orderBy === property && order === "asc";
     setOrder(isAscending ? "desc" : "asc");
     setOrderBy(property);
+  };
+
+  const handleOpenEditModal = (user: User) => {
+    setSelectedUser(user);
+    setOpenEditModal(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setOpenEditModal(false);
+    setSelectedUser(null);
+  };
+
+  const handleSaveEdit = () => {
+    if (selectedUser) {
+      console.log("Usuário editado:", selectedUser);
+    }
+    handleCloseEditModal();
   };
 
   const sortedRows = [...rows]
@@ -156,7 +238,7 @@ export default function UserManagementTable() {
                   <Search
                     sx={{
                       color:
-                        theme.palette.mode === "dark" ? "#0DC7E8" : "#003366", // Cor da lupa dependendo do tema
+                        theme.palette.mode === "dark" ? "#0DC7E8" : "#003366",
                     }}
                   />
                 </InputAdornment>
@@ -165,29 +247,29 @@ export default function UserManagementTable() {
             sx={{
               "& .MuiOutlinedInput-root": {
                 backgroundColor:
-                  theme.palette.mode === "dark" ? "rgb(12, 12, 12)" : "#f0f0f0", // Fundo cinza claro no modo claro e fundo escuro no modo escuro
-                borderRadius: "25px", // Aumenta o raio da barra de pesquisa
+                  theme.palette.mode === "dark" ? "rgb(12, 12, 12)" : "#f0f0f0",
+                borderRadius: "25px",
                 border:
                   theme.palette.mode === "dark"
                     ? "1px solid rgb(12, 12, 12)"
-                    : "1px solid #f0f0f0", // Borda cinza claro no modo claro e borda escura no modo escuro
+                    : "1px solid #f0f0f0",
                 "&.Mui-focused fieldset": {
                   borderColor:
                     theme.palette.mode === "dark"
                       ? "rgb(12, 12, 12)"
-                      : "#f0f0f0", // Cor da borda no foco: cinza muito claro no modo claro
+                      : "#f0f0f0",
                 },
               },
               "& .MuiInputBase-input": {
-                color: theme.palette.mode === "dark" ? "white" : "black", // Cor do texto
+                color: theme.palette.mode === "dark" ? "white" : "black",
               },
               "& .MuiInputLabel-root": {
-                color: theme.palette.mode === "dark" ? "white" : "black", // Cor do label
+                color: theme.palette.mode === "dark" ? "white" : "black",
               },
               "& .MuiInputLabel-root.Mui-focused": {
-                color: "rgb(12, 12, 12)", // Cor do label ao focar
+                color: "rgb(12, 12, 12)",
               },
-              width: "90%", // Largura da barra de pesquisa
+              width: "90%",
             }}
           />
         </Box>
@@ -195,8 +277,8 @@ export default function UserManagementTable() {
 
       <TableContainer
         sx={{
-          overflow: "hidden", // Garante que as bordas arredondadas não sejam cortadas
-          boxShadow: "none", // Para não interferir com o estilo de bordas arredondadas
+          overflow: "hidden",
+          boxShadow: "none",
         }}
       >
         <Table
@@ -205,14 +287,25 @@ export default function UserManagementTable() {
         >
           <TableHead>
             <TableRow>
-              {["name", "phone", "date", "status"].map((column) => (
+              {[
+                "name",
+                "phone",
+                "date",
+                "status",
+                "email",
+                "dataCriacao",
+                "dataUltimaAtualizacao",
+                "ultimoLogin",
+                "superAdministrador",
+                "roleEmpresa",
+              ].map((column) => (
                 <TableCell
                   key={column}
                   onClick={() => handleSort(column as keyof User)}
                   style={{
                     cursor: "pointer",
-                    borderBottom: "1px solid transparent", // Tornar as bordas transparentes
-                    fontWeight: "bold", // Deixa o nome da coluna em negrito
+                    borderBottom: "1px solid transparent",
+                    fontWeight: "bold",
                   }}
                 >
                   <TableSortLabel
@@ -222,17 +315,29 @@ export default function UserManagementTable() {
                     {column === "name"
                       ? "Nome do Utilizador"
                       : column === "phone"
-                        ? "Telefone"
-                        : column === "date"
-                          ? "Data de Conta"
-                          : "Status"}
+                      ? "Telefone"
+                      : column === "date"
+                      ? "Data de Conta"
+                      : column === "email"
+                      ? "Email"
+                      : column === "dataCriacao"
+                      ? "Data de Criação"
+                      : column === "dataUltimaAtualizacao"
+                      ? "Última Atualização"
+                      : column === "ultimoLogin"
+                      ? "Último Login"
+                      : column === "superAdministrador"
+                      ? "Super Administrador"
+                      : column === "roleEmpresa"
+                      ? "Role da Empresa"
+                      : "Status"}
                   </TableSortLabel>
                 </TableCell>
               ))}
               <TableCell
                 style={{
-                  borderBottom: "1px solid transparent", // Tornar a borda inferior transparente também
-                  fontWeight: "bold", // Deixa o nome da coluna em negrito
+                  borderBottom: "1px solid transparent",
+                  fontWeight: "bold",
                 }}
               >
                 Ações
@@ -249,10 +354,10 @@ export default function UserManagementTable() {
                   theme.palette.mode === "dark"
                     ? isEvenRow
                       ? "#252525"
-                      : "#1d1d1d" // Dark mode: linhas alternadas
+                      : "#1d1d1d"
                     : isEvenRow
-                      ? "#f5f5f5"
-                      : "#e0e0e0"; // Light mode: linhas alternadas com cinza claro
+                    ? "#f5f5f5"
+                    : "#e0e0e0";
 
                 return (
                   <TableRow
@@ -260,11 +365,19 @@ export default function UserManagementTable() {
                     sx={{
                       backgroundColor,
                       "& td": {
-                        border: "1px solid transparent", // Tornar as bordas das células transparentes
+                        border: "1px solid transparent",
                       },
                     }}
                   >
-                    <TableCell>{row.name}</TableCell>
+                    <TableCell
+                      onClick={() => handleOpenEditModal(row)} // Tornar o nome clicável
+                      style={{
+                        cursor: "pointer",
+                        color: theme.palette.primary.main,
+                      }}
+                    >
+                      {row.name}
+                    </TableCell>
                     <TableCell>{row.phone}</TableCell>
                     <TableCell>{row.date}</TableCell>
                     <TableCell width={100}>
@@ -282,24 +395,31 @@ export default function UserManagementTable() {
                             theme.palette.mode === "dark"
                               ? "white"
                               : row.status === "Ativo"
-                                ? "#002C04"
-                                : "#3A0000", // Cor do texto, branco no modo escuro
+                              ? "#002C04"
+                              : "#3A0000",
                         }}
                       >
                         {row.status}
                       </Box>
                     </TableCell>
+                    <TableCell>{row.email}</TableCell>
+                    <TableCell>{row.dataCriacao}</TableCell>
+                    <TableCell>{row.dataUltimaAtualizacao}</TableCell>
+                    <TableCell>{row.ultimoLogin}</TableCell>
+                    <TableCell>{row.superAdministrador ? "Sim" : "Não"}</TableCell>
+                    <TableCell>{row.roleEmpresa}</TableCell>
                     <TableCell>
                       <IconButton
                         sx={{
                           color:
                             theme.palette.mode === "dark"
                               ? "#0DC7E8"
-                              : "#1976d2", // Cor do ícone de editar
+                              : "#1976d2",
                           backgroundColor: "transparent",
                           marginRight: "5px",
-                          boxShadow: "none", // Remove a sombra
+                          boxShadow: "none",
                         }}
+                        onClick={() => handleOpenEditModal(row)}
                       >
                         <Edit />
                       </IconButton>
@@ -307,7 +427,7 @@ export default function UserManagementTable() {
                         style={{
                           color: "#d32f2f",
                           backgroundColor: "transparent",
-                          boxShadow: "none", // Remove a sombra
+                          boxShadow: "none",
                         }}
                       >
                         <Delete />
@@ -326,9 +446,177 @@ export default function UserManagementTable() {
           page={page + 1}
           onChange={(event, value) => handleChangePage(event, value - 1)}
           color="primary"
-          shape="rounded"
         />
       </Box>
+
+      <Dialog open={openEditModal} onClose={handleCloseEditModal}>
+  <DialogTitle><h2>Editar Utilizador</h2></DialogTitle>
+  <DialogContent>
+    {selectedUser && (
+      <div>
+        <TextField
+          label="Nome"
+          fullWidth
+          disabled
+          value={selectedUser.name}
+          onChange={(e) => {
+            setSelectedUser((prev) => ({
+              ...prev!,
+              name: e.target.value,
+            }));
+          }}
+          margin="normal"
+        />
+        <TextField
+          label="Telefone"
+          fullWidth
+          disabled
+          value={selectedUser.phone}
+          onChange={(e) => {
+            setSelectedUser((prev) => ({
+              ...prev!,
+              phone: e.target.value,
+            }));
+          }}
+          margin="normal"
+        />
+        <TextField
+          label="Email"
+          fullWidth
+          disabled
+          value={selectedUser.email}
+          onChange={(e) => {
+            setSelectedUser((prev) => ({
+              ...prev!,
+              email: e.target.value,
+            }));
+          }}
+          margin="normal"
+        />
+        <TextField
+          label="Data de Criação"
+          fullWidth
+          disabled
+          value={selectedUser.dataCriacao}
+          onChange={(e) => {
+            setSelectedUser((prev) => ({
+              ...prev!,
+              dataCriacao: e.target.value,
+            }));
+          }}
+          margin="normal"
+        />
+        <TextField
+          label="Última Atualização"
+          fullWidth
+          disabled
+          value={selectedUser.dataUltimaAtualizacao}
+          onChange={(e) => {
+            setSelectedUser((prev) => ({
+              ...prev!,
+              dataUltimaAtualizacao: e.target.value,
+            }));
+          }}
+          margin="normal"
+        />
+        <TextField
+          label="Último Login"
+          fullWidth
+          disabled
+          value={selectedUser.ultimoLogin}
+          onChange={(e) => {
+            setSelectedUser((prev) => ({
+              ...prev!,
+              ultimoLogin: e.target.value,
+            }));
+          }}
+          margin="normal"
+        />
+        <FormControlLabel
+          control={
+            <Checkbox
+              checked={selectedUser.superAdministrador}
+              onChange={(e) => {
+                setSelectedUser((prev) => ({
+                  ...prev!,
+                  superAdministrador: e.target.checked,
+                }));
+              }}
+            />
+          }
+          label="Super Administrador"
+        />
+        <TextField
+          label="Role da Empresa"
+          fullWidth
+          value={selectedUser.roleEmpresa}
+          onChange={(e) => {
+            setSelectedUser((prev) => ({
+              ...prev!,
+              roleEmpresa: e.target.value,
+            }));
+          }}
+          margin="normal"
+        />
+      </div>
+    )}
+  </DialogContent>
+  <DialogActions>
+  <Button onClick={handleCloseEditModal} color="primary" sx={{ marginRight: 2 }}>
+  Cancelar
+</Button>
+<Button
+  onClick={handleSaveEdit}
+  sx={{
+    backgroundColor: "#4caf50", // Cor verde
+    "&:hover": {
+      backgroundColor: "#388e3c", // Tom mais escuro para hover
+    },
+  }}
+>
+  Salvar
+</Button>
+
+  </DialogActions>
+  <DialogActions>
+  <Box
+    sx={{
+      display: "flex",
+      justifyContent: "center",
+      width: "100%",
+    }}
+  ><br />
+    <IconButton
+      sx={{
+        color: "#d32f2f",  // Cor vermelha
+        backgroundColor: "transparent",
+        boxShadow: "none",
+      }}
+      onClick={handleDeleteClick}  // Abre o dialog de confirmação
+    >
+      <Delete />
+    </IconButton>
+  </Box>
+</DialogActions>
+
+
+<Dialog open={openConfirmDialog} onClose={handleCancelDelete}>
+  <DialogTitle>Confirmar Exclusão</DialogTitle>
+  <DialogContent>
+    <p>Você tem certeza que deseja excluir este usuário?</p>
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={handleCancelDelete} color="primary">
+      Cancelar
+    </Button>
+    <Button onClick={handleConfirmDelete} color="error">
+      Confirmar
+    </Button>
+  </DialogActions>
+</Dialog>
+
+</Dialog>
+
     </Paper>
   );
 }

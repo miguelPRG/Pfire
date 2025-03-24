@@ -15,21 +15,25 @@ import {
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import { useAuth } from "../hooks/AuthContext";
+import { useNavigate } from "react-router-dom";
 import logo from "../assets/images/logo.png";
-
-// Importe o Sidebar
 import Sidebar from "./Sidebar";
 
-const navigationPages = ["Products", "Pricing", "Blog"];
+const navigationPages = [
+  
+  { label: "Utilizadores", path: "/UserManagementTable" },
+];
+
 const userSettings = ["Profile", "Account", "Dashboard", "Logout"];
 
 function ResponsiveAppBar() {
   const { logout } = useAuth();
   const [anchorElNav, setAnchorElNav] = useState<null | HTMLElement>(null);
   const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(false); // Controla o estado do sidebar
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md")); // Detecta se a tela é pequena
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const navigate = useNavigate();
 
   const openNavigationMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElNav(event.currentTarget);
@@ -47,49 +51,25 @@ function ResponsiveAppBar() {
     setAnchorElUser(null);
   };
 
-  // Função para abrir ou fechar o Sidebar
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
 
   return (
     <Box sx={{ display: "flex" }}>
-      {/* Sidebar sempre presente (para telas menores) */}
       <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
 
-      <AppBar
-        position="static"
-        sx={{
-          backgroundColor: theme.palette.primary.main,
-          borderRadius: 0,
-          boxShadow: 0,
-          width: "100%", // Garante que o AppBar ocupe toda a largura da tela
-        }}
-      >
+      <AppBar position="static" sx={{ backgroundColor: theme.palette.primary.main }}>
         <Container maxWidth="xl">
           <Toolbar disableGutters>
-            {/* Botão para abrir/fechar o Sidebar */}
-            <IconButton
-              size="large"
-              aria-label="toggle sidebar"
-              onClick={toggleSidebar}
-              color="inherit"
-              sx={{ mr: 2 }} // Adiciona margem à direita
-            >
+            <IconButton size="large" onClick={toggleSidebar} color="inherit" sx={{ mr: 2 }}>
               <MenuIcon />
             </IconButton>
 
-            {/* Logo */}
-            <img
-              src={logo}
-              alt="Logo"
-              style={{ width: 80, height: 80, marginRight: 10 }}
-            />
+            <img src={logo} alt="Logo" style={{ width: 80, height: 80, marginRight: 10 }} />
 
-            {/* Nome da aplicação - aparece apenas em telas grandes */}
             <Typography
               variant="h6"
-              noWrap
               component="a"
               href="/"
               sx={{
@@ -105,89 +85,53 @@ function ResponsiveAppBar() {
               PFIRE
             </Typography>
 
-            {/* Se for tela pequena, mostra o Menu Hambúrguer */}
             {isMobile ? (
-              <Box sx={{ flexGrow: 1, display: "flex" }}>
-                <IconButton
-                  size="large"
-                  aria-label="open menu"
-                  aria-controls="menu-appbar"
-                  aria-haspopup="true"
-                  onClick={openNavigationMenu}
-                  color="inherit"
-                >
+              <Box sx={{ flexGrow: 1 }}>
+                <IconButton size="large" onClick={openNavigationMenu} color="inherit">
                   <MenuIcon />
                 </IconButton>
                 <Menu
-                  id="menu-appbar"
                   anchorEl={anchorElNav}
-                  anchorOrigin={{
-                    vertical: "bottom",
-                    horizontal: "left",
-                  }}
+                  anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
                   keepMounted
-                  transformOrigin={{
-                    vertical: "top",
-                    horizontal: "left",
-                  }}
+                  transformOrigin={{ vertical: "top", horizontal: "left" }}
                   open={Boolean(anchorElNav)}
                   onClose={closeNavigationMenu}
                 >
-                  {navigationPages.map((page) => (
-                    <MenuItem key={page} onClick={closeNavigationMenu}>
-                      <Typography textAlign="center">{page}</Typography>
+                  {navigationPages.map(({ label, path }) => (
+                    <MenuItem key={label} onClick={() => { closeNavigationMenu(); navigate(path); }}>
+                      <Typography textAlign="center">{label}</Typography>
                     </MenuItem>
                   ))}
                 </Menu>
               </Box>
             ) : (
-              /* Se for tela grande, mostra os botões de navegação */
               <Box sx={{ flexGrow: 1, display: "flex" }}>
-                {navigationPages.map((page) => (
-                  <Button
-                    key={page}
-                    onClick={closeNavigationMenu}
-                    sx={{ my: 2, color: "white", display: "block" }}
-                  >
-                    {page}
+                {navigationPages.map(({ label, path }) => (
+                  <Button key={label} onClick={() => navigate(path)} sx={{ my: 2, color: "white" }}>
+                    {label}
                   </Button>
                 ))}
               </Box>
             )}
 
-            {/* Menu do usuário */}
-            <Box sx={{ width: "auto", display: "flex", alignItems: "center" }}>
+            <Box sx={{ display: "flex", alignItems: "center" }}>
               <Tooltip title="Open settings">
                 <IconButton onClick={openUserMenu} sx={{ p: 0 }}>
                   <Avatar alt="User Avatar" src="/static/images/avatar/2.jpg" />
                 </IconButton>
               </Tooltip>
               <Menu
-                sx={{ mt: "45px", width: "250px", minWidth: "50px" }}
-                id="menu-appbar"
+                sx={{ mt: "45px", width: "250px" }}
                 anchorEl={anchorElUser}
-                anchorOrigin={{
-                  vertical: "top",
-                  horizontal: "right",
-                }}
+                anchorOrigin={{ vertical: "top", horizontal: "right" }}
                 keepMounted
-                transformOrigin={{
-                  vertical: "top",
-                  horizontal: "right",
-                }}
+                transformOrigin={{ vertical: "top", horizontal: "right" }}
                 open={Boolean(anchorElUser)}
                 onClose={closeUserMenu}
               >
                 {userSettings.map((setting) => (
-                  <MenuItem
-                    key={setting}
-                    onClick={() => {
-                      closeUserMenu();
-                      if (setting === "Logout") {
-                        logout();
-                      }
-                    }}
-                  >
+                  <MenuItem key={setting} onClick={() => { closeUserMenu(); if (setting === "Logout") logout(); }}>
                     <Typography textAlign="center">{setting}</Typography>
                   </MenuItem>
                 ))}
