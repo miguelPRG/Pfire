@@ -10,7 +10,12 @@ import {
   Divider,
   useMediaQuery,
   useTheme,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle"; // ícone de sucesso
 import { useAuth } from "../hooks/AuthContext";
 import google from "../assets/images/google.png";
 import facebook from "../assets/images/facebook.png";
@@ -42,6 +47,7 @@ function RegisterPage() {
   const localidadeRef = useRef<HTMLInputElement>(null);
   const moradaRef = useRef<HTMLInputElement>(null);
   const codigoPostalRef = useRef<HTMLInputElement>(null);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   const handleRegister = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -70,15 +76,9 @@ function RegisterPage() {
 
     try {
       setLoading(true);
-
-      const payload = {
-        user,
-        empresa,
-      };
-
+      const payload = { user, empresa };
       await registerUser(payload);
-      alert("Conta criada com sucesso! Verifique seu email.");
-      navigate("/login");
+      setShowSuccessDialog(true); // Mostra o popup de sucesso
     } catch (err) {
       setError("Erro no registo. Tente novamente.");
     } finally {
@@ -93,11 +93,11 @@ function RegisterPage() {
         textAlign: "center",
         mt: 4,
         backgroundColor: "background.default",
-        padding: 4,
+        p: 4,
         borderRadius: 2,
       }}
     >
-      <Box sx={{ position: "relative", marginBottom: 3 }}>
+      <Box sx={{ position: "relative", mb: 3 }}>
         <Box
           sx={{
             backgroundColor: "primary.main",
@@ -118,7 +118,7 @@ function RegisterPage() {
       </Box>
 
       <Paper elevation={6} sx={{ maxWidth: "1000px", p: isMobile ? 2 : 4 }}>
-        <Typography variant="h1" sx={{ marginBottom: 2, marginTop: 2 }}>
+        <Typography variant="h1" sx={{ mb: 2, mt: 2 }}>
           CRIAR CONTA COM
         </Typography>
 
@@ -130,7 +130,7 @@ function RegisterPage() {
             sx={{
               display: "flex",
               alignItems: "center",
-              backgroundColor: "#FFFFFF",
+              backgroundColor: "#FFF",
               px: 1.7,
               py: 0.7,
               width: "200px",
@@ -160,7 +160,7 @@ function RegisterPage() {
             <img
               src={facebook}
               alt="Facebook Logo"
-              style={{ width: 55, height: 40, marginRight: 2 }}
+              style={{ width: 52, height: 35.5, marginRight: 2 }}
             />
           </Button>
           <Button
@@ -168,7 +168,7 @@ function RegisterPage() {
             sx={{
               display: "flex",
               alignItems: "center",
-              backgroundColor: "#FFFFFF",
+              backgroundColor: "#FFF",
               px: 1.7,
               py: 0.7,
               width: "200px",
@@ -179,7 +179,7 @@ function RegisterPage() {
             <img
               src={microsoft}
               alt="Microsoft Logo"
-              style={{ width: 33, height: 33, marginRight: 8 }}
+              style={{ width: 33, height: 32, marginRight: 8 }}
             />
           </Button>
         </Box>
@@ -196,31 +196,24 @@ function RegisterPage() {
               display: "flex",
               flexDirection: "column",
               gap: 1,
-              padding: 0,
-              marginBottom: "-20px",
-              marginTop: "-20px",
+              mb: "-20px",
+              mt: "-20px",
             }}
           >
-            <Typography
-              variant="h1"
-              sx={{ fontSize: "1.1rem", marginBottom: "4px" }}
-            >
+            <Typography variant="h1" sx={{ fontSize: "1.1rem", mb: "4px" }}>
               Cria uma conta com teu Email
             </Typography>
 
-            {/* Nome e Email */}
             {isMobile ? (
               <>
                 <TextField
                   required
-                  id="name"
                   label="Nome"
                   type="text"
                   inputRef={nameRef}
                 />
                 <TextField
                   required
-                  id="email"
                   label="Email"
                   type="email"
                   inputRef={emailRef}
@@ -228,16 +221,10 @@ function RegisterPage() {
               </>
             ) : (
               <Box
-                sx={{
-                  display: "flex",
-                  gap: 0.3,
-                  width: "100%",
-                  marginBottom: "-15px",
-                }}
+                sx={{ display: "flex", gap: 0.8, width: "100%", mb: "-15px" }}
               >
                 <TextField
                   required
-                  id="name"
                   label="Nome"
                   type="text"
                   sx={{ flex: 1 }}
@@ -245,28 +232,24 @@ function RegisterPage() {
                 />
                 <TextField
                   required
-                  id="email"
                   label="Email"
                   type="email"
-                  inputRef={emailRef}
                   sx={{ flex: 1 }}
+                  inputRef={emailRef}
                 />
               </Box>
             )}
 
-            {/* Senha e Confirmar Senha */}
             {isMobile ? (
               <>
                 <TextField
                   required
-                  id="password"
                   label="Senha"
                   type="password"
                   inputRef={passwordRef}
                 />
                 <TextField
                   required
-                  id="confirm-password"
                   label="Confirmar senha"
                   type="password"
                   inputRef={confirmPasswordRef}
@@ -274,27 +257,20 @@ function RegisterPage() {
               </>
             ) : (
               <Box
-                sx={{
-                  display: "flex",
-                  gap: 0.3,
-                  width: "100%",
-                  marginBottom: "-15px",
-                }}
+                sx={{ display: "flex", gap: 0.8, width: "100%", mb: "-15px" }}
               >
                 <TextField
                   required
-                  id="password"
                   label="Senha"
                   type="password"
-                  sx={{ flex: 1, width: "100%", margin: 0 }}
+                  sx={{ flex: 1 }}
                   inputRef={passwordRef}
                 />
                 <TextField
                   required
-                  id="confirm-password"
                   label="Confirmar senha"
                   type="password"
-                  sx={{ flex: 1, width: "100%", margin: 0 }}
+                  sx={{ flex: 1 }}
                   inputRef={confirmPasswordRef}
                 />
               </Box>
@@ -302,16 +278,14 @@ function RegisterPage() {
 
             <Typography
               variant="h1"
-              sx={{ fontSize: "1.1rem", marginTop: "8px", marginBottom: "4px" }}
+              sx={{ fontSize: "1.1rem", mt: "8px", mb: "4px" }}
             >
               Insira os dados da Empresa
             </Typography>
 
-            {/* Nome da Empresa */}
             {isMobile ? (
               <TextField
                 required
-                id="empresaName"
                 label="Nome da empresa"
                 type="text"
                 inputRef={empresaNameRef}
@@ -323,34 +297,30 @@ function RegisterPage() {
                   display: "flex",
                   gap: 2,
                   width: "100%",
-                  marginBottom: "-15px",
-                  marginTop: "-15px",
+                  mb: "-15px",
+                  mt: "-15px",
                 }}
               >
                 <TextField
                   required
-                  id="empresaName"
                   label="Nome da empresa"
-                  inputRef={empresaNameRef}
                   type="text"
                   sx={{ flex: 1 }}
+                  inputRef={empresaNameRef}
                 />
               </Box>
             )}
 
-            {/* NIF e Localidade */}
             {isMobile ? (
               <>
                 <TextField
                   required
-                  id="nif"
                   label="NIF da empresa"
                   type="text"
                   inputRef={nifRef}
                 />
                 <TextField
                   required
-                  id="localidade"
                   label="Localidade"
                   type="text"
                   inputRef={localidadeRef}
@@ -358,91 +328,74 @@ function RegisterPage() {
               </>
             ) : (
               <Box
-                sx={{
-                  display: "flex",
-                  gap: 0.5,
-                  width: "100%",
-                  marginBottom: "-15px",
-                }}
+                sx={{ display: "flex", gap: 0.8, width: "100%", mb: "-15px" }}
               >
                 <TextField
                   required
-                  id="nif"
                   label="NIF da empresa"
                   type="text"
+                  sx={{ flex: 1 }}
                   inputRef={nifRef}
-                  sx={{ flex: 1, width: "100%", margin: 0 }}
                 />
                 <TextField
                   required
-                  id="localidade"
                   label="Localidade"
                   type="text"
+                  sx={{ flex: 1 }}
                   inputRef={localidadeRef}
-                  sx={{ flex: 1, width: "100%", margin: 0 }}
                 />
               </Box>
             )}
 
-            {/* Morada e Código Postal */}
             {isMobile ? (
               <>
                 <TextField
                   required
-                  id="morada"
                   label="Morada"
                   type="text"
                   inputRef={moradaRef}
                 />
                 <TextField
                   required
-                  id="codigo_postal"
                   label="Código postal"
                   type="text"
                   inputRef={codigoPostalRef}
                 />
               </>
             ) : (
-              <Box sx={{ display: "flex", gap: 0.5, width: "100%" }}>
+              <Box sx={{ display: "flex", gap: 0.8, width: "100%" }}>
                 <TextField
                   required
-                  id="morada"
                   label="Morada"
                   type="text"
+                  sx={{ flex: 1 }}
                   inputRef={moradaRef}
-                  sx={{ flex: 1, width: "100%", margin: 0 }}
                 />
                 <TextField
                   required
-                  id="codigo_postal"
                   label="Código postal"
                   type="text"
+                  sx={{ flex: 1 }}
                   inputRef={codigoPostalRef}
-                  sx={{ flex: 1, width: "100%", margin: 0 }}
                 />
               </Box>
             )}
-            {/* Número de Telemóvel */}
 
             {isMobile ? (
-              <>
-                <TextField
-                  required
-                  id="telefone"
-                  label="Número de telemóvel"
-                  type="text"
-                  inputRef={telefoneRef}
-                />
-              </>
+              <TextField
+                required
+                label="Número de telemóvel"
+                type="text"
+                inputRef={telefoneRef}
+              />
             ) : (
-              <Box sx={{ display: "flex", width: "100%", marginTop: "-15px" }}>
+              <Box sx={{ display: "flex", width: "100%", mt: "-15px" }}>
                 <TextField
                   required
-                  id="telefone"
                   label="Número de telemóvel"
                   type="text"
+                  sx={{ flex: 1 }}
                   inputRef={telefoneRef}
-                  sx={{ flex: 1, width: "100%", margin: 0 }}
                 />
               </Box>
             )}
@@ -488,6 +441,45 @@ function RegisterPage() {
             </Typography>
           </Box>
         </form>
+        <Dialog open={showSuccessDialog} onClose={() => navigate("/login")}>
+          <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <CheckCircleIcon color="success" fontSize="large" />
+            <Typography variant="h6" fontWeight="bold">
+              Conta criada com sucesso!
+            </Typography>
+          </DialogTitle>
+
+          <DialogContent>
+            <Typography sx={{ mt: 1 }}>
+             O teu registo foi concluído. Por favor, verifica o teu email
+              para ativar a conta.
+            </Typography>
+          </DialogContent>
+
+          <DialogActions sx={{ justifyContent: "center", pb: 2 }}>
+            <Button
+              onClick={() => navigate("/login")}
+              variant="contained"
+              sx={{
+                background:
+                  theme.palette.mode === "dark"
+                    ? "linear-gradient(45deg, #43A047, #66BB6A)" // verde escuro para modo escuro
+                    : "linear-gradient(45deg, #4CAF50, #81C784)", // verde claro para modo claro
+                color: "#fff",
+                fontWeight: "bold",
+                px: 3,
+                "&:hover": {
+                  background:
+                    theme.palette.mode === "dark"
+                      ? "linear-gradient(45deg, #388E3C, #66BB6A)"
+                      : "linear-gradient(45deg, #388E3C, #66BB6A)",
+                },
+              }}
+            >
+              Ir para login
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Paper>
     </Container>
   );
