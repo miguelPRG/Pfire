@@ -1,7 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import JSONResponse
 from controller.jwtValidation import verify_jwt,generate_jwt
-from controller.clientIP import limiter
 from pathlib import Path
 from secrets import choice
 from string import ascii_letters, punctuation, digits
@@ -14,8 +13,6 @@ from models.userEmpresaModels import UserEmpresaCreate
 from datetime import datetime
 from asyncio import to_thread, gather
 from database import user_collection, empresa_collection, user_empresa_collection
-import strawberry
-from strawberry.fastapi import GraphQLRouter
 
 routerUser = APIRouter(prefix="/users")
 
@@ -37,7 +34,6 @@ initialize_app(cred)
 
 # 🚀 Administrador Criar Novo Usuário
 @routerUser.post("/")
-@limiter.limit("5 per 120 seconds")
 async def create_user(user: UserCreate, request: Request, recaptchaToken: str, jwt: str = Depends(verify_jwt)):
     
     # Validate the reCAPTCHA token
@@ -62,7 +58,6 @@ async def create_user(user: UserCreate, request: Request, recaptchaToken: str, j
 
 # 🚀 Atualizar Usuário
 @routerUser.put("/")
-@limiter.limit("5 per 120 seconds")
 async def update_user(user: UserUpdate, request: Request, recaptchaToken: str, id: str = None, email: str = None, jwt: str = Depends(verify_jwt)):
     
     # Validate the reCAPTCHA token
@@ -107,7 +102,6 @@ async def update_user(user: UserUpdate, request: Request, recaptchaToken: str, i
 
 # 🚀 Apagar Usuário
 @routerUser.delete("/")
-@limiter.limit("5 per 120 seconds")
 async def soft_delete_user(request:Request, recaptchaToken: str,id:str = None, email:str = None ,jwt: str = Depends(verify_jwt)):
     
     # Validate the reCAPTCHA token
@@ -132,7 +126,6 @@ async def soft_delete_user(request:Request, recaptchaToken: str,id:str = None, e
     return JSONResponse({"message": "Utilizador desativado!"})
 
 @routerUser.put("/activate")
-@limiter.limit("5 per 120 seconds")
 async def activate_user(request:Request, recaptchaToken: str,id:str = None, email:str = None ,jwt: str = Depends(verify_jwt)):
         
         # Validate the reCAPTCHA token
@@ -156,9 +149,10 @@ async def activate_user(request:Request, recaptchaToken: str,id:str = None, emai
     
         return JSONResponse({"message": "Utilizador ativado!"})
 
+"""FIM Das Operações CRUD"""
+
 # 🚀 Login via Firebase OAuth
 @routerUser.post("/login-oauth")
-@limiter.limit("5 per 120 seconds")
 async def login_oauth(request: Request, firebase_token: str):
     try:
         decoded_token = auth.verify_id_token(firebase_token)
@@ -201,7 +195,6 @@ async def login_oauth(request: Request, firebase_token: str):
 
 # 🚀 Login via Email e Senha
 @routerUser.post("/login")
-@limiter.limit("5 per 120 seconds")
 async def login(user: UserLogin, request:Request, recaptchaToken: str = None):
     # Validate the reCAPTCHA token
     #await validar_recaptcha_token(recaptchaToken, "login")
@@ -227,7 +220,6 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str = None):
 
 # Registar um novo User
 @routerUser.post("/register")
-@limiter.limit("5 per 120 seconds")
 async def register_user(data: RegisterUser, request: Request, recaptchaToken: str):
 
     # Validate the reCAPTCHA token

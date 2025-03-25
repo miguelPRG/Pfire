@@ -2,7 +2,6 @@ from fastapi import APIRouter, HTTPException, Request, Depends
 from controller.jwtValidation import verify_jwt
 from controller.recaptchaValidation import validar_recaptcha_token
 from models.empresaModels import EmpresaUpdate 
-from controller.clientIP import limiter
 from database import db
 from bson import ObjectId
 from datetime import datetime
@@ -11,7 +10,6 @@ routerEmpresa = APIRouter(prefix="/empresa")
 collection = db["empresa"]
 
 @routerEmpresa.get("/")
-@limiter.limit("3 per 30 seconds")
 async def get_empresas(request: Request, id:str = None, nif:str = None,jwt: str= Depends(verify_jwt), limit: int = 100):
     
     if not jwt["isSuperAdmin"]:
@@ -39,7 +37,6 @@ async def get_empresas(request: Request, id:str = None, nif:str = None,jwt: str=
 
 
 @routerEmpresa.put("/")
-@limiter.limit("5 per 120 seconds")
 async def update_empresa(empresa: EmpresaUpdate, request: Request, recaptchaToken: str, id: str = None, nif: str = None, jwt: dict = Depends(verify_jwt)):
 
     if not jwt["isSuperAdmin"]:
@@ -76,7 +73,6 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, recaptchaToke
     return empresa_data
 
 @routerEmpresa.delete("/")
-@limiter.limit("5 per 120 seconds")
 async def delete_empresa(request: Request, id: str = None, nif: str = None, jwt: dict = Depends(verify_jwt)):
 
     if not jwt["isSuperAdmin"]:
