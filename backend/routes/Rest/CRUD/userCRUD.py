@@ -118,10 +118,10 @@ async def soft_delete_user(request: Request, recaptchaToken: str, id: str = None
 
 # 🚀 Ativar Usuário
 @routerUser.put("/activate")
-async def activate_user(request: Request, recaptchaToken: str = None, id: str = None, email: str = None):
+async def activate_user(request: Request, recaptchaToken: str, id: str = None, email: str = None):
     
     # Validar o reCAPTCHA token
-    #await validar_recaptcha_token(recaptchaToken, "activate")
+    await validar_recaptcha_token(recaptchaToken, "activate")
 
     jwt = getattr(request.state, "jwt", None)
     

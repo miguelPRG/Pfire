@@ -1,10 +1,9 @@
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from routes.Rest.services import usersServices
 from routes.Rest.CRUD import userCRUD
 from routes.graphQL.schema import graphql_router
-from slowapi.errors import RateLimitExceeded
 from controller.clientIP import rate_limit
 from controller.jwtValidation import verify_jwt  # Função para verificar o JWT
 
@@ -25,16 +24,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-"""Middleware de limitador de tempo"""
+# Middleware de limitador de tempo
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next):
     """Middleware para aplicar o limite de requisições a todas as rotas"""
+    
+    EXCLUDED_PATHS = {"/user/auth"}
+
+    if request.url.path in EXCLUDED_PATHS:
+        return await call_next(request)
+
     response = await rate_limit(request)
     if response:
         return response  # Retorna a resposta de erro 429 se o limite for excedido
     return await call_next(request)  # Caso contrário, processa a requisição normalmente
 
-""" Middleware para verificar e injetar o JWT no cabeçalho Authorization """
+# Middleware para verificar e injetar o JWT no cabeçalho Authorization
 @app.middleware("http")
 async def jwt_authentication_middleware(request: Request, call_next):
     """Verifica se a rota requer autenticação e valida o JWT a partir do cookie _fp"""
@@ -44,26 +49,25 @@ async def jwt_authentication_middleware(request: Request, call_next):
     if request.url.path in EXCLUDED_PATHS:
         return await call_next(request)
 
-    # 📌 Tenta extrair o token JWT do cookie "_fp"
-    token = request.cookies["_fp"]
-
+    # Tenta extrair o token JWT do cookie "_fp"
+    token = request.cookies.get("_fp")
+    
     if not token:
         return JSONResponse(status_code=401, content={"message": "Token ausente. Faça login."})
 
     try:
-        # 🔑 Valida e decodifica o token JWT
+        # Valida e decodifica o token JWT
         user_data = verify_jwt(token)
-        request.state.jwt = user_data  # ✅ Armazena os dados do usuário na request
+        request.state.jwt = user_data  # Armazena os dados do usuário na request
 
     except Exception as e:
         return JSONResponse(status_code=401, content={"message": f"Erro na autenticação: {str(e)}"})
 
-    # 🔄 Passa para a próxima requisição
+    # Passa para a próxima requisição
     response = await call_next(request)
     return response
 
-
-""" Registrar as rotas REST e GraphQL """
+# Registrar as rotas REST e GraphQL
 
 # Rotas do usuário (REST)
 app.include_router(usersServices.routerUser)
@@ -72,7 +76,7 @@ app.include_router(userCRUD.routerUser)
 # Rotas GraphQL
 app.include_router(graphql_router, prefix="/graphql")
 
-""" Manipulação de Exceções """
+# Manipulação de Exceções
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(
@@ -82,6 +86,6 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
 
 @app.get("/")
 async def root(request: Request):
-    """ Rota de teste que retorna os dados do usuário autenticado """
+    """Rota de teste que retorna os dados do usuário autenticado"""
     jwt = getattr(request.state, "jwt", None)
-    return {"message": "Bem-vindo ao backend com FastAPI e MongoDB!", "user": jwt["nome"]}
+    return {"message": "Bem-vindo ao backend com FastAPI e MongoDB!", "user": jwt["nome"] if jwt else None}

@@ -55,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!user) {
         try {
-          const response = await fetch("backend/users/auth", {
+          const response = await fetch("backend/user/auth", {
             method: "GET",
             credentials: "include",
           });
@@ -96,7 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         { action: "login" },
       );
       const response = await fetch(
-        `http://localhost:8000/users/login?recaptchaToken=${token}`,
+        `http://localhost:8000/user/login?recaptchaToken=${token}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -215,7 +215,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Logout via Backend
   async function logout() {
-    await fetch("backend/users/logout", {
+    await fetch("backend/user/logout", {
       method: "POST",
       credentials: "include",
     });
