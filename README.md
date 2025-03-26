@@ -27,12 +27,16 @@ Os dados aqui indicados deverão ser substituidos pelos respetivos dados verdade
 
 **AVISO**: Para fins de desenvolvimento, será necessário criar a sua própria base de dados em MongoDB. A base de dados utilizada em produção encontra-se sob o mais restrito acesso. 
 
+### Diagrama de Base de Dados
+![Diagrama de Base de Dados](diagrama.jpg)
+
 ### Chaves de Criptografia JWT
 Este projeto utiliza um sistema de autenticação baseado em JWT no `backend`, tal como poderá ser visualizado no seguinte ficheiro python: `backend\controller\auth.py`. Para testar o desenvolvimento, será necessário criar um par de chaves de criptografia dentro de uma pasta de nome `chaves` exatamente como especificado no ficheiro `auth.py`. É importante criar a pasta `chaves` com este nome, para que o seu conteúdo seja ignorado pelo `.gitignore`, preservando assim o comprometimento das chaves de criptografia.
 
 #### Criar chaves de criptografia
 1. `cd /backend`
 2. `mkdir chaves`
+3. `cd backend`
 3. `openssl genpkey -algorithm RSA -aes-256-cbc -out privada.pem`
 4. Crie uma password para proteger a chave privada(deverá ser **EXATAMENTE** igual a **PRIVATE_KEY_PASSWORD** que foi definido no ficheiro `.env`)
 5. `openssl rsa -in privada.pem -pubout -out publica.pem`
@@ -111,7 +115,7 @@ Por esta razão, é fortemente indicada a efetuação de uma análise de vulnera
 Não serão aceites commits marcados como **failed** em merge requests.
 
 ### Comunicação entre Frontend e Backend
-Os endpoints das `APIs` foram definidos em `python`, utilizando a framework do **FastAPI**. Para aceder ao `backend` pelo `frontend`, bastará realizar um `fetch('backend')` e a comunicação entre os dois contêineres será estabelecida. Para aceder ao resto dos endpoints, será necessário consultar as rotas previamente estabelecidas na seguinte pasta: `backend\routes`.
+Os endpoints das `APIs` foram definidos em `python`, utilizando a framework do **FastAPI**. Para aceder ao `backend` pelo `frontend`, bastará realizar um fetch para `/backend`, por exemplo: `fetch("/backend")` e a comunicação entre os dois contêineres será estabelecida. Para aceder ao resto dos endpoints, será necessário consultar as rotas previamente estabelecidas na seguinte pasta: `backend\routes`.
 
 ## Conclusão
 Este projeto foi elaborado e organizado de modo que o desenvolvimento corporativo fosse o mais simples e organizado possível. Em caso de alguma dúvida, por favor entre em contacto com Miguel Gonçalves!
