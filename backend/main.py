@@ -25,12 +25,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+"""Middleware de limitador de tempo"""
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    """Middleware para aplicar o limite de requisições a todas as rotas"""
+    response = await rate_limit(request)
+    if response:
+        return response  # Retorna a resposta de erro 429 se o limite for excedido
+    return await call_next(request)  # Caso contrário, processa a requisição normalmente
+
 """ Middleware para verificar e injetar o JWT no cabeçalho Authorization """
 @app.middleware("http")
 async def jwt_authentication_middleware(request: Request, call_next):
     """Verifica se a rota requer autenticação e valida o JWT a partir do cookie _fp"""
     
-    EXCLUDED_PATHS = {"/users/login", "/users/register", "/users/login-oauth"}
+    EXCLUDED_PATHS = {"/user/login", "/user/register", "/user/login-oauth"}
 
     if request.url.path in EXCLUDED_PATHS:
         return await call_next(request)
@@ -70,20 +79,6 @@ async def custom_http_exception_handler(request: Request, exc: HTTPException):
         status_code=exc.status_code,
         content={"message": f"Erro: {exc.detail}"},
     )
-
-@app.exception_handler(RateLimitExceeded)
-async def rate_limit_error(request, exc):
-    return JSONResponse(
-        status_code=429,
-        content={"message": "Limite de requisições excedido. Tente novamente mais tarde."},
-    )
-
-""" Middleware de Limite de Taxa """
-@app.middleware("http")
-async def rate_limit_middleware(request: Request, call_next):
-    await rate_limit(request)  # Aplica o rate limit
-    response = await call_next(request)
-    return response
 
 @app.get("/")
 async def root(request: Request):

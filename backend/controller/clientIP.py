@@ -1,6 +1,6 @@
 import time
 from fastapi import Request
-from slowapi.errors import RateLimitExceeded
+from fastapi.responses import JSONResponse
 
 # Definir o número máximo de requisições e o intervalo de tempo
 LIMIT = 5  # número de requisições permitidas
@@ -34,11 +34,13 @@ async def rate_limit(request: Request):
         
         if len(timestamps) >= LIMIT:
             # Se o limite de requisições for atingido, lança uma exceção de erro 429
-            raise RateLimitExceeded("Too Many Requests")
+            return JSONResponse(
+                status_code=429,
+                content={"message": "Limite de requisições excedido. Tente novamente mais tarde."},
+            )
         
         # Adiciona o timestamp da nova requisição
         rate_limiter[client_ip].append(current_time)
     else:
         # Se não houver requisições, cria uma nova entrada
         rate_limiter[client_ip] = [current_time]
-        

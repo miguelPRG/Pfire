@@ -37,16 +37,12 @@ def load_private_key():
 public_key = load_public_key()
 private_key = load_private_key()
 
-def verify_jwt(request: Request):
+def verify_jwt(token):
     try:
-        token = request.cookies.get("_fp")  # Aqui você pega o cookie
-
         if not token:
             raise HTTPException(status_code=400, detail="Token não encontrado!")
         
         payload = jwt.decode(token, public_key ,algorithms=[ALGORITHM])
-        
-        print(payload)
 
         return payload
     except  jwt.InvalidTokenError:
