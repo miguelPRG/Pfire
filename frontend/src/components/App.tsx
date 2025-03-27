@@ -1,4 +1,4 @@
-import { lazy, ReactElement, Suspense } from "react";
+import { lazy, ReactElement, Suspense, useEffect } from "react";
 import {
   BrowserRouter as Router,
   Route,
@@ -19,8 +19,7 @@ const Register = lazy(() => import("../pages/RegisterPage"));
 const CadastroEmpresa = lazy(() => import("../pages/CadastroEmpresaPage"));
 const Home = lazy(() => import("../pages/HomePage"));
 const UserManagementTable = lazy(() => import("../pages/UserManagementTable"));
-const ClientManagementTable = lazy(() => import("../pages/ClientManagementTable"));
-const AddNewClientPage = lazy(() => import("../pages/AddNewClientPage"));
+const EmpresasPage = lazy(() => import("../pages/EmpresasPage"));
 
 interface RouteProps {
   user: unknown;
@@ -51,9 +50,20 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 const ThemeToggleButton = () => {
   const { darkMode, toggleTheme } = useTema();
 
+  useEffect(() => {
+    const savedScrollPosition = sessionStorage.getItem("scrollPosition");
+    if (savedScrollPosition) {
+      window.scrollTo(0, parseInt(savedScrollPosition, 10));
+      sessionStorage.removeItem("scrollPosition");
+    }
+  }, [darkMode]);
+
   return (
     <IconButton
-      onClick={toggleTheme}
+      onClick={() => {
+        sessionStorage.setItem("scrollPosition", window.scrollY.toString()); // Salva a posição antes de mudar o tema
+        toggleTheme();
+      }}
       sx={{
         position: "fixed",
         bottom: 16,
@@ -90,8 +100,7 @@ function App() {
             <Route path="/cadastro-empresa" element={<PublicRoute user={user} element={<CadastroEmpresa />} />} />
             <Route path="/" element={<ProtectedRoute user={user} element={<Home />} />} />
             <Route path="/UserManagementTable" element={<ProtectedRoute user={user} element={<UserManagementTable />} />} />
-            <Route path="/ClientManagementTable" element={<ProtectedRoute user={user} element={<ClientManagementTable />} />} />
-            <Route path="/AddNewClientPage" element={<ProtectedRoute user={user} element={<AddNewClientPage />} />} />
+            <Route path="/EmpresasPage" element={<ProtectedRoute user={user} element={<EmpresasPage />} />} />
             <Route path="*" element={<Navigate to={user ? "/" : "/login"} />} />
           </Routes>
         </Layout>

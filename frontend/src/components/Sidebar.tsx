@@ -1,22 +1,8 @@
 import * as React from "react";
 import { useNavigate } from "react-router-dom";
-import Box from "@mui/material/Box";
-import Drawer from "@mui/material/Drawer";
-import List from "@mui/material/List";
-import Divider from "@mui/material/Divider";
-import ListItem from "@mui/material/ListItem";
-import ListItemButton from "@mui/material/ListItemButton";
-import ListItemIcon from "@mui/material/ListItemIcon";
-import ListItemText from "@mui/material/ListItemText";
-import Collapse from "@mui/material/Collapse";
-import DescriptionIcon from "@mui/icons-material/Description";
-import StarIcon from "@mui/icons-material/Star";
-import LayersIcon from "@mui/icons-material/Layers";
-import InfoIcon from "@mui/icons-material/Info";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import ExpandLess from "@mui/icons-material/ExpandLess";
-import ExpandMore from "@mui/icons-material/ExpandMore";
-import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+import { Box, Drawer, List, Divider, ListItem, ListItemButton, ListItemIcon, ListItemText, Collapse } from "@mui/material";
+import { Description as DescriptionIcon, Star as StarIcon, Layers as LayersIcon, Info as InfoIcon, ExpandLess, ExpandMore, ArrowForwardIos as ArrowForwardIosIcon, Engineering as EngineeringIcon } from "@mui/icons-material";
+import BusinessIcon from '@mui/icons-material/Business';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -53,21 +39,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
     >
       {/* Lista principal */}
       <List sx={{ flexGrow: 1 }}>
-        {/* Clientes */}
-       { /*
-        <ListItem disablePadding>
-          <ListItemButton>
-            <ListItemIcon>
-              <WorkIcon />
-            </ListItemIcon>
-            <ListItemText primary="Clientes" />
-          </ListItemButton>
-        </ListItem>
-        */
-}
-
-        {/* Extintores */}
-
         {/* Relatórios - Com submenu */}
         <ListItem disablePadding>
           <ListItemButton onClick={handleToggleReports}>
@@ -78,7 +49,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             {openReports ? <ExpandLess /> : <ExpandMore />}
           </ListItemButton>
         </ListItem>
-
         {/* Submenu de Relatórios */}
         <Collapse in={openReports} timeout="auto" unmountOnExit>
           <List component="div" disablePadding>
@@ -92,7 +62,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             </ListItem>
           </List>
         </Collapse>
-
         {/* Modelos - Com submenu */}
         <ListItem disablePadding>
           <ListItemButton onClick={handleToggleModels}>
@@ -103,7 +72,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             {openModels ? <ExpandLess /> : <ExpandMore />}
           </ListItemButton>
         </ListItem>
-
         {/* Submenu de Modelos */}
         <Collapse in={openModels} timeout="auto" unmountOnExit>
           <List component="div" disablePadding>
@@ -117,7 +85,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             </ListItem>
           </List>
         </Collapse>
-
         {/* Atualizar Plano */}
         <ListItem disablePadding>
           <ListItemButton>
@@ -127,32 +94,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             <ListItemText primary="Atualizar Plano" />
           </ListItemButton>
         </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => handleNavigation("/EmpresasPage")}>
+            <ListItemIcon >
+              <BusinessIcon />
+            </ListItemIcon>
+            <ListItemText primary="Empresas" />
+          </ListItemButton>
+        </ListItem>
       </List>
-
       <Divider />
-
       {/* Parte inferior - Utilizadores e Suporte */}
       <Box sx={{ display: "flex", flexDirection: "column" }}>
         {/* Utilizadores */}
-  <ListItem disablePadding>
-    <ListItemButton onClick={() => handleNavigation("/UserManagementTable")}>
-      <ListItemIcon>
-        <AccountCircleIcon />
-      </ListItemIcon>
-      <ListItemText primary="Funcionários" />
-    </ListItemButton>
-  </ListItem>
-
-  {/* Clientes */}
-  <ListItem disablePadding>
-    <ListItemButton onClick={() => handleNavigation("/ClientManagementTable")}>
-      <ListItemIcon>
-        <ArrowForwardIosIcon />
-      </ListItemIcon>
-      <ListItemText primary="Clientes" />
-    </ListItemButton>
-  </ListItem>
-
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => handleNavigation("/UserManagementTable")}>
+            <ListItemIcon>
+              <EngineeringIcon />
+            </ListItemIcon>
+            <ListItemText primary="Funcionários" />
+          </ListItemButton>
+        </ListItem>
         {/* Suporte */}
         <ListItem disablePadding>
           <ListItemButton>
