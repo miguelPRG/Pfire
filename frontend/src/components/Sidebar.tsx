@@ -9,7 +9,6 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Collapse from "@mui/material/Collapse";
-import WorkIcon from "@mui/icons-material/Work";
 import DescriptionIcon from "@mui/icons-material/Description";
 import StarIcon from "@mui/icons-material/Star";
 import LayersIcon from "@mui/icons-material/Layers";
@@ -55,6 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       {/* Lista principal */}
       <List sx={{ flexGrow: 1 }}>
         {/* Clientes */}
+       { /*
         <ListItem disablePadding>
           <ListItemButton>
             <ListItemIcon>
@@ -63,6 +63,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             <ListItemText primary="Clientes" />
           </ListItemButton>
         </ListItem>
+        */
+}
+
+        {/* Extintores */}
 
         {/* Relatórios - Com submenu */}
         <ListItem disablePadding>
@@ -130,14 +134,24 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       {/* Parte inferior - Utilizadores e Suporte */}
       <Box sx={{ display: "flex", flexDirection: "column" }}>
         {/* Utilizadores */}
-        <ListItem disablePadding>
-          <ListItemButton onClick={() => handleNavigation("/UserManagementTable")}>
-            <ListItemIcon>
-              <AccountCircleIcon />
-            </ListItemIcon>
-            <ListItemText primary="Utilizadores" />
-          </ListItemButton>
-        </ListItem>
+  <ListItem disablePadding>
+    <ListItemButton onClick={() => handleNavigation("/UserManagementTable")}>
+      <ListItemIcon>
+        <AccountCircleIcon />
+      </ListItemIcon>
+      <ListItemText primary="Funcionários" />
+    </ListItemButton>
+  </ListItem>
+
+  {/* Clientes */}
+  <ListItem disablePadding>
+    <ListItemButton onClick={() => handleNavigation("/ClientManagementTable")}>
+      <ListItemIcon>
+        <ArrowForwardIosIcon />
+      </ListItemIcon>
+      <ListItemText primary="Clientes" />
+    </ListItemButton>
+  </ListItem>
 
         {/* Suporte */}
         <ListItem disablePadding>
@@ -156,9 +170,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
     <Drawer
       open={isOpen}
       onClose={toggleSidebar}
-      sx={{ width: 250, flexShrink: 0 }}
-      PaperProps={{ sx: { width: 250 } }}
-    >
+      sx={{ width: 250, flexShrink: 0, '& .MuiDrawer-paper': { width: 250 } }}>
       {DrawerList}
     </Drawer>
   );
