@@ -103,7 +103,7 @@ async def register_user(data: RegisterUser, request: Request, recaptchaToken: st
     # Validate the reCAPTCHA token
     await validar_recaptcha_token(recaptchaToken, "register")
     #Verificar se o utilizador com aquele email já existe    
-    existing_user = await collection.find_one({"email": user.email})  
+    existing_user = await user_collection.find_one({"email": user.email})  
 
     # Verificar se o email já está registado
     existing_user = await user_collection.find_one({"email": data.user.email})
