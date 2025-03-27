@@ -52,31 +52,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async function checkAuth() {
       //Esta função poderá ser descomentada para verificar a animação de carregamento, mas não deve ser incluida na produção
       //await new Promise((resolve) => setTimeout(resolve, 1000));
+      try {
+        const response = await fetch("backend/user/auth", {
+          method: "GET",
+          credentials: "include",
+        });
 
-      if (!user) {
-        try {
-          const response = await fetch("backend/user/auth", {
-            method: "GET",
-            credentials: "include",
+        if (response.ok) {
+          const data = await response.json();
+          console.log(data);
+          setUser({
+            nome: data.nome,
+            email: data.email,
+            isSuperAdmin: data.isSuperAdmin,
           });
-
-          if (response.ok) {
-            const data = await response.json();
-            console.log(data);
-            setUser({
-              nome: data.nome,
-              email: data.email,
-              isSuperAdmin: data.isSuperAdmin,
-            });
-          } else {
-            setUser(null);
-          }
-        } catch (error) {
-          console.error("Erro ao verificar autenticação:", error);
+        } else {
           setUser(null);
-        } finally {
-          setLoading(false); // Após a verificação (sucesso ou falha), setLoading deve ser false
         }
+      } catch (error) {
+        console.error("Erro ao verificar autenticação:", error);
+        setUser(null);
+      } finally {
+        setLoading(false); // Após a verificação (sucesso ou falha), setLoading deve ser false
       }
     }
 

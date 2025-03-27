@@ -1,8 +1,7 @@
 import os
 import jwt
 from pathlib import Path
-from fastapi import HTTPException, Depends, Request
-from database import db
+from fastapi import HTTPException
 from datetime import datetime
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
@@ -13,7 +12,7 @@ PRIVATE_KEY = Path(__file__).parent / "../chaves/privada.pem"
 PRIVATE_KEY_PASSWORD = os.getenv("PRIVATE_KEY_PASSWORD")
 ALGORITHM = "RS256"
 USER_HOURS = 24
-SUPER_ADMIN = 1
+SUPER_ADMIN_DAYS = 30
 
 def load_public_key():
     with open(PUBLIC_KEY, "rb") as key_file:
@@ -59,7 +58,7 @@ def verify_jwt(token):
 
 def generate_jwt(user_name: str,user_email: str, is_super_admin: bool = False):
     if is_super_admin:
-        expire_delta = SUPER_ADMIN * 60 * 60  # Expiração em segundos
+        expire_delta = SUPER_ADMIN_DAYS * 24 * 60 * 60  # Expiração em segundos
     else:
         expire_delta = USER_HOURS * 60 * 60  # Expiração em segundos
 
