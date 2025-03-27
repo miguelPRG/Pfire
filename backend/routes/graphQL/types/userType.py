@@ -7,7 +7,7 @@ class User:
     id: Optional[str]
     nome: Optional[str]
     email: Optional[str]
-    telefone: Optional[str]
+    telefone: Optional[str] = None
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
     last_login: Optional[datetime]
