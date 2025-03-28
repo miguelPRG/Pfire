@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 
 # Carregar variáveis de ambiente do arquivo .env
 load_dotenv()
+
 # Substitua pelos seus dados do Google Cloud
 PROJECT_ID = getenv("PROJECT_ID")  # ID do seu projeto no Google Cloud
 API_KEY = getenv("API_KEY")  # Chave da API do Google Cloud

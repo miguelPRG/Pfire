@@ -1,6 +1,5 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from routes.Rest.services import usersServices
 from routes.Rest.CRUD import userCRUD
 from routes.graphQL.schema import graphql_router

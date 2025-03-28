@@ -1,4 +1,4 @@
-import * as React from "react";
+import {useState} from "react";
 import { useTheme } from "@mui/material/styles";
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, IconButton, TextField, Select, MenuItem, Box, Pagination, TableSortLabel, InputAdornment, Dialog, DialogActions, DialogContent, DialogTitle, Button, FormControlLabel, Checkbox 
 } from "@mui/material";
@@ -27,15 +27,15 @@ const rows: User[] = [
 ];
 
 export default function UserManagementTable() {
-  const [page, setPage] = React.useState<number>(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState<number>(5);
-  const [search, setSearch] = React.useState<string>("");
-  const [orderBy, setOrderBy] = React.useState<keyof User | null>(null);
-  const [order, setOrder] = React.useState<"asc" | "desc">("asc");
-  const [openEditModal, setOpenEditModal] = React.useState<boolean>(false);
-  const [selectedUser, setSelectedUser] = React.useState<User | null>(null);
+  const [page, setPage] = useState<number>(0);
+  const [rowsPerPage, setRowsPerPage] = useState<number>(5);
+  const [search, setSearch] = useState<string>("");
+  const [orderBy, setOrderBy] = useState<keyof User | null>(null);
+  const [order, setOrder] = useState<"asc" | "desc">("asc");
+  const [openEditModal, setOpenEditModal] = useState<boolean>(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const theme = useTheme();
-  const [openConfirmDialog, setOpenConfirmDialog] = React.useState<boolean>(false);
+  const [openConfirmDialog, setOpenConfirmDialog] = useState<boolean>(false);
 
   const handleDeleteClick = () => {
     setOpenConfirmDialog(true);

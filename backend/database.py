@@ -1,9 +1,5 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
-from dotenv import load_dotenv
-
-# Carregar variáveis de ambiente do arquivo .env
-load_dotenv()
 
 # Obter a URI do MongoDB do arquivo .env
 uri = os.getenv("MONGO_URL")  # A URI do MongoDB Atlas
