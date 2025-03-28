@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { Box, Drawer, List, Divider, ListItem, ListItemButton, ListItemIcon, ListItemText, Collapse } from "@mui/material";
 import { Description as DescriptionIcon, Star as StarIcon, Layers as LayersIcon, Info as InfoIcon, ExpandLess, ExpandMore, ArrowForwardIos as ArrowForwardIosIcon, Engineering as EngineeringIcon } from "@mui/icons-material";
 import BusinessIcon from '@mui/icons-material/Business';
+import GroupIcon from '@mui/icons-material/Group';
+
 
 interface SidebarProps {
   isOpen: boolean;
@@ -100,6 +102,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
               <BusinessIcon />
             </ListItemIcon>
             <ListItemText primary="Empresas" />
+          </ListItemButton>
+        </ListItem>
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => handleNavigation("/ClientManagementTable")}>
+            <ListItemIcon >
+            <GroupIcon />
+            </ListItemIcon>
+            <ListItemText primary="Clientes" />
           </ListItemButton>
         </ListItem>
       </List>

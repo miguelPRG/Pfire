@@ -20,6 +20,8 @@ const CadastroEmpresa = lazy(() => import("../pages/CadastroEmpresaPage"));
 const Home = lazy(() => import("../pages/HomePage"));
 const UserManagementTable = lazy(() => import("../pages/UserManagementTable"));
 const EmpresasPage = lazy(() => import("../pages/EmpresasPage"));
+const ClientManagementTable = lazy(() => import("../pages/ClientManagementTable"));
+
 
 interface RouteProps {
   user: unknown;
@@ -86,8 +88,7 @@ function App() {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
         <CircularProgress />
-      </Box>
-    );
+      </Box>    );
   }
 
   return (
@@ -100,6 +101,8 @@ function App() {
             <Route path="/cadastro-empresa" element={<PublicRoute user={user} element={<CadastroEmpresa />} />} />
             <Route path="/" element={<ProtectedRoute user={user} element={<Home />} />} />
             <Route path="/UserManagementTable" element={<ProtectedRoute user={user} element={<UserManagementTable />} />} />
+            <Route path="/ClientManagementTable" element={<ProtectedRoute user={user} element={<ClientManagementTable />} />} />
+      
             <Route path="/EmpresasPage" element={<ProtectedRoute user={user} element={<EmpresasPage />} />} />
             <Route path="*" element={<Navigate to={user ? "/" : "/login"} />} />
           </Routes>

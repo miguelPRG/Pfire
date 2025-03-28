@@ -22,7 +22,7 @@ import Sidebar from "./Sidebar";
 const navigationPages = [
   
   { label: "Utilizadores", path: "/UserManagementTable" },
-  { label: "Clientes", path: "/ClientManagementTable" },
+ 
 ];
 
 const userSettings = ["Profile", "Account", "Dashboard", "Logout"];

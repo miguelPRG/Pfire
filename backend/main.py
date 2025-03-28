@@ -53,7 +53,7 @@ async def jwt_authentication_middleware(request: Request, call_next):
     token = request.cookies.get("_fp")
     
     if not token:
-        return JSONResponse(status_code=401, content={"message": "Token ausente. Faça login."})
+        return HTTPException(status_code=401, content={"message": "Token ausente. Faça login."})
 
     try:
         # Valida e decodifica o token JWT
@@ -61,7 +61,7 @@ async def jwt_authentication_middleware(request: Request, call_next):
         request.state.jwt = user_data  # Armazena os dados do usuário na request
 
     except Exception as e:
-        return JSONResponse(status_code=401, content={"message": f"Erro na autenticação: {str(e)}"})
+        return HTTPException(status_code=401, content={"message": f"Erro na autenticação: {str(e)}"})
 
     # Passa para a próxima requisição
     response = await call_next(request)
@@ -79,7 +79,7 @@ app.include_router(graphql_router, prefix="/graphql")
 # Manipulação de Exceções
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
-    return JSONResponse(
+    return HTTPException(
         status_code=exc.status_code,
         content={"message": f"Erro: {exc.detail}"},
     )
