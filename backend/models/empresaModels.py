@@ -41,7 +41,6 @@ class EmpresaUpdate(BaseModel):
     logo: Optional[Binary] = None
     updated_by: Optional[ObjectId] = None # Id do usuário que está atualizando a empresa
     updated_at: datetime = Field(default_factory=datetime.now)
-    isActive: Optional[bool] = None
 
     @model_validator(mode='before')
     @classmethod

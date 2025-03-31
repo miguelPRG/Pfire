@@ -4,7 +4,7 @@ from bson import ObjectId
 from passlib.context import CryptContext
 from models.userModels import UserCreate, UserUpdate
 from datetime import datetime
-from database import users_collection
+from database import users_collection, users_empresas_collection
 
 routerUser = APIRouter(prefix="/user")
 
@@ -25,13 +25,16 @@ async def create_user(user: UserCreate, request: Request, recaptchaToken: str):
     # 📌 Obtém os dados do usuário autenticado do JWT
     jwt = getattr(request.state, "jwt", None)
 
-    if not jwt or not jwt.get("isSuperAdmin", False):
-        raise HTTPException(status_code=403, detail="Acesso negado. Apenas Super Admins podem criar usuários.")
+    if not jwt:
+        raise HTTPException(status_code=403, detail="Acesso negado.")
 
     # ✅ Valida o reCAPTCHA token
     await validar_recaptcha_token(recaptchaToken, "register")
 
     # 🚀 Verificar se o utilizador com aquele email já existe    
+    
+    
+    
     existing_user = await users_collection.find_one({"email": user.email})  
     if existing_user:
         raise HTTPException(status_code=400, detail="Email já registado.")
@@ -45,6 +48,8 @@ async def create_user(user: UserCreate, request: Request, recaptchaToken: str):
 
     if not result.inserted_id:
         raise HTTPException(status_code=400, detail="Erro ao criar conta.")
+
+
 
     return {"message": "Usuário criado com sucesso!"}
 

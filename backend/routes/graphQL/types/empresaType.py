@@ -16,4 +16,3 @@ class Empresa:
     created_at: datetime
     updated_by: Optional[str]
     updated_at: datetime 
-    isActive: bool

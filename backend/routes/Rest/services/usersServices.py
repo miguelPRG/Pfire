@@ -58,7 +58,7 @@ async def login_oauth(request: Request, firebase_token: str):
             user_task = users_collection.update_one({"email": email}, {"$set": {"last_login": datetime.now()}})
 
         # Gerar JWT
-        token_task = to_thread(generate_jwt, db_user["name"], db_user["email"], db_user["isSuperAdmin"])
+        token_task = to_thread(generate_jwt,str(db_user["_id"]) ,db_user["name"], db_user["email"], db_user["isSuperAdmin"])
 
         _,token = await gather(user_task, token_task)
 
@@ -73,9 +73,9 @@ async def login_oauth(request: Request, firebase_token: str):
 
 # 🚀 Login via Email e Senha
 @routerUser.post("/login")
-async def login(user: UserLogin, request:Request, recaptchaToken: str = None):
+async def login(user: UserLogin, request:Request, recaptchaToken: str):
     # Validate the reCAPTCHA token
-    #await validar_recaptcha_token(recaptchaToken, "login")
+    await validar_recaptcha_token(recaptchaToken, "login")
     
     db_user = await users_collection.find_one({"email": user.email})
 
@@ -87,7 +87,7 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str = None):
 
     last_login_time = datetime.now()
     update_task = users_collection.update_one({"email": user.email}, {"$set": {"last_login": last_login_time}})
-    token_task = to_thread(generate_jwt,db_user["nome"], db_user["email"], db_user["isSuperAdmin"])
+    token_task = to_thread(generate_jwt,str(db_user["_id"]),db_user["nome"], db_user["email"], db_user["isSuperAdmin"])
 
     _, token = await gather(update_task, token_task)
 

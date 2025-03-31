@@ -1,5 +1,5 @@
 from .types.userType import User
-from database import user_collection, user_empresa_collection
+from database import users_collection, users_empresas_collection
 from .utils.limpar import filter_null_fields
 from bson import ObjectId
 from fastapi import HTTPException
@@ -25,8 +25,8 @@ class UserQuery:
                 
         users = []
 
-        async for user_empresa in user_empresa_collection.find({"empresa_id": ObjectId(empresa_id)}):
-            async for user in user_collection.find({"_id": user_empresa["user_id"]}):
+        async for user_empresa in users_empresas_collection.find({"empresa_id": ObjectId(empresa_id)}):
+            async for user in users_collection.find({"_id": user_empresa["user_id"]}):
                 
                 # Mapeia os dados do usuário
                 user_data = {

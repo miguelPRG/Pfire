@@ -1,5 +1,5 @@
 from .types.empresaType import Empresa
-from database import empresa_collection
+from database import empresas_collection
 from .utils.limpar import filter_null_fields
 from fastapi import HTTPException
 import strawberry
@@ -19,7 +19,7 @@ class EmpresaQuery:
         
         empresas = []
 
-        async for empresa in empresa_collection.find().skip(start).limit(end - start):
+        async for empresa in empresas_collection.find().skip(start).limit(end - start):
 
             # Converte o logótipo de BinData para Base64, se existir
             logo_bin = empresa.get("logo")
@@ -38,7 +38,6 @@ class EmpresaQuery:
                 "created_at": empresa.get("created_at"),
                 "updated_by": empresa.get("updated_by"),
                 "updated_at": empresa.get("updated_at"),
-                "isActive": empresa.get("isActive")
             }
 
             empresas.append(Empresa(**filter_null_fields(empresa_data)))

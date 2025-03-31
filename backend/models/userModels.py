@@ -32,7 +32,6 @@ class UserUpdate(BaseModel):
     telefone: Optional[str] = None
     empresa_id: Optional[str] = None
     isSuperAdmin: Optional[bool] = None
-    isActive: Optional[bool] = None
 
     @model_validator(mode='before')
     @classmethod

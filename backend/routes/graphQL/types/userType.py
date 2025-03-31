@@ -12,4 +12,3 @@ class User:
     updated_at: Optional[datetime]
     last_login: Optional[datetime]
     isSuperAdmin: Optional[bool]
-    isActive: Optional[bool]
