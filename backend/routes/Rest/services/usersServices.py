@@ -70,13 +70,12 @@ async def login_oauth(request: Request, firebase_token: str):
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Erro ao autenticar: {str(e)}")
 
-
 # 🚀 Login via Email e Senha
 @routerUser.post("/login")
 async def login(user: UserLogin, request:Request, recaptchaToken: str):
     # Validate the reCAPTCHA token
     await validar_recaptcha_token(recaptchaToken, "login")
-    
+
     db_user = await users_collection.find_one({"email": user.email})
 
     if not db_user or not pwd_context.verify(user.password, db_user["password"]):
@@ -85,11 +84,19 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str):
     if not db_user.get("isActive", True):
         raise HTTPException(status_code=403, detail="Esta conta foi desativada.")
 
-    last_login_time = datetime.now()
-    update_task = users_collection.update_one({"email": user.email}, {"$set": {"last_login": last_login_time}})
-    token_task = to_thread(generate_jwt,str(db_user["_id"]),db_user["nome"], db_user["email"], db_user["isSuperAdmin"])
+    user_empresa_cursor = users_empresas_collection.find({"user_id": db_user["_id"]})
+    user_empresas = []
 
-    _, token = await gather(update_task, token_task)
+    async for user_empresa in user_empresa_cursor:
+        empresa = await empresas_collection.find_one({"_id": user_empresa["empresa_id"]})
+        if empresa:
+            user_empresas.append({
+                "id": str(empresa["_id"]),
+                "empresa_nome": empresa["nome"],
+                "role": user_empresa["role"]
+            })
+
+    token = generate_jwt(str(db_user["_id"]),db_user["nome"], db_user["email"], db_user["isSuperAdmin"],user_empresas)
 
     response = JSONResponse({"nome": db_user["nome"], "email": db_user["email"], "isSuperAdmin": db_user["isSuperAdmin"]})
     response.set_cookie(key="_fp", value=token, httponly=True, samesite="Strict")
@@ -99,25 +106,27 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str):
 # Registar um novo User
 @routerUser.post("/register")
 async def register_user(data: RegisterUser, request: Request, recaptchaToken: str):
-
     # Validate the reCAPTCHA token
     await validar_recaptcha_token(recaptchaToken, "register")
-    #Verificar se o utilizador com aquele email já existe    
-    existing_user = await users_collection.find_one({"email": user.email})  
+    
+    print("Dados do User a Registar: ", data.user)
+    print("Dados da Empresa a Registar: ", data.empresa)
 
-    # Verificar se o email já está registado
-    existing_user = await users_collection.find_one({"email": data.user.email})
+    # Verificar se o utilizador com aquele email já existe
+    existing_user = await users_collection.find_one({"email": data.user.email})  # Normaliza o email
 
     if existing_user:
         raise HTTPException(status_code=400, detail="Email já registado.")
 
-    existing_empresa = await empresas_collection.find_one({"nif": data.empresa.nif})
+    # Verificar se a empresa com aquele NIF já existe
+    existing_empresa = await empresas_collection.find_one({"nif": data.empresa.nif})  # Normaliza o NIF
 
     if existing_empresa:
         raise HTTPException(status_code=400, detail="Empresa já registada.")
-
+    
     # Criar User
     new_user = data.user
+    new_user.email = new_user.email.strip().lower()  # Normaliza o email antes de salvar
     new_user.password = pwd_context.hash(new_user.password)
     new_user_data = new_user.model_dump(by_alias=True)
     user = await users_collection.insert_one(new_user_data)
@@ -150,7 +159,7 @@ async def register_user(data: RegisterUser, request: Request, recaptchaToken: st
     if not user.inserted_id or not empresa.inserted_id or not user_empresa.inserted_id:
         raise HTTPException(status_code=400, detail="Erro ao criar relação entre o user e empresa.")
 
-    return JSONResponse({"message": "Conta criada! Verifique seu email para ativação."})
+    return {"message": "Conta criada! Verifique seu email para ativação."}
 
 # 🚀 Autenticação do Usuário (Verificar JWT)
 @routerUser.get("/auth")
@@ -158,7 +167,7 @@ async def auth_user(request: Request):
 
     jwt = getattr(request.state, "jwt", None)
 
-    return {"nome": jwt["nome"], "email": jwt["email"], "isSuperAdmin": jwt["isSuperAdmin"]}
+    return {"nome": jwt["nome"], "email": jwt["email"], "isSuperAdmin": jwt["isSuperAdmin"], "empresas": jwt["empresas"]}
 
 # 🚀 Logout
 @routerUser.post("/logout")

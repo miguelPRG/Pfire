@@ -9,32 +9,37 @@ import { FirebaseLogin, FirebaseLogout } from "../firebase"; // Importando as fu
 
 declare var grecaptcha: any;
 
-interface User {
+interface UserLoggedIn {
   nome: string;
   email: string;
   isSuperAdmin: boolean;
+  empresas: any[];
+}
+
+export interface UserRegistered{
+  nome: string | undefined,
+  email: string | undefined,
+  telefone: string | undefined;
+  password: string | undefined;
+}
+
+export interface Empresa{
+  nome: string | undefined;
+  nif: string | undefined;
+  localidade: string | undefined;
+  morada: string | undefined;
+  codigo_postal: string | undefined;
+  telefone: string | undefined;
 }
 
 interface AuthContextType {
-  user: User | null;
+  user: UserLoggedIn | null;
   loading: boolean;
   login: (email: string, pwd: string) => void;
 
   registerUser: (payload: {
-    user: {
-      nome: string;
-      email: string;
-      telefone: string;
-      password: string;
-    };
-    empresa: {
-      nome: string;
-      nif: string;
-      localidade?: string;
-      morada: string;
-      codigo_postal: string;
-      telefone: string;
-    };
+    user: UserRegistered,
+    empresa: Empresa
   }) => Promise<void>;
 
   loginWithOAuth: (provider: "google" | "facebook" | "microsoft") => void;
@@ -45,7 +50,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserLoggedIn | null>(null);
   const [loading, setLoading] = useState(true); // Inicializa como true até a verificação de autenticação ser concluída
 
   useEffect(() => {
@@ -65,7 +70,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             nome: data.nome,
             email: data.email,
             isSuperAdmin: data.isSuperAdmin,
+            empresas: data.empresas
           });
+
+          console.log(user)
         } else {
           setUser(null);
         }
@@ -117,6 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nome: data.nome,
         email: data.email,
         isSuperAdmin: data.isSuperAdmin,
+        empresas: data.empresas
       });
     } catch (error) {
       console.error("Erro no login:", error);
@@ -124,21 +133,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
   async function registerUser(payload: {
-    user: {
-      nome: string;
-      email: string;
-      telefone?: string;
-      password: string;
-    };
-    empresa: {
-      nome: string;
-      nif?: string;
-      localidade?: string;
-      morada?: string;
-      codigo_postal?: string;
-      telefone?: string;
-    };
-    //recaptchaToken: string;
+    user: UserRegistered;
+    empresa: Empresa
   }) {
     // ✅ Executa o reCAPTCHA antes de enviar os dados
     const token = await window.grecaptcha.enterprise.execute(
@@ -149,7 +145,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     );
 
     const response = await fetch(
-      `backend/users/register?recaptchaToken=${token}`,
+      `backend/user/register?recaptchaToken=${token}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -203,6 +199,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nome: user.displayName,
         email: user.email,
         isSuperAdmin: data.isSuperAdmin,
+        empresas: data.empresas
       });
     } catch (error) {
       console.error("Erro no login com o Firebase:", error);

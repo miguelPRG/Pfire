@@ -39,6 +39,8 @@ async def rate_limit_middleware(request: Request, call_next):
     return await call_next(request)  # Caso contrário, processa a requisição normalmente
 
 # Middleware para verificar e injetar o JWT no cabeçalho Authorization
+from fastapi.responses import JSONResponse  # Import necessário
+
 @app.middleware("http")
 async def jwt_authentication_middleware(request: Request, call_next):
     """Verifica se a rota requer autenticação e valida o JWT a partir do cookie _fp"""
@@ -52,7 +54,10 @@ async def jwt_authentication_middleware(request: Request, call_next):
     token = request.cookies.get("_fp")
     
     if not token:
-        return HTTPException(status_code=401, content={"message": "Token ausente. Faça login."})
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Token ausente. Faça login."}
+        )
 
     try:
         # Valida e decodifica o token JWT
@@ -60,7 +65,10 @@ async def jwt_authentication_middleware(request: Request, call_next):
         request.state.jwt = user_data  # Armazena os dados do usuário na request
 
     except Exception as e:
-        return HTTPException(status_code=401, content={"message": f"Erro na autenticação: {str(e)}"})
+        return JSONResponse(
+            status_code=401,
+            content={"detail": "Erro na autenticação!"}
+        )
 
     # Passa para a próxima requisição
     response = await call_next(request)
@@ -78,9 +86,9 @@ app.include_router(graphql_router, prefix="/graphql")
 # Manipulação de Exceções
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
-    return HTTPException(
-        status_code=exc.status_code,
-        content={"message": f"Erro: {exc.detail}"},
+    return JSONResponse(
+            status_code=401,
+            content={"detail": exc.detail}
     )
 
 @app.get("/")

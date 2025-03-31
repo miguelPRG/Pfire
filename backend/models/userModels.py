@@ -47,3 +47,11 @@ class RegisterUser(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+    last_login: Optional[datetime] = None
+    
+    @model_validator(mode='before')
+    @classmethod
+    def set_default_values(cls, values):
+        current_time = datetime.now()
+        values["last_login"] = current_time
+        return values
