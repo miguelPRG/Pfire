@@ -31,6 +31,7 @@ except Exception as e:
 db = client["pfire"]  # Substitua pelo nome do banco de dados desejado
 
 # Coleções
-user_collection = db["users"]
-empresa_collection = db["empresa"]
-user_empresa_collection = db["user_empresa"]
+users_collection = db["users"]
+empresas_collection = db["empresas"]
+users_empresas_collection = db["users_empresas"]
+clientes_collection = db["clientes"]

@@ -4,7 +4,7 @@ from bson import ObjectId
 from passlib.context import CryptContext
 from models.userModels import UserCreate, UserUpdate
 from datetime import datetime
-from database import user_collection
+from database import users_collection
 
 routerUser = APIRouter(prefix="/user")
 
@@ -32,7 +32,7 @@ async def create_user(user: UserCreate, request: Request, recaptchaToken: str):
     await validar_recaptcha_token(recaptchaToken, "register")
 
     # 🚀 Verificar se o utilizador com aquele email já existe    
-    existing_user = await user_collection.find_one({"email": user.email})  
+    existing_user = await users_collection.find_one({"email": user.email})  
     if existing_user:
         raise HTTPException(status_code=400, detail="Email já registado.")
 
@@ -41,7 +41,7 @@ async def create_user(user: UserCreate, request: Request, recaptchaToken: str):
 
     # 📄 Formatar os dados e inserir no banco de dados   
     user_data = user.model_dump(by_alias=True)
-    result = await user_collection.insert_one(user_data)
+    result = await users_collection.insert_one(user_data)
 
     if not result.inserted_id:
         raise HTTPException(status_code=400, detail="Erro ao criar conta.")
@@ -62,9 +62,9 @@ async def update_user(user: UserUpdate, request: Request, recaptchaToken: str, i
 
     user_found = None
     if id:
-        user_found = await user_collection.find_one({"_id": ObjectId(id)})
+        user_found = await users_collection.find_one({"_id": ObjectId(id)})
     elif email:
-        user_found = await user_collection.find_one({"email": email})
+        user_found = await users_collection.find_one({"email": email})
 
     if not user_found:
         raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
@@ -84,9 +84,9 @@ async def update_user(user: UserUpdate, request: Request, recaptchaToken: str, i
     
     result = None
     if id:
-        result = await user_collection.update_one({"_id": ObjectId(id)}, {"$set": update_data})
+        result = await users_collection.update_one({"_id": ObjectId(id)}, {"$set": update_data})
     elif email:
-        result = await user_collection.update_one({"email": email}, {"$set": update_data})
+        result = await users_collection.update_one({"email": email}, {"$set": update_data})
 
     if not result.modified_count:
         raise HTTPException(status_code=400, detail="Erro ao atualizar.")
@@ -107,9 +107,9 @@ async def soft_delete_user(request: Request, recaptchaToken: str, id: str = None
 
     result = None
     if id:
-        result = await user_collection.update_one({"_id": ObjectId(id)}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
+        result = await users_collection.update_one({"_id": ObjectId(id)}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
     elif email:
-        result = await user_collection.update_one({"email": email}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
+        result = await users_collection.update_one({"email": email}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
 
     if not result.modified_count:
         raise HTTPException(status_code=400, detail="Usuário não encontrado.")
@@ -130,9 +130,9 @@ async def activate_user(request: Request, recaptchaToken: str, id: str = None, e
 
     result = None
     if id:
-        result = await user_collection.update_one({"_id": ObjectId(id)}, {"$set": {"isActive": True, "updated_at": datetime.now()}})
+        result = await users_collection.update_one({"_id": ObjectId(id)}, {"$set": {"isActive": True, "updated_at": datetime.now()}})
     elif email:
-        result = await user_collection.update_one({"email": email}, {"$set": {"isActive": True, "updated_at": datetime.now()}})
+        result = await users_collection.update_one({"email": email}, {"$set": {"isActive": True, "updated_at": datetime.now()}})
 
     if not result.modified_count:
         raise HTTPException(status_code=400, detail="Usuário não encontrado.")

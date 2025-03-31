@@ -1,12 +1,11 @@
 from fastapi import APIRouter, HTTPException, Request
 from controller.recaptchaValidation import validar_recaptcha_token
 from models.empresaModels import EmpresaUpdate 
-from database import db
+from database import empresas_collection
 from bson import ObjectId
 from datetime import datetime
 
 routerEmpresa = APIRouter(prefix="/empresa")
-collection = db["empresa"]
 
 @routerEmpresa.put("/")
 async def update_empresa(empresa: EmpresaUpdate, request: Request, recaptchaToken: str, id: str = None, nif: str = None):
@@ -23,10 +22,10 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, recaptchaToke
     empresa_found = None
 
     if id:
-        empresa_found = await collection.find_one({"_id": ObjectId(id)})
+        empresa_found = await empresas_collection.find_one({"_id": ObjectId(id)})
     
     elif nif:  
-        empresa_found = await collection.find_one({"nif": nif})
+        empresa_found = await empresas_collection.find_one({"nif": nif})
 
     if not empresa_found:
         raise HTTPException(status_code=404, detail="Empresa não encontrada.")
@@ -37,10 +36,10 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, recaptchaToke
     empresa_data["updated_at"] = datetime.now()
 
     if id:
-        result = await collection.update_one({"_id": ObjectId(id)}, {"$set": empresa_data})
+        result = await empresas_collection.update_one({"_id": ObjectId(id)}, {"$set": empresa_data})
     
     else:
-        result = await collection.update_one({"nif": nif}, {"$set": empresa_data})
+        result = await empresas_collection.update_one({"nif": nif}, {"$set": empresa_data})
 
     if not result.modified_count:
         raise HTTPException(status_code=400, detail="Erro ao atualizar empresa.")
@@ -59,10 +58,10 @@ async def soft_delete_empresa(request: Request, id: str = None, nif: str = None)
     empresa_found = None
 
     if id:
-        empresa_found = await collection.update_one({"_id": ObjectId(id)}, {"$set": {"isActive": False}})
+        empresa_found = await empresas_collection.update_one({"_id": ObjectId(id)}, {"$set": {"isActive": False}})
 
     elif nif:
-        empresa_found = await collection.find_one({"nif": nif}, {"$set": {"isActive": False}})
+        empresa_found = await empresas_collection.find_one({"nif": nif}, {"$set": {"isActive": False}})
     
     if not empresa_found:
         raise HTTPException(status_code=404, detail="Empresa não encontrada.")
