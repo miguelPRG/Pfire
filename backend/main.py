@@ -5,6 +5,8 @@ from routes.Rest.CRUD import userCRUD
 from routes.graphQL.schema import graphql_router
 from controller.clientIP import rate_limit
 from controller.jwtValidation import verify_jwt  # Função para verificar o JWT
+# Middleware para verificar e injetar o JWT no cabeçalho Authorization
+from fastapi.responses import JSONResponse  # Import necessário
 
 app = FastAPI()
 
@@ -37,9 +39,6 @@ async def rate_limit_middleware(request: Request, call_next):
     if response:
         return response  # Retorna a resposta de erro 429 se o limite for excedido
     return await call_next(request)  # Caso contrário, processa a requisição normalmente
-
-# Middleware para verificar e injetar o JWT no cabeçalho Authorization
-from fastapi.responses import JSONResponse  # Import necessário
 
 @app.middleware("http")
 async def jwt_authentication_middleware(request: Request, call_next):

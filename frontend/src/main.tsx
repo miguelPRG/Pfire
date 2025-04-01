@@ -1,5 +1,5 @@
-import * as React from "react";
-import * as ReactDOM from "react-dom/client";
+import React from "react";
+import ReactDOM from "react-dom/client";
 import { AuthProvider } from "./hooks/AuthContext";
 import { TemaProvider } from "./hooks/TemaContext";
 import App from "./components/App";

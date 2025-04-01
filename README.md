@@ -36,13 +36,12 @@ Este projeto utiliza um sistema de autenticação baseado em JWT no `backend`, t
 #### Criar chaves de criptografia
 1. `cd /backend`
 2. `mkdir chaves`
-3. `cd backend`
+3. `cd chaves`
 3. `openssl genpkey -algorithm RSA -aes-256-cbc -out privada.pem`
 4. Crie uma password para proteger a chave privada(deverá ser **EXATAMENTE** igual a **PRIVATE_KEY_PASSWORD** que foi definido no ficheiro `.env`)
 5. `openssl rsa -in privada.pem -pubout -out publica.pem`
 
 ### Como Executar Servidores para Desenvolvimento
-
 **AVISO**: É altamente recomendada a execução dos próximos comandos aqui apresentados, utilizando `WSL`, caso trabalhe numa máquina que não use `Linux`. Lembrando que este é instalado automaticamente com o `Docker`. De seguida, deverá ser criada uma máquina `Linux` para utilizar o `WSL`, como por exemplo `Ubuntu` ou `Debian`.
 
 #### Instalar Ubuntu no WSL:
@@ -57,18 +56,17 @@ Opcionalmente, podemos tornar a máquina `Ubuntu` como a máquina padrão do `WS
 
 **AVISO**: De modo a garantir que não haja nenhum problema no futuro, é altamente recomendada a repetição do passo 4. Assim, a máquina `Ubuntu` ficará sempre atualizada.
 
-#### Executar Frontend:
-1. `cd /frontend`
-2. `npm install`
-3. `npm run dev` 
+#### Ficheiros de Ativação
+Para executar os servidores, foram criados ficheiros de ativação que não só ligam as duas máquinas, como também garantem que são executadas com as dependências na versão mais recente. Seguem-se agora os passas para executar estes ficheiros em cada máquina
 
-#### Executar Backend: 
+##### Executar Backend: 
 1. `cd /backend`
-2. `sudo apt install python3-venv`
-3. `python3 -m venv venv`
-4. `source venv/bin/activate`
-5. `pip install -r requirements.txt`
-6. `uvicorn main:app --reload`
+2. `python3 activateBackend` 
+
+##### Executar Frontend:
+1. `cd /frontend`
+2. `dos2unix activateFrontend.sh`
+3. `./activateFrontend`
 
 ### Como Executar a Aplicação no Geral para Produção
 Para testar como a aplicação irá ser executada em produção, bastará utilizar o seguinte comando no diretório raiz do projeto, assumindo que tenha privilégios de administração e que o docker esteja devidamente instalado.
@@ -77,20 +75,6 @@ Para testar como a aplicação irá ser executada em produção, bastará utiliz
 
 ### Como Instalar Novas Dependências
 Caso sejam adicionadas novas dependências, estas deverão ser comunicadas o mais claramente possível, para que seja possível avaliar se estas podem ser incluídas no projeto e quais versões serão utilizadas.
-
-#### Como Atualizar o Backend
-De tempos a tempos, o ficheiro requirements.txt poderá vir a ser alterado para incluir as novas dependências ou versões.
-
-Caso tenha sido instalada uma nova dependência do python ou uma nova versão de uma já existente com o `pip install`, estas mudanças deverão ser justificadas no `merge request` após o `git push` do novo `commit`. Não esquecendo de gerar o ficheiro `requirements.txt` de novo, desta vez com a lista de dependências do **backend** atualizada:
-
-**AVISO:** Este comando deve ser executado com estrema responsabilidade, somente se forem instaladas/atualizadas dependências cruciais para o bom funcionamento da aplicação. Não execute este comando em caso de instalação de novas dependências, apenas para fins de testagem de código, análise de vulnerabilidades,etc. 
-
-`pip freeze > requirements.txt`
-
-#### Como Atualizar Frontend
-Tal como o **backend**, também existem ficheiros que contêm dependências utilizadas no **frontend**: `package.json` e o `package-lock.json`. Estes ficheiros também podem vir a ser alterados, felizmente estes são atualizados automaticamente sempre que uma nova dependência é atualizada ou instalada. Para obter as dependências atualizadas basta executar o seguinte comando: 
-
-`npm install`
 
 **AVISO:** Em caso de alguma mudança nestes ficheiros: `backend\requirements.txt`, `frontend\package.json`, `frontend\package-lock.json`, por favor justifique a sua alteração. Poderão haver problemas de incompatibilidade em caso de instalações de novas dependências, ou atualizações das mesmas. Assim sendo, estas mudanças deverão ser unicamente enviadas num `commit` reservado apenas para esse efeito. **Não serão aceites commits que contenham mudanças não justificadas nestes ficheiros, para futuras avaliações de `merge requests`**
 
