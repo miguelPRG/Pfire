@@ -105,7 +105,7 @@ function RegisterPage() {
             width: 70,
             height: 70,
             position: "absolute",
-            top: "10px",
+            top: "-30px",
             zIndex: 1,
           }}
         >

@@ -1,9 +1,28 @@
-import {useState} from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Box, Drawer, List, Divider, ListItem, ListItemButton, ListItemIcon, ListItemText, Collapse } from "@mui/material";
-import { Description as DescriptionIcon, Star as StarIcon, Layers as LayersIcon, Info as InfoIcon, ExpandLess, ExpandMore, ArrowForwardIos as ArrowForwardIosIcon, Engineering as EngineeringIcon } from "@mui/icons-material";
-import BusinessIcon from '@mui/icons-material/Business';
-import GroupIcon from '@mui/icons-material/Group';
+import {
+  Box,
+  Drawer,
+  List,
+  Divider,
+  ListItem,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Collapse,
+} from "@mui/material";
+import {
+  Description as DescriptionIcon,
+  Star as StarIcon,
+  Layers as LayersIcon,
+  Info as InfoIcon,
+  ExpandLess,
+  ExpandMore,
+  ArrowForwardIos as ArrowForwardIosIcon,
+  Engineering as EngineeringIcon,
+} from "@mui/icons-material";
+import BusinessIcon from "@mui/icons-material/Business";
+import GroupIcon from "@mui/icons-material/Group";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -56,7 +75,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             <ListItem disablePadding>
               <ListItemButton sx={{ width: "90%", pl: 4 }}>
                 <ListItemIcon>
-                  <ArrowForwardIosIcon sx={{ marginRight: 2, fontSize: "small" }} />
+                  <ArrowForwardIosIcon
+                    sx={{ marginRight: 2, fontSize: "small" }}
+                  />
                 </ListItemIcon>
                 <ListItemText primary="Extintores" />
               </ListItemButton>
@@ -79,7 +100,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             <ListItem disablePadding>
               <ListItemButton sx={{ width: "90%", pl: 4 }}>
                 <ListItemIcon>
-                  <ArrowForwardIosIcon sx={{ marginRight: 2, fontSize: "small" }} />
+                  <ArrowForwardIosIcon
+                    sx={{ marginRight: 2, fontSize: "small" }}
+                  />
                 </ListItemIcon>
                 <ListItemText primary="Extintores" />
               </ListItemButton>
@@ -97,16 +120,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         </ListItem>
         <ListItem disablePadding>
           <ListItemButton onClick={() => handleNavigation("/EmpresasPage")}>
-            <ListItemIcon >
+            <ListItemIcon>
               <BusinessIcon />
             </ListItemIcon>
             <ListItemText primary="Empresas" />
           </ListItemButton>
         </ListItem>
         <ListItem disablePadding>
-          <ListItemButton onClick={() => handleNavigation("/ClientManagementTable")}>
-            <ListItemIcon >
-            <GroupIcon />
+          <ListItemButton
+            onClick={() => handleNavigation("/ClientManagementTable")}
+          >
+            <ListItemIcon>
+              <GroupIcon />
             </ListItemIcon>
             <ListItemText primary="Clientes" />
           </ListItemButton>
@@ -117,7 +142,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       <Box sx={{ display: "flex", flexDirection: "column" }}>
         {/* Utilizadores */}
         <ListItem disablePadding>
-          <ListItemButton onClick={() => handleNavigation("/UserManagementTable")}>
+          <ListItemButton
+            onClick={() => handleNavigation("/UserManagementTable")}
+          >
             <ListItemIcon>
               <EngineeringIcon />
             </ListItemIcon>
@@ -141,7 +168,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
     <Drawer
       open={isOpen}
       onClose={toggleSidebar}
-      sx={{ width: 250, flexShrink: 0, '& .MuiDrawer-paper': { width: 250 } }}>
+      sx={{ width: 250, flexShrink: 0, "& .MuiDrawer-paper": { width: 250 } }}
+    >
       {DrawerList}
     </Drawer>
   );

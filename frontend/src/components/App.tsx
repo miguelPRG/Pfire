@@ -20,8 +20,10 @@ const CadastroEmpresa = lazy(() => import("../pages/CadastroEmpresaPage"));
 const Home = lazy(() => import("../pages/HomePage"));
 const UserManagementTable = lazy(() => import("../pages/UserManagementTable"));
 const EmpresasPage = lazy(() => import("../pages/EmpresasPage"));
-const ClientManagementTable = lazy(() => import("../pages/ClientManagementTable"));
-
+const ClientManagementTable = lazy(
+  () => import("../pages/ClientManagementTable"),
+);
+const AddNewClient = lazy(() => import("../pages/AddNewClientPage"));
 
 interface RouteProps {
   user: unknown;
@@ -86,9 +88,15 @@ function App() {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+      <Box
+        display="flex"
+        justifyContent="center"
+        alignItems="center"
+        minHeight="100vh"
+      >
         <CircularProgress />
-      </Box>    );
+      </Box>
+    );
   }
 
   return (
@@ -96,14 +104,52 @@ function App() {
       <Suspense fallback={<CircularProgress />}>
         <Layout>
           <Routes>
-            <Route path="/login" element={<PublicRoute user={user} element={<Login />} />} />
-            <Route path="/register" element={<PublicRoute user={user} element={<Register />} />} />
-            <Route path="/cadastro-empresa" element={<PublicRoute user={user} element={<CadastroEmpresa />} />} />
-            <Route path="/" element={<ProtectedRoute user={user} element={<Home />} />} />
-            <Route path="/UserManagementTable" element={<ProtectedRoute user={user} element={<UserManagementTable />} />} />
-            <Route path="/ClientManagementTable" element={<ProtectedRoute user={user} element={<ClientManagementTable />} />} />
-      
-            <Route path="/EmpresasPage" element={<ProtectedRoute user={user} element={<EmpresasPage />} />} />
+            <Route
+              path="/login"
+              element={<PublicRoute user={user} element={<Login />} />}
+            />
+            <Route
+              path="/register"
+              element={<PublicRoute user={user} element={<Register />} />}
+            />
+            <Route
+              path="/cadastro-empresa"
+              element={
+                <PublicRoute user={user} element={<CadastroEmpresa />} />
+              }
+            />
+            <Route
+              path="/"
+              element={<ProtectedRoute user={user} element={<Home />} />}
+            />
+            <Route
+              path="/UserManagementTable"
+              element={
+                <ProtectedRoute user={user} element={<UserManagementTable />} />
+              }
+            />
+            <Route
+              path="/ClientManagementTable"
+              element={
+                <ProtectedRoute
+                  user={user}
+                  element={<ClientManagementTable />}
+                />
+              }
+            />
+            <Route
+              path="/AddNewClientPage"
+              element={
+                <ProtectedRoute user={user} element={<AddNewClient />} />
+              }
+            />
+
+            <Route
+              path="/EmpresasPage"
+              element={
+                <ProtectedRoute user={user} element={<EmpresasPage />} />
+              }
+            />
             <Route path="*" element={<Navigate to={user ? "/" : "/login"} />} />
           </Routes>
         </Layout>

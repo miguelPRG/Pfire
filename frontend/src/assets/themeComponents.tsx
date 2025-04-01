@@ -9,7 +9,6 @@ const commonComponents: Components = {
         border: "none", // 🔹 Remove qualquer borda global
         boxShadow: "none", // 🔹 Remove sombras que possam criar efeito de borda
         "& .MuiBox-root": {
-          padding: "16px",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -17,6 +16,16 @@ const commonComponents: Components = {
       },
     },
   },
+
+  MuiContainer: {
+    styleOverrides: {
+      root:{
+        padding: "10px",
+        border: "0"
+      }
+    }
+  },
+
   MuiOutlinedInput: {
     styleOverrides: {
       root: {
@@ -40,6 +49,7 @@ const commonComponents: Components = {
         padding: "10px 20px",
         fontWeight: "bold",
         transition: "0.3s",
+        marginBottom: "10px",
         "&:hover": {
           backgroundColor: "#1565C0",
         },
@@ -54,7 +64,8 @@ const commonComponents: Components = {
         borderRadius: "15px", // 🔹 Remove qualquer borda arredondada da página
         padding: "14px",
         width: "100%",
-        margin: "0 auto",
+        margin: "auto",
+        marginBottom: "10px",
         boxShadow: "none", // 🔹 Remove qualquer sombra desnecessária
       },
     },
@@ -67,8 +78,7 @@ const commonComponents: Components = {
     },
     styleOverrides: {
       root: {
-        borderRadius: "0px",
-        marginBottom: "0px",
+        marginBottom: "10px",
         "&:hover .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline": {
           borderColor: "#1976D2",
         },

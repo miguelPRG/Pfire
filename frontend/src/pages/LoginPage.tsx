@@ -92,11 +92,12 @@ function LoginPage() {
         <Box
           sx={{
             backgroundColor: "primary.main",
+            
             borderRadius: "50%",
             width: 70, // Tamanho fixo para garantir que seja circular
             height: 70,
             position: "absolute",
-            top: "10px", // Move para cima do Paper
+            top: "-30px", // Move para cima do Paper
             zIndex: 1, // Garante que fique sobre o Paper
           }}
         >
@@ -263,7 +264,7 @@ function LoginPage() {
           </Box>
           <Typography
             variant="h4"
-            sx={{ marginBottom: 0.5, fontSize: "0.900rem" }}
+            sx={{ fontSize: "0.900rem" }}
           >
             Não tens uma conta?{" "}
             <Link
