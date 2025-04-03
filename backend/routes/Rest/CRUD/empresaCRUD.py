@@ -6,6 +6,7 @@ from bson import ObjectId
 
 routerEmpresa = APIRouter(prefix="/empresa")
 
+#Atualizar Empresa
 @routerEmpresa.put("/")
 async def update_empresa(empresa: EmpresaUpdate, request: Request, recaptchaToken: str, id: str = None, nif: str = None):
 
@@ -18,8 +19,6 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, recaptchaToke
     # Validate the reCAPTCHA token
     await validar_recaptcha_token(recaptchaToken, "update")
 
-    empresa_found = None
-
     if id:
         empresa_found = await empresas_collection.find_one({"_id": ObjectId(id), "isActive": True})
     
@@ -30,19 +29,22 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, recaptchaToke
         raise HTTPException(status_code=404, detail="Empresa não encontrada.")
     
     #Caso não seja super administrado. verifica se o utilizar é administrado daquela empresa
+
     if not jwt["isSuperAdmin"]:
-        user_empresa = users_empresas_collection.find_one({"empresa_id":empresa_found["_id"], "user_id": ObjectId(jwt["id"]),"role": "admin","isActive": True})
+
+        user_id = ObjectId(jwt["id"])
+        user_empresa = users_empresas_collection.find_one({"empresa_id":empresa_found["_id"], "user_id": user_id,"role": "admin","isActive": True})
 
         if not user_empresa:
             raise HTTPException(status_code=403, detail="Acesso negado!")
     
-    empresa_data = {k: v for k, v in empresa.model_dump(exclude_unset=True).items()}
+    empresa_data = empresa.model_dump(exclude_unset=True)
     
-    empresa_data["updated_by"] = ObjectId(jwt["id"])
+    empresa_data["updated_by"] = user_id
 
-    result = await empresas_collection.update_one({"_id": empresa_found["_id"]})
+    result = await empresas_collection.update_one({"_id": empresa_found["_id"]}, {"$set": empresa_data})
 
     if not result.modified_count:
         raise HTTPException(status_code=400, detail="Erro ao atualizar empresa.")
     
-    return empresa_data
+    return {"message": "Empresa Criada com Sucesso!"}

@@ -72,9 +72,9 @@ async def login_oauth(request: Request, firebase_token: str):
 
 # 🚀 Login via Email e Senha
 @routerUser.post("/login")
-async def login(user: UserLogin, request:Request, recaptchaToken: str):
+async def login(user: UserLogin, request:Request, recaptchaToken: str = None):
     # Validate the reCAPTCHA token
-    await validar_recaptcha_token(recaptchaToken, "login")
+    #await validar_recaptcha_token(recaptchaToken, "login")
 
     db_user = await users_collection.find_one({"email": user.email})
 
@@ -84,19 +84,7 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str):
     if not db_user.get("isActive", True):
         raise HTTPException(status_code=403, detail="Esta conta foi desativada.")
 
-    user_empresa_cursor = users_empresas_collection.find({"user_id": db_user["_id"]})
-    user_empresas = []
-
-    async for user_empresa in user_empresa_cursor:
-        empresa = await empresas_collection.find_one({"_id": user_empresa["empresa_id"]})
-        if empresa:
-            user_empresas.append({
-                "id": str(empresa["_id"]),
-                "empresa_nome": empresa["nome"],
-                "role": user_empresa["role"]
-            })
-
-    token = generate_jwt(str(db_user["_id"]),db_user["nome"], db_user["email"], db_user["isSuperAdmin"],user_empresas)
+    token = generate_jwt(str(db_user["_id"]),db_user["nome"], db_user["email"], db_user["isSuperAdmin"])
 
     response = JSONResponse({"nome": db_user["nome"], "email": db_user["email"], "isSuperAdmin": db_user["isSuperAdmin"]})
     response.set_cookie(key="_fp", value=token, httponly=True, samesite="Strict")
@@ -167,7 +155,7 @@ async def auth_user(request: Request):
 
     jwt = getattr(request.state, "jwt", None)
 
-    return {"nome": jwt["nome"], "email": jwt["email"], "isSuperAdmin": jwt["isSuperAdmin"], "empresas": jwt["empresas"]}
+    return {"nome": jwt["nome"], "email": jwt["email"], "isSuperAdmin": jwt["isSuperAdmin"]}
 
 # 🚀 Logout
 @routerUser.post("/logout")

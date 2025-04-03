@@ -55,7 +55,7 @@ async def jwt_authentication_middleware(request: Request, call_next):
     if not token:
         return JSONResponse(
             status_code=401,
-            content={"detail": "Token ausente. Faça login."}
+            content={"message": "Acesso Negado!"}
         )
 
     try:

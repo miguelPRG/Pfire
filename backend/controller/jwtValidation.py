@@ -56,7 +56,7 @@ def verify_jwt(token):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro desconhecido: {str(e)}")
 
-def generate_jwt(id: str,user_name: str,user_email: str, is_super_admin: bool,empresas: list):
+def generate_jwt(id: str,user_name: str,user_email: str, is_super_admin: bool):
     if is_super_admin:
         expire_delta = SUPER_ADMIN_DAYS * 24 * 60 * 60  # Expiração em segundos
     else:
@@ -70,7 +70,6 @@ def generate_jwt(id: str,user_name: str,user_email: str, is_super_admin: bool,em
         "nome": user_name,
         "email": user_email,
         "isSuperAdmin": is_super_admin,
-        "empresas": empresas,
         "iat": datetime.now().timestamp(),  # A data de criação do token
         "exp": expire  # A data de expiração corrigida
     }

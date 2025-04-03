@@ -11,7 +11,7 @@ class ClienteCreate(BaseModel):
     cidade: str
     morada: str
     codigo_postal: str
-    empresa_id: str 
+    empresa_index: int 
     created_by: Optional[ObjectId] = None # Será definido na função que cria o cliente
     created_at: datetime = Field(default_factory=datetime.now)
     updated_by: Optional[ObjectId] = None # Será definido na função que cria o cliente

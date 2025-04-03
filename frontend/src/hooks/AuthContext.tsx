@@ -13,7 +13,6 @@ interface UserLoggedIn {
   nome: string;
   email: string;
   isSuperAdmin: boolean;
-  empresas: any[];
 }
 
 export interface UserRegistered{
@@ -51,6 +50,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserLoggedIn | null>(null);
+  //const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [loading, setLoading] = useState(true); // Inicializa como true até a verificação de autenticação ser concluída
 
   useEffect(() => {
@@ -70,10 +70,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             nome: data.nome,
             email: data.email,
             isSuperAdmin: data.isSuperAdmin,
-            empresas: data.empresas
           });
 
           console.log(user)
+
+          /*Falta apenas uma coisa. Depois do user fazer login, precisamos de fazer uma consulta em GraphQL e guardar em cache
+          a lista de empresas associadas ao user. Caso seja super Administrador, deverão ser retornadas todas em empresas*/
+
         } else {
           setUser(null);
         }
@@ -125,7 +128,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nome: data.nome,
         email: data.email,
         isSuperAdmin: data.isSuperAdmin,
-        empresas: data.empresas
       });
     } catch (error) {
       console.error("Erro no login:", error);
@@ -199,7 +201,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nome: user.displayName,
         email: user.email,
         isSuperAdmin: data.isSuperAdmin,
-        empresas: data.empresas
       });
     } catch (error) {
       console.error("Erro no login com o Firebase:", error);

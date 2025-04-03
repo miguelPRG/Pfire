@@ -24,7 +24,7 @@ class EmpresaCreate(BaseModel):
 
         values['created_at'] = current_time
         values['updated_at'] = current_time
-        values['isActive'] = False  # Corrigindo "isActivated" para "isActive"
+        values['isActive'] = True  # Corrigindo "isActivated" para "isActive"
 
         return values
 

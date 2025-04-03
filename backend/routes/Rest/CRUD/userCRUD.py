@@ -3,8 +3,10 @@ from controller.recaptchaValidation import validar_recaptcha_token
 from bson import ObjectId
 from passlib.context import CryptContext
 from models.userModels import UserCreate, UserUpdate
+from models.userEmpresaModels import UserEmpresaCreate
 from datetime import datetime
-from database import users_collection, users_empresas_collection
+from database import users_collection, users_empresas_collection, empresas_collection
+from asyncio import gather
 
 routerUser = APIRouter(prefix="/user")
 
@@ -19,39 +21,8 @@ pwd_context = CryptContext(
 
 # 🚀 Administrador Criar Novo Usuário
 @routerUser.post("/")
-async def create_user(user: UserCreate, request: Request, recaptchaToken: str):
-    """ Rota protegida para criação de usuários - Apenas Super Admins podem criar novos usuários """
-
-    # 📌 Obtém os dados do usuário autenticado do JWT
-    jwt = getattr(request.state, "jwt", None)
-
-    if not jwt:
-        raise HTTPException(status_code=403, detail="Acesso negado.")
-
-    # ✅ Valida o reCAPTCHA token
-    await validar_recaptcha_token(recaptchaToken, "register")
-
-    # 🚀 Verificar se o utilizador com aquele email já existe    
-    
-    
-    
-    existing_user = await users_collection.find_one({"email": user.email})  
-    if existing_user:
-        raise HTTPException(status_code=400, detail="Email já registado.")
-
-    # 🔐 Criptografar password
-    user.password = pwd_context.hash(user.password)
-
-    # 📄 Formatar os dados e inserir no banco de dados   
-    user_data = user.model_dump(by_alias=True)
-    result = await users_collection.insert_one(user_data)
-
-    if not result.inserted_id:
-        raise HTTPException(status_code=400, detail="Erro ao criar conta.")
-
-
-
-    return {"message": "Usuário criado com sucesso!"}
+async def create_user(userCreate: UserCreate, request: Request, recaptchaToken: str):
+   pass
 
 @routerUser.put("/")
 async def update_user(user: UserUpdate, request: Request, recaptchaToken: str, id: str = None, email: str = None):
@@ -107,14 +78,17 @@ async def soft_delete_user(request: Request, recaptchaToken: str, id: str = None
 
     jwt = getattr(request.state, "jwt", None)
     
-    if not jwt or not jwt["isSuperAdmin"]:
-        raise HTTPException(status_code=403, detail="Acesso negado!")
+    if jwt["user_id"] != id and jwt["email"]!=email and not jwt["isSuperAdmin"]:
+        raise HTTPException(status_code=403, detail="Acesso negado! Não tens autorização para ativar utilizadores!")
 
-    result = None
     if id:
         result = await users_collection.update_one({"_id": ObjectId(id)}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
+
     elif email:
         result = await users_collection.update_one({"email": email}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
+    
+    else:
+        raise HTTPException(status_code=400, detail="Não foi inserido nada que identifique o utilizador que queres ativar")
 
     if not result.modified_count:
         raise HTTPException(status_code=400, detail="Usuário não encontrado.")
@@ -130,16 +104,19 @@ async def activate_user(request: Request, recaptchaToken: str, id: str = None, e
 
     jwt = getattr(request.state, "jwt", None)
     
-    if not jwt or not jwt["isSuperAdmin"]:
-        raise HTTPException(status_code=403, detail="Acesso negado!")
+    if jwt["user_id"] != id and jwt["email"]!=email and not jwt["isSuperAdmin"]:
+        raise HTTPException(status_code=403, detail="Acesso negado! Não tens autorização para ativar utilizadores!")
 
-    result = None
     if id:
-        result = await users_collection.update_one({"_id": ObjectId(id)}, {"$set": {"isActive": True, "updated_at": datetime.now()}})
+        result = await users_collection.update_one({"_id": ObjectId(id)},{"$set":{"isActive": True, "update_at": datetime.now()}})
+    
     elif email:
-        result = await users_collection.update_one({"email": email}, {"$set": {"isActive": True, "updated_at": datetime.now()}})
-
+        result = await users_collection.update_one({"email": email},{"$set":{"isActive": True, "update_at": datetime.now()}})
+    
+    else:
+        raise HTTPException(status_code=400, detail="Não foi inserido nada que identifique o utilizador que queres ativar")
+    
     if not result.modified_count:
-        raise HTTPException(status_code=400, detail="Usuário não encontrado.")
+        raise HTTPException(status_code=400, detail="Erro ao ativar user")
 
-    return {"message": "Utilizador ativado!"}
+    return {"message": "Utilizador ativa com sucesso"}
