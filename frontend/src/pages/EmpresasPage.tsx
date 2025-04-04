@@ -122,8 +122,7 @@ export default function UserManagementTable() {
   const [openEditModal, setOpenEditModal] = useState<boolean>(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const theme = useTheme();
-  const [openConfirmDialog, setOpenConfirmDialog] =
-    useState<boolean>(false);
+  const [openConfirmDialog, setOpenConfirmDialog] = useState<boolean>(false);
 
   const handleDeleteClick = () => {
     setOpenConfirmDialog(true);

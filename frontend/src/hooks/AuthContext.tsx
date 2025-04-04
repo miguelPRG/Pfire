@@ -15,14 +15,14 @@ interface UserLoggedIn {
   isSuperAdmin: boolean;
 }
 
-export interface UserRegistered{
-  nome: string | undefined,
-  email: string | undefined,
+export interface UserRegistered {
+  nome: string | undefined;
+  email: string | undefined;
   telefone: string | undefined;
   password: string | undefined;
 }
 
-export interface Empresa{
+export interface Empresa {
   nome: string | undefined;
   nif: string | undefined;
   localidade: string | undefined;
@@ -37,8 +37,8 @@ interface AuthContextType {
   login: (email: string, pwd: string) => void;
 
   registerUser: (payload: {
-    user: UserRegistered,
-    empresa: Empresa
+    user: UserRegistered;
+    empresa: Empresa;
   }) => Promise<void>;
 
   loginWithOAuth: (provider: "google" | "facebook" | "microsoft") => void;
@@ -77,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           /*Falta apenas uma coisa. Depois do user fazer login, precisamos de fazer uma consulta em GraphQL e guardar em cache
           a lista de empresas associadas ao user. Caso seja super Administrador, deverão ser retornadas todas em empresas*/
 
+          console.log(user);
         } else {
           setUser(null);
         }
@@ -136,7 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
   async function registerUser(payload: {
     user: UserRegistered;
-    empresa: Empresa
+    empresa: Empresa;
   }) {
     // ✅ Executa o reCAPTCHA antes de enviar os dados
     const token = await window.grecaptcha.enterprise.execute(

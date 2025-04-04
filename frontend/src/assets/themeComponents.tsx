@@ -19,11 +19,11 @@ const commonComponents: Components = {
 
   MuiContainer: {
     styleOverrides: {
-      root:{
+      root: {
         padding: "10px",
-        border: "0"
-      }
-    }
+        border: "0",
+      },
+    },
   },
 
   MuiOutlinedInput: {

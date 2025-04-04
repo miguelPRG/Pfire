@@ -92,7 +92,7 @@ function LoginPage() {
         <Box
           sx={{
             backgroundColor: "primary.main",
-            
+
             borderRadius: "50%",
             width: 70, // Tamanho fixo para garantir que seja circular
             height: 70,
@@ -262,10 +262,7 @@ function LoginPage() {
               />
             </Button>
           </Box>
-          <Typography
-            variant="h4"
-            sx={{ fontSize: "0.900rem" }}
-          >
+          <Typography variant="h4" sx={{ fontSize: "0.900rem" }}>
             Não tens uma conta?{" "}
             <Link
               to="/register"

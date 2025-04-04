@@ -451,8 +451,8 @@ function RegisterPage() {
 
           <DialogContent>
             <Typography sx={{ mt: 1 }}>
-             O teu registo foi concluído. Por favor, verifica o teu email
-              para ativar a conta.
+              O teu registo foi concluído. Por favor, verifica o teu email para
+              ativar a conta.
             </Typography>
           </DialogContent>
 

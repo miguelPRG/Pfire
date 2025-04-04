@@ -1,4 +1,4 @@
-import {useState} from "react";
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -69,9 +69,7 @@ export default function ClientManagementTable() {
   ]);
 
   const [openEditModal, setOpenEditModal] = useState(false);
-  const [selectedClient, setSelectedClient] = useState<Cliente | null>(
-    null,
-  );
+  const [selectedClient, setSelectedClient] = useState<Cliente | null>(null);
 
   const handleChangePage = (_: unknown, newPage: number) => setPage(newPage);
   const handleChangeRowsPerPage = (e: any) => {
