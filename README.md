@@ -61,12 +61,12 @@ Para executar os servidores, foram criados ficheiros de ativação que não só 
 
 ##### Executar Backend: 
 1. `cd /backend`
-2. `python3 activateBackend` 
+2. `python3 startBackend.py` 
 
 ##### Executar Frontend:
 1. `cd /frontend`
 2. `dos2unix activateFrontend.sh`
-3. `./activateFrontend`
+3. `./startFrontend`
 
 ### Como Executar a Aplicação no Geral para Produção
 Para testar como a aplicação irá ser executada em produção, bastará utilizar o seguinte comando no diretório raiz do projeto, assumindo que tenha privilégios de administração e que o docker esteja devidamente instalado.

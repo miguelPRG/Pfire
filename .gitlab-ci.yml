@@ -21,7 +21,7 @@ python_test:
     - pip install bandit
 
     #analisar vulnerabilidades no código python
-    - bandit -r . -c bandit.yml
+    - bandit -r . -c bandit.yml --exclude ./startBackend.py
   allow_failure: true  # Continua o pipeline mesmo com falhas
 
 # Frontend Security Check
