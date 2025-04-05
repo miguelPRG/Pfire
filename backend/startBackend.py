@@ -1,6 +1,5 @@
 import os
 import subprocess
-import sys
 import platform
 import venv
 
@@ -10,26 +9,54 @@ def create_virtual_env():
     venv.create("venv", with_pip=True)
 
 def main():
-    # Verifica se a pasta venv existe
-    if os.path.isdir("venv"):
-        print("Ativando ambiente virtual existente...")
-    else:
-        create_virtual_env()
-
     # Caminho para o interpretador Python dentro do ambiente virtual
     if platform.system() == "Windows":
         venv_python = os.path.join("venv", "Scripts", "python.exe")
     else:
         venv_python = os.path.join("venv", "bin", "python")
 
-    # Atualizar pip
-    subprocess.run([venv_python, "-m", "pip", "install", "--upgrade", "pip"], check=True, shell=False)
+    # Verifica se a pasta venv existe
+    if os.path.isdir("venv"):
+        print("Ativando ambiente virtual existente...")
 
-    # Instalar as dependências e remover pacotes não listados em requirements.txt, exceto pip
-    subprocess.run([venv_python, "-m", "pip", "install", "--no-deps", "-r", "requirements.txt"], check=True, shell=False)
+        # Desinstalar tudo o que não está no requirements.txt
+        installed_packages = subprocess.run(
+            [venv_python, "-m", "pip", "freeze"],
+            capture_output=True,
+            text=True,
+            check=True
+        ).stdout.splitlines()
+
+        required_packages = []
+        if os.path.isfile("requirements.txt"):
+            with open("requirements.txt", "r") as req_file:
+                required_packages = [line.split("==")[0] for line in req_file if line.strip()]
+
+        packages_to_remove = set(pkg.split("==")[0] for pkg in installed_packages) - set(required_packages)
+
+        if packages_to_remove:
+            print(f"Removendo pacotes não listados em requirements.txt: {', '.join(packages_to_remove)}")
+            subprocess.run(
+                [venv_python, "-m", "pip", "uninstall", "-y", *packages_to_remove],
+                check=True
+            )
+    else:
+        create_virtual_env()
+
+    # Atualizar pip
+    print("Atualizando o pip...")
+    subprocess.run([venv_python, "-m", "pip", "install", "--upgrade", "pip"], check=True)
+
+    # Instalar as dependências do requirements.txt
+    if os.path.isfile("requirements.txt"):
+        print("Instalando dependências do requirements.txt...")
+        subprocess.run([venv_python, "-m", "pip", "install", "-r", "requirements.txt"], check=True)
+    else:
+        print("Arquivo requirements.txt não encontrado. Nenhuma dependência será instalada.")
 
     # Executar o Uvicorn usando o interpretador do ambiente virtual
-    subprocess.run([venv_python, "-m", "uvicorn", "main:app", "--reload"], check=True, shell=False)
+    print("Iniciando o servidor Uvicorn...")
+    subprocess.run([venv_python, "-m", "uvicorn", "main:app", "--reload"], check=True)
 
 if __name__ == "__main__":
     main()
