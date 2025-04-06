@@ -32,9 +32,6 @@ async def update_user(user: UserUpdate, request: Request, recaptchaToken: str, i
 
     # Validar o reCAPTCHA token
     await validar_recaptcha_token(recaptchaToken, "update")
-    
-    if not jwt:
-        raise HTTPException(status_code=401, detail="Token JWT inválido ou não fornecido.")
 
     user_found = None
     if id:
@@ -67,7 +64,7 @@ async def update_user(user: UserUpdate, request: Request, recaptchaToken: str, i
     if not result.modified_count:
         raise HTTPException(status_code=400, detail="Erro ao atualizar.")
 
-    return {"message": "Utilizador atualizado!"}
+    return {"message": "Utilizador atualizado com sucesso!"}
 
 # 🚀 Apagar Usuário
 @routerUser.delete("/")
@@ -79,7 +76,7 @@ async def soft_delete_user(request: Request, recaptchaToken: str, id: str = None
     jwt = getattr(request.state, "jwt", None)
     
     if jwt["user_id"] != id and jwt["email"]!=email and not jwt["isSuperAdmin"]:
-        raise HTTPException(status_code=403, detail="Acesso negado! Não tens autorização para ativar utilizadores!")
+        raise HTTPException(status_code=403, detail="Acesso negado! Não tens autorização para apagar utilizadores!")
 
     if id:
         result = await users_collection.update_one({"_id": ObjectId(id)}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
@@ -88,12 +85,12 @@ async def soft_delete_user(request: Request, recaptchaToken: str, id: str = None
         result = await users_collection.update_one({"email": email}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
     
     else:
-        raise HTTPException(status_code=400, detail="Não foi inserido nada que identifique o utilizador que queres ativar")
+        raise HTTPException(status_code=400, detail="Não foi inserido nada que identifique o utilizador.")
 
     if not result.modified_count:
-        raise HTTPException(status_code=400, detail="Usuário não encontrado.")
+        raise HTTPException(status_code=409, detail="Erro ao apagar utilizador.")
 
-    return {"message": "Utilizador desativado!"}
+    return {"message": "Utilizador desativado com sucesso!"}
 
 # 🚀 Ativar Usuário
 @routerUser.put("/activate")
@@ -117,6 +114,6 @@ async def activate_user(request: Request, recaptchaToken: str, id: str = None, e
         raise HTTPException(status_code=400, detail="Não foi inserido nada que identifique o utilizador que queres ativar")
     
     if not result.modified_count:
-        raise HTTPException(status_code=400, detail="Erro ao ativar user")
+        raise HTTPException(status_code=409, detail="Erro ao ativar utilizador.")
 
-    return {"message": "Utilizador ativa com sucesso"}
+    return {"message": "Utilizador ativa com sucesso!"}

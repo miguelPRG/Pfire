@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Field, model_validator
 from datetime import datetime
-from bson import ObjectId,Binary
-from typing import Optional
+from typing import Optional, Any
 
 class EmpresaCreate(BaseModel):
     nome: str
@@ -10,12 +9,14 @@ class EmpresaCreate(BaseModel):
     morada: str
     codigo_postal: str = Field(max_length=8)
     telefone: str
-    logo: Optional[Binary] = None
-    created_by: Optional[ObjectId] = None # Id do usuário que está criando a empresa será o mesmo que está criando a conta
+    logo: Optional[bytes] = None
+    created_by: Optional[Any] = None  # Pode ser um ID ou outro tipo de referência
     created_at: datetime = Field(default_factory=datetime.now)
-    updated_by: Optional[ObjectId] = None # Id do usuário que está atualizando a empresa erá o mesmo que está criando a conta
+    updated_by: Optional[Any] = None  # Pode ser um ID ou outro tipo de referência
     updated_at: datetime = Field(default_factory=datetime.now)
     isActive: bool
+
+    """Os campos created_by e updated_by são preenchidos automaticamente com a data e hora atual quando o objeto é criado."""
 
     @model_validator(mode='before')
     @classmethod
@@ -28,9 +29,6 @@ class EmpresaCreate(BaseModel):
 
         return values
 
-    class Config():
-        arbitrary_types_allowed=True
-
 class EmpresaUpdate(BaseModel):
     nome: Optional[str] = None
     nif: Optional[str] = None
@@ -38,8 +36,7 @@ class EmpresaUpdate(BaseModel):
     morada: Optional[str] = None
     codigo_postal: Optional[str] = None
     telefone: Optional[str] = None
-    logo: Optional[Binary] = None
-    updated_by: Optional[ObjectId] = None # Id do usuário que está atualizando a empresa
+    logo: Optional[bytes] = None
     updated_at: datetime = Field(default_factory=datetime.now)
 
     @model_validator(mode='before')
@@ -50,6 +47,4 @@ class EmpresaUpdate(BaseModel):
         values['updated_at'] = current_time
 
         return values
-
-    class Config():
-        arbitrary_types_allowed=True
+    

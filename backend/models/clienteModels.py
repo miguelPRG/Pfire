@@ -1,7 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field, model_validator
 from datetime import datetime
-from typing import Optional
-from bson import ObjectId
+from typing import Optional, Any
 
 class ClienteCreate(BaseModel):
     nome: str
@@ -12,11 +11,13 @@ class ClienteCreate(BaseModel):
     morada: str
     codigo_postal: str
     empresa_index: int 
-    created_by: Optional[ObjectId] = None # Será definido na função que cria o cliente
     created_at: datetime = Field(default_factory=datetime.now)
-    updated_by: Optional[ObjectId] = None # Será definido na função que cria o cliente
+    created_by: Optional[Any] = None 
     updated_at: datetime = Field(default_factory=datetime.now)
+    updated_by: Optional[Any] = None
     isActive: bool
+
+    """Os campos created_by e updated_by são preenchidos automaticamente com a data e hora atual quando o objeto é criado."""
 
     @model_validator(mode='before')
     @classmethod
@@ -26,9 +27,6 @@ class ClienteCreate(BaseModel):
         values["created_at"] = current_time
         values["updated_at"] = current_time
         values["isActive"] = False
-    
-    class Config():
-        arbitrary_types_allowed=True
 
 class ClienteUpdate(BaseModel):
     nome: Optional[str]
@@ -38,9 +36,7 @@ class ClienteUpdate(BaseModel):
     cidade: Optional[str]
     morada: Optional[str]
     codigo_postal: Optional[str]
-    updated_by: Optional[ObjectId] = None 
     updated_at: datetime = Field(default_factory=datetime.now)
-    isActive: bool
 
     @model_validator(mode='before')
     @classmethod
@@ -48,6 +44,3 @@ class ClienteUpdate(BaseModel):
         current_time = datetime.now()
 
         values["updated_at"] = current_time
-    
-    class Config():
-        arbitrary_types_allowed=True

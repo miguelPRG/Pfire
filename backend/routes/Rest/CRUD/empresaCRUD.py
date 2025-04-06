@@ -3,7 +3,6 @@ from controller.recaptchaValidation import validar_recaptcha_token
 from models.empresaModels import EmpresaUpdate 
 from database import empresas_collection, users_empresas_collection
 from bson import ObjectId
-
 routerEmpresa = APIRouter(prefix="/empresa")
 
 #Atualizar Empresa
@@ -30,9 +29,10 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, recaptchaToke
     
     #Caso não seja super administrado. verifica se o utilizar é administrado daquela empresa
 
+    user_id = ObjectId(jwt["user_id"])
+
     if not jwt["isSuperAdmin"]:
 
-        user_id = ObjectId(jwt["id"])
         user_empresa = users_empresas_collection.find_one({"empresa_id":empresa_found["_id"], "user_id": user_id,"role": "admin","isActive": True})
 
         if not user_empresa:

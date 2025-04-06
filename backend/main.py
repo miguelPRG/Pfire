@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from routes.Rest.services import usersServices
-from routes.Rest.CRUD import userCRUD
+from routes.Rest.CRUD import userCRUD, empresaCRUD, clienteCRUD
 from routes.graphQL.schema import graphql_router
 from controller.clientIP import rate_limit
 from controller.jwtValidation import verify_jwt  # Função para verificar o JWT
@@ -79,6 +79,11 @@ async def jwt_authentication_middleware(request: Request, call_next):
 app.include_router(usersServices.routerUser)
 app.include_router(userCRUD.routerUser)
 
+#Rotas da empresa (REST)
+app.include_router(empresaCRUD.routerEmpresa)
+
+#Rotas do cliente (REST)
+
 # Rotas GraphQL
 app.include_router(graphql_router, prefix="/graphql")
 
@@ -86,8 +91,8 @@ app.include_router(graphql_router, prefix="/graphql")
 @app.exception_handler(HTTPException)
 async def custom_http_exception_handler(request: Request, exc: HTTPException):
     return JSONResponse(
-            status_code=401,
-            content={"detail": exc.detail}
+            status_code=400,
+            content={"Erro HTTP não esperado": exc.detail}
     )
 
 @app.get("/")

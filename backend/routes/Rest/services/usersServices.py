@@ -38,7 +38,7 @@ async def login_oauth(request: Request, firebase_token: str):
         username = decoded_token.get("name")
 
         if not email or not username:
-            raise HTTPException(status_code=400, detail="Email não encontrado no token firebase.")
+            raise HTTPException(status_code=404, detail="Email não encontrado no token firebase.")
 
         db_user = await users_collection.find_one({"email": email})
         user_task = None
@@ -51,9 +51,9 @@ async def login_oauth(request: Request, firebase_token: str):
             user_task = users_collection.insert_one(user_data)
 
         else:
-            # Verificar se o utilizdor está ativado
+            # Verificar se o utilizador está ativado
             if not db_user["isActive"]:
-                raise HTTPException(status_code=400, detail="Esta conta foi desativada.")
+                raise HTTPException(status_code=403, detail="Esta conta foi desativada.")
             # Atualizar horário do último login
             user_task = users_collection.update_one({"email": email}, {"$set": {"last_login": datetime.now()}})
 
@@ -96,31 +96,24 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str = None):
 async def register_user(data: RegisterUser, request: Request, recaptchaToken: str):
     # Validate the reCAPTCHA token
     await validar_recaptcha_token(recaptchaToken, "register")
-    
-    print("Dados do User a Registar: ", data.user)
-    print("Dados da Empresa a Registar: ", data.empresa)
 
     # Verificar se o utilizador com aquele email já existe
     existing_user = await users_collection.find_one({"email": data.user.email})  # Normaliza o email
 
     if existing_user:
-        raise HTTPException(status_code=400, detail="Email já registado.")
+        raise HTTPException(status_code=401, detail="Email já registado.")
 
     # Verificar se a empresa com aquele NIF já existe
     existing_empresa = await empresas_collection.find_one({"nif": data.empresa.nif})  # Normaliza o NIF
 
     if existing_empresa:
-        raise HTTPException(status_code=400, detail="Empresa já registada.")
+        raise HTTPException(status_code=401, detail="Empresa já registada.")
     
-    # Criar User
+    #Criar utilizador
     new_user = data.user
-    new_user.email = new_user.email.strip().lower()  # Normaliza o email antes de salvar
     new_user.password = pwd_context.hash(new_user.password)
     new_user_data = new_user.model_dump(by_alias=True)
     user = await users_collection.insert_one(new_user_data)
-
-    if not user.inserted_id:
-        raise HTTPException(status_code=400, detail="Erro ao criar user.")
 
     # Criar Empresa
     new_empresa = data.empresa
@@ -129,23 +122,19 @@ async def register_user(data: RegisterUser, request: Request, recaptchaToken: st
     empresa_data = new_empresa.model_dump(by_alias=True)
     empresa = await empresas_collection.insert_one(empresa_data)
 
-    if not empresa.inserted_id:
-        raise HTTPException(status_code=400, detail="Erro ao criar empresa.")
-
     # Criar UserEmpresa
+    print("Criar User_Empresa")
     new_user_empresa = UserEmpresaCreate(
         user_id=user.inserted_id,
         empresa_id=empresa.inserted_id,
         role="admin",
-        created_by=user.inserted_id,
-        updated_by=user.inserted_id
     )
     
     user_empresa_data = new_user_empresa.model_dump(by_alias=True)
     user_empresa = await users_empresas_collection.insert_one(user_empresa_data)
 
     if not user.inserted_id or not empresa.inserted_id or not user_empresa.inserted_id:
-        raise HTTPException(status_code=400, detail="Erro ao criar relação entre o user e empresa.")
+        raise HTTPException(status_code=409, detail="Erro na criação do utilizador.")
 
     return {"message": "Conta criada! Verifique seu email para ativação."}
 
