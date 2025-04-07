@@ -11,8 +11,8 @@ PUBLIC_KEY = Path(__file__).parent / "../chaves/publica.pem"
 PRIVATE_KEY = Path(__file__).parent / "../chaves/privada.pem"
 PRIVATE_KEY_PASSWORD = os.getenv("PRIVATE_KEY_PASSWORD")
 ALGORITHM = "RS256"
-USER_HOURS = 24
-SUPER_ADMIN_DAYS = 30
+SUPER_ADMIN_DAYS = 1
+NORMAL_USER_DAYS = 30
 
 def load_public_key():
     with open(PUBLIC_KEY, "rb") as key_file:
@@ -58,9 +58,9 @@ def verify_jwt(token):
 
 def generate_jwt(id: str,user_name: str,user_email: str, is_super_admin: bool):
     if is_super_admin:
-        expire_delta = SUPER_ADMIN_DAYS * 24 * 60 * 60  # Expiração em segundos
+        expire_delta = SUPER_ADMIN_DAYS *12 * 60 * 60  # Os super administradores têm uma expiração mais curta(12 horas)
     else:
-        expire_delta = USER_HOURS * 60 * 60  # Expiração em segundos
+        expire_delta = NORMAL_USER_DAYS *24 * 60 * 60  # Expiração em segundos
 
     # Usando o timezone UTC corretamente
     expire = datetime.now().timestamp() + expire_delta  # expire_delta já está em segundos
