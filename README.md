@@ -65,8 +65,9 @@ Para executar os servidores, foram criados ficheiros de ativação que não só 
 
 ##### Executar Frontend:
 1. `cd /frontend`
-2. `dos2unix activateFrontend.sh`
-3. `./startFrontend`
+2. `sudo apt install dos2unix`
+3. `dos2unix startFrontend.sh`
+4. `./startFrontend.sh`
 
 ### Como Executar a Aplicação no Geral para Produção
 Para testar como a aplicação irá ser executada em produção, bastará utilizar o seguinte comando no diretório raiz do projeto, assumindo que tenha privilégios de administração e que o docker esteja devidamente instalado.
