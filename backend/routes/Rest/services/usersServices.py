@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from controller.recaptchaValidation import validar_recaptcha_token
-from controller.jwtValidation import generate_jwt
+from controller.jwtValidation import generate_jwt,TOKEN_BLACKLIST
 from pathlib import Path
 from secrets import choice
 from string import ascii_letters, punctuation, digits
@@ -148,8 +148,15 @@ async def auth_user(request: Request):
 
 # 🚀 Logout
 @routerUser.post("/logout")
-async def logout_user():
-    response = JSONResponse({"message": "Logout bem-sucedido!"})
+async def logout_user(request: Request):
+    
+    # Preparar a resposta JSON
+    response = JSONResponse({"message": "Logout realizado com sucesso."})
+
+    # Revogar o token JWT
+    token = request.cookies.get("_fp")
+    TOKEN_BLACKLIST.add(token)
+
     response.delete_cookie("_fp", httponly=True, samesite="Strict", secure=True)
     return response
 
