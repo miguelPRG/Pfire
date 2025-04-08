@@ -14,7 +14,6 @@ class EmpresaCreate(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
     updated_by: Optional[Any] = None  # Pode ser um ID ou outro tipo de referência
     updated_at: datetime = Field(default_factory=datetime.now)
-    isActive: bool
 
     """Os campos created_by e updated_by são preenchidos automaticamente com a data e hora atual quando o objeto é criado."""
 
@@ -25,7 +24,6 @@ class EmpresaCreate(BaseModel):
 
         values['created_at'] = current_time
         values['updated_at'] = current_time
-        values['isActive'] = True  # Corrigindo "isActivated" para "isActive"
 
         return values
 

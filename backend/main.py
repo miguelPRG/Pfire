@@ -5,7 +5,6 @@ from routes.Rest.CRUD import userCRUD, empresaCRUD, clienteCRUD
 from routes.graphQL.schema import graphql_router
 from controller.clientIP import rate_limit
 from controller.jwtValidation import verify_jwt  # Função para verificar o JWT
-# Middleware para verificar e injetar o JWT no cabeçalho Authorization
 from fastapi.responses import JSONResponse  # Import necessário
 
 app = FastAPI()
@@ -78,12 +77,10 @@ async def jwt_authentication_middleware(request: Request, call_next):
 # Rotas do usuário (REST)
 app.include_router(usersServices.routerUser)
 app.include_router(userCRUD.routerUser)
-
 #Rotas da empresa (REST)
 app.include_router(empresaCRUD.routerEmpresa)
-
 #Rotas do cliente (REST)
-
+app.include_router(clienteCRUD.routerCliente)
 # Rotas GraphQL
 app.include_router(graphql_router, prefix="/graphql")
 

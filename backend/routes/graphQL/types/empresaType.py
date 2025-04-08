@@ -4,15 +4,15 @@ from datetime import datetime
 
 @strawberry.type
 class Empresa:
-    id: Optional[str]
-    nome: Optional[str]
-    nif: Optional[str]
-    localidade: Optional[str]
-    morada: Optional[str]
-    codigo_postal: Optional[str]
-    telefone: Optional[str]
-    logo: Optional[str] = None  # Use Base64-encoded string for the logo
-    created_by: Optional[str]
+    id: str
+    nome: str
+    nif: str
+    localidade: str
+    morada: str
+    codigo_postal: str
+    telefone: str
+    logo: str = None  # Use Base64-encoded string for the logo
+    created_by: str
     created_at: datetime
-    updated_by: Optional[str]
-    updated_at: datetime 
+    updated_by: str
+    updated_at: datetime

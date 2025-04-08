@@ -3,48 +3,88 @@ from controller.recaptchaValidation import validar_recaptcha_token
 from models.empresaModels import EmpresaUpdate 
 from database import empresas_collection, users_empresas_collection
 from bson import ObjectId
+from datetime import datetime
+
 routerEmpresa = APIRouter(prefix="/empresa")
 
 #Atualizar Empresa
 @routerEmpresa.put("/")
-async def update_empresa(empresa: EmpresaUpdate, request: Request, recaptchaToken: str, id: str = None, nif: str = None):
+async def update_empresa(empresa: EmpresaUpdate, request: Request, recaptchaToken: str,id: str = None, nif: str = None):
+
+    if not id and not nif:
+        raise HTTPException(status_code=400, detail="ID ou NIF da empresa deve ser fornecido.")
 
     # Sacar jwt
     jwt = getattr(request.state, "jwt", None)
 
-    if not jwt:
-        raise HTTPException(status_code=403, detail="Acesso negado!")
-
     # Validate the reCAPTCHA token
     await validar_recaptcha_token(recaptchaToken, "update")
 
-    if id:
-        empresa_found = await empresas_collection.find_one({"_id": ObjectId(id), "isActive": True})
-    
-    elif nif:  
-        empresa_found = await empresas_collection.find_one({"nif": nif, "isActive": True})
-
-    if not empresa_found:
-        raise HTTPException(status_code=404, detail="Empresa não encontrada.")
-    
-    #Caso não seja super administrado. verifica se o utilizar é administrado daquela empresa
-
     user_id = ObjectId(jwt["user_id"])
 
+    # Se o utilizador não for super admin, verificar se ele é admin da empresa que quer atualizar
     if not jwt["isSuperAdmin"]:
 
-        user_empresa = users_empresas_collection.find_one({"empresa_id":empresa_found["_id"], "user_id": user_id,"role": "admin","isActive": True})
+        if id:
+            user_empresa = await users_empresas_collection.find_one({"empresa_id":id, "user_id": user_id,"role": "admin","isActive": True})
+        
+        else:
+            user_empresa = await users_empresas_collection.find_one({"nif":nif, "user_id": user_id,"role": "admin","isActive": True})
 
         if not user_empresa:
-            raise HTTPException(status_code=403, detail="Acesso negado!")
+            raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para atualizar esta empresa.")
     
     empresa_data = empresa.model_dump(exclude_unset=True)
     
     empresa_data["updated_by"] = user_id
+    empresa_data["updated_at"] = datetime.now()
 
-    result = await empresas_collection.update_one({"_id": empresa_found["_id"]}, {"$set": empresa_data})
+    if id:
+        result = await empresas_collection.update_one({"_id":id, "isActive": True}, {"$set": empresa_data})
+    else:
+        result = await empresas_collection.update_one({"nif": nif, "isActive": True}, {"$set": empresa_data})
 
     if not result.modified_count:
-        raise HTTPException(status_code=400, detail="Erro ao atualizar empresa.")
+        raise HTTPException(status_code=400, detail="Erro ao atualizar empresa. Verifica se a empresa existe.")
     
     return {"message": "Empresa Criada com Sucesso!"}
+
+# Apagar Empresa
+@routerEmpresa.delete("/")
+async def soft_delete_empresa(request: Request, recaptchaToken: str, id: str = None, nif: str = None):
+
+    # Sacar jwt
+    jwt = getattr(request.state, "jwt", None)
+
+    # Validar o reCAPTCHA token
+    await validar_recaptcha_token(recaptchaToken, "delete")
+
+    if not jwt:
+        raise HTTPException(status_code=403, detail="Acesso negado!")
+    
+    if not id and not nif:
+        raise HTTPException(status_code=400, detail="ID ou NIF da empresa deve ser fornecido.")
+    
+    user_id = ObjectId(jwt["user_id"])
+
+    if not jwt["isSuperAdmin"]:
+
+        if id:
+            user_empresa = await users_empresas_collection.find_one({"empresa_id":id, "user_id": user_id,"role": "admin","isActive": True})
+
+        else:
+            user_empresa = await users_empresas_collection.find_one({"empresa_id":nif, "user_id": user_id,"role": "admin","isActive": True})
+
+        if not user_empresa:
+            raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para apagar esta empresa.")
+
+    if id:
+        result = await empresas_collection.update_one({"_id":id, "isActive": True}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
+    
+    else:
+        result = await empresas_collection.update_one({"nif": nif, "isActive": True}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
+
+    if not result or not result.modified_count:
+            raise HTTPException(status_code=400, detail="Erro ao apagar empresa. Verifica se a empresa existe.")
+    
+    return {"message": "Empresa apagada com sucesso!"}

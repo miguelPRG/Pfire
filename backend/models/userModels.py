@@ -30,8 +30,8 @@ class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     password: Optional[str] = None
     telefone: Optional[str] = None
-    empresa_id: Optional[str] = None
     isSuperAdmin: Optional[bool] = None
+    updated_at: datetime = Field(default_factory=datetime.now)
 
     @model_validator(mode='before')
     @classmethod

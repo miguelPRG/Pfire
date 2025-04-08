@@ -84,36 +84,46 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str = None):
     if not db_user.get("isActive", True):
         raise HTTPException(status_code=403, detail="Esta conta foi desativada.")
 
-    token = generate_jwt(str(db_user["_id"]),db_user["nome"], db_user["email"], db_user["isSuperAdmin"])
+    token = to_thread(generate_jwt,str(db_user["_id"]),db_user["nome"], db_user["email"], db_user["isSuperAdmin"])
 
     response = JSONResponse({"nome": db_user["nome"], "email": db_user["email"], "isSuperAdmin": db_user["isSuperAdmin"]})
-    response.set_cookie(key="_fp", value=token, httponly=True, samesite="Strict")
+
+    token = await token
+
+    response.set_cookie(key="_fp", value=token, httponly=True, samesite="Strict", secure=True)
 
     return response
 
 # Registar um novo User
 @routerUser.post("/register")
 async def register_user(data: RegisterUser, request: Request, recaptchaToken: str):
+    
     # Validate the reCAPTCHA token
     await validar_recaptcha_token(recaptchaToken, "register")
 
     # Verificar se o utilizador com aquele email já existe
-    existing_user = await users_collection.find_one({"email": data.user.email})  # Normaliza o email
-
-    if existing_user:
-        raise HTTPException(status_code=401, detail="Email já registado.")
+    existing_user = users_collection.find_one({"email": data.user.email})  # Normaliza o email
 
     # Verificar se a empresa com aquele NIF já existe
-    existing_empresa = await empresas_collection.find_one({"nif": data.empresa.nif})  # Normaliza o NIF
+    existing_empresa = empresas_collection.find_one({"nif": data.empresa.nif})  # Normaliza o NIF
+
+    #Espera que as duas operações terminem
+    existing_user, existing_empresa = await gather(existing_user, existing_empresa)
+
+    if existing_user:
+        raise HTTPException(status_code=401, detail="O utilizador que tem este email já existe.")
 
     if existing_empresa:
-        raise HTTPException(status_code=401, detail="Empresa já registada.")
-    
+        raise HTTPException(status_code=401, detail="A empresa que tem este NIF já existe.")
+
     #Criar utilizador
     new_user = data.user
     new_user.password = pwd_context.hash(new_user.password)
     new_user_data = new_user.model_dump(by_alias=True)
     user = await users_collection.insert_one(new_user_data)
+
+    if not user.inserted_id:
+        raise HTTPException(status_code=500, detail="Erro ao criar o utilizador.")
 
     # Criar Empresa
     new_empresa = data.empresa
@@ -122,8 +132,10 @@ async def register_user(data: RegisterUser, request: Request, recaptchaToken: st
     empresa_data = new_empresa.model_dump(by_alias=True)
     empresa = await empresas_collection.insert_one(empresa_data)
 
+    if not empresa.inserted_id:
+        raise HTTPException(status_code=500, detail="Erro ao criar a empresa.")
+    
     # Criar UserEmpresa
-    print("Criar User_Empresa")
     new_user_empresa = UserEmpresaCreate(
         user_id=user.inserted_id,
         empresa_id=empresa.inserted_id,
@@ -133,12 +145,12 @@ async def register_user(data: RegisterUser, request: Request, recaptchaToken: st
     user_empresa_data = new_user_empresa.model_dump(by_alias=True)
     user_empresa = await users_empresas_collection.insert_one(user_empresa_data)
 
-    if not user.inserted_id or not empresa.inserted_id or not user_empresa.inserted_id:
+    if not user_empresa.inserted_id:
         raise HTTPException(status_code=409, detail="Erro na criação do utilizador.")
 
     return {"message": "Conta criada! Verifique seu email para ativação."}
 
-# 🚀 Autenticação do Usuário (Verificar JWT)
+# 🚀 Autenticação do Usuário (Verificar JWT) Esta função será chamada sempre que o cliente fizer refresh no seu browser
 @routerUser.get("/auth")
 async def auth_user(request: Request):
 
