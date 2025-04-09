@@ -185,7 +185,7 @@ export default function UserManagementTable() {
         boxShadow: "none",
       }}
     >
-      <div>
+      <div style={{ textAlign: "center" }}>
         <h1>Empresas</h1>
       </div>
       <div
@@ -522,18 +522,22 @@ export default function UserManagementTable() {
             Cancelar
           </Button>
           <Button
+            onClick={handleCloseEditModal}
+            sx={{
+              backgroundColor: "#f44336", // Vermelho ideal
+              color: "white",
+              "&:hover": { backgroundColor: "#d32f2f" }, // Vermelho mais escuro no hover
+            }}
+          >
+            Excluir
+          </Button>
+          <Button
             onClick={handleSaveEdit}
             style={{ backgroundColor: "green", color: "white" }}
           >
             Salvar
           </Button>
         </DialogActions>
-
-        <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-          <IconButton onClick={handleDeleteClick} style={{ color: "red" }}>
-            <Delete />
-          </IconButton>
-        </Box>
       </Dialog>
 
       <Dialog open={openConfirmDialog} onClose={handleCancelDelete}>

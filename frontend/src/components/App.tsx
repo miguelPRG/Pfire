@@ -24,6 +24,7 @@ const ClientManagementTable = lazy(
   () => import("../pages/ClientManagementTable"),
 );
 const AddNewClient = lazy(() => import("../pages/AddNewClientPage"));
+const EditProfilePage = lazy(() => import("../pages/EditProfilePage"));
 
 interface RouteProps {
   user: unknown;
@@ -148,6 +149,12 @@ function App() {
               path="/EmpresasPage"
               element={
                 <ProtectedRoute user={user} element={<EmpresasPage />} />
+              }
+            />
+            <Route
+              path="/EditProfilePage"
+              element={
+                <ProtectedRoute user={user} element={<EditProfilePage />} />
               }
             />
             <Route path="*" element={<Navigate to={user ? "/" : "/login"} />} />

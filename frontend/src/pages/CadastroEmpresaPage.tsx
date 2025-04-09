@@ -36,7 +36,7 @@ function CadastroEmpresaPage() {
       <Box
         sx={{
           position: "relative",
-          marginBottom: 3,
+          marginBottom: 7,
         }}
       >
         <Box

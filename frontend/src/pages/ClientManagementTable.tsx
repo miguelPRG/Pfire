@@ -404,6 +404,16 @@ export default function ClientManagementTable() {
             Cancelar
           </Button>
           <Button
+            onClick={handleCloseEditModal}
+            sx={{
+              backgroundColor: "#f44336", // Vermelho ideal
+              color: "white",
+              "&:hover": { backgroundColor: "#d32f2f" }, // Vermelho mais escuro no hover
+            }}
+          >
+            Excluir
+          </Button>
+          <Button
             onClick={handleSaveEdit}
             sx={{
               backgroundColor: theme.palette.success.main,
@@ -414,11 +424,6 @@ export default function ClientManagementTable() {
             Salvar
           </Button>
         </DialogActions>
-        <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-          <IconButton onClick={handleDeleteFromModal} sx={{ color: "red" }}>
-            <Delete />
-          </IconButton>
-        </Box>
       </Dialog>
     </Paper>
   );

@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isSuperAdmin: data.isSuperAdmin,
           });
 
-          console.log(user)
+          console.log(user);
 
           /*Falta apenas uma coisa. Depois do user fazer login, precisamos de fazer uma consulta em GraphQL e guardar em cache
           a lista de empresas associadas ao user. Caso seja super Administrador, deverão ser retornadas todas em empresas*/

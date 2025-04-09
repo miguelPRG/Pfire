@@ -13,16 +13,18 @@ import {
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import { useAuth } from "../hooks/AuthContext";
+import { useNavigate } from "react-router-dom";
 import logo from "../assets/images/logo.png";
 import Sidebar from "./Sidebar";
 
-const userSettings = ["Profile", "Account", "Dashboard", "Logout"];
+const userSettings = ["Perfil", "Account", "Dashboard", "Logout"];
 
 function ResponsiveAppBar() {
   const { logout } = useAuth();
   const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const theme = useTheme();
+  const navigate = useNavigate(); // Inicializa o useNavigate
 
   const openUserMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElUser(event.currentTarget);
@@ -104,7 +106,7 @@ function ResponsiveAppBar() {
               </IconButton>
             </Tooltip>
             <Menu
-              sx={{ mt: "45px" }}
+              sx={{ mt: "50px", width: "200px" }}
               anchorEl={anchorElUser}
               anchorOrigin={{ vertical: "top", horizontal: "right" }}
               keepMounted
@@ -117,6 +119,7 @@ function ResponsiveAppBar() {
                   key={setting}
                   onClick={() => {
                     closeUserMenu();
+                    if (setting === "Perfil") navigate("/EditProfilePage");
                     if (setting === "Logout") logout();
                   }}
                 >
