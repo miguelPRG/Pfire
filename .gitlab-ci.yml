@@ -1,9 +1,26 @@
 stages:
+  - prepare
   - test
   - security
 
 variables:
   PYTHONPATH: "$CI_PROJECT_DIR/backend"
+
+# Merge develop if coming from another branch
+rebase_develop:
+  stage: prepare
+  image: alpine:latest
+  script:
+    - apk add --no-cache git
+    - |
+      if [ "$CI_COMMIT_REF_NAME" != "develop" ]; then
+        git config --global user.email "miguelgoncalves2024@hotmail.com"
+        git config --global user.name "miguelgoncalves2024"
+        git fetch origin
+        git rebase origin/develop || echo "Rebase falhou, continue com cuidado!"
+      else
+        echo "Já estamos na branch develop. Nenhum merge necessário."
+      fi
 
 # Backend Security Check
 python_test:
@@ -11,7 +28,6 @@ python_test:
   stage: security
   script:
     - apt-get update && apt-get install -y --no-install-recommends gcc libmariadb-dev pkg-config curl git && rm -rf /var/lib/apt/lists/*
-    
     - cd backend
     - rm -rf .venv/
     - python -m venv .venv
@@ -19,10 +35,8 @@ python_test:
     - pip install --upgrade pip
     - pip install -r requirements.txt
     - pip install bandit
-
-    #analisar vulnerabilidades no código python
     - bandit -r . -c bandit.yml --exclude ./startBackend.py
-  allow_failure: true  # Continua o pipeline mesmo com falhas
+  allow_failure: true
 
 # Frontend Security Check
 node_test:
@@ -31,5 +45,5 @@ node_test:
   script:
     - cd frontend
     - npm install
-    - npm audit --audit-level=high || true  # Permite falhas
-  allow_failure: true  # Continua o pipeline mesmo com falhas
+    - npm audit --audit-level=high || true
+  allow_failure: true
