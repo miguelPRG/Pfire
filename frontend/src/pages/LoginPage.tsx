@@ -17,6 +17,7 @@ import microsoft from "../assets/images/microsoft.png";
 import facebook from "../assets/images/facebook.png";
 import google from "../assets/images/google.png";
 import logo from "../assets/images/logo.png";
+import { useNavigate } from "react-router-dom";
 
 function LoginPage() {
   const emailRef = useRef<HTMLInputElement>(null);
@@ -24,6 +25,7 @@ function LoginPage() {
   const [isLoading, setLoading] = useState(false);
   const [authError, setAuthError] = useState(false);
   const { login, loginWithOAuth } = useAuth();
+  const navigate = useNavigate();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -141,6 +143,7 @@ function LoginPage() {
             <Typography
               component="a"
               href="#"
+              onClick={() => navigate("/forgot-password")}
               sx={{
                 color: "primary.main",
                 textDecoration: "none",

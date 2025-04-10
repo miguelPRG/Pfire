@@ -25,6 +25,9 @@ const ClientManagementTable = lazy(
 );
 const AddNewClient = lazy(() => import("../pages/AddNewClientPage"));
 const EditProfilePage = lazy(() => import("../pages/EditProfilePage"));
+const ForgotPasswordPage = lazy(
+  () => import("../pages/ForgotPasswordPage"),
+);
 
 interface RouteProps {
   user: unknown;
@@ -117,6 +120,12 @@ function App() {
               path="/cadastro-empresa"
               element={
                 <PublicRoute user={user} element={<CadastroEmpresa />} />
+              }
+            />
+            <Route
+              path="/forgot-password"
+              element={
+                <PublicRoute user={user} element={<ForgotPasswordPage />} />
               }
             />
             <Route

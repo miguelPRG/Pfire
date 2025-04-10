@@ -101,7 +101,12 @@ function EditProfilePage() {
     },
                 }}
               >
-                <PhotoCameraIcon fontSize="small" sx={{ color: "black" }} />
+                <PhotoCameraIcon
+                  fontSize="small"
+                  sx={{
+                    color: (theme) => theme.palette.background.default, // Acessa a cor do tema dinamicamente
+                  }}
+                />
               </IconButton>
             </label>
           </Box>
@@ -270,7 +275,12 @@ function EditProfilePage() {
     },
                 }}
               >
-                <PhotoCameraIcon fontSize="small" sx={{ color: "black" }} />
+                <PhotoCameraIcon
+                  fontSize="small"
+                  sx={{
+                    color: (theme) => theme.palette.background.default, // Acessa a cor do tema dinamicamente
+                  }}
+                />
               </IconButton>
             </label>
           </Box>
