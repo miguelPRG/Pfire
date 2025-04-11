@@ -14,12 +14,9 @@ class UserQuery:
        
         request = info.context["request"]  # Obtém o objeto de requisição
         jwt = getattr(request.state, "jwt", None)
-
-        if not jwt:
-            raise HTTPException(status_code=401, detail="Token não encontrado nos cookies.")
         
         # Verifica se a empresa existe
-        empresa = await empresas_collection.find_one({"_id": ObjectId(empresa_id), "isActive": True})
+        empresa = await empresas_collection.find_one({"_id": ObjectId(empresa_id)})
         
         if not empresa:
             raise HTTPException(status_code=404, detail="Empresa não encontrada.")
@@ -29,7 +26,7 @@ class UserQuery:
             
             # Verifica se o usuário tem o papel de administrador na empresa
             user_empresa = await users_empresas_collection.find_one(
-                {"user_id": ObjectId(jwt["user_id"]), "empresa_id": ObjectId(empresa_id), "role": "admin", "isActive": True}
+                {"user_id": ObjectId(jwt["user_id"]), "empresa_id": ObjectId(empresa_id), "role": "admin"}
             )
             
             if not user_empresa:
@@ -37,8 +34,8 @@ class UserQuery:
                 
         users = []
 
-        async for user_empresa in users_empresas_collection.find({"empresa_id": ObjectId(empresa_id), "isActive": True}):
-            async for user in users_collection.find({"_id": user_empresa["user_id"]}).skip(start).limit(lmt):
+        async for user_empresa in users_empresas_collection.find({"empresa_id": ObjectId(empresa_id)}).skip(start).limit(lmt):
+            async for user in users_collection.find({"_id": user_empresa["user_id"]}):
                 
                 # Mapeia os dados do usuário
                 user_data = {
@@ -55,7 +52,7 @@ class UserQuery:
                 # Adiciona o campo isSuperAdmin apenas se for super administrador
                 if not jwt["isSuperAdmin"]:
                     
-                    user_data = {k: v for k, v in user_data.items() if k != "isActive" and k != "last_login" and k != "updated_at"}
+                    user_data = {k: v for k, v in user_data.items() if k not in ["isActive", "created_at", "updated_at", "last_login"]}
                 
                 users.append(User(**filter_null_fields(user_data)))
 

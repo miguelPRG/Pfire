@@ -11,7 +11,6 @@ class UserEmpresaCreate(BaseModel):
     created_at: datetime = Field(default_factory=datetime.now)
     updated_by: ObjectId 
     updated_at: datetime = Field(default_factory=datetime.now)
-    isActive: bool
 
     class Config:
         arbitrary_types_allowed = True
@@ -22,13 +21,8 @@ class UserEmpresaCreate(BaseModel):
     @classmethod
     def set_default_values(cls, values):
 
-        # Verifica se o JWT está presente na classe
-        jwt = getattr(cls, "jwt", None)
-
         # Define o valor padrão para created_at e updated_at como a data e hora atual
         current_time = datetime.now()
-        values['created_by'] = jwt["user_id"] if jwt else None
         values['created_at'] = current_time
         values['updated_at'] = current_time
-        values['isActive'] = False
         return values

@@ -96,10 +96,10 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str = None):
 
 # Registar um novo User
 @routerUser.post("/register")
-async def register_user(data: RegisterUser, request: Request, recaptchaToken: str):
+async def register_user(data: RegisterUser, request: Request, recaptchaToken: str = None):
     
     # Validate the reCAPTCHA token
-    await validar_recaptcha_token(recaptchaToken, "register")
+    #await validar_recaptcha_token(recaptchaToken, "register")
 
     # Verificar se o utilizador com aquele email já existe
     existing_user = users_collection.find_one({"email": data.user.email})  # Normaliza o email
@@ -140,6 +140,8 @@ async def register_user(data: RegisterUser, request: Request, recaptchaToken: st
         user_id=user.inserted_id,
         empresa_id=empresa.inserted_id,
         role="admin",
+        created_by=user.inserted_id,
+        updated_by=user.inserted_id,
     )
     
     user_empresa_data = new_user_empresa.model_dump(by_alias=True)

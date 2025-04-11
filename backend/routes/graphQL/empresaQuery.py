@@ -21,10 +21,10 @@ class EmpresaQuery:
             filtro = {}
         
         else:
-            filtro = {"user_id": ObjectId(jwt["user_id"]), "isActive": True}
+            filtro = {"user_id": ObjectId(jwt["user_id"])}
 
         async for user_empresa in users_empresas_collection.find(filtro).skip(start).limit(lmt):
-            async for empresa in empresas_collection.find({"_id": user_empresa["empresa_id"], "isActive": True}):
+            async for empresa in empresas_collection.find({"_id": user_empresa["empresa_id"]}):
                 # Mapeia os dados da empresa
                 empresa_data = {
                     "id": str(empresa.get("_id")),
@@ -33,11 +33,12 @@ class EmpresaQuery:
                     "telefone": empresa.get("telefone"),
                     "email": empresa.get("email"),
                     "morada": empresa.get("morada"),
-                    "cidade": empresa.get("cidade"),
+                    "localidade": empresa.get("localidade"),
                     "codigo_postal": empresa.get("codigo_postal"),
+                    "created_by": str(empresa.get("created_by")),
                     "created_at": empresa.get("created_at"),
+                    "updated_by": str(empresa.get("updated_by")),
                     "updated_at": empresa.get("updated_at"),
-                    "isActive": empresa.get("isActive")
                 }
                 
                 # Adiciona o campo logo apenas se existir
@@ -46,7 +47,10 @@ class EmpresaQuery:
                     logo_base64 = b64encode(empresa["logo"]).decode('utf-8')
                     empresa_data["logo"] = logo_base64
 
-                # Filtra os campos nulos
+                # Filtra os campos que não devem ser retornados para usuários não administradores
+                if not jwt["isSuperAdmin"]:
+                    empresa_data = {k: v for k, v in empresa_data.items() if k not in ["created_by", "updated_by"]}
+
                 empresas.append(Empresa(**filter_null_fields(empresa_data)))
         
         return empresas
