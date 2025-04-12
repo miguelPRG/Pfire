@@ -40,9 +40,9 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, recaptchaToke
     empresa_data["updated_at"] = datetime.now()
 
     if id:
-        result = await empresas_collection.update_one({"_id":id, "isActive": True}, {"$set": empresa_data})
+        result = await empresas_collection.update_one({"_id":id}, {"$set": empresa_data})
     else:
-        result = await empresas_collection.update_one({"nif": nif, "isActive": True}, {"$set": empresa_data})
+        result = await empresas_collection.update_one({"nif": nif}, {"$set": empresa_data})
 
     if not result.modified_count:
         raise HTTPException(status_code=400, detail="Erro ao atualizar empresa. Verifica se a empresa existe.")
@@ -50,41 +50,3 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, recaptchaToke
     return {"message": "Empresa Criada com Sucesso!"}
 
 # Apagar Empresa
-@routerEmpresa.delete("/")
-async def soft_delete_empresa(request: Request, recaptchaToken: str, id: str = None, nif: str = None):
-
-    # Sacar jwt
-    jwt = getattr(request.state, "jwt", None)
-
-    # Validar o reCAPTCHA token
-    await validar_recaptcha_token(recaptchaToken, "delete")
-
-    if not jwt:
-        raise HTTPException(status_code=403, detail="Acesso negado!")
-    
-    if not id and not nif:
-        raise HTTPException(status_code=400, detail="ID ou NIF da empresa deve ser fornecido.")
-    
-    user_id = ObjectId(jwt["user_id"])
-
-    if not jwt["isSuperAdmin"]:
-
-        if id:
-            user_empresa = await users_empresas_collection.find_one({"empresa_id":id, "user_id": user_id,"role": "admin","isActive": True})
-
-        else:
-            user_empresa = await users_empresas_collection.find_one({"empresa_id":nif, "user_id": user_id,"role": "admin","isActive": True})
-
-        if not user_empresa:
-            raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para apagar esta empresa.")
-
-    if id:
-        result = await empresas_collection.update_one({"_id":id, "isActive": True}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
-    
-    else:
-        result = await empresas_collection.update_one({"nif": nif, "isActive": True}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
-
-    if not result or not result.modified_count:
-            raise HTTPException(status_code=400, detail="Erro ao apagar empresa. Verifica se a empresa existe.")
-    
-    return {"message": "Empresa apagada com sucesso!"}

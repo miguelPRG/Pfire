@@ -27,7 +27,7 @@ graphql-core==3.2.6
 grpcio==1.71.0
 grpcio-status==1.71.0
 h11==0.14.0
-httpcore==1.0.7
+httpcore==1.0.8
 httplib2==0.22.0
 httpx==0.28.1
 idna==3.10
@@ -40,10 +40,10 @@ protobuf==5.29.4
 pyasn1==0.6.1
 pyasn1_modules==0.4.2
 pycparser==2.22
-pydantic==2.11.2
+pydantic==2.11.3
 pydantic_core==2.33.1
 PyJWT==2.10.1
-pymongo==4.11.3
+pymongo==4.12.0
 pyparsing==3.2.3
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.0
@@ -52,10 +52,10 @@ requests==2.32.3
 rsa==4.9
 six==1.17.0
 sniffio==1.3.1
-starlette==0.46.1
-strawberry-graphql==0.263.1
+starlette==0.46.2
+strawberry-graphql==0.264.0
 typing-inspection==0.4.0
-typing_extensions==4.13.1
+typing_extensions==4.13.2
 uritemplate==4.1.1
-urllib3==2.3.0
-uvicorn==0.34.0
+urllib3==2.4.0
+uvicorn==0.34.1

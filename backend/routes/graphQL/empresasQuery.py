@@ -9,7 +9,7 @@ from base64 import b64encode  # Importa o módulo base64 para conversão
 @strawberry.type
 class EmpresaQuery:
     @strawberry.field
-    async def empresa(self, info: Info, start: int = 0, lmt: int = 10) -> list[Empresa]:
+    async def empresas(self, info: Info, start: int = 0, lmt: int = 10) -> list[Empresa]:
         
         request = info.context["request"]  # Obtém o objeto de requisição
         jwt = getattr(request.state, "jwt", None)

@@ -9,7 +9,7 @@ from strawberry.types import Info
 @strawberry.type
 class UserQuery:
     @strawberry.field
-    async def user(self,info: Info, empresa_id: str, start: int = 0, lmt:int = 10) -> list[User]:
+    async def users(self,info: Info, empresa_id: str, start: int = 0, lmt:int = 10) -> list[User]:
         """Retorna os usuários de uma empresa, respeitando os campos selecionados no GraphQL."""
        
         request = info.context["request"]  # Obtém o objeto de requisição

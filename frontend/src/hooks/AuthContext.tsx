@@ -4,15 +4,16 @@ import {
   useContext,
   ReactNode,
   useEffect,
+  useRef
 } from "react";
 import { FirebaseLogin, FirebaseLogout } from "../firebase"; // Importando as funções do Firebase
 
 declare var grecaptcha: any;
 
 interface UserLoggedIn {
+  id: string
   nome: string;
   email: string;
-  isSuperAdmin: boolean;
 }
 
 export interface UserRegistered {
@@ -44,12 +45,14 @@ interface AuthContextType {
   loginWithOAuth: (provider: "google" | "facebook" | "microsoft") => void;
   logout: () => void;
   logoutWithOAuth: () => void;
+  chooseCompany: (id: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserLoggedIn | null>(null);
+  const empresaId = useRef<string | null>(null); // Ref para armazenar o ID da empresa
   //const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [loading, setLoading] = useState(true); // Inicializa como true até a verificação de autenticação ser concluída
 
@@ -67,23 +70,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const data = await response.json();
           console.log(data);
           setUser({
+            id: data.id,
             nome: data.nome,
             email: data.email,
-            isSuperAdmin: data.isSuperAdmin,
           });
 
-          console.log(user);
-
-          /*Falta apenas uma coisa. Depois do user fazer login, precisamos de fazer uma consulta em GraphQL e guardar em cache
-          a lista de empresas associadas ao user. Caso seja super Administrador, deverão ser retornadas todas em empresas*/
-
-          console.log(user);
         } else {
           setUser(null);
+          empresaId.current = null; // Limpa o ID da empresa se a autenticação falhar
         }
       } catch (error) {
         console.error("Erro ao verificar autenticação:", error);
         setUser(null);
+        empresaId.current = null; // Limpa o ID da empresa se ocorrer um erro
       } finally {
         setLoading(false); // Após a verificação (sucesso ou falha), setLoading deve ser false
       }
@@ -126,9 +125,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setUser({
+        id: data.id,
         nome: data.nome,
         email: data.email,
-        isSuperAdmin: data.isSuperAdmin,
       });
     } catch (error) {
       console.error("Erro no login:", error);
@@ -199,9 +198,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setUser({
+        id: data.id,
         nome: user.displayName,
         email: user.email,
-        isSuperAdmin: data.isSuperAdmin,
       });
     } catch (error) {
       console.error("Erro no login com o Firebase:", error);
@@ -229,6 +228,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  // Escolher id da empresa
+  function chooseCompany(id: string) {
+    empresaId.current = id; // Atualiza o ID da empresa
+    console.log("ID da empresa escolhida:", empresaId.current);
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -239,6 +244,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginWithOAuth,
         logout,
         logoutWithOAuth,
+        chooseCompany,
       }}
     >
       {children}

@@ -86,7 +86,7 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str = None):
 
     token = to_thread(generate_jwt,str(db_user["_id"]),db_user["nome"], db_user["email"], db_user["isSuperAdmin"])
 
-    response = JSONResponse({"nome": db_user["nome"], "email": db_user["email"], "isSuperAdmin": db_user["isSuperAdmin"]})
+    response = JSONResponse({"id":str(db_user["_id"]),"nome": db_user["nome"], "email": db_user["email"]})
 
     token = await token
 
@@ -96,10 +96,10 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str = None):
 
 # Registar um novo User
 @routerUser.post("/register")
-async def register_user(data: RegisterUser, request: Request, recaptchaToken: str = None):
+async def register_user(data: RegisterUser, request: Request, recaptchaToken: str):
     
     # Validate the reCAPTCHA token
-    #await validar_recaptcha_token(recaptchaToken, "register")
+    await validar_recaptcha_token(recaptchaToken, "register")
 
     # Verificar se o utilizador com aquele email já existe
     existing_user = users_collection.find_one({"email": data.user.email})  # Normaliza o email
@@ -158,7 +158,7 @@ async def auth_user(request: Request):
 
     jwt = getattr(request.state, "jwt", None)
 
-    return {"nome": jwt["nome"], "email": jwt["email"], "isSuperAdmin": jwt["isSuperAdmin"]}
+    return {"id": jwt["user_id"],"nome": jwt["nome"], "email": jwt["email"]}
 
 # 🚀 Logout
 @routerUser.post("/logout")

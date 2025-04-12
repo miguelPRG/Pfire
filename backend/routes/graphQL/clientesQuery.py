@@ -9,7 +9,7 @@ from bson import ObjectId
 @strawberry.type
 class ClienteQuery:
     @strawberry.field
-    async def cliente(self, info: Info, empresa_id:str,start: int = 0, lmt: int = 10) -> list[Cliente]:
+    async def clientes(self, info: Info, empresa_id:str,start: int = 0, lmt: int = 10) -> list[Cliente]:
 
         request = info.context["request"]
         jwt = getattr(request.state, "jwt", None)

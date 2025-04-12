@@ -1,7 +1,7 @@
 import strawberry
-from .userQuery import UserQuery
-from .empresaQuery import EmpresaQuery
-from .clienteQuery import ClienteQuery
+from .usersQuery import UserQuery
+from .empresasQuery import EmpresaQuery
+from .clientesQuery import ClienteQuery
 from strawberry.fastapi import GraphQLRouter
 
 @strawberry.type
