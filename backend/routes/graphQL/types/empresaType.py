@@ -11,7 +11,7 @@ class Empresa:
     localidade: str
     codigo_postal: str
     logo: str = None  # Use Base64-encoded string for the logo
-    created_by: str
+    created_by: str = None
     created_at: datetime
-    updated_by: str
+    updated_by: str = None
     updated_at: datetime

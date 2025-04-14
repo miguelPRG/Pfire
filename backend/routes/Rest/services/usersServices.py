@@ -84,12 +84,9 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str = None):
     if not db_user.get("isActive", True):
         raise HTTPException(status_code=403, detail="Esta conta foi desativada.")
 
-    token = to_thread(generate_jwt,str(db_user["_id"]),db_user["nome"], db_user["email"], db_user["isSuperAdmin"])
+    token = generate_jwt(str(db_user["_id"]),db_user["nome"], db_user["email"], db_user["isSuperAdmin"])
 
     response = JSONResponse({"id":str(db_user["_id"]),"nome": db_user["nome"], "email": db_user["email"]})
-
-    token = await token
-
     response.set_cookie(key="_fp", value=token, httponly=True, samesite="Strict", secure=True)
 
     return response

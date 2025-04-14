@@ -8,11 +8,6 @@ class UserCreate(BaseModel):
     email: EmailStr
     telefone: Optional[str] = None
     password: str
-    created_at: datetime = Field(default_factory=datetime.now)
-    updated_at: datetime = Field(default_factory=datetime.now)
-    last_login: datetime = Field(default_factory=datetime.now)
-    isSuperAdmin: bool = Field(default=False)
-    isActive: bool = Field(default=False)
 
     @model_validator(mode='before')
     @classmethod
@@ -20,7 +15,7 @@ class UserCreate(BaseModel):
         current_time = datetime.now()
         values['created_at'] = current_time
         values['updated_at'] = current_time
-        values['last_login'] = current_time
+        values['last_login'] = None
         values['isSuperAdmin'] = False
         values['isActive'] = False
         return values
@@ -31,7 +26,6 @@ class UserUpdate(BaseModel):
     password: Optional[str] = None
     telefone: Optional[str] = None
     isSuperAdmin: Optional[bool] = None
-    updated_at: datetime = Field(default_factory=datetime.now)
 
     @model_validator(mode='before')
     @classmethod
@@ -47,7 +41,6 @@ class RegisterUser(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
-    last_login: Optional[datetime] = None
     
     @model_validator(mode='before')
     @classmethod

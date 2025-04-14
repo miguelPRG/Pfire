@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from routes.Rest.services import usersServices
-from routes.Rest.CRUD import userCRUD, empresaCRUD, clienteCRUD
+from routes.Rest.CRUD import userCRUD, empresaCRUD, clienteCRUD, modelosCRUD
 from routes.graphQL.schema import graphql_router
 from controller.clientIP import rate_limit
 from controller.jwtValidation import verify_jwt  # Função para verificar o JWT
@@ -20,8 +20,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["POST", "PUT", "DELETE"]
 )
 
 # Middleware de limitador de tempo
@@ -29,6 +28,9 @@ app.add_middleware(
 async def rate_limit_middleware(request: Request, call_next):
     """Middleware para aplicar o limite de requisições a todas as rotas"""
     
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
     EXCLUDED_PATHS = {"/user/auth"}
 
     if request.url.path in EXCLUDED_PATHS:
@@ -81,6 +83,8 @@ app.include_router(userCRUD.routerUser)
 app.include_router(empresaCRUD.routerEmpresa)
 #Rotas do cliente (REST)
 app.include_router(clienteCRUD.routerCliente)
+#Rotas dis modelos (REST)
+app.include_router(modelosCRUD.routerModelo)
 # Rotas GraphQL
 app.include_router(graphql_router, prefix="/graphql")
 

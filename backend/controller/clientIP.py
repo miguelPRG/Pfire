@@ -4,7 +4,7 @@ from fastapi.responses import JSONResponse
 
 # Definir o número máximo de requisições e o intervalo de tempo
 LIMIT = 5  # número de requisições permitidas
-TIME_FRAME = 60  # intervalo de tempo (em segundos)
+TIME_FRAME = 30  # intervalo de tempo (em segundos)
 
 # Dicionário em memória para armazenar as requisições por IP
 rate_limiter = {}

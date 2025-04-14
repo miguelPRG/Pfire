@@ -15,7 +15,7 @@ class ClienteQuery:
         jwt = getattr(request.state, "jwt", None)
 
         if not jwt["isSuperAdmin"]:
-            user_empresa = await users_empresas_collection.find_one({"empresa_id": ObjectId(empresa_id), "user_id": ObjectId(jwt["user_id"]), "role": "admin", "isActive": True})
+            user_empresa = await users_empresas_collection.find_one({"empresa_id": ObjectId(empresa_id), "user_id": ObjectId(jwt["user_id"]), "role": "admin"})
 
             if not user_empresa:
                 raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para ver clientes nesta empresa.")

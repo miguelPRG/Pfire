@@ -31,7 +31,6 @@ class EmpresaQuery:
                     "nome": empresa.get("nome"),
                     "nif": empresa.get("nif"),
                     "telefone": empresa.get("telefone"),
-                    "email": empresa.get("email"),
                     "morada": empresa.get("morada"),
                     "localidade": empresa.get("localidade"),
                     "codigo_postal": empresa.get("codigo_postal"),
@@ -47,10 +46,11 @@ class EmpresaQuery:
                     logo_base64 = b64encode(empresa["logo"]).decode('utf-8')
                     empresa_data["logo"] = logo_base64
 
-                # Filtra os campos que não devem ser retornados para usuários não administradores
                 if not jwt["isSuperAdmin"]:
+
                     empresa_data = {k: v for k, v in empresa_data.items() if k not in ["created_by", "updated_by"]}
 
+                # Filtra os campos nulos
                 empresas.append(Empresa(**filter_null_fields(empresa_data)))
         
         return empresas

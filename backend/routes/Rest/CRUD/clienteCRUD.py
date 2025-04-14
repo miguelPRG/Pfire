@@ -9,11 +9,11 @@ routerCliente = APIRouter(prefix="/cliente")
 #Criar um novo cliente
 @routerCliente.post("/")
 async def criar_cliente(cliente: ClienteCreate, request: Request, recaptchaToken: str):
-    # Sacar jwt
-    jwt = getattr(request.state, "jwt", None)
 
     # Validar reCAPTCHA token
     await validar_recaptcha_token(recaptchaToken, "register")    
+    
+    jwt = getattr(request.state, "jwt", None)
 
     empresa_id = ObjectId(cliente.empresa_id)
 

@@ -1,6 +1,6 @@
 import strawberry
-
 from datetime import datetime
+from typing import Optional
 
 @strawberry.type
 class Cliente:
@@ -13,7 +13,7 @@ class Cliente:
     morada: str
     codigo_postal: str
     created_at: datetime 
-    created_by: str
+    created_by: str = None
     updated_at: datetime
-    updated_by: str
-    isActive: bool
+    updated_by: str = None
+    isActive: Optional[bool] = None

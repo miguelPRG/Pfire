@@ -1,5 +1,6 @@
 import strawberry
 from datetime import datetime
+from typing import Optional
 
 @strawberry.type
 class User:
@@ -8,7 +9,7 @@ class User:
     email: str
     telefone: str
     role: str
-    created_at: datetime
-    updated_at: datetime
-    last_login: datetime
-    isActive: bool
+    created_at: datetime = None
+    updated_at: datetime = None
+    last_login: datetime = None
+    isActive: Optional[bool] = None
