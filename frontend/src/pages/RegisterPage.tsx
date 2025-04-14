@@ -92,7 +92,6 @@ function RegisterPage() {
       sx={{
         textAlign: "center",
         mt: 4,
-        backgroundColor: "background.default",
         p: 4,
         borderRadius: 2,
       }}

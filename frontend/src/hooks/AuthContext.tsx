@@ -216,6 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     setUser(null);
+    empresaId.current = null; // Limpa o ID da empresa ao deslogar
   }
 
   // Logout via Firebase

@@ -56,7 +56,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 };
 
 const ThemeToggleButton = () => {
-  const { darkMode, toggleTheme } = useTema();
+  const { darkMode, toggleTheme, isChanging } = useTema();
 
   useEffect(() => {
     const savedScrollPosition = sessionStorage.getItem("scrollPosition");
@@ -68,6 +68,7 @@ const ThemeToggleButton = () => {
 
   return (
     <IconButton
+      disabled={isChanging}
       onClick={() => {
         sessionStorage.setItem("scrollPosition", window.scrollY.toString()); // Salva a posição antes de mudar o tema
         toggleTheme();

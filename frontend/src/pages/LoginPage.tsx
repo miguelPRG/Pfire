@@ -72,7 +72,6 @@ function LoginPage() {
       sx={{
         textAlign: "center",
         mt: 4,
-        backgroundColor: "background.default",
         padding: 4,
         borderRadius: 2,
       }}

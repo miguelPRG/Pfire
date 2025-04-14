@@ -1,10 +1,8 @@
 import {
   createContext,
-  useState,
   useContext,
   ReactNode,
-  useEffect,
-  useMemo,
+  useState,
 } from "react";
 import { ThemeProvider, CssBaseline, createTheme } from "@mui/material";
 import { lightTheme, darkTheme } from "../assets/Theme";
@@ -12,6 +10,7 @@ import { lightTheme, darkTheme } from "../assets/Theme";
 interface TemaContextProps {
   darkMode: boolean;
   toggleTheme: () => void;
+  isChanging: boolean;
 }
 
 const TemaContext = createContext<TemaContextProps | undefined>(undefined);
@@ -25,47 +24,53 @@ export const useTema = () => {
 };
 
 export function TemaProvider({ children }: { children: ReactNode }) {
-  const getInitialDarkMode = () => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("darkMode") === "true";
-    }
-    return false;
-  };
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    // Recupera o estado inicial do tema do localStorage
+    return localStorage.getItem("darkMode") === "true";
+  });
 
-  const [darkMode, setDarkMode] = useState<boolean>(getInitialDarkMode);
-  const [isChangingTheme, setIsChangingTheme] = useState(false);
+  // Armazena o tema atual sem causar re-renderizações
+  const [theme, setTheme] = useState(createTheme(darkMode ? darkTheme : lightTheme));
 
-  // Memoriza o tema para evitar recriações desnecessárias
-  const theme = useMemo(
-    () => createTheme(darkMode ? darkTheme : lightTheme),
-    [darkMode],
-  );
-
-  // Aplica a cor do fundo diretamente no body para evitar flash branco
-  useEffect(() => {
-    document.body.style.backgroundColor = darkMode
-      ? darkTheme.palette.background.default
-      : lightTheme.palette.background.default;
-  }, [darkMode]);
-
-  useEffect(() => {
-    localStorage.setItem("darkMode", String(darkMode));
-  }, [darkMode]);
+  // Estado para indicar se o tema está a ser alterado
+  const [isChanging, setIsChanging] = useState(false);
 
   const toggleTheme = () => {
-    setIsChangingTheme(true);
-    setDarkMode((prevMode) => !prevMode);
-    setTimeout(() => setIsChangingTheme(false), 5); // Delay para evitar flash. Mais conforto para o utilizador.
+    // Ativa o estado de transição
+    setIsChanging(true);
+
+    // Alterna o tema
+    setDarkMode((prevMode) => {
+      const newMode = !prevMode;
+
+      // Atualiza o tema imediatamente
+      setTheme(createTheme(newMode ? darkTheme : lightTheme));
+
+      // Salva o estado do tema no localStorage
+      localStorage.setItem("darkMode", String(newMode));
+
+      // Aplica uma transição suave ao body
+      document.body.style.transition = "background-color 0.3s ease";
+      document.body.style.backgroundColor = newMode
+        ? darkTheme.palette.background.default
+        : lightTheme.palette.background.default;
+
+      return newMode;
+    });
+
+    // Finaliza o estado de transição após a duração da animação
+    setTimeout(() => {
+      setIsChanging(false);
+    }, 300); // Tempo da transição (0.3s)
   };
 
   return (
-    <TemaContext.Provider value={{ darkMode, toggleTheme }}>
-      {!isChangingTheme && (
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          {children}
-        </ThemeProvider>
-      )}
+    <TemaContext.Provider value={{ darkMode, toggleTheme, isChanging }}>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        {children}
+      </ThemeProvider>
     </TemaContext.Provider>
   );
 }
+
