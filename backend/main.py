@@ -6,6 +6,7 @@ from routes.graphQL.schema import graphql_router
 from controller.clientIP import rate_limit
 from controller.jwtValidation import verify_jwt  # Função para verificar o JWT
 from fastapi.responses import JSONResponse  # Import necessário
+from controller.token_blacklist import is_token_revoked  # Import necessário
 
 app = FastAPI()
 
@@ -57,6 +58,12 @@ async def jwt_authentication_middleware(request: Request, call_next):
         return JSONResponse(
             status_code=401,
             content={"message": "Acesso Negado!"}
+        )
+
+    if await is_token_revoked(token):
+        return JSONResponse(
+            status_code=401,
+            content={"message": "Token revogado! Por favor, faça login novamente."}
         )
 
     try:

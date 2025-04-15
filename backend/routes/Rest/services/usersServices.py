@@ -1,7 +1,8 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from controller.recaptchaValidation import validar_recaptcha_token
-from controller.jwtValidation import generate_jwt,TOKEN_BLACKLIST
+from controller.jwtValidation import generate_jwt  # Se usa para generar el JWT
+from controller.token_blacklist import add_token_to_blacklist  # Nueva función para usar Redis
 from pathlib import Path
 from secrets import choice
 from string import ascii_letters, punctuation, digits
@@ -23,9 +24,9 @@ pwd_context = CryptContext(
 )
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent 
-SERVICE_ACCOUNT_PATH = BASE_DIR / "chaves" / "serviceAccountKey.json"  # Caminho correto
+SERVICE_ACCOUNT_PATH = BASE_DIR / "chaves" / "serviceAccountKey.json"  # Camino correcto
 
-# Inicializa o Firebase com o caminho ajustado
+# Inicializa el Firebase usando el archivo de credenciales
 cred = credentials.Certificate(str(SERVICE_ACCOUNT_PATH))
 initialize_app(cred)
 
@@ -44,23 +45,22 @@ async def login_oauth(request: Request, firebase_token: str):
         user_task = None
 
         if not db_user:
-            #Criar um novo utilizador
+            # Crear un nuevo usuario
             random_string = "".join(choice(ascii_letters + digits + punctuation) for _ in range(15))
             new_user = UserCreate(name=username, email=email, password=random_string, auth_provider="firebase")
             user_data = new_user.model_dump(by_alias=True)
             user_task = users_collection.insert_one(user_data)
-
+            
         else:
-            # Verificar se o utilizador está ativado
+            # Verificar si el usuario está activo
             if not db_user["isActive"]:
                 raise HTTPException(status_code=403, detail="Esta conta foi desativada.")
-            # Atualizar horário do último login
+            # Actualizar el horario del último login
             user_task = users_collection.update_one({"email": email}, {"$set": {"last_login": datetime.now()}})
 
-        # Gerar JWT
-        token_task = to_thread(generate_jwt,str(db_user["_id"]) ,db_user["name"], db_user["email"], db_user["isSuperAdmin"])
-
-        _,token = await gather(user_task, token_task)
+        # Generar JWT
+        token_task = to_thread(generate_jwt, str(db_user["_id"]), db_user["name"], db_user["email"], db_user["isSuperAdmin"])
+        _, token = await gather(user_task, token_task)
 
         response = JSONResponse({"name": db_user["name"], "email": db_user["email"]})
         response.set_cookie(key="_fp", value=token, httponly=True, samesite="Strict", secure=True)
@@ -72,9 +72,9 @@ async def login_oauth(request: Request, firebase_token: str):
 
 # 🚀 Login via Email e Senha
 @routerUser.post("/login")
-async def login(user: UserLogin, request:Request, recaptchaToken: str = None):
-    # Validate the reCAPTCHA token
-    #await validar_recaptcha_token(recaptchaToken, "login")
+async def login(user: UserLogin, request: Request, recaptchaToken: str = None):
+    # Validar el token reCAPTCHA (se descomenta según necesidad)
+    # await validar_recaptcha_token(recaptchaToken, "login")
 
     db_user = await users_collection.find_one({"email": user.email})
 
@@ -91,29 +91,27 @@ async def login(user: UserLogin, request:Request, recaptchaToken: str = None):
 
     return response
 
-# Registar um novo User
+# 🚀 Registar um novo User
 @routerUser.post("/register")
 async def register_user(data: RegisterUser, request: Request, recaptchaToken: str):
-    
-    # Validate the reCAPTCHA token
+    # Validar el token reCAPTCHA
     await validar_recaptcha_token(recaptchaToken, "register")
 
-    # Verificar se o utilizador com aquele email já existe
-    existing_user = users_collection.find_one({"email": data.user.email})  # Normaliza o email
+    # Verificar si el usuario con ese email ya existe
+    existing_user = users_collection.find_one({"email": data.user.email})
+    # Verificar si la empresa con ese NIF ya existe
+    existing_empresa = empresas_collection.find_one({"nif": data.empresa.nif})
 
-    # Verificar se a empresa com aquele NIF já existe
-    existing_empresa = empresas_collection.find_one({"nif": data.empresa.nif})  # Normaliza o NIF
-
-    #Espera que as duas operações terminem
+    # Espera a que ambas operaciones finalicen
     existing_user, existing_empresa = await gather(existing_user, existing_empresa)
 
     if existing_user:
         raise HTTPException(status_code=401, detail="O utilizador que tem este email já existe.")
-
+    
     if existing_empresa:
         raise HTTPException(status_code=401, detail="A empresa que tem este NIF já existe.")
 
-    #Criar utilizador
+    # Crear el nuevo usuario
     new_user = data.user
     new_user.password = pwd_context.hash(new_user.password)
     new_user_data = new_user.model_dump(by_alias=True)
@@ -122,7 +120,7 @@ async def register_user(data: RegisterUser, request: Request, recaptchaToken: st
     if not user.inserted_id:
         raise HTTPException(status_code=500, detail="Erro ao criar o utilizador.")
 
-    # Criar Empresa
+    # Crear la empresa
     new_empresa = data.empresa
     new_empresa.created_by = user.inserted_id
     new_empresa.updated_by = user.inserted_id
@@ -132,7 +130,7 @@ async def register_user(data: RegisterUser, request: Request, recaptchaToken: st
     if not empresa.inserted_id:
         raise HTTPException(status_code=500, detail="Erro ao criar a empresa.")
     
-    # Criar UserEmpresa
+    # Crear UserEmpresa
     new_user_empresa = UserEmpresaCreate(
         user_id=user.inserted_id,
         empresa_id=empresa.inserted_id,
@@ -140,7 +138,7 @@ async def register_user(data: RegisterUser, request: Request, recaptchaToken: st
         created_by=user.inserted_id,
         updated_by=user.inserted_id,
     )
-    
+
     user_empresa_data = new_user_empresa.model_dump(by_alias=True)
     user_empresa = await users_empresas_collection.insert_one(user_empresa_data)
 
@@ -149,7 +147,7 @@ async def register_user(data: RegisterUser, request: Request, recaptchaToken: st
 
     return {"message": "Conta criada! Verifique seu email para ativação."}
 
-# 🚀 Autenticação do Usuário (Verificar JWT) Esta função será chamada sempre que o cliente fizer refresh no seu browser
+# 🚀 Autenticação do Usuário (Verificar JWT)
 @routerUser.get("/auth")
 async def auth_user(request: Request):
 
@@ -159,19 +157,23 @@ async def auth_user(request: Request):
 
 # 🚀 Logout
 @routerUser.post("/logout")
-async def logout_user(request: Request):
-    
-    # Preparar a resposta JSON
-    response = JSONResponse({"message": "Logout realizado com sucesso."})
-
-    # Revogar o token JWT
+async def logout_user(request: Request, response: Response):
+    """
+    Endpoint de logout: extrae el token JWT (guardado en la cookie "_fp"),
+    lo agrega a la blacklist en Redis y elimina la cookie.
+    """
     token = request.cookies.get("_fp")
-    TOKEN_BLACKLIST.add(token)
-
+    if not token:
+        raise HTTPException(status_code=401, detail="Token não encontrado.")
+    
+    # Agrega el token a Redis con el TTL correspondiente (basado en su expiración)
+    await add_token_to_blacklist(token)
+    
+    # Elimina la cookie del JWT
     response.delete_cookie("_fp", httponly=True, samesite="Strict", secure=True)
-    return response
+    return {"message": "Logout efetuado com sucesso!"}
 
-# 🚀 Logout Global (Todos os Dispositivos) Ainda está em desenvolvimento
+# 🚀 Logout Global (Todos os Dispositivos) - Em desenvolvimento
 """
 @routerUser.post("/logout-all")
 async def logout_all_users(email: str):
