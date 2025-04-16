@@ -84,7 +84,7 @@ async def login(user: UserLogin, request: Request, recaptchaToken: str = None):
     if not db_user.get("isActive", True):
         raise HTTPException(status_code=403, detail="Esta conta foi desativada.")
 
-    token = generate_jwt(str(db_user["_id"]),db_user["nome"], db_user["email"], db_user["isSuperAdmin"])
+    token = generate_jwt(str(db_user["_id"]),db_user["nome"], db_user["email"],db_user["isSuperAdmin"],db_user.get("telefone"))
 
     response = JSONResponse({"id":str(db_user["_id"]),"nome": db_user["nome"], "email": db_user["email"]})
     response.set_cookie(key="_fp", value=token, httponly=True, samesite="Strict", secure=True)
@@ -153,7 +153,13 @@ async def auth_user(request: Request):
 
     jwt = getattr(request.state, "jwt", None)
 
-    return {"id": jwt["user_id"],"nome": jwt["nome"], "email": jwt["email"]}
+    return {"id": jwt["user_id"],"nome": jwt["nome"], "email": jwt["email"] , "telefone": jwt["telefone"]}
+
+@routerUser.get("/isSuperAdmin")
+async def is_super_admin(request: Request):
+    jwt = getattr(request.state, "jwt", None)
+    
+    return jwt["isSuperAdmin"]
 
 # 🚀 Logout
 @routerUser.post("/logout")

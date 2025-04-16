@@ -80,7 +80,7 @@ function RegisterPage() {
       await registerUser(payload);
       setShowSuccessDialog(true); // Mostra o popup de sucesso
     } catch (err) {
-      setError("Erro no registo. Tente novamente.");
+      setError(err as string);
     } finally {
       setLoading(false);
     }

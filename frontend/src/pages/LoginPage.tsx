@@ -41,7 +41,7 @@ function LoginPage() {
     try {
       await login(email, password);
     } catch (error) {
-      console.error("Error during login:", error);
+      console.error(error);
       setAuthError(true);
       if (emailRef.current) emailRef.current.value = "";
       if (passwordRef.current) passwordRef.current.value = "";

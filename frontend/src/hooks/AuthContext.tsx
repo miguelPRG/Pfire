@@ -4,7 +4,6 @@ import {
   useContext,
   ReactNode,
   useEffect,
-  useRef
 } from "react";
 import { FirebaseLogin, FirebaseLogout } from "../firebase"; // Importando as funções do Firebase
 
@@ -14,6 +13,7 @@ interface UserLoggedIn {
   id: string
   nome: string;
   email: string;
+  telefone?: string;
 }
 
 export interface UserRegistered {
@@ -34,6 +34,7 @@ export interface Empresa {
 
 interface AuthContextType {
   user: UserLoggedIn | null;
+  empresaId: string | null; // Adicionando o ID da empresa ao contexto
   loading: boolean;
   login: (email: string, pwd: string) => void;
 
@@ -52,7 +53,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserLoggedIn | null>(null);
-  const empresaId = useRef<string | null>(null); // Ref para armazenar o ID da empresa
+  const [empresaId, setEmpresaId] = useState<string | null>(null); // Ref para armazenar o ID da empresa
   //const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [loading, setLoading] = useState(true); // Inicializa como true até a verificação de autenticação ser concluída
 
@@ -66,23 +67,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           credentials: "include",
         });
 
+        const data = await response.json();
+
         if (response.ok) {
-          const data = await response.json();
           console.log(data);
           setUser({
             id: data.id,
             nome: data.nome,
             email: data.email,
+            telefone: data.telefone,
           });
 
         } else {
-          setUser(null);
-          empresaId.current = null; // Limpa o ID da empresa se a autenticação falhar
+          
+          throw Error(data.message || "Erro desconhecido do backend");
         }
       } catch (error) {
-        console.error("Erro ao verificar autenticação:", error);
-        setUser(null);
-        empresaId.current = null; // Limpa o ID da empresa se ocorrer um erro
+        throw error;
       } finally {
         setLoading(false); // Após a verificação (sucesso ou falha), setLoading deve ser false
       }
@@ -119,8 +120,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await response.json();
 
       if (!response.ok) {
-        setUser(null);
-        console.log(data);
         throw new Error(data.message || "Erro desconhecido do backend");
       }
 
@@ -129,8 +128,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nome: data.nome,
         email: data.email,
       });
+
     } catch (error) {
-      console.error("Erro no login:", error);
       throw error;
     }
   }
@@ -138,31 +137,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user: UserRegistered;
     empresa: Empresa;
   }) {
-    // ✅ Executa o reCAPTCHA antes de enviar os dados
-    const token = await window.grecaptcha.enterprise.execute(
-      "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",
-      {
-        action: "register",
-      },
-    );
 
-    const response = await fetch(
-      `backend/user/register?recaptchaToken=${token}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload), // agora só vai user e empresa
-      },
-    );
+    try{
+        // ✅ Executa o reCAPTCHA antes de enviar os dados
+        const token = await window.grecaptcha.enterprise.execute(
+          "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",
+          {
+            action: "register",
+          },
+        );
 
-    const data = await response.json();
+        const response = await fetch(
+          `backend/user/register?recaptchaToken=${token}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify(payload), // agora só vai user e empresa
+          },
+        );
 
-    if (!response.ok) {
-      throw new Error(data.detail || "Erro desconhecido do backend");
-    }
+        const data = await response.json();
 
-    return data;
+        if (!response.ok) {
+          throw new Error(data.detail || "Erro desconhecido do backend");
+        }
+        return data;
+
+      }catch (error) {
+        throw error;
+      }
   }
 
   // Login via Firebase OAuth
@@ -203,7 +207,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: user.email,
       });
     } catch (error) {
-      console.error("Erro no login com o Firebase:", error);
       throw error;
     }
   }
@@ -216,7 +219,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     setUser(null);
-    empresaId.current = null; // Limpa o ID da empresa ao deslogar
+    setEmpresaId(null) // Limpa o ID da empresa ao deslogar
   }
 
   // Logout via Firebase
@@ -225,20 +228,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await FirebaseLogout();
       setUser(null);
     } catch (error) {
-      console.error("Erro ao deslogar do Firebase:", error);
+      throw error;
     }
   }
 
   // Escolher id da empresa
   function chooseCompany(id: string) {
-    empresaId.current = id; // Atualiza o ID da empresa
-    console.log("ID da empresa escolhida:", empresaId.current);
+    setEmpresaId(id) // Atualiza o ID da empresa
+    console.log("ID da empresa escolhida:", id);
   }
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        empresaId,
         login,
         registerUser,
         loading,
