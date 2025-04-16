@@ -21,7 +21,7 @@ rebase_develop:
       else
         echo "Já estamos na branch develop. Nenhum rebase necessário."
       fi
-
+  allow_failure: true
 # Backend Security Check
 python_test:
   image: python:3.12-slim
