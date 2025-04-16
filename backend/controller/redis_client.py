@@ -8,9 +8,9 @@ import os
 # ssl=True
 
 # Credenciales en variables de entorno
-redis_host = os.getenv("REDIS_HOST", "cunning-lamb-12871.upstash.io")
+redis_host = os.getenv("REDIS_HOST", "saved-dragon-11376.upstash.io")
 redis_port = int(os.getenv("REDIS_PORT", "6379"))
-redis_password = os.getenv("REDIS_PASSWORD", "ATJHAAIjcDE4OTIxZGI3NThjNzU0MjViOGI4OTM4YTM2MWJlODgyOHAxMA")
+redis_password = os.getenv("REDIS_PASSWORD", "ASxwAAIjcDFiMmFmMDVlN2E5MjM0NWZjOGU2Y2ZjNmJjMmY4MTA1YXAxMA")
 
 # Crear una instancia asíncrona del cliente Redis
 redis_client = aioredis.Redis(
