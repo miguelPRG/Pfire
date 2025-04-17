@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request
 from controller.recaptchaValidation import validar_recaptcha_token
-from models.modeloCamposModels import ModelosCamposCreate, ModelosCamposUpdate
+from models.modeloCamposModels import ModelosCamposCreate, ModelosCamposUpdate, MAIN_FIELDS
 from database import modelos_collection,users_empresas_collection, empresas_collection
 from bson import ObjectId
 
@@ -63,6 +63,10 @@ async def update_modelo(request:Request, modelo: ModelosCamposUpdate, recaptchaT
 
     if not jwt["isSuperAdmin"]:
         # Verificar se o utilizador é admin da empresa
+    
+        if not modelo.empresa_id:
+            raise HTTPException(status_code=400, detail="ID da empresa é obrigatório para atualizar o modelo.")
+        
         user_empresa = await users_empresas_collection.find_one({"empresa_id": ObjectId(modelo.empresa_id), "user_id":user_id, "role": "admin"})
         
         if not user_empresa:
@@ -70,6 +74,9 @@ async def update_modelo(request:Request, modelo: ModelosCamposUpdate, recaptchaT
     
     modelo_data = modelo.model_dump(by_alias=True)
     modelo_data["updated_by"] = user_id
+
+    if modelo_data.get("empresa_id"):
+        del modelo_data["empresa_id"]  # Remove empresa_id se estiver presente, pois não pode ser atualizado
 
     if id:
         result = await modelos_collection.find_one({"_id": ObjectId(id)})
@@ -87,7 +94,7 @@ async def update_modelo(request:Request, modelo: ModelosCamposUpdate, recaptchaT
             modelo_data[key] = value
 
     # Eleminar campos com valor igual a "delete"
-    keys_to_delete = [key for key, value in modelo_data.items() if value == "delete"]
+    keys_to_delete = [key for key, value in modelo_data.items() if value == "delete" and key not in MAIN_FIELDS]
     for key in keys_to_delete:
         del modelo_data[key]
 
@@ -101,9 +108,9 @@ async def update_modelo(request:Request, modelo: ModelosCamposUpdate, recaptchaT
     
 #Apagar Modelo
 @routerModelo.delete("/")
-async def apagar_modelo(request:Request, empresa_id:str,recaptchaToken:str = None,id:str = None, model_name:str = None):
+async def apagar_modelo(request:Request, empresa_id:str,recaptchaToken:str,id:str = None, model_name:str = None):
 
-    #await validar_recaptcha_token(recaptchaToken, "register")
+    await validar_recaptcha_token(recaptchaToken, "register")
 
     if not id and not model_name:
         raise HTTPException(status_code=400, detail="ID ou nome do modelo são obrigatórios.")

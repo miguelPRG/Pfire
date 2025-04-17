@@ -19,18 +19,15 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
+    allow_origins=origins,  # Domínios permitidos
     allow_credentials=True,
-    allow_methods=["GET","POST", "PUT", "DELETE"]
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Inclua OPTIONS
+    allow_headers=["*"],  # Permita todos os cabeçalhos necessários
 )
-
 # Middleware de limitador de tempo
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next):
     """Middleware para aplicar o limite de requisições a todas as rotas"""
-    
-    if request.method == "OPTIONS":
-        return await call_next(request)
 
     EXCLUDED_PATHS = {"/user/auth"}
 

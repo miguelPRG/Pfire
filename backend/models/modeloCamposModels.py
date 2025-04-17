@@ -6,13 +6,11 @@ from fastapi import HTTPException
 MAIN_FIELDS = {
     "model_name",
     "empresa_id", 
-    "created_by", 
     "created_at",
-    "updated_by",
     "updated_at",
 }
 
-ALLOWED_DATATYPES = {"number", "string", "boolean", "object"}  # Tipos de dados permitidos
+ALLOWED_DATATYPES = {"number", "string", "bool", "object"}  # Tipos de dados permitidos
 
 class ModelosCamposCreate(BaseModel):
     model_name: str  # Ex: "extintores", "para-raios", "bocas de incêndio"
@@ -25,6 +23,9 @@ class ModelosCamposCreate(BaseModel):
         data = datetime.now()
         values["created_at"] = data
         values["updated_at"] = data
+
+        if len(values.keys()) < 5:
+            raise HTTPException(status_code=400, detail="Modelo deve conter pelo menos 3 campos: 'model_name', 'empresa_id' e um campo personalizado.")
 
         for key, value in values.items():
 
@@ -62,8 +63,7 @@ class ModelosCamposCreate(BaseModel):
         return values
 
 class ModelosCamposUpdate(BaseModel):
-    model_name: Optional[str] = None
-    empresa_id: str
+    model_name: Optional[str] = None  # Ex: "extintores", "para-raios", "bocas de incêndio"
     model_config = ConfigDict(extra='allow')
 
     @model_validator(mode="before")
@@ -73,7 +73,7 @@ class ModelosCamposUpdate(BaseModel):
         values["updated_at"] = data
 
         for key, value in values.items():
-            if key in MAIN_FIELDS:
+            if key in MAIN_FIELDS: 
                 continue
 
             # Remove campos com valor "delete"
