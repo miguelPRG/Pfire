@@ -34,8 +34,7 @@ async def criar_cliente(cliente: ClienteCreate, request: Request, recaptchaToken
     cliente_data = cliente.model_dump(by_alias=True)
     user_id = ObjectId(jwt["user_id"])
 
-    # Converte o campo empresa_id de string para ObjectId. é necessário apaga-lo primeiro
-    del cliente_data["empresa_id"]
+    # Converte o campo empresa_id de string para ObjectId
     cliente_data["empresa_id"] = empresa_id
     cliente_data["created_by"] = user_id
     cliente_data["updated_by"] = user_id

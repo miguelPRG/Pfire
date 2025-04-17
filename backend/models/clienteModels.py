@@ -11,10 +11,6 @@ class ClienteCreate(BaseModel):
     morada: str
     codigo_postal: str
     empresa_id: str  # Será passado inicialmente como string e depois convertido para ObjectId
-    created_at: datetime = Field(default_factory=datetime.now)
-    created_by: Optional[Any] = None
-    updated_at: datetime = Field(default_factory=datetime.now)
-    updated_by: Optional[Any] = None
     isActive: bool
 
     """Os campos created_by e updated_by são preenchidos automaticamente com a data e hora atual quando o objeto é criado."""
