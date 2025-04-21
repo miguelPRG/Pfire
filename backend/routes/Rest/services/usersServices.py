@@ -13,6 +13,7 @@ from models.userEmpresaModels import UserEmpresaCreate
 from datetime import datetime
 from asyncio import to_thread, gather
 from database import users_collection, empresas_collection, users_empresas_collection
+from datetime import datetime
 
 routerUser = APIRouter(prefix="/user")
 
@@ -84,6 +85,11 @@ async def login(user: UserLogin, request: Request, recaptchaToken: str = None):
     if not db_user.get("isActive", True):
         raise HTTPException(status_code=403, detail="Esta conta foi desativada.")
 
+    atualizar_user = await users_collection.update_one({"email": user.email}, {"$set": {"last_login": datetime.now()}})
+
+    if not atualizar_user.modified_count:
+        raise HTTPException(status_code=500, detail="Erro ao atualizar o último login.")
+
     token = generate_jwt(str(db_user["_id"]),db_user["nome"], db_user["email"],db_user["isSuperAdmin"],db_user.get("telefone"))
 
     response = JSONResponse({"id":str(db_user["_id"]),"nome": db_user["nome"], "email": db_user["email"]})
@@ -115,6 +121,10 @@ async def register_user(data: RegisterUser, request: Request, recaptchaToken: st
     new_user = data.user
     new_user.password = pwd_context.hash(new_user.password)
     new_user_data = new_user.model_dump(by_alias=True)
+    new_user_data["created_at"] = new_user_data["updated_at"] = datetime.now()
+    new_user_data["last_login"] = None
+    new_user_data["isSuperAdmin"] = False
+    new_user_data["isActive"] = False
     user = await users_collection.insert_one(new_user_data)
 
     if not user.inserted_id:

@@ -13,18 +13,6 @@ class EmpresaCreate(BaseModel):
     created_by: Optional[Any] = None  # Pode ser um ID ou outro tipo de referência
     updated_by: Optional[Any] = None  # Pode ser um ID ou outro tipo de referência
 
-    """Os campos created_by e updated_by são preenchidos automaticamente com a data e hora atual quando o objeto é criado."""
-
-    @model_validator(mode='before')
-    @classmethod
-    def set_default_values(cls, values):
-        current_time = datetime.now()
-
-        values['created_at'] = current_time
-        values['updated_at'] = current_time
-
-        return values
-
 class EmpresaUpdate(BaseModel):
     nome: Optional[str] = None
     nif: Optional[str] = None

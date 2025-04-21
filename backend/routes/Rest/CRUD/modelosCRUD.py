@@ -3,6 +3,7 @@ from controller.recaptchaValidation import validar_recaptcha_token
 from models.modeloCamposModels import ModelosCamposCreate, ModelosCamposUpdate, MAIN_FIELDS
 from database import modelos_collection,users_empresas_collection, empresas_collection
 from bson import ObjectId
+from datetime import datetime
 
 routerModelo = APIRouter(prefix="/modelo")
 
@@ -39,6 +40,7 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request, recaptchaT
     modelo_data = modelo.model_dump(by_alias=True)  # Inclui todos os campos, incluindo os customizados
     modelo_data["created_by"] = user_id
     modelo_data["updated_by"] = user_id
+    modelo_data["created_at"] = modelo_data["updated_at"] = datetime.now()
     modelo_data["empresa_id"] = empresa_id
 
     result = await modelos_collection.insert_one(modelo_data)

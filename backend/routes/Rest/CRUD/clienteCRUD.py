@@ -3,6 +3,7 @@ from controller.recaptchaValidation import validar_recaptcha_token
 from models.clienteModels import ClienteCreate, ClienteUpdate, ClienteActivion
 from database import clientes_collection, users_empresas_collection
 from bson import ObjectId
+from datetime import datetime
 
 routerCliente = APIRouter(prefix="/cliente")
 
@@ -34,10 +35,12 @@ async def criar_cliente(cliente: ClienteCreate, request: Request, recaptchaToken
     cliente_data = cliente.model_dump(by_alias=True)
     user_id = ObjectId(jwt["user_id"])
 
-    # Converte o campo empresa_id de string para ObjectId
+    # Adicionar os campos obrigatórios
     cliente_data["empresa_id"] = empresa_id
     cliente_data["created_by"] = user_id
     cliente_data["updated_by"] = user_id
+    cliente_data["created_at"] = cliente_data["updated_at"] = datetime.now()
+    cliente_data["isActive"] = True
 
     result = await clientes_collection.insert_one(cliente_data)
 

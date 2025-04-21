@@ -7,24 +7,10 @@ class ClienteCreate(BaseModel):
     email: EmailStr
     telefone: str
     nif: str
-    cidade: str
+    localidade: str
     morada: str
     codigo_postal: str
     empresa_id: str  # Será passado inicialmente como string e depois convertido para ObjectId
-    isActive: bool
-
-    """Os campos created_by e updated_by são preenchidos automaticamente com a data e hora atual quando o objeto é criado."""
-
-    @model_validator(mode='before')
-    @classmethod
-    def set_default_values(cls, values):
-        # Define o valor padrão para created_at e updated_at como a data e hora atual
-        current_time = datetime.now()
-        values["created_at"] = current_time
-        values["updated_at"] = current_time
-        values["isActive"] = True
-
-        return values
 
 class ClienteUpdate(BaseModel):
     empresa_id: str
@@ -35,7 +21,7 @@ class ClienteUpdate(BaseModel):
     cidade: Optional[str] = None
     morada: Optional[str] = None
     codigo_postal: Optional[str] = None
-    updated_at: datetime
+    updated_at: datetime = Field(default_factory=datetime.now)  # Define o valor padrão como a data e hora atual
 
     @model_validator(mode='before')
     @classmethod
@@ -48,7 +34,7 @@ class ClienteUpdate(BaseModel):
 
 class ClienteActivion(BaseModel):
     empresa_id: str
-    update_at: datetime
+    update_at: datetime = Field(default_factory=datetime.now)
 
     @model_validator(mode='before')
     @classmethod

@@ -20,9 +20,6 @@ class ModelosCamposCreate(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def validate_custom_fields(cls, values):
-        data = datetime.now()
-        values["created_at"] = data
-        values["updated_at"] = data
 
         if len(values.keys()) < 5:
             raise HTTPException(status_code=400, detail="Modelo deve conter pelo menos 3 campos: 'model_name', 'empresa_id' e um campo personalizado.")
@@ -65,6 +62,7 @@ class ModelosCamposCreate(BaseModel):
 class ModelosCamposUpdate(BaseModel):
     model_name: Optional[str] = None  # Ex: "extintores", "para-raios", "bocas de incêndio"
     model_config = ConfigDict(extra='allow')
+    updated_at: datetime = Field(default_factory=datetime.now)  # Data de atualização padrão
 
     @model_validator(mode="before")
     @classmethod
