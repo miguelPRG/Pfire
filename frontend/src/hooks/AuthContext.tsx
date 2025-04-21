@@ -41,7 +41,7 @@ interface AuthContextType {
   registerUser: (payload: {
     user: UserRegistered;
     empresa: Empresa;
-  }) => Promise<void>;
+  }) => void;
 
   loginWithOAuth: (provider: "google" | "facebook" | "microsoft") => void;
   logout: () => void;
@@ -54,7 +54,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserLoggedIn | null>(null);
   const [empresaId, setEmpresaId] = useState<string | null>(null); // Ref para armazenar o ID da empresa
-  //const [empresas, setEmpresas] = useState<Empresa[]>([]);
   const [loading, setLoading] = useState(true); // Inicializa como true até a verificação de autenticação ser concluída
 
   useEffect(() => {
