@@ -17,11 +17,10 @@ rebase_develop:
         git config --global user.email "miguelgoncalves2024@hotmail.com"
         git config --global user.name "miguelgoncalves2024"
         git fetch origin
-        git rebase origin/develop || echo "Rebase falhou, continue com cuidado!"
+        git rebase origin/develop || exit 1  # Falha o job se o rebase falhar
       else
         echo "Já estamos na branch develop. Nenhum rebase necessário."
       fi
-  allow_failure: true
 # Backend Security Check
 python_test:
   image: python:3.12-slim
