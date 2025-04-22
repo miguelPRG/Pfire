@@ -30,7 +30,7 @@ class ClienteQuery:
                 "email": cliente.get("email"),
                 "telefone": cliente.get("telefone"),
                 "nif": cliente.get("nif"),
-                "cidade": cliente.get("cidade"),
+                "localidade": cliente.get("localidade"),
                 "morada": cliente.get("morada"),
                 "codigo_postal": cliente.get("codigo_postal"),
                 "created_at": cliente.get("created_at"),

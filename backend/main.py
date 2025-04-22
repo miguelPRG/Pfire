@@ -44,6 +44,8 @@ async def jwt_authentication_middleware(request: Request, call_next):
     """Verifica se a rota requer autenticação e valida o JWT a partir do cookie _fp"""
     
     EXCLUDED_PATHS = {"/user/login", "/user/register", "/user/login-oauth"}
+    if request.method == "OPTIONS":
+        return await call_next(request)
 
     if request.url.path in EXCLUDED_PATHS:
         return await call_next(request)
