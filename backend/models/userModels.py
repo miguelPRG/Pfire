@@ -1,5 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, model_validator
-from datetime import datetime
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from .empresaModels import EmpresaCreate
 
@@ -15,15 +14,7 @@ class UserUpdate(BaseModel):
     password: Optional[str] = None
     telefone: Optional[str] = None
     isSuperAdmin: Optional[bool] = None
-    updated_at :datetime = Field(default_factory=datetime.now)
     
-    @model_validator(mode='before')
-    @classmethod
-    def set_default_values(cls, values):
-        current_time = datetime.now()
-        values['updated_at'] = current_time
-        return values
-
 class RegisterUser(BaseModel):
     user: UserCreate
     empresa: EmpresaCreate

@@ -132,6 +132,7 @@ async def register_user(data: RegisterUser, request: Request, recaptchaToken: st
 
     # Crear la empresa
     new_empresa = data.empresa
+    new_empresa.created_at = new_empresa.updated_at = datetime.now()
     new_empresa.created_by = user.inserted_id
     new_empresa.updated_by = user.inserted_id
     empresa_data = new_empresa.model_dump(by_alias=True)

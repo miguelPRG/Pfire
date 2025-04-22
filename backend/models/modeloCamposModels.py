@@ -1,13 +1,10 @@
-from datetime import datetime
-from pydantic import BaseModel, Field, model_validator, ConfigDict
-from typing import Optional, Any
+from pydantic import BaseModel, model_validator, ConfigDict
+from typing import Optional
 from fastapi import HTTPException
 
 MAIN_FIELDS = {
     "model_name",
     "empresa_id", 
-    "created_at",
-    "updated_at",
 }
 
 ALLOWED_DATATYPES = {"number", "string", "bool", "object"}  # Tipos de dados permitidos
@@ -62,13 +59,10 @@ class ModelosCamposCreate(BaseModel):
 class ModelosCamposUpdate(BaseModel):
     model_name: Optional[str] = None  # Ex: "extintores", "para-raios", "bocas de incêndio"
     model_config = ConfigDict(extra='allow')
-    updated_at: datetime = Field(default_factory=datetime.now)  # Data de atualização padrão
 
     @model_validator(mode="before")
     @classmethod
     def validate_custom_fields(cls, values):
-        data = datetime.now()
-        values["updated_at"] = data
 
         for key, value in values.items():
             if key in MAIN_FIELDS: 

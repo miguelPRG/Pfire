@@ -71,6 +71,7 @@ async def atualizar_cliente(cliente: ClienteUpdate, request: Request, recaptchaT
     
     cliente_data = cliente.model_dump(exclude_unset=True)
     cliente_data["updated_by"] = ObjectId(jwt["user_id"])
+    cliente_data["updated_at"] = datetime.now()
 
     if id:
         result = await clientes_collection.update_one({"_id": ObjectId(id), "isActive": True}, {"$set": cliente_data})
@@ -103,9 +104,9 @@ async def apagar_cliente(cliente: ClienteActivion, request: Request,recaptchaTok
             raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para apagar clientes nesta empresa.")
     
     if id:
-        result = await clientes_collection.update_one({"_id": ObjectId(id), "isActive": True}, {"$set": {"isActive": False, "updated_by": ObjectId(jwt["user_id"])}})
+        result = await clientes_collection.update_one({"_id": ObjectId(id), "isActive": True}, {"$set": {"isActive": False, "updated_by": ObjectId(jwt["user_id"]), "updated_at": datetime.now()}})
     else:
-        result = await clientes_collection.update_one({"nif": nif,"isActive": True}, {"$set": {"isActive": False, "updated_by": ObjectId(jwt["user_id"])}})
+        result = await clientes_collection.update_one({"nif": nif,"isActive": True}, {"$set": {"isActive": False, "updated_by": ObjectId(jwt["user_id"]), "updated_at": datetime.now()}})
     
     if not result.modified_count:
         raise HTTPException(status_code=404, detail="Cliente não encontrado. Verifique se o cliente realmente existe.")
@@ -132,10 +133,10 @@ async def reativar_cliente(cliente: ClienteActivion, request: Request, recaptcha
             raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para ativar clientes nesta empresa.")
     
     if id:
-        result = await clientes_collection.update_one({"_id": ObjectId(id), "isActive": False}, {"$set": {"isActive": True, "updated_by": ObjectId(jwt["user_id"])}})
+        result = await clientes_collection.update_one({"_id": ObjectId(id), "isActive": False}, {"$set": {"isActive": True, "updated_by": ObjectId(jwt["user_id"]), "updated_at": datetime.now()}})
     
     else:
-        result = await clientes_collection.update_one({"nif": nif, "isActive": False}, {"$set": {"isActive": True, "updated_by": ObjectId(jwt["user_id"])}})
+        result = await clientes_collection.update_one({"nif": nif, "isActive": False}, {"$set": {"isActive": True, "updated_by": ObjectId(jwt["user_id"]), "updated_at": datetime.now()}})
     
     if not result.modified_count:
             raise HTTPException(status_code=404, detail="Cliente não encontrado. É possivel que o cliente já esteja ativo.")

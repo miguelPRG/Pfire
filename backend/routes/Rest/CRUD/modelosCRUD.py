@@ -53,7 +53,6 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request, recaptchaT
 #Atualizar Modelo
 @routerModelo.put("/")
 async def update_modelo(request:Request, modelo: ModelosCamposUpdate, recaptchaToken: str, id: str = None, model_name: str = None):
-
     if not id and not model_name:
         raise HTTPException(status_code=400, detail="ID ou nome do modelo são obrigatórios.")
 
@@ -76,6 +75,7 @@ async def update_modelo(request:Request, modelo: ModelosCamposUpdate, recaptchaT
     
     modelo_data = modelo.model_dump(by_alias=True)
     modelo_data["updated_by"] = user_id
+    modelo_data["updated_at"] = datetime.now()
 
     if modelo_data.get("empresa_id"):
         del modelo_data["empresa_id"]  # Remove empresa_id se estiver presente, pois não pode ser atualizado

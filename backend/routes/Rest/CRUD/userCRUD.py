@@ -32,6 +32,7 @@ async def update_user(user: UserUpdate, request: Request, recaptchaToken: str):
         user.password = pwd_context.hash(user.password)
 
     update_data = user.model_dump(exclude_unset=True)
+    update_data["updated_at"] = datetime.now()
     
     result = await users_collection.update_one({"_id": ObjectId(jwt["user_id"]), "isActive": True}, {"$set": update_data})
 

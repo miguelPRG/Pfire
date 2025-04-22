@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field, model_validator
-from datetime import datetime
+from pydantic import BaseModel, Field
 from typing import Optional, Any
+from datetime import datetime
 
 class EmpresaCreate(BaseModel):
     nome: str
@@ -10,8 +10,10 @@ class EmpresaCreate(BaseModel):
     codigo_postal: str = Field(max_length=8)
     telefone: str
     logo: Optional[bytes] = None
-    created_by: Optional[Any] = None  # Pode ser um ID ou outro tipo de referência
-    updated_by: Optional[Any] = None  # Pode ser um ID ou outro tipo de referência
+    created_by: Any
+    created_at: datetime
+    updated_by: Any  # Pode ser um ID ou outro tipo de referência
+    updated_at: datetime  # Pode ser uma data ou timestamp
 
 class EmpresaUpdate(BaseModel):
     nome: Optional[str] = None
@@ -21,14 +23,4 @@ class EmpresaUpdate(BaseModel):
     codigo_postal: Optional[str] = None
     telefone: Optional[str] = None
     logo: Optional[bytes] = None
-    updated_at: datetime = Field(default_factory=datetime.now)
-
-    @model_validator(mode='before')
-    @classmethod
-    def set_default_values(cls, values):
-        current_time = datetime.now()
-
-        values['updated_at'] = current_time
-
-        return values
-    
+ 
