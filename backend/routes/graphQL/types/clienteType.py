@@ -9,11 +9,11 @@ class Cliente:
     email: str
     telefone: str
     nif: str
-    localidade : str
+    localidade: str
     morada: str
     codigo_postal: str
     created_at: datetime 
-    created_by: str 
-    updated_at: datetime 
-    updated_by: str 
-    isActive: Optional[bool] 
+    created_by: str = None
+    updated_at: datetime
+    updated_by: str = None
+    isActive: Optional[bool] = None

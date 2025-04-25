@@ -94,13 +94,6 @@ app.include_router(modelosCRUD.routerModelo)
 # Rotas GraphQL
 app.include_router(graphql_router, prefix="/graphql")
 
-# Manipulação de Exceções
-@app.exception_handler(HTTPException)
-async def custom_http_exception_handler(request: Request, exc: HTTPException):
-    return JSONResponse(
-            status_code=400,
-            content={"Erro HTTP não esperado": exc.detail}
-    )
 
 @app.get("/")
 async def root(request: Request):

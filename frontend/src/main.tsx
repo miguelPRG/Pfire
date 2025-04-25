@@ -8,15 +8,15 @@ import  client  from "./graphql/apolloClient"; // certifica-te de que o caminho 
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <ApolloProvider client={client}>
-      {/* Provedor do Apollo! Responsável por permitir comunicação com o GraphQL */}
-      <AuthProvider>
-        {/* Provedor de Autenticação! Responsável por verificar login do utilizador */}
-        <TemaProvider>
-          {/* Provedor do Tema! Responsável por configurar o tema. Light ou Dark */}
-          <App />
-        </TemaProvider>
-      </AuthProvider>
-    </ApolloProvider>
+    <AuthProvider>
+      {/* Provedor de Autenticação! Responsável por verificar login do utilizador */}
+      <TemaProvider>
+      {/* Provedor do Tema! Responsável por configurar o tema. Light ou Dark */}
+        <ApolloProvider client={client}>
+        {/* Provedor do Apollo! Responsável por permitir comunicação com o GraphQL */}
+        <App />
+        </ApolloProvider>
+      </TemaProvider>
+    </AuthProvider>
   </React.StrictMode>,
 );
