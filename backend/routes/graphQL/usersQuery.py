@@ -11,7 +11,13 @@ class UserQuery:
     @strawberry.field
     async def users(self,info: Info, empresa_id: str, start: int = 0, lmt:int = 10) -> list[User]:
         """Retorna os usuários de uma empresa, respeitando os campos selecionados no GraphQL."""
-       
+
+        if lmt<=0 or lmt > 10:
+            lmt = 10
+
+        if start < 0:
+            start = 0
+
         request = info.context["request"]  # Obtém o objeto de requisição
         jwt = getattr(request.state, "jwt", None)
         

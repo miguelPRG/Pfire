@@ -9,8 +9,14 @@ from base64 import b64encode  # Importa o módulo base64 para conversão
 @strawberry.type
 class EmpresaQuery:
     @strawberry.field
-    async def empresas(self, info: Info, start: int = 0, lmt: int = 10) -> list[Empresa]:
+    async def empresas(self, info: Info, empresa_id:str = None,start: int = 0, lmt: int = 10) -> list[Empresa]:
         
+        if lmt <= 0 or lmt > 10:
+            lmt = 10
+
+        if start < 0:
+            start = 0
+
         request = info.context["request"]  # Obtém o objeto de requisição
         jwt = getattr(request.state, "jwt", None)
         
@@ -22,6 +28,9 @@ class EmpresaQuery:
         
         else:
             filtro = {"user_id": ObjectId(jwt["user_id"])}
+
+        if empresa_id:
+            filtro["empresa_id"] = ObjectId(empresa_id)
 
         async for user_empresa in users_empresas_collection.find(filtro).skip(start).limit(lmt):
             async for empresa in empresas_collection.find({"_id": user_empresa["empresa_id"]}):

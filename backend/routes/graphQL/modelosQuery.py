@@ -4,14 +4,22 @@ from .utils.limpar import filter_null_fields
 from fastapi import HTTPException
 import strawberry
 from strawberry.types import Info
+from bson import ObjectId
 
 @strawberry.type
 class ModeloQuery:
     @strawberry.field
     async def modelos(self, info:Info, empresa_id:str, start:int=0, lmt:int = 10) -> list[Modelo]:
 
+        if lmt<=0 or lmt > 10:
+            lmt = 10
+
+        if start < 0:
+            start = 0
+
         request = info.context["request"]
         jwt = getattr(request.state, "jwt", None)
+        empresa_id = ObjectId(empresa_id)
 
         if not jwt["isSuperAdmin"]:
             user_empresa = await users_empresas_collection.find_one({"empresa_id": empresa_id, "user_id": jwt["user_id"], "role": "admin"})

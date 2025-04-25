@@ -10,19 +10,26 @@ from bson import ObjectId
 class ClienteQuery:
     @strawberry.field
     async def clientes(self, info: Info, empresa_id:str,start: int = 0, lmt: int = 10) -> list[Cliente]:
+        
+        if lmt<=0 or lmt > 10:
+            lmt = 10
+
+        if start < 0:
+            start = 0
 
         request = info.context["request"]
         jwt = getattr(request.state, "jwt", None)
+        empresa_id = ObjectId(empresa_id)
 
         if not jwt["isSuperAdmin"]:
-            user_empresa = await users_empresas_collection.find_one({"empresa_id": ObjectId(empresa_id), "user_id": ObjectId(jwt["user_id"]), "role": "admin"})
+            user_empresa = await users_empresas_collection.find_one({"empresa_id": empresa_id, "user_id": ObjectId(jwt["user_id"]), "role": "admin"})
 
             if not user_empresa:
                 raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para ver clientes nesta empresa.")
         
         clientes = []
 
-        async for cliente in clientes_collection.find({"empresa_id": ObjectId(empresa_id), "isActive": True}).skip(start).limit(lmt):
+        async for cliente in clientes_collection.find({"empresa_id": empresa_id, "isActive": True}).skip(start).limit(lmt):
             # Mapeia os dados do cliente
             cliente_data = {
                 "id": str(cliente.get("_id")),
