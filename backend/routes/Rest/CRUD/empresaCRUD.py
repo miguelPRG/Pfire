@@ -40,7 +40,8 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, recaptchaToke
     empresa_data["updated_at"] = datetime.now()
 
     if id:
-        result = await empresas_collection.update_one({"_id":id}, {"$set": empresa_data})
+        result = await empresas_collection.update_one({"_id": ObjectId(id)}, {"$set": empresa_data})
+
     else:
         result = await empresas_collection.update_one({"nif": nif}, {"$set": empresa_data})
 
