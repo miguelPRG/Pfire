@@ -1,5 +1,6 @@
 import strawberry
 from datetime import datetime
+from typing import Optional
 
 @strawberry.type
 class Empresa:
@@ -10,8 +11,8 @@ class Empresa:
     morada: str
     localidade: str
     codigo_postal: str
-    logo: str = None  # Use Base64-encoded string for the logo
-    created_by: str = None
+    logo: Optional[str] = None # Use Base64-encoded string for the logo
     created_at: datetime
-    updated_by: str = None
-    updated_at: datetime
+    created_by: Optional[str] = None
+    updated_by: Optional[str] = None
+    updated_at: Optional[datetime] = None

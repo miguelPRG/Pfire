@@ -13,7 +13,7 @@ class Cliente:
     morada: str
     codigo_postal: str
     created_at: datetime 
-    created_by: str = None
-    updated_at: datetime
-    updated_by: str = None
+    created_by: Optional[str] = None
+    updated_at: Optional[datetime] = None
+    updated_by: Optional[str] = None
     isActive: Optional[bool] = None

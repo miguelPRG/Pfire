@@ -9,7 +9,7 @@ class User:
     email: str
     telefone: str
     role: str
-    created_at: datetime = None
-    updated_at: datetime = None
-    last_login: datetime = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    last_login: Optional[datetime] = None
     isActive: Optional[bool] = None

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from routes.Rest.services import usersServices
-from routes.Rest.CRUD import userCRUD, empresaCRUD, clienteCRUD, modelosCRUD
+from routes.Rest.CRUD import userCRUD, empresaCRUD, clienteCRUD, modelosCRUD, relatorioCRUD
 from routes.graphQL.schema import graphql_router
 from controller.clientIP import rate_limit
 from controller.jwtValidation import verify_jwt  # Função para verificar o JWT
@@ -91,6 +91,8 @@ app.include_router(empresaCRUD.routerEmpresa)
 app.include_router(clienteCRUD.routerCliente)
 #Rotas dis modelos (REST)
 app.include_router(modelosCRUD.routerModelo)
+#Rotas de relatórios (REST)
+app.include_router(relatorioCRUD.routerRelatorio)
 # Rotas GraphQL
 app.include_router(graphql_router, prefix="/graphql")
 

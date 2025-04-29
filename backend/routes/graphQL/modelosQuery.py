@@ -22,7 +22,7 @@ class ModeloQuery:
         empresa_id = ObjectId(empresa_id)
 
         if not jwt["isSuperAdmin"]:
-            user_empresa = await users_empresas_collection.find_one({"empresa_id": empresa_id, "user_id": jwt["user_id"], "role": "admin"})
+            user_empresa = await users_empresas_collection.find_one({"empresa_id": empresa_id, "user_id": jwt["user_id"]})
             
             if not user_empresa:
                 raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para ver modelos nesta empresa.")
@@ -39,7 +39,6 @@ class ModeloQuery:
             modelo_data = {
                 "id": str(modelo.get("_id")),
                 "model_name": modelo.get("model_name"),
-                "empresa_id": str(modelo.get("empresa_id")),
                 "created_by": str(modelo.get("created_by")),
                 "created_at": modelo.get("created_at"),
                 "updated_by": str(modelo.get("updated_by")),
@@ -48,7 +47,7 @@ class ModeloQuery:
             }
 
             if not jwt["isSuperAdmin"]:
-                modelo_data = {k: v for k, v in modelo_data.items() if k not in ["created_by", "updated_by"]}
+                modelo_data = {k: v for k, v in modelo_data.items() if k not in ["created_by", "updated_by", "updated_at"]}
             
             modelos.append(Modelo(**filter_null_fields(modelo_data))) 
 

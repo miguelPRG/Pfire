@@ -21,7 +21,7 @@ class RelatorioCreate(BaseModel):
         values["created_at"] = data
         values["updated_at"] = data
 
-        if len(values.keys()) < 5:
+        if len(values.keys()) < 3:
             raise HTTPException(status_code=400, detail="Modelo deve contar pele menos um campo personalizado.")
 
         for key in values.keys():

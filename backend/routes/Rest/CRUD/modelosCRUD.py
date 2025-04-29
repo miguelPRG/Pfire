@@ -9,9 +9,9 @@ routerModelo = APIRouter(prefix="/modelo")
 
 #Criar Modelo
 @routerModelo.post("/")
-async def criar_modelo(modelo: ModelosCamposCreate, request: Request, recaptchaToken: str = None):
+async def criar_modelo(modelo: ModelosCamposCreate, request: Request, recaptchaToken: str):
 
-    #await validar_recaptcha_token(recaptchaToken, "register")
+    await validar_recaptcha_token(recaptchaToken, "register")
 
     #Verificar se o user tem permissão para criar modelos nesta empresa
     jwt = getattr(request.state, "jwt", None)
