@@ -32,7 +32,7 @@ class UserQuery:
             
             # Verifica se o usuário tem o papel de administrador na empresa
             user_empresa = await users_empresas_collection.find_one(
-                {"user_id": ObjectId(jwt["user_id"]), "empresa_id": ObjectId(empresa_id), "role": "admin"}
+                {"user_id": ObjectId(jwt["user_id"]), "empresa_id": ObjectId(empresa_id), "isAdmin": True}
             )
             
             if not user_empresa:

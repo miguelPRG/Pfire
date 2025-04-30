@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Request
 from controller.recaptchaValidation import validar_recaptcha_token
 from models.relatorioModels import RelatorioCreate, RelatorioDelete
 from database import relatorios_collection, modelos_collection, clientes_collection, users_empresas_collection
+from datetime import datetime
 from asyncio import gather
 from bson import ObjectId
 
@@ -56,10 +57,11 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request, recaptc
     # para ObjectId
     relatorio_data = relatorio.model_dump(by_alias=True)
     relatorio_data["created_by"] = ObjectId(jwt["user_id"])
+    relatorio_data["created_at"] = datetime.now()
     relatorio_data["modelo_campos_id"] = ObjectId(relatorio.modelo_campos_id)
     relatorio_data["empresa_id"] = relatorio.empresa_id
     relatorio_data["cliente_id"] = ObjectId(relatorio.cliente_id)
-    
+    relatorio_data["isActive"] = True
     # Sacar todas as chaves do relatório que começam com "custom_"
     relatorio_fields = {key: relatorio_data[key] for key in relatorio_data if key.startswith("custom_")}
 

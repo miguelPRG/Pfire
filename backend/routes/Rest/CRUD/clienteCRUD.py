@@ -27,7 +27,7 @@ async def criar_cliente(cliente: ClienteCreate, request: Request, recaptchaToken
     if not jwt["isSuperAdmin"]:
         
         #Verificar se o utilizador é admin da empresa
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": empresa_id, "user_id": ObjectId(jwt["user_id"]), "role": "admin", "isActive": True})
+        user_empresa = await users_empresas_collection.find_one({"empresa_id": empresa_id, "user_id": ObjectId(jwt["user_id"]), "isAdmin" : True})
         
         if not user_empresa:
             raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para criar clientes nesta empresa.")
@@ -64,7 +64,7 @@ async def atualizar_cliente(cliente: ClienteUpdate, request: Request, recaptchaT
     if not jwt["isSuperAdmin"]:
 
         # Verificar se o utilizador é admin da empresa
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": ObjectId(cliente.empresa_id), "user_id": ObjectId(jwt["user_id"]), "role": "admin", "isActive": True})
+        user_empresa = await users_empresas_collection.find_one({"empresa_id": ObjectId(cliente.empresa_id), "user_id": ObjectId(jwt["user_id"]), "isAdmin" : True})
 
         if not user_empresa:
             raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para atualizar clientes nesta empresa.")
@@ -98,7 +98,7 @@ async def apagar_cliente(cliente: ClienteActivion, request: Request,recaptchaTok
     
     if not jwt["isSuperAdmin"]:
         
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": ObjectId(cliente.empresa_id), "user_id": ObjectId(jwt["user_id"]), "role": "admin", "isActive": True})
+        user_empresa = await users_empresas_collection.find_one({"empresa_id": ObjectId(cliente.empresa_id), "user_id": ObjectId(jwt["user_id"]), "isAdmin" : True})
         
         if not user_empresa:
             raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para apagar clientes nesta empresa.")
@@ -127,7 +127,7 @@ async def reativar_cliente(cliente: ClienteActivion, request: Request, recaptcha
     
     if not jwt["isSuperAdmin"]:
 
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": ObjectId(cliente.empresa_id), "user_id": ObjectId(jwt["user_id"]), "role": "admin", "isActive": True})
+        user_empresa = await users_empresas_collection.find_one({"empresa_id": ObjectId(cliente.empresa_id), "user_id": ObjectId(jwt["user_id"]), "isAdmin" : True})
 
         if not user_empresa:
             raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para ativar clientes nesta empresa.")

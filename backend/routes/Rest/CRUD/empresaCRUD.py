@@ -26,10 +26,10 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, recaptchaToke
     if not jwt["isSuperAdmin"]:
 
         if id:
-            user_empresa = await users_empresas_collection.find_one({"empresa_id":id, "user_id": user_id,"role": "admin","isActive": True})
+            user_empresa = await users_empresas_collection.find_one({"empresa_id":id, "user_id": user_id,"isAdmin": True})
         
         else:
-            user_empresa = await users_empresas_collection.find_one({"nif":nif, "user_id": user_id,"role": "admin","isActive": True})
+            user_empresa = await users_empresas_collection.find_one({"nif":nif, "user_id": user_id,"isAdmin": True})
 
         if not user_empresa:
             raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para atualizar esta empresa.")

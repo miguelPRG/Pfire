@@ -132,10 +132,9 @@ async def register_user(data: RegisterUser, request: Request, recaptchaToken: st
 
     # Crear la empresa
     new_empresa = data.empresa
-    new_empresa.created_at = new_empresa.updated_at = datetime.now()
-    new_empresa.created_by = user.inserted_id
-    new_empresa.updated_by = user.inserted_id
     empresa_data = new_empresa.model_dump(by_alias=True)
+    empresa_data["created_at"] = empresa_data["updated_at"] = datetime.now()
+    empresa_data["created_by"] = empresa_data["updated_by"] = user.inserted_id
     empresa = await empresas_collection.insert_one(empresa_data)
 
     if not empresa.inserted_id:
@@ -145,9 +144,11 @@ async def register_user(data: RegisterUser, request: Request, recaptchaToken: st
     new_user_empresa = UserEmpresaCreate(
         user_id=user.inserted_id,
         empresa_id=empresa.inserted_id,
-        role="admin",
+        isAdmin=True,
         created_by=user.inserted_id,
+        created_at=datetime.now(),
         updated_by=user.inserted_id,
+        updated_at=datetime.now()
     )
 
     user_empresa_data = new_user_empresa.model_dump(by_alias=True)

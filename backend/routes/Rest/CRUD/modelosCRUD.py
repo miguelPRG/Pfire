@@ -20,7 +20,7 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request, recaptchaT
 
     if not jwt["isSuperAdmin"]:
         # Verificar se o utilizador é admin da empresa
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": modelo.empresa_id, "user_id":user_id, "role": "admin"})
+        user_empresa = await users_empresas_collection.find_one({"empresa_id": modelo.empresa_id, "user_id":user_id, "isAdmin": True})
         
         if not user_empresa:
             raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para criar modelos nesta empresa.")
@@ -70,7 +70,7 @@ async def update_modelo(request: Request,modelo: ModelosCamposUpdate,recaptchaTo
         user_empresa = await users_empresas_collection.find_one({
             "empresa_id": modelo.empresa_id,
             "user_id": user_id,
-            "role": "admin"
+            "isAdmin": True
         })
         if not user_empresa:
             raise HTTPException(status_code=403, detail="Acesso negado!")
@@ -165,8 +165,6 @@ async def update_modelo(request: Request,modelo: ModelosCamposUpdate,recaptchaTo
                 continue
 
             # === caso mudou datatype ===
-            # === caso mudou datatype ===
-            # === caso mudou datatype ===
             if new_type != old_type:
                 # 1) valida todas as chaves do payload antes de criar
                 for subk in new_val.keys():
@@ -252,7 +250,7 @@ async def apagar_modelo(request:Request,modelo:ModelosCamposDelete,recaptchaToke
 
     if not jwt["isSuperAdmin"]:
         # Verificar se o utilizador é admin da empresa
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": ObjectId(modelo.empresa_id), "user_id":user_id, "role": "admin"})
+        user_empresa = await users_empresas_collection.find_one({"empresa_id": ObjectId(modelo.empresa_id), "user_id":user_id, "isAdmin": True})
         
         if not user_empresa:
             raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para apagar modelos nesta empresa.")

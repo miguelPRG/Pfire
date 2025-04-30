@@ -1,4 +1,3 @@
-from datetime import datetime
 from pydantic import BaseModel, model_validator, ConfigDict
 from fastapi import HTTPException
 
@@ -19,9 +18,6 @@ class RelatorioCreate(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def validate_custom_fields(cls, values):
-        data = datetime.now()
-        values["created_at"] = data
-        values["isActive"] = True
 
         if len(values.keys()) < 3:
             raise HTTPException(status_code=400, detail="Modelo deve contar pele menos um campo personalizado.")
