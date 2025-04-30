@@ -6,6 +6,8 @@ MAIN_FIELDS = {
     "modelo_campos_id",
     "cliente_id",
     "empresa_id",
+    "created_at",
+    "isActive",
 }
 
 class RelatorioCreate(BaseModel):
@@ -19,7 +21,7 @@ class RelatorioCreate(BaseModel):
     def validate_custom_fields(cls, values):
         data = datetime.now()
         values["created_at"] = data
-        values["updated_at"] = data
+        values["isActive"] = True
 
         if len(values.keys()) < 3:
             raise HTTPException(status_code=400, detail="Modelo deve contar pele menos um campo personalizado.")
@@ -32,3 +34,6 @@ class RelatorioCreate(BaseModel):
                 raise HTTPException(status_code=400, detail=f"Nome de campo inválido: {key}. Os campos personalizados devem começar com 'custom_'.")
 
         return values
+
+class RelatorioDelete(BaseModel):
+    empresa_id: str
