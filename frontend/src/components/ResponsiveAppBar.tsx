@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useTheme } from "@mui/material";
+import { useTheme, useScrollTrigger } from "@mui/material";
 import {
   AppBar,
   Box,
@@ -24,26 +24,31 @@ function ResponsiveAppBar() {
   const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const theme = useTheme();
-  const navigate = useNavigate(); // Inicializa o useNavigate
+  const navigate = useNavigate();
 
   const openUserMenu = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorElUser(event.currentTarget);
   };
-
   const closeUserMenu = () => {
     setAnchorElUser(null);
   };
-
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
   };
+
+  // dispara quando a página rola
+  const trigger = useScrollTrigger({
+    disableHysteresis: true,
+    threshold: 0,
+  });
 
   return (
     <Box>
       <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
 
       <AppBar
-        position="static"
+        position="fixed"
+        elevation={trigger ? 4 : 0}
         sx={{ backgroundColor: theme.palette.primary.main, borderRadius: 0 }}
       >
         <Toolbar
@@ -55,31 +60,38 @@ function ResponsiveAppBar() {
             justifyContent: "space-between",
           }}
         >
-          {/* Lado esquerdo: ícone, logo e texto */}
+          {/* Lado esquerdo */}
           <Box sx={{ display: "flex", alignItems: "center" }}>
-            <IconButton onClick={toggleSidebar} color="inherit" sx={{ mr: 1 }}>
+            <IconButton
+              onClick={toggleSidebar}
+              color="inherit"
+              sx={{ marginRight: 2 }}
+            >
               <MenuIcon />
             </IconButton>
+
             <Box
               component="img"
               src={logo}
               alt="Logo"
               sx={{
-                height: 40, // valor fixo e controlado
+                cursor: "pointer",
+                height: 40,
                 transform: {
                   xs: "scale(2.1)",
                   sm: "scale(2.75)",
                   md: "scale(2.8)",
                 },
                 transformOrigin: "left center",
-                mr: 1,
+                mr: 2,
+                ml: 2,
               }}
+              onClick={() => navigate("/")}
             />
 
             <Typography
               variant="h6"
-              component="a"
-              href="/"
+              component="span"
               sx={{
                 fontFamily: "monospace",
                 fontWeight: 700,
@@ -87,49 +99,59 @@ function ResponsiveAppBar() {
                 color: "inherit",
                 textDecoration: "none",
                 fontSize: { xs: "1.2rem", sm: "1.8rem", md: "2.0rem" },
-                marginLeft: {
-                  xs: 1.65, // mais colado em telas pequenas
-                  sm: 3.4,
-                  md: 3.8,
-                },
+                ml: { xs: 1.65, sm: 3.4, md: 3.8 },
+                cursor: "pointer",
               }}
+              onClick={() => navigate("/")}
             >
               PFIRE
             </Typography>
           </Box>
 
-          {/* Lado direito: Avatar */}
+          {/* Lado direito */}
           <Box sx={{ display: "flex", alignItems: "center" }}>
             <Tooltip title="Open settings">
               <IconButton onClick={openUserMenu} sx={{ p: 0 }}>
                 <Avatar alt="User Avatar" src="/static/images/avatar/2.jpg" />
               </IconButton>
             </Tooltip>
+
             <Menu
-              sx={{ mt: "50px", width: "200px" }}
               anchorEl={anchorElUser}
-              anchorOrigin={{ vertical: "top", horizontal: "right" }}
-              keepMounted
-              transformOrigin={{ vertical: "top", horizontal: "right" }}
               open={Boolean(anchorElUser)}
               onClose={closeUserMenu}
+              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
+              PaperProps={{
+                sx: {
+                  mt: 1,
+                  minWidth: 140,
+                  maxWidth: 200,
+                  boxShadow: 3,
+                },
+              }}
             >
               {userSettings.map((setting) => (
                 <MenuItem
                   key={setting}
                   onClick={() => {
                     closeUserMenu();
-                    if (setting === "Perfil") navigate("/EditProfilePage");
+                    if (setting === "Perfil") navigate("/edit-profile");
                     if (setting === "Logout") logout();
                   }}
                 >
-                  <Typography textAlign="center">{setting}</Typography>
+                  <Typography variant="body2" textAlign="left" width="100%">
+                    {setting}
+                  </Typography>
                 </MenuItem>
               ))}
             </Menu>
           </Box>
         </Toolbar>
       </AppBar>
+
+      {/* Espaço para não sobrepor o conteúdo */}
+      <Box sx={{ height: 100 }} />
     </Box>
   );
 }

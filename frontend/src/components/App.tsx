@@ -49,7 +49,9 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <>
-      {!isLoginPage && !loading && user && <ResponsiveAppBar />}
+      {!isLoginPage && !loading && user &&
+        <ResponsiveAppBar />  
+      }
       <Box component="main">{children}</Box>
     </>
   );
@@ -134,13 +136,13 @@ function App() {
               element={<ProtectedRoute user={user} element={<Home />} />}
             />
             <Route
-              path="/UserManagementTable"
+              path="/users-list"
               element={
                 <ProtectedRoute user={user} element={<UserManagementTable />} />
               }
             />
             <Route
-              path="/ClientManagementTable"
+              path="/clients-list"
               element={
                 <ProtectedRoute
                   user={user}
@@ -149,20 +151,20 @@ function App() {
               }
             />
             <Route
-              path="/AddNewClientPage"
+              path="/add-client"
               element={
                 <ProtectedRoute user={user} element={<AddNewClient />} />
               }
             />
 
             <Route
-              path="/EmpresasPage"
+              path="/empresas-list"
               element={
                 <ProtectedRoute user={user} element={<EmpresasPage />} />
               }
             />
             <Route
-              path="/EditProfilePage"
+              path="/edit-profile"
               element={
                 <ProtectedRoute user={user} element={<EditProfilePage />} />
               }

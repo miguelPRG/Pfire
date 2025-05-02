@@ -119,7 +119,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           </ListItemButton>
         </ListItem>
         <ListItem disablePadding>
-          <ListItemButton onClick={() => handleNavigation("/EmpresasPage")}>
+          <ListItemButton onClick={() => handleNavigation("/empresas-list")}>
             <ListItemIcon>
               <BusinessIcon />
             </ListItemIcon>
@@ -128,7 +128,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         </ListItem>
         <ListItem disablePadding>
           <ListItemButton
-            onClick={() => handleNavigation("/ClientManagementTable")}
+            onClick={() => handleNavigation("/clients-list")}
           >
             <ListItemIcon>
               <GroupIcon />
@@ -143,7 +143,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         {/* Utilizadores */}
         <ListItem disablePadding>
           <ListItemButton
-            onClick={() => handleNavigation("/UserManagementTable")}
+            onClick={() => handleNavigation("/users-list")}
           >
             <ListItemIcon>
               <EngineeringIcon />
