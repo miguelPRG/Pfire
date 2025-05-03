@@ -10,6 +10,7 @@ class ClienteCreate(BaseModel):
     morada: str
     codigo_postal: str
     empresa_id: str  # Será passado inicialmente como string e depois convertido para ObjectId
+    recaptchaToken: str
 
 class ClienteUpdate(BaseModel):
     empresa_id: str
@@ -20,7 +21,11 @@ class ClienteUpdate(BaseModel):
     cidade: Optional[str] = None
     morada: Optional[str] = None
     codigo_postal: Optional[str] = None
+    recaptchaToken: str
 
 class ClienteActivion(BaseModel):
+    id: Optional[str] = None
+    nif: Optional[str] = None
     empresa_id: str
+    recaptchaToken: str
     

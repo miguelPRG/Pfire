@@ -11,6 +11,7 @@ class EmpresaCreate(BaseModel):
     logo: Optional[bytes] = None
 
 class EmpresaUpdate(BaseModel):
+    recaptchaToken:str
     nome: Optional[str] = None
     nif: Optional[str] = None
     localidade: Optional[str] = None

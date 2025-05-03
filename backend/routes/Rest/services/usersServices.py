@@ -73,9 +73,9 @@ async def login_oauth(request: Request, firebase_token: str):
 
 # 🚀 Login via Email e Senha
 @routerUser.post("/login")
-async def login(user: UserLogin, request: Request, recaptchaToken: str = None):
+async def login(user: UserLogin, request: Request):
     # Validar el token reCAPTCHA (se descomenta según necesidad)
-    # await validar_recaptcha_token(recaptchaToken, "login")
+    # await validar_recaptcha_token(user.recaptchaToken, "login")
 
     db_user = await users_collection.find_one({"email": user.email})
 
@@ -99,9 +99,9 @@ async def login(user: UserLogin, request: Request, recaptchaToken: str = None):
 
 # 🚀 Registar um novo User
 @routerUser.post("/register")
-async def register_user(data: RegisterUser, request: Request, recaptchaToken: str):
+async def register_user(data: RegisterUser, request: Request):
     # Validar el token reCAPTCHA
-    await validar_recaptcha_token(recaptchaToken, "register")
+    await validar_recaptcha_token(data.recaptchaToken, "register")
 
     # Verificar si el usuario con ese email ya existe
     existing_user = users_collection.find_one({"email": data.user.email})

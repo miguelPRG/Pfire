@@ -76,7 +76,7 @@ function RegisterPage() {
 
     try {
       setLoading(true);
-      const payload = { user, empresa };
+      const payload = { user, empresa, recaptchaToken: "" };
       await registerUser(payload);
       setShowSuccessDialog(true); // Mostra o popup de sucesso
     } catch (err) {

@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Request
 from controller.recaptchaValidation import validar_recaptcha_token
-from models.relatorioModels import RelatorioCreate, RelatorioDelete
+from models.relatorioModels import RelatorioCreate, RelatorioActivation
 from database import relatorios_collection, modelos_collection, clientes_collection, users_empresas_collection
 from datetime import datetime
 from asyncio import gather
@@ -10,12 +10,17 @@ routerRelatorio = APIRouter(prefix="/relatorio")
 
 #Criar Relatório
 @routerRelatorio.post("/")
-async def create_relatorio(relatorio: RelatorioCreate, request: Request, recaptchaToken:str):
+async def create_relatorio(relatorio: RelatorioCreate, request: Request):
     # Validar o reCAPTCHA token
-    await validar_recaptcha_token(recaptchaToken, "create")
+    await validar_recaptcha_token(relatorio.recaptchaToken, "create")
 
     #Converter para ObjectId
     relatorio.empresa_id = ObjectId(relatorio.empresa_id)
+
+    relatorio_found = await relatorios_collection.find_one({"empresa_id": relatorio.empresa_id,"relatorio_name": relatorio.relatorio_name, "isActive": True})
+
+    if relatorio_found:
+        raise HTTPException(status_code=400, detail="Já existe um relatório com este nome para esta empresa. Por favor insira outro nome")
 
     # Verificar se o cliente existe
     cliente = clientes_collection.find_one({"_id": ObjectId(relatorio.cliente_id), "isActive": True})
@@ -62,6 +67,7 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request, recaptc
     relatorio_data["empresa_id"] = relatorio.empresa_id
     relatorio_data["cliente_id"] = ObjectId(relatorio.cliente_id)
     relatorio_data["isActive"] = True
+    del relatorio_data["recaptchaToken"]
     # Sacar todas as chaves do relatório que começam com "custom_"
     relatorio_fields = {key: relatorio_data[key] for key in relatorio_data if key.startswith("custom_")}
 
@@ -134,9 +140,13 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request, recaptc
 
 #Apagar Relatório
 @routerRelatorio.delete("/")
-async def delete_relatorio(relatorio: RelatorioDelete, request: Request, id: str ,recaptchaToken: str): 
+async def delete_relatorio(relatorio: RelatorioActivation, request: Request): 
+    
+    if not relatorio.id and not relatorio.relatorio_name:
+        raise HTTPException(status_code=400, detail="Deve ser informado o id ou o nome do relatório para apagar.")
+    
     # Validar o reCAPTCHA token
-    await validar_recaptcha_token(recaptchaToken, "delete")
+    await validar_recaptcha_token(relatorio.recaptchaToken, "delete")
 
     #Sacar jwt
     jwt = getattr(request.state, "jwt", None)
@@ -149,9 +159,55 @@ async def delete_relatorio(relatorio: RelatorioDelete, request: Request, id: str
         if not user_empresa:
             raise HTTPException(status_code=403, detail="Usuário não tem permissão para apagar relatórios para esta empresa")
     
-    relatio_update = await relatorios_collection.update_one({"_id": ObjectId(id)}, {"$set": {"isActive": False}})
+    if relatorio.id:
+        relatio_update = await relatorios_collection.update_one(
+            {"_id": ObjectId(relatorio.id), "isActive": True},
+            {"$set": {"isActive": False, "updated_at": datetime.now(), "updated_by": ObjectId(jwt["user_id"])}}
+        )
+    else:
+        relatio_update = await relatorios_collection.update_one(
+            {"relatorio_name": relatorio.relatorio_name, "empresa_id": ObjectId(relatorio.empresa_id), "isActive": True},
+            {"$set": {"isActive": False, "updated_at": datetime.now(), "updated_by": ObjectId(jwt["user_id"])}}
+        )
 
     if relatio_update.modified_count == 0:
         raise HTTPException(status_code=404, detail="Relatório não encontrado ou já foi apagado!")
 
     return {"message": "Relatório apagado com sucesso!"}
+
+#Reativar Relatório
+@routerRelatorio.put("/activate")
+async def activate_relatorio(relatorio: RelatorioActivation, request: Request): 
+    
+    if not relatorio.id and not relatorio.relatorio_name:
+        raise HTTPException(status_code=400, detail="Deve ser informado o id ou o nome do relatório para apagar.")
+    
+    # Validar o reCAPTCHA token
+    await validar_recaptcha_token(relatorio.recaptchaToken, "activate")
+
+    #Sacar jwt
+    jwt = getattr(request.state, "jwt", None)
+
+    # Verificar se o usuário é super admin
+    if not jwt["isSuperAdmin"]:
+        # Verificar se o usuário tem permissão para apagar relatórios para a empresa
+        
+        user_empresa = await users_empresas_collection.find_one({"user_id": jwt["user_id"], "empresa_id": ObjectId(relatorio.empresa_id)})
+        if not user_empresa:
+            raise HTTPException(status_code=403, detail="Usuário não tem permissão para apagar relatórios para esta empresa")
+    
+    if relatorio.id:
+        relatio_update = await relatorios_collection.update_one(
+            {"_id": ObjectId(relatorio.id), "isActive": False},
+            {"$set": {"isActive": True, "updated_at": datetime.now(), "updated_by": ObjectId(jwt["user_id"])}}
+        )
+    else:
+        relatio_update = await relatorios_collection.update_one(
+            {"relatorio_name": relatorio.relatorio_name, "empresa_id": ObjectId(relatorio.empresa_id), "isActive": False},
+            {"$set": {"isActive": True, "updated_at": datetime.now(), "updated_by": ObjectId(jwt["user_id"])}}
+        )
+
+    if relatio_update.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Relatório não encontrado ou já foi apagado!")
+
+    return {"message": "Relatório reativado com sucesso!"}

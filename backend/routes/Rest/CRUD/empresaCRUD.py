@@ -9,7 +9,7 @@ routerEmpresa = APIRouter(prefix="/empresa")
 
 #Atualizar Empresa
 @routerEmpresa.put("/")
-async def update_empresa(empresa: EmpresaUpdate, request: Request, recaptchaToken: str,id: str = None, nif: str = None):
+async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str = None, nif: str = None):
 
     if not id and not nif:
         raise HTTPException(status_code=400, detail="ID ou NIF da empresa deve ser fornecido.")
@@ -18,7 +18,7 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, recaptchaToke
     jwt = getattr(request.state, "jwt", None)
 
     # Validate the reCAPTCHA token
-    await validar_recaptcha_token(recaptchaToken, "update")
+    await validar_recaptcha_token(empresa.recaptchaToken, "update")
 
     user_id = ObjectId(jwt["user_id"])
 
@@ -38,6 +38,7 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, recaptchaToke
     
     empresa_data["updated_by"] = user_id
     empresa_data["updated_at"] = datetime.now()
+    del empresa_data["recaptchaToken"]
 
     if id:
         result = await empresas_collection.update_one({"_id": ObjectId(id)}, {"$set": empresa_data})

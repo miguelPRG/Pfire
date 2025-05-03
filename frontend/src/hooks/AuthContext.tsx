@@ -41,6 +41,7 @@ interface AuthContextType {
   registerUser: (payload: {
     user: UserRegistered;
     empresa: Empresa;
+    recaptchaToken: string; // Adicionando o token do reCAPTCHA aqui
   }) => void;
 
   loginWithOAuth: (provider: "google" | "facebook" | "microsoft") => void;
@@ -104,7 +105,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         { action: "login" },
       );
       const response = await fetch(
-        `http://localhost:8000/user/login?recaptchaToken=${token}`,
+        `http://localhost:8000/user/login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -112,6 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           body: JSON.stringify({
             email: email.trim(),
             password: password.trim(),
+            recaptchaToken: token, // Adicionando o token do reCAPTCHA aqui
           }),
         },
       );
@@ -135,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function registerUser(payload: {
     user: UserRegistered;
     empresa: Empresa;
+    recaptchaToken?: string; // Adicionando o token do reCAPTCHA aqui
   }) {
 
     try{
@@ -146,8 +149,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           },
         );
 
+        payload.recaptchaToken = token; // Adiciona o token ao payload
+
         const response = await fetch(
-          `backend/user/register?recaptchaToken=${token}`,
+          `backend/user/register`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },

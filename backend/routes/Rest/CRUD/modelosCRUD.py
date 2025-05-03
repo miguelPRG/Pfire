@@ -9,9 +9,9 @@ routerModelo = APIRouter(prefix="/modelo")
 
 #Criar Modelo
 @routerModelo.post("/")
-async def criar_modelo(modelo: ModelosCamposCreate, request: Request, recaptchaToken: str):
+async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
 
-    await validar_recaptcha_token(recaptchaToken, "register")
+    await validar_recaptcha_token(modelo.recaptchaToken, "register")
 
     #Verificar se o user tem permissão para criar modelos nesta empresa
     jwt = getattr(request.state, "jwt", None)
@@ -47,6 +47,7 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request, recaptchaT
     modelo_data["created_by"] = user_id
     modelo_data["updated_by"] = user_id
     modelo_data["created_at"] = modelo_data["updated_at"] = datetime.now()
+    del modelo_data["recaptchaToken"]  # Remove o campo recaptchaToken antes de inserir no banco de dados
 
     result = await modelos_collection.insert_one(modelo_data)
 
@@ -56,11 +57,11 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request, recaptchaT
     return {"message": "Modelo criado com sucesso!"}
 
 @routerModelo.put("/")
-async def update_modelo(request: Request,modelo: ModelosCamposUpdate,recaptchaToken: str,id: str = None,model_name: str = None):
+async def update_modelo(request: Request,modelo: ModelosCamposUpdate, id: str = None,model_name: str = None):
     if not id and not model_name:
         raise HTTPException(status_code=400, detail="ID ou nome do modelo são obrigatórios.")
 
-    await validar_recaptcha_token(recaptchaToken, "register")
+    await validar_recaptcha_token(modelo.recaptchaToken, "register")
 
     jwt = getattr(request.state, "jwt", None)
     user_id = ObjectId(jwt["user_id"])
@@ -227,6 +228,7 @@ async def update_modelo(request: Request,modelo: ModelosCamposUpdate,recaptchaTo
     # Seta metadados
     modelo_found["updated_by"] = user_id
     modelo_found["updated_at"] = datetime.now()
+    del modelo_found["recaptchaToken"]  # Remove o campo recaptchaToken antes de atualizar no banco de dados
 
     res = await modelos_collection.replace_one({"_id": modelo_found["_id"]}, modelo_found)
     if not res.modified_count:
@@ -236,11 +238,11 @@ async def update_modelo(request: Request,modelo: ModelosCamposUpdate,recaptchaTo
 
 #Apagar Modelo
 @routerModelo.delete("/")
-async def apagar_modelo(request:Request,modelo:ModelosCamposDelete,recaptchaToken:str,id:str = None, model_name:str = None):
+async def apagar_modelo(request:Request,modelo:ModelosCamposDelete):
 
-    await validar_recaptcha_token(recaptchaToken, "register")
+    await validar_recaptcha_token(modelo.recaptchaToken, "register")
 
-    if not id and not model_name:
+    if not modelo.id and not modelo.model_name:
         raise HTTPException(status_code=400, detail="ID ou nome do modelo são obrigatórios.")
     
     jwt = getattr(request.state, "jwt", None)
@@ -255,11 +257,11 @@ async def apagar_modelo(request:Request,modelo:ModelosCamposDelete,recaptchaToke
         if not user_empresa:
             raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para apagar modelos nesta empresa.")
 
-    if id:
+    if modelo.id:
         result = await modelos_collection.delete_one({"_id": ObjectId(id)})
 
     else:
-        result = await modelos_collection.delete_one({"model_name": model_name})
+        result = await modelos_collection.delete_one({"model_name": modelo.model_name})
     
     if not result.deleted_count:
         raise HTTPException(status_code=500, detail="Erro ao apagar modelo")

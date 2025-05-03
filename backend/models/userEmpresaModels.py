@@ -14,3 +14,4 @@ class UserEmpresaCreate(BaseModel):
 class UserRole(BaseModel):
     user_id: str
     empresa_id: str
+    recaptchaToken: str

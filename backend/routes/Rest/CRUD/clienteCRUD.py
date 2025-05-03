@@ -9,10 +9,10 @@ routerCliente = APIRouter(prefix="/cliente")
 
 #Criar um novo cliente
 @routerCliente.post("/")
-async def criar_cliente(cliente: ClienteCreate, request: Request, recaptchaToken: str):
+async def criar_cliente(cliente: ClienteCreate, request: Request):
 
     # Validar reCAPTCHA token
-    await validar_recaptcha_token(recaptchaToken, "register")    
+    await validar_recaptcha_token(cliente.recaptchaToken, "register")    
     
     jwt = getattr(request.state, "jwt", None)
 
@@ -41,6 +41,7 @@ async def criar_cliente(cliente: ClienteCreate, request: Request, recaptchaToken
     cliente_data["updated_by"] = user_id
     cliente_data["created_at"] = cliente_data["updated_at"] = datetime.now()
     cliente_data["isActive"] = True
+    del cliente_data["recaptchaToken"]
 
     result = await clientes_collection.insert_one(cliente_data)
 
@@ -51,12 +52,12 @@ async def criar_cliente(cliente: ClienteCreate, request: Request, recaptchaToken
 
 # Atualizar um cliente
 @routerCliente.put("/")
-async def atualizar_cliente(cliente: ClienteUpdate, request: Request, recaptchaToken: str,id: str = None, nif: str = None):
+async def atualizar_cliente(cliente: ClienteUpdate, request: Request,id: str = None, nif: str = None):
     # Sacar jwt
     jwt = getattr(request.state, "jwt", None)
 
     # Validar reCAPTCHA token
-    await validar_recaptcha_token(recaptchaToken, "register")
+    await validar_recaptcha_token(cliente.recaptchaToken, "register")
 
     if not id and not nif:
         raise HTTPException(status_code=400, detail="ID ou NIF do cliente são obrigatórios.")
@@ -72,6 +73,7 @@ async def atualizar_cliente(cliente: ClienteUpdate, request: Request, recaptchaT
     cliente_data = cliente.model_dump(exclude_unset=True)
     cliente_data["updated_by"] = ObjectId(jwt["user_id"])
     cliente_data["updated_at"] = datetime.now()
+    del cliente_data["recaptchaToken"]
 
     if id:
         result = await clientes_collection.update_one({"_id": ObjectId(id), "isActive": True}, {"$set": cliente_data})
@@ -86,14 +88,14 @@ async def atualizar_cliente(cliente: ClienteUpdate, request: Request, recaptchaT
 
 #Apagar um cliente
 @routerCliente.delete("/")
-async def apagar_cliente(cliente: ClienteActivion, request: Request,recaptchaToken:str, id: str = None, nif: str = None):
+async def apagar_cliente(cliente: ClienteActivion, request: Request):
     # Sacar jwt
     jwt = getattr(request.state, "jwt", None)
 
     # Validar reCAPTCHA token
-    await validar_recaptcha_token(recaptchaToken, "register")
+    await validar_recaptcha_token(cliente.recaptchaToken, "register")
 
-    if not id and not nif:
+    if not cliente.id and not cliente.nif:
         raise HTTPException(status_code=400, detail="ID ou NIF do cliente são obrigatórios.")
     
     if not jwt["isSuperAdmin"]:
@@ -103,10 +105,10 @@ async def apagar_cliente(cliente: ClienteActivion, request: Request,recaptchaTok
         if not user_empresa:
             raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para apagar clientes nesta empresa.")
     
-    if id:
-        result = await clientes_collection.update_one({"_id": ObjectId(id), "isActive": True}, {"$set": {"isActive": False, "updated_by": ObjectId(jwt["user_id"]), "updated_at": datetime.now()}})
+    if cliente.id:
+        result = await clientes_collection.update_one({"_id": ObjectId(cliente.id), "isActive": True}, {"$set": {"isActive": False, "updated_by": ObjectId(jwt["user_id"]), "updated_at": datetime.now()}})
     else:
-        result = await clientes_collection.update_one({"nif": nif,"isActive": True}, {"$set": {"isActive": False, "updated_by": ObjectId(jwt["user_id"]), "updated_at": datetime.now()}})
+        result = await clientes_collection.update_one({"nif": cliente.nif,"isActive": True}, {"$set": {"isActive": False, "updated_by": ObjectId(jwt["user_id"]), "updated_at": datetime.now()}})
     
     if not result.modified_count:
         raise HTTPException(status_code=404, detail="Cliente não encontrado. Verifique se o cliente realmente existe.")
@@ -115,14 +117,14 @@ async def apagar_cliente(cliente: ClienteActivion, request: Request,recaptchaTok
 
 #Ativar um cliente
 @routerCliente.put("/activate")
-async def reativar_cliente(cliente: ClienteActivion, request: Request, recaptchaToken: str, id: str = None, nif: str = None):
+async def reativar_cliente(cliente: ClienteActivion, request: Request):
     # Sacar jwt
     jwt = getattr(request.state, "jwt", None)
 
     # Validar reCAPTCHA token
-    await validar_recaptcha_token(recaptchaToken, "register")
+    await validar_recaptcha_token(cliente.recaptchaToken, "register")
 
-    if not id and not nif:
+    if not cliente.id and not cliente.nif:
         raise HTTPException(status_code=400, detail="ID ou NIF do cliente são obrigatórios.")
     
     if not jwt["isSuperAdmin"]:
@@ -132,11 +134,11 @@ async def reativar_cliente(cliente: ClienteActivion, request: Request, recaptcha
         if not user_empresa:
             raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para ativar clientes nesta empresa.")
     
-    if id:
-        result = await clientes_collection.update_one({"_id": ObjectId(id), "isActive": False}, {"$set": {"isActive": True, "updated_by": ObjectId(jwt["user_id"]), "updated_at": datetime.now()}})
+    if cliente.id:
+        result = await clientes_collection.update_one({"_id": ObjectId(cliente.id), "isActive": False}, {"$set": {"isActive": True, "updated_by": ObjectId(jwt["user_id"]), "updated_at": datetime.now()}})
     
     else:
-        result = await clientes_collection.update_one({"nif": nif, "isActive": False}, {"$set": {"isActive": True, "updated_by": ObjectId(jwt["user_id"]), "updated_at": datetime.now()}})
+        result = await clientes_collection.update_one({"nif": cliente.nif, "isActive": False}, {"$set": {"isActive": True, "updated_by": ObjectId(jwt["user_id"]), "updated_at": datetime.now()}})
     
     if not result.modified_count:
             raise HTTPException(status_code=404, detail="Cliente não encontrado. É possivel que o cliente já esteja ativo.")

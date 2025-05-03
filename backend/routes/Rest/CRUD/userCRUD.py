@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Request
 from controller.recaptchaValidation import validar_recaptcha_token
 from bson import ObjectId
 from passlib.context import CryptContext
-from models.userModels import UserUpdate
+from models.userModels import UserUpdate,UserActivation
 from datetime import datetime
 from database import users_collection
 
@@ -19,13 +19,13 @@ pwd_context = CryptContext(
 
 # 🚀 Atualizar Usuário. Apenas o próprio utilizador pode atualizar os seus dados
 @routerUser.put("/")
-async def update_user(user: UserUpdate, request: Request, recaptchaToken: str):
+async def update_user(user: UserUpdate, request: Request):
     
     #Sacar jwt
     jwt = getattr(request.state, "jwt", None)
 
     # Validar o reCAPTCHA token
-    await validar_recaptcha_token(recaptchaToken, "update")
+    await validar_recaptcha_token(user.recaptchaToken, "update")
 
     # Atualizar senha se esta foi enviada
     if user.password:
@@ -43,24 +43,24 @@ async def update_user(user: UserUpdate, request: Request, recaptchaToken: str):
 
 # 🚀 Apagar Usuário
 @routerUser.delete("/")
-async def soft_delete_user(request: Request, recaptchaToken: str, id: str = None, email: str = None):
+async def soft_delete_user(request: Request, user: UserActivation):
     
-    if not id and not email:
+    if not user.id and not user.email:
         raise HTTPException(status_code=400, detail="Não foi inserido nada que identifique o utilizador.")
 
     # Validar o reCAPTCHA token
-    await validar_recaptcha_token(recaptchaToken, "delete")
+    await validar_recaptcha_token(user.recaptchaToken, "delete")
 
     jwt = getattr(request.state, "jwt", None)
     
-    if jwt["user_id"] != id and jwt["email"]!=email and not jwt["isSuperAdmin"]:
+    if jwt["user_id"] != user.id and jwt["email"]!=user.email and not jwt["isSuperAdmin"]:
         raise HTTPException(status_code=403, detail="Acesso negado! Não tens autorização para apagar utilizadores!")
 
-    if id:
-        result = await users_collection.update_one({"_id": ObjectId(id)}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
+    if user.id:
+        result = await users_collection.update_one({"_id": ObjectId(user.id)}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
 
     else:
-        result = await users_collection.update_one({"email": email}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
+        result = await users_collection.update_one({"email": user.email}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
 
     if not result.modified_count:
         raise HTTPException(status_code=409, detail="Erro ao apagar utilizador. Verifica se o utilizador existe.")
@@ -69,26 +69,26 @@ async def soft_delete_user(request: Request, recaptchaToken: str, id: str = None
 
 # 🚀 Ativar Usuário
 @routerUser.put("/activate")
-async def activate_user(request: Request, recaptchaToken: str, id: str = None, email: str = None):
+async def activate_user(request: Request, user: UserActivation):
     
-    if not id and not email:
+    if not user.id and not user.email:
         raise HTTPException(status_code=400, detail="Não foi inserido nada que identifique o utilizador.")
 
     # Validar o reCAPTCHA token
-    await validar_recaptcha_token(recaptchaToken, "activate")
+    await validar_recaptcha_token(user.recaptchaToken, "activate")
 
     jwt = getattr(request.state, "jwt", None)
     
-    if jwt["user_id"] != id and jwt["email"]!=email and not jwt["isSuperAdmin"]:
+    if jwt["user_id"] != user.id and jwt["email"]!=user.email and not jwt["isSuperAdmin"]:
         raise HTTPException(status_code=403, detail="Acesso negado! Não tens autorização para ativar utilizadores!")
 
-    if id:
-        result = await users_collection.update_one({"_id": ObjectId(id)},{"$set":{"isActive": True, "update_at": datetime.now()}})
-    
-    else:
-        result = await users_collection.update_one({"email": email},{"$set":{"isActive": True, "update_at": datetime.now()}})
-    
-    if not result.modified_count:
-        raise HTTPException(status_code=409, detail="Erro ao ativar utilizador.")
+    if user.id:
+        result = await users_collection.update_one({"_id": ObjectId(user.id)}, {"$set": {"isActive": True, "updated_at": datetime.now()}})
 
-    return {"message": "Utilizador ativa com sucesso!"}
+    else:
+        result = await users_collection.update_one({"email": user.email}, {"$set": {"isActive": True, "updated_at": datetime.now()}})
+
+    if not result.modified_count:
+        raise HTTPException(status_code=409, detail="Erro ao ativar utilizador. Verifica se o utilizador existe.")
+
+    return {"message": "Utilizador ativado com sucesso!"}

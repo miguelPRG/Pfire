@@ -44,7 +44,7 @@ async def jwt_authentication_middleware(request: Request, call_next):
     """Verifica se a rota requer autenticação e valida o JWT a partir do cookie _fp"""
 
     # Este código deverá ser descomentado em produção
-    
+    """
     origin = request.headers.get("origin")
 
     if not origin or origin not in allowed_origins:
@@ -52,7 +52,7 @@ async def jwt_authentication_middleware(request: Request, call_next):
             status_code=403,
             content={"message": "Origem não permitida!"}
         )
-    
+    """
     EXCLUDED_PATHS = {"/user/login", "/user/register", "/user/login-oauth"}
     if request.method == "OPTIONS":
         return await call_next(request)

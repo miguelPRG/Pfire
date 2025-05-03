@@ -9,10 +9,10 @@ routerUserEmpresa = APIRouter(prefix="/user")
 
 #Set Administrador
 @routerUserEmpresa.put("/set-admin")
-async def set_admin(user:UserRole, request: Request, recaptchaToken:str):
+async def set_admin(user:UserRole, request: Request):
 
     # Validar recaptcha token
-    await validar_recaptcha_token(recaptchaToken, "set-admin")
+    await validar_recaptcha_token(user.recaptchaToken, "set-admin")
 
     jwt = getattr(request.state, "jwt", None)
 
@@ -39,10 +39,10 @@ async def set_admin(user:UserRole, request: Request, recaptchaToken:str):
     return {"message": "Utilizador agora é admin da empresa"}
 
 @routerUserEmpresa.put("/revoke-admin")
-async def remoke_admin(user:UserRole, request: Request, recaptchaToken:str):
+async def remoke_admin(user:UserRole, request: Request):
 
     # Validar recaptcha token
-    await validar_recaptcha_token(recaptchaToken, "remoke-admin")
+    await validar_recaptcha_token(user.recaptchaToken, "remoke-admin")
 
     jwt = getattr(request.state, "jwt", None)
 

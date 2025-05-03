@@ -28,7 +28,9 @@ export default function AddNewClientPage() {
         { action: "register" }
       );
 
-      const response = await fetch(`/backend/cliente?recaptchaToken=${recaptchaToken}`, {
+      dados.recaptchaToken = recaptchaToken; // Adiciona o token ao payload
+
+      const response = await fetch(`/backend/cliente`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
