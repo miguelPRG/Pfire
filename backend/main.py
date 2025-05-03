@@ -11,7 +11,7 @@ from controller.token_blacklist import is_token_revoked  # Import necessário
 app = FastAPI()
 
 # Configuração de CORS
-origins = [
+allowed_origins = [
     "http://frontend:80",
     "http://frontend:443",
     "http://localhost:3000",
@@ -19,10 +19,10 @@ origins = [
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # Domínios permitidos
+    allow_origins=allowed_origins,  # Domínios permitidos
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Inclua OPTIONS
-    allow_headers=["*"],  # Permita todos os cabeçalhos necessários
+    allow_headers=["Content-Type", "Host", "Cookie"],  # Permita todos os cabeçalhos necessários
 )
 # Middleware de limitador de tempo
 @app.middleware("http")
@@ -42,6 +42,16 @@ async def rate_limit_middleware(request: Request, call_next):
 @app.middleware("http")
 async def jwt_authentication_middleware(request: Request, call_next):
     """Verifica se a rota requer autenticação e valida o JWT a partir do cookie _fp"""
+
+    # Este código deverá ser descomentado em produção
+    
+    origin = request.headers.get("origin")
+
+    if not origin or origin not in allowed_origins:
+        return JSONResponse(
+            status_code=403,
+            content={"message": "Origem não permitida!"}
+        )
     
     EXCLUDED_PATHS = {"/user/login", "/user/register", "/user/login-oauth"}
     if request.method == "OPTIONS":
