@@ -10,3 +10,7 @@ class UserEmpresaCreate(BaseModel):
     created_at: datetime
     updated_by: Any
     updated_at: datetime
+
+class UserRole(BaseModel):
+    user_id: str
+    empresa_id: str

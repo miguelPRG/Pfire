@@ -1,6 +1,6 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from routes.Rest.services import usersServices
+from routes.Rest.services import usersServices, userEmpresaServices
 from routes.Rest.CRUD import userCRUD, empresaCRUD, clienteCRUD, modelosCRUD, relatorioCRUD
 from routes.graphQL.schema import graphql_router
 from controller.clientIP import rate_limit
@@ -85,6 +85,7 @@ async def jwt_authentication_middleware(request: Request, call_next):
 # Rotas do usuário (REST)
 app.include_router(usersServices.routerUser)
 app.include_router(userCRUD.routerUser)
+app.include_router(userEmpresaServices.routerUserEmpresa)
 #Rotas da empresa (REST)
 app.include_router(empresaCRUD.routerEmpresa)
 #Rotas do cliente (REST)

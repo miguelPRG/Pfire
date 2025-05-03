@@ -49,7 +49,7 @@ class UserQuery:
                     "nome": user.get("nome"),
                     "email": user.get("email"),
                     "telefone": user.get("telefone"),
-                    "role": user_empresa.get("role"),
+                    "isAdmin": user_empresa.get("isAdmin"),
                     "created_at": user.get("created_at"),
                     "updated_at": user.get("updated_at"),
                     "last_login": user.get("last_login"),

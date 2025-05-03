@@ -8,7 +8,7 @@ class User:
     nome: str
     email: str
     telefone: str
-    role: str
+    isAdmin: bool
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     last_login: Optional[datetime] = None
