@@ -544,7 +544,6 @@ export default function UserManagementTable() {
           </Button>
           <Button
             onClick={handleConfirmDelete}
-            color="primary"
             style={{ backgroundColor: "red", color: "white" }}
           >
             Excluir

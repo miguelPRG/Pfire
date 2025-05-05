@@ -5,21 +5,42 @@ import {
   TextField,
   Button,
   Box,
-  useMediaQuery,
-  useTheme,
 } from "@mui/material";
-import { useRef } from "react";
-
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import logo from "../assets/images/logo.png";
 
+// Esquema de validação com Zod
+const empresaSchema = z.object({
+  nome: z.string().nonempty("O nome da empresa é obrigatório"),
+  nif: z
+    .string()
+    .nonempty("O NIF é obrigatório")
+    .regex(/^[5789]\d{8}$/, "O NIF é inválido"),
+  localidade: z.string().nonempty("A localidade é obrigatória").trim(),
+  morada: z.string().nonempty("A morada é obrigatória").trim(),
+  codigo_postal: z
+    .string()
+    .nonempty("O código postal é obrigatório")
+    .regex(/^\d{4}-\d{3}$/, "O código postal deve estar no formato 1234-567"),
+});
+
+type EmpresaFormInputs = z.infer<typeof empresaSchema>;
+
 function CadastroEmpresaPage() {
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const nomeEmpresaRef = useRef<HTMLInputElement>(null);
-  const nifRef = useRef<HTMLInputElement>(null);
-  const localidadeRef = useRef<HTMLInputElement>(null);
-  const moradaRef = useRef<HTMLInputElement>(null);
-  const codigoPostalRef = useRef<HTMLInputElement>(null);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<EmpresaFormInputs>({
+    resolver: zodResolver(empresaSchema),
+  });
+
+  const onSubmit = async (data: EmpresaFormInputs) => {
+    console.log("Dados da empresa:", data);
+    // Aqui você pode enviar os dados para o backend
+  };
 
   return (
     <Container
@@ -76,20 +97,17 @@ function CadastroEmpresaPage() {
           CRIAR CONTA
         </Typography>
 
-        <form>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <Box
             sx={{
               display: "flex",
               flexDirection: "column",
-              gap: 0,
-              "& > *": {
-                marginBottom: "-15px", // Ajuste fino no espaçamento negativo
-              },
+              gap: 2,
             }}
           >
             {/* Dados da Empresa */}
             <Typography
-              variant="h5"
+              variant="h4"
               sx={{
                 marginTop: 0,
                 marginBottom: 0,
@@ -99,110 +117,51 @@ function CadastroEmpresaPage() {
               Insira os dados da Empresa
             </Typography>
 
-            {isMobile ? (
-              <TextField
-                required
-                id="nome"
-                label="Nome da empresa"
-                type="text"
-                inputRef={nomeEmpresaRef}
-                sx={{ mb: 0.5 }}
-              />
-            ) : (
-              <Box sx={{ display: "flex", gap: 1, width: "100%" }}>
-                <TextField
-                  required
-                  id="nome"
-                  label="Nome da empresa"
-                  type="text"
-                  inputRef={nomeEmpresaRef}
-                  sx={{ flexGrow: 1 }}
-                />
-              </Box>
-            )}
-
-            {isMobile ? (
-              <>
-                <TextField
-                  required
-                  id="nif"
-                  label="NIF da empresa"
-                  type="text"
-                  inputRef={nifRef}
-                  sx={{ mb: 0.5 }}
-                />
-                <TextField
-                  required
-                  id="localidade"
-                  label="Localidade"
-                  type="text"
-                  sx={{ mb: 0.5 }}
-                />
-              </>
-            ) : (
-              <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
-                <TextField
-                  required
-                  id="nif"
-                  label="NIF da empresa"
-                  type="text"
-                  inputRef={nifRef}
-                  sx={{ flexGrow: 1 }}
-                />
-                <TextField
-                  required
-                  id="localidade"
-                  label="Localidade"
-                  type="text"
-                  inputRef={localidadeRef}
-                  sx={{ flexGrow: 1 }}
-                />
-              </Box>
-            )}
-
-            {isMobile ? (
-              <>
-                <TextField
-                  required
-                  id="morada"
-                  label="Morada"
-                  type="text"
-                  inputRef={moradaRef}
-                  sx={{ mb: 0.5 }}
-                />
-                <TextField
-                  required
-                  id="codigo_postal"
-                  label="Código postal"
-                  type="text"
-                  inputRef={codigoPostalRef}
-                  sx={{ mb: 0.5 }}
-                />
-              </>
-            ) : (
-              <Box sx={{ display: "flex", gap: 1, width: "100%" }}>
-                <TextField
-                  required
-                  id="morada"
-                  label="Morada"
-                  type="text"
-                  inputRef={moradaRef}
-                  sx={{ flexGrow: 1 }}
-                />
-                <TextField
-                  required
-                  id="codigo_postal"
-                  label="Código postal"
-                  type="text"
-                  inputRef={codigoPostalRef}
-                  sx={{ flexGrow: 1 }}
-                />
-              </Box>
-            )}
+            <TextField
+              {...register("nome")}
+              label="Nome da empresa*"
+              error={!!errors.nome}
+              helperText={errors.nome?.message}
+              fullWidth
+              margin="normal"
+            />
+            <TextField
+              {...register("nif")}
+              label="NIF da empresa*"
+              error={!!errors.nif}
+              helperText={errors.nif?.message}
+              fullWidth
+              margin="normal"
+            />
+            <TextField
+              {...register("localidade")}
+              label="Localidade*"
+              error={!!errors.localidade}
+              helperText={errors.localidade?.message}
+              fullWidth
+              margin="normal"
+            />
+            <TextField
+              {...register("morada")}
+              label="Morada*"
+              error={!!errors.morada}
+              helperText={errors.morada?.message}
+              fullWidth
+              margin="normal"
+            />
+            <TextField
+              {...register("codigo_postal")}
+              label="Código postal*"
+              error={!!errors.codigo_postal}
+              helperText={errors.codigo_postal?.message}
+              fullWidth
+              margin="normal"
+            />
 
             {/* Botão de Criar Conta */}
             <Button
               type="submit"
+              disabled={isSubmitting}
               sx={{
                 background: "linear-gradient(45deg, #FFA726 30%, #FB8C00 90%)",
                 color: "white",
@@ -215,7 +174,7 @@ function CadastroEmpresaPage() {
                 },
               }}
             >
-              FINALIZAR CADASTO
+              {isSubmitting ? "A criar..." : "FINALIZAR CADASTRO"}
             </Button>
           </Box>
         </form>

@@ -27,6 +27,6 @@ class RegisterUser(BaseModel):
     recaptchaToken: str
 
 class UserLogin(BaseModel):
-    recapatchaToken: Optional[str] = None
     email: EmailStr
     password: str
+    recaptchaToken: str

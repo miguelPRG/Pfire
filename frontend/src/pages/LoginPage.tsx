@@ -32,7 +32,7 @@ type LoginFormInputs = z.infer<typeof loginSchema>;
 function LoginPage() {
   const { login, loginWithOAuth } = useAuth();
   const navigate = useNavigate();
-  const [authError, setAuthError] = useState({ isError: false, message: "" });
+  const [authError, setAuthError] = useState({ error: false, message: "" });
 
   const {
     register,
@@ -43,26 +43,25 @@ function LoginPage() {
   });
 
   const onSubmit = async (data: LoginFormInputs) => {
-    setAuthError({ isError: false, message: "" });
+    setAuthError({ error: false, message: "" });
 
     try {
       await login(data.email, data.password);
     } catch (error: any) {
       setAuthError({
-        isError: true,
-        message: error?.message || "Ocorreu um erro inesperado.",
-      });
+        error: true,
+        message: error.message});
     }
   };
 
   const handleOAuthLogin = async (provider: "google" | "microsoft") => {
-    setAuthError({ isError: false, message: "" });
+    setAuthError({ error: false, message: "" });
 
     try {
       await loginWithOAuth(provider);
     } catch (error: any) {
       setAuthError({
-        isError: true,
+        error: true,
         message: error?.message || "Erro ao tentar autenticar com o provedor.",
       });
     }
@@ -78,8 +77,8 @@ function LoginPage() {
       }}
     >
       {/* Exibir erro de autenticação */}
-      {authError.isError && authError.message && (
-        <Fade in={authError.isError} timeout={800}>
+      {authError.error && authError.message && (
+        <Fade in={authError.error} timeout={800}>
           <Alert variant="filled" severity="error" sx={{ mt: -3 }}>
             {authError.message}
           </Alert>
@@ -89,7 +88,7 @@ function LoginPage() {
       <Box
         sx={{
           position: "relative",
-          marginBottom: 10,
+          marginBottom: 8,
         }}
       >
         <Box
@@ -129,7 +128,7 @@ function LoginPage() {
           <TextField
             {...register("email")}
             id="email"
-            label="Email"
+            label="Email*"
             error={!!errors.email}
             helperText={errors.email?.message}
             fullWidth
@@ -138,7 +137,7 @@ function LoginPage() {
           <TextField
             {...register("password")}
             id="password"
-            label="Password"
+            label="Password*"
             type="password"
             error={!!errors.password}
             helperText={errors.password?.message}
@@ -180,8 +179,8 @@ function LoginPage() {
           </Button>
 
           {/* Linha Horizontal */}
-          <Divider sx={{ width: "100%", my: 2 }} />
-          <Typography variant="h3">ou</Typography>
+          <Divider/>
+          <Typography variant="body1">ou</Typography>
           <Box
             sx={{
               display: "flex",
@@ -246,11 +245,10 @@ function LoginPage() {
               />
             </Button>
           </Box>
-          <Typography variant="h4" sx={{ fontSize: "0.900rem" }}>
+          <Typography variant="body1">
             Não tens uma conta?{" "}
             <Link
               to="/register"
-              style={{ color: "#1976D2", textDecoration: "none" }}
             >
               Regista-te
             </Link>

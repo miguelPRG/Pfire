@@ -59,7 +59,7 @@ const commonComponents: Components = {
   MuiPaper: {
     styleOverrides: {
       root: {
-        backgroundColor: "primary",
+        
         backgroundImage: "none",
         borderRadius: "15px", // 🔹 Remove qualquer borda arredondada da página
         padding: "14px",
@@ -95,17 +95,43 @@ const commonComponents: Components = {
         fontSize: "1.3rem",
         fontWeight: "550",
       },
-      root: {
-        fontSize: "1rem",
+
+      h2: {
+        fontSize: "1.2rem",
+        fontWeight: "550",
+      },
+      h3: {
+        fontSize: "1.1rem",
+        fontWeight: "500",
+      },
+      h4: {
+        fontSize: "1.0rem",
+      },
+      body1: {
+        fontSize: "0.9rem",
+        "& a": {
+          color: "#1976D2", // Define a cor dos links
+          textDecoration: "none", // Remove o sublinhado
+          "&:hover": {
+            textDecoration: "underline", // Adiciona sublinhado ao passar o mouse
+          },
+          "&:active": {
+            color: "#1976D2", // Define a cor ao clicar
+          },
+        },
       },
     },
   },
   MuiIconButton: {
     styleOverrides: {
       root: {
-        backgroundColor: "primary.main",
+        backgroundColor: "#1976D2",
         color: "white",
         boxShadow: "0px 3px 6px rgba(0, 0, 0, 0.2)",
+        
+        "&:hover": {
+        backgroundColor: "#00C8FF",
+      },
       },
     },
   },

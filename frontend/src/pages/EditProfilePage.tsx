@@ -11,6 +11,30 @@ import {
   Grid,
 } from "@mui/material";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+// Esquema de validação com Zod
+const editCompanySchema = z.object({
+  companyName: z.string().nonempty("O nome da empresa é obrigatório"),
+  nif: z
+    .string()
+    .nonempty("O NIF é obrigatório")
+    .regex(/^[5789]\d{8}$/, "O NIF é inválido"),
+  address: z.string().nonempty("A morada é obrigatória"),
+  locality: z.string().nonempty("A localidade é obrigatória"),
+  postalCode: z
+    .string()
+    .nonempty("O código postal é obrigatório")
+    .regex(/^\d{4}-\d{3}$/, "O código postal deve estar no formato 1234-567"),
+  companyPhone: z
+    .string()
+    .nonempty("O telefone da empresa é obrigatório")
+    .regex(/^\d{9}$/, "O telefone da empresa deve ter 9 dígitos"),
+});
+
+type EditCompanyFormInputs = z.infer<typeof editCompanySchema>;
 
 function EditProfilePage() {
   const [formData, setFormData] = useState({
@@ -20,17 +44,27 @@ function EditProfilePage() {
     password: "",
     confirmPassword: "",
     newPassword: "",
-    companyName: "",
-    nif: "",
-    address: "",
-    locality: "",
-    postalCode: "",
-    companyPhone: "",
   });
 
   const [avatarPreview, setAvatarPreview] = useState(
     "/static/images/avatar/2.jpg",
   );
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<EditCompanyFormInputs>({
+    resolver: zodResolver(editCompanySchema),
+    defaultValues: {
+      companyName: "João Silva",
+      nif: "",
+      address: "",
+      locality: "",
+      postalCode: "",
+      companyPhone: "",
+    },
+  });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -44,9 +78,8 @@ function EditProfilePage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmitInfo = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Dados atualizados:", formData);
+  const handleSubmitInfo = async (data: EditCompanyFormInputs) => {
+    console.log("Dados atualizados:", data);
   };
 
   const handleSubmitPassword = (e: React.FormEvent) => {
@@ -96,9 +129,9 @@ function EditProfilePage() {
                   right: -5,
                   backgroundColor: "secondary.main",
                   boxShadow: 1,
-    "&:hover": {
-      backgroundColor: "secondary.dark", // Cor ao passar o mouse
-    },
+                  "&:hover": {
+                    backgroundColor: "secondary.dark", // Cor ao passar o mouse
+                  },
                 }}
               >
                 <PhotoCameraIcon
@@ -116,7 +149,7 @@ function EditProfilePage() {
           </Typography>
         </Box>
 
-        <Box component="form" onSubmit={handleSubmitInfo}>
+        <Box component="form" onSubmit={handleSubmitPassword}>
           <Grid container spacing={2} justifyContent="center">
             <Grid item xs={12} md={6}>
               <TextField
@@ -151,7 +184,7 @@ function EditProfilePage() {
                 <Button
                   type="submit"
                   variant="contained"
-                   color="secondary"
+                  color="secondary"
                   sx={{ width: 200 }}
                 >
                   Salvar Alterações
@@ -218,7 +251,7 @@ function EditProfilePage() {
                 <Button
                   type="submit"
                   variant="contained"
-                   color="secondary"
+                  color="secondary"
                   sx={{ width: 200 }}
                 >
                   Alterar Senha
@@ -248,105 +281,68 @@ function EditProfilePage() {
           flexDirection="column"
           alignItems="center"
         >
-          <Box position="relative">
-            <Avatar
-              alt="User Avatar"
-              src={avatarPreview}
-              sx={{ width: 80, height: 80 }}
-            />
-            <label htmlFor="avatar-upload">
-              <input
-                accept="image/*"
-                id="avatar-upload"
-                type="file"
-                style={{ display: "none" }}
-                onChange={handleFileChange}
-              />
-              <IconButton
-                component="span"
-                sx={{
-                  position: "absolute",
-                  bottom: -5,
-                  right: -5,
-                  backgroundColor: "secondary.main",
-                  boxShadow: 1,
-                  "&:hover": {
-      backgroundColor: "secondary.dark", // Cor ao passar o mouse
-    },
-                }}
-              >
-                <PhotoCameraIcon
-                  fontSize="small"
-                  sx={{
-                    color: (theme) => theme.palette.background.default, // Acessa a cor do tema dinamicamente
-                  }}
-                />
-              </IconButton>
-            </label>
-          </Box>
-
           <Typography variant="h5" fontWeight="bold" mt={2}>
             Editar Dados da Empresa
           </Typography>
         </Box>
-        <Box component="form" onSubmit={handleSubmitInfo}>
+        <Box component="form" onSubmit={handleSubmit(handleSubmitInfo)}>
           <Grid container spacing={2} justifyContent="center">
             <Grid item xs={12} md={6}>
               <TextField
+                {...register("companyName")}
                 label="Nome da Empresa"
-                name="companyName"
-                value={formData.companyName}
-                onChange={handleChange}
+                error={!!errors.companyName}
+                helperText={errors.companyName?.message}
                 fullWidth
               />
             </Grid>
 
             <Grid item xs={12} md={6}>
               <TextField
+                {...register("nif")}
                 label="NIF"
-                name="nif"
-                value={formData.nif}
-                onChange={handleChange}
+                error={!!errors.nif}
+                helperText={errors.nif?.message}
                 fullWidth
               />
             </Grid>
 
             <Grid item xs={12} md={6}>
               <TextField
+                {...register("address")}
                 label="Morada"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
+                error={!!errors.address}
+                helperText={errors.address?.message}
                 fullWidth
               />
             </Grid>
 
             <Grid item xs={12} md={6}>
               <TextField
+                {...register("locality")}
                 label="Localidade"
-                name="locality"
-                value={formData.locality}
-                onChange={handleChange}
+                error={!!errors.locality}
+                helperText={errors.locality?.message}
                 fullWidth
               />
             </Grid>
 
             <Grid item xs={12} md={6}>
               <TextField
+                {...register("postalCode")}
                 label="Código Postal"
-                name="postalCode"
-                value={formData.postalCode}
-                onChange={handleChange}
+                error={!!errors.postalCode}
+                helperText={errors.postalCode?.message}
                 fullWidth
               />
             </Grid>
 
             <Grid item xs={12} md={6}>
               <TextField
+                {...register("companyPhone")}
                 label="Telefone empresa"
-                name="companyPhone"
-                value={formData.companyPhone}
-                onChange={handleChange}
+                error={!!errors.companyPhone}
+                helperText={errors.companyPhone?.message}
                 fullWidth
               />
             </Grid>
@@ -357,12 +353,16 @@ function EditProfilePage() {
                   type="submit"
                   variant="contained"
                   color="secondary"
-                  sx={{ width: 200 ,boxShadow: 1,
+                  sx={{
+                    width: 200,
+                    boxShadow: 1,
                     "&:hover": {
-        backgroundColor: "secondary.dark", // Cor ao passar o mouse
-      },}}
+                      backgroundColor: "secondary.dark",
+                    },
+                  }}
+                  disabled={isSubmitting}
                 >
-                  Salvar Alterações
+                  {isSubmitting ? "Salvando..." : "Salvar Alterações"}
                 </Button>
               </Box>
             </Grid>

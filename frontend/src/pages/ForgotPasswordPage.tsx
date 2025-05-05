@@ -1,4 +1,7 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Box,
   Button,
@@ -10,26 +13,34 @@ import {
   DialogActions,
   DialogContent,
   DialogContentText,
-  DialogTitle,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/images/logo.png";
 
+// Esquema de validação com Zod
+const forgotPasswordSchema = z.object({
+  email: z
+    .string()
+    .nonempty("O email é obrigatório")
+    .email("Insira um email válido"),
+});
+
+type ForgotPasswordFormInputs = z.infer<typeof forgotPasswordSchema>;
+
 function ForgotPassword() {
-  const emailRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const email = emailRef.current?.value.trim();
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<ForgotPasswordFormInputs>({
+    resolver: zodResolver(forgotPasswordSchema),
+  });
 
-    if (!email) {
-      alert("Por favor, insira o seu e-mail.");
-      return;
-    }
-
-    console.log("E-mail enviado para:", email);
+  const onSubmit = (data: ForgotPasswordFormInputs) => {
+    console.log("E-mail enviado para:", data.email);
     setOpen(true); // Abre o modal
   };
 
@@ -85,16 +96,18 @@ function ForgotPassword() {
 
         <Box
           component="form"
-          onSubmit={handleSubmit}
+          onSubmit={handleSubmit(onSubmit)}
           display="flex"
           flexDirection="column"
           gap={2}
         >
           <TextField
-            inputRef={emailRef}
+            {...register("email")}
             label="Email"
             type="email"
             fullWidth
+            error={!!errors.email}
+            helperText={errors.email?.message}
             required
           />
 
@@ -125,8 +138,9 @@ function ForgotPassword() {
                   background: "linear-gradient(45deg, #FB8C00 30%, #FFA726 90%)",
                 },
               }}
+              disabled={isSubmitting}
             >
-              Recuperar Palavra-Passe
+              {isSubmitting ? "A enviar..." : "Recuperar Palavra-Passe"}
             </Button>
           </Box>
         </Box>
@@ -134,7 +148,6 @@ function ForgotPassword() {
 
       {/* MODAL DE CONFIRMAÇÃO */}
       <Dialog open={open} onClose={handleClose}>
-        
         <DialogContent>
           <DialogContentText>
             Se existir uma conta com esse e-mail, receberás um link de recuperação em breve.

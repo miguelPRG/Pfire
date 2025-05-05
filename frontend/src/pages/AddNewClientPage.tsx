@@ -1,23 +1,48 @@
 import { Box, Button, TextField, Typography, Paper } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
-import { useRef } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-declare var grecaptcha: any; 
+declare var grecaptcha: any;
+
+// Esquema de validação com Zod
+const addClientSchema = z.object({
+  nome: z.string().nonempty("O nome é obrigatório"),
+  email: z.string().nonempty("O email é obrigatório").email("Email inválido"),
+  telefone: z
+    .string()
+    .nonempty("O telefone é obrigatório")
+    .regex(/^\d{9}$/, "O telefone deve ter 9 dígitos"),
+  nif: z
+    .string()
+    .nonempty("O NIF é obrigatório")
+    .regex(/^[5789]\d{8}$/, "O NIF é inválido"),
+  localidade: z.string().nonempty("A localidade é obrigatória"),
+  morada: z.string().nonempty("A morada é obrigatória"),
+  codigo_postal: z
+    .string()
+    .nonempty("O código postal é obrigatório")
+    .regex(/^\d{4}-\d{3}$/, "O código postal deve estar no formato 1234-567"),
+  recaptchaToken: z.string().optional(), // Adiciona o token do reCAPTCHA como opcional
+});
+
+type AddClientFormInputs = z.infer<typeof addClientSchema>;
+
 export default function AddNewClientPage() {
   const navigate = useNavigate();
   const theme = useTheme();
 
-  // Refs para os campos
-  const nomeRef = useRef<HTMLInputElement>(null);
-  const emailRef = useRef<HTMLInputElement>(null);
-  const telefoneRef = useRef<HTMLInputElement>(null);
-  const nifRef = useRef<HTMLInputElement>(null);
-  const localidadeRef = useRef<HTMLInputElement>(null);
-  const moradaRef = useRef<HTMLInputElement>(null);
-  const codigoPostalRef = useRef<HTMLInputElement>(null);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<AddClientFormInputs>({
+    resolver: zodResolver(addClientSchema),
+  });
 
-  const enviarNovoCliente = async (dados: any) => {
+  const enviarNovoCliente = async (dados: AddClientFormInputs & { empresa_id: string }) => {
     try {
       if (!dados.empresa_id || !/^[a-f\d]{24}$/i.test(dados.empresa_id)) {
         throw new Error("ID da empresa inválido ou não fornecido.");
@@ -52,28 +77,15 @@ export default function AddNewClientPage() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const onSubmit = async (formData: AddClientFormInputs) => {
     const empresa_id = prompt("Insere o ID da empresa:");
     if (!empresa_id) {
       alert("Erro: empresa_id não fornecido.");
       return;
     }
 
-    const novoCliente = {
-      nome: nomeRef.current?.value || "",
-      email: emailRef.current?.value || "",
-      telefone: telefoneRef.current?.value || "",
-      nif: nifRef.current?.value || "",
-      localidade: localidadeRef.current?.value || "",
-      morada: moradaRef.current?.value || "",
-      codigo_postal: codigoPostalRef.current?.value || "",
-      empresa_id: empresa_id,
-    };
-
     try {
-      await enviarNovoCliente(novoCliente);
+      await enviarNovoCliente({ ...formData, empresa_id });
       alert("Novo cliente adicionado com sucesso!");
       navigate("/ClientManagementTable");
     } catch (error) {
@@ -96,32 +108,87 @@ export default function AddNewClientPage() {
 
       <Box
         component="form"
-        onSubmit={handleSubmit}
+        onSubmit={handleSubmit(onSubmit)}
         sx={{ display: "flex", flexDirection: "column", gap: 2 }}
       >
-        <TextField label="Nome" inputRef={nomeRef} required fullWidth />
-        <TextField label="Email" type="email" inputRef={emailRef} required fullWidth />
-        <TextField label="Telefone" inputRef={telefoneRef} required fullWidth />
-        <TextField label="NIF" inputRef={nifRef} required fullWidth />
-        <TextField label="Localidade" inputRef={localidadeRef} fullWidth />
-        <TextField label="Morada" inputRef={moradaRef} fullWidth />
-        <TextField label="Código Postal" inputRef={codigoPostalRef} fullWidth />
+        <TextField
+          {...register("nome")}
+          label="Nome"
+          error={!!errors.nome}
+          helperText={errors.nome?.message}
+          required
+          fullWidth
+        />
+        <TextField
+          {...register("email")}
+          label="Email"
+          type="email"
+          error={!!errors.email}
+          helperText={errors.email?.message}
+          required
+          fullWidth
+        />
+        <TextField
+          {...register("telefone")}
+          label="Telefone"
+          error={!!errors.telefone}
+          helperText={errors.telefone?.message}
+          required
+          fullWidth
+        />
+        <TextField
+          {...register("nif")}
+          label="NIF"
+          error={!!errors.nif}
+          helperText={errors.nif?.message}
+          required
+          fullWidth
+        />
+        <TextField
+          {...register("localidade")}
+          label="Localidade"
+          error={!!errors.localidade}
+          helperText={errors.localidade?.message}
+          fullWidth
+        />
+        <TextField
+          {...register("morada")}
+          label="Morada"
+          error={!!errors.morada}
+          helperText={errors.morada?.message}
+          fullWidth
+        />
+        <TextField
+          {...register("codigo_postal")}
+          label="Código Postal"
+          error={!!errors.codigo_postal}
+          helperText={errors.codigo_postal?.message}
+          fullWidth
+        />
 
         <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
-          <Button onClick={handleCancel} sx={{
-            backgroundColor: theme.palette.primary.main,
-            color: "white",
-            minWidth: 140,
-          }}>
+          <Button
+            onClick={handleCancel}
+            sx={{
+              backgroundColor: theme.palette.primary.main,
+              color: "white",
+              minWidth: 140,
+            }}
+          >
             Cancelar
           </Button>
-          <Button type="submit" variant="contained" sx={{
-            backgroundColor: theme.palette.success.main,
-            color: "white",
-            "&:hover": { backgroundColor: theme.palette.success.dark },
-            minWidth: 140,
-          }}>
-            Adicionar
+          <Button
+            type="submit"
+            variant="contained"
+            sx={{
+              backgroundColor: theme.palette.success.main,
+              color: "white",
+              "&:hover": { backgroundColor: theme.palette.success.dark },
+              minWidth: 140,
+            }}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "A adicionar..." : "Adicionar"}
           </Button>
         </Box>
       </Box>

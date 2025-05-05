@@ -7,7 +7,11 @@ import {
 } from "react";
 import { FirebaseLogin, FirebaseLogout } from "../firebase"; // Importando as funções do Firebase
 
-declare var grecaptcha: any;
+declare global {
+  interface Window {
+    grecaptcha: any;
+  }
+}
 
 interface UserLoggedIn {
   id: string
@@ -17,44 +21,40 @@ interface UserLoggedIn {
 }
 
 export interface UserRegistered {
-  nome: string | undefined;
-  email: string | undefined;
-  telefone: string | undefined;
-  password: string | undefined;
+  nome: string;
+  email: string;
+  telefone?: string;
+  password: string;
 }
 
 export interface Empresa {
-  nome: string | undefined;
-  nif: string | undefined;
-  localidade: string | undefined;
-  morada: string | undefined;
-  codigo_postal: string | undefined;
-  telefone: string | undefined;
+  nome: string;
+  nif: string;
+  localidade: string;
+  morada: string;
+  codigo_postal: string;
+  telefone: string;
 }
 
 interface AuthContextType {
   user: UserLoggedIn | null;
-  empresaId: string | null; // Adicionando o ID da empresa ao contexto
   loading: boolean;
   login: (email: string, pwd: string) => void;
 
   registerUser: (payload: {
     user: UserRegistered;
     empresa: Empresa;
-    recaptchaToken: string; // Adicionando o token do reCAPTCHA aqui
   }) => void;
 
   loginWithOAuth: (provider: "google" | "microsoft") => void;
   logout: () => void;
   logoutWithOAuth: () => void;
-  chooseCompany: (id: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserLoggedIn | null>(null);
-  const [empresaId, setEmpresaId] = useState<string | null>(null); // Ref para armazenar o ID da empresa
   const [loading, setLoading] = useState(true); // Inicializa como true até a verificação de autenticação ser concluída
 
   useEffect(() => {
@@ -133,10 +133,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw error;
     }
   }
+
   async function registerUser(payload: {
     user: UserRegistered;
     empresa: Empresa;
-    recaptchaToken?: string; // Adicionando o token do reCAPTCHA aqui
   }) {
 
     try{
@@ -148,7 +148,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           },
         );
 
-        payload.recaptchaToken = token; // Adiciona o token ao payload
+
 
         const response = await fetch(
           `backend/user/register`,
@@ -156,7 +156,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
-            body: JSON.stringify(payload), // agora só vai user e empresa
+            body: JSON.stringify({
+              ...payload, // Inclui user e empresa
+              recaptchaToken: token, // Adiciona o recaptchaToken ao payload
+            }),
           },
         );
 
@@ -222,7 +225,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     setUser(null);
-    setEmpresaId(null) // Limpa o ID da empresa ao deslogar
   }
 
   // Logout via Firebase
@@ -235,24 +237,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  // Escolher id da empresa
-  function chooseCompany(id: string) {
-    setEmpresaId(id) // Atualiza o ID da empresa
-    console.log("ID da empresa escolhida:", id);
-  }
-
   return (
     <AuthContext.Provider
       value={{
         user,
-        empresaId,
         login,
         registerUser,
         loading,
         loginWithOAuth,
         logout,
         logoutWithOAuth,
-        chooseCompany,
       }}
     >
       {children}

@@ -1,5 +1,5 @@
-import { useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate,Link } from "react-router-dom";
 import {
   Container,
   Typography,
@@ -14,74 +14,88 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  Fade,
+  Alert
 } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle"; // ícone de sucesso
 import { useAuth } from "../hooks/AuthContext";
 import google from "../assets/images/google.png";
 import microsoft from "../assets/images/microsoft.png";
 import logo from "../assets/images/logo.png";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
 
-declare global {
-  interface Window {
-    grecaptcha: any;
-  }
-}
+// Esquema de validação com Zod
+const registerSchema = z.object({
+  user: z.object({
+    nome: z.string().nonempty("O nome é obrigatório"),
+    email: z.string().nonempty("O email é obrigatório").email("Email inválido"),
+    telefone: z
+      .string()
+      .optional()
+      .refine((telefone) => !telefone || /^\d{9}$/.test(telefone), {
+        message: "O telefone deve ter 9 dígitos",
+      }),
+    password: z
+      .string()
+      .nonempty("A senha é obrigatória")
+      .min(9, "A senha deve ter pelo menos 9 caracteres")
+      .regex(/[A-Z]/, "A senha deve conter pelo menos uma letra maiúscula")
+      .regex(/\d/, "A senha deve conter pelo menos um número"),
+    confirmPassword: z.string().nonempty("A confirmação da senha é obrigatória"),
+  }).refine((data) => data.password === data.confirmPassword, {
+    message: "As senhas não coincidem",
+    path: ["confirmPassword"],
+  }),
+  empresa: z.object({
+    nome: z.string().nonempty("O nome da empresa é obrigatório"),
+    nif: z
+      .string()
+      .nonempty("O NIF é obrigatório")
+      .regex(/^[5789]\d{8}$/, "O NIF é inválido"),
+    localidade: z.string().nonempty("A localidade é obrigatória").trim(),
+    morada: z.string().nonempty("A morada é obrigatória").trim(),
+    codigo_postal: z
+      .string()
+      .nonempty("O código postal é obrigatório")
+      .regex(/^\d{4}-\d{3}$/, "O código postal deve estar no formato 1234-567"),
+    telefone: z
+      .string()
+      .nonempty("O telefone da empresa é obrigatório")
+      .regex(/^\d{9}$/, "O telefone da empresa deve ter 9 dígitos"),
+  }),
+});
+
+type RegisterFormInputs = z.infer<typeof registerSchema>;
 
 function RegisterPage() {
   const theme = useTheme();
+  const [isRegistError, setIsRegistError] = useState({ error: false, message: "" });
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const navigate = useNavigate();
   const { registerUser } = useAuth();
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const emailRef = useRef<HTMLInputElement>(null);
-  const passwordRef = useRef<HTMLInputElement>(null);
-  const confirmPasswordRef = useRef<HTMLInputElement>(null);
-  const nameRef = useRef<HTMLInputElement>(null);
-  const telefoneRef = useRef<HTMLInputElement>(null);
-  const empresaNameRef = useRef<HTMLInputElement>(null);
-  const nifRef = useRef<HTMLInputElement>(null);
-  const localidadeRef = useRef<HTMLInputElement>(null);
-  const moradaRef = useRef<HTMLInputElement>(null);
-  const codigoPostalRef = useRef<HTMLInputElement>(null);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
-  const handleRegister = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setError(null);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<RegisterFormInputs>({
+    resolver: zodResolver(registerSchema),
+  });
 
-    if (passwordRef.current?.value !== confirmPasswordRef.current?.value) {
-      setError("As senhas não coincidem!");
-      return;
-    }
-
-    const user = {
-      nome: nameRef.current?.value || "",
-      email: emailRef.current?.value || "",
-      telefone: telefoneRef.current?.value || "",
-      password: passwordRef.current?.value || "",
-    };
-
-    const empresa = {
-      nome: empresaNameRef.current?.value || "",
-      nif: nifRef.current?.value || "",
-      localidade: localidadeRef.current?.value || "",
-      morada: moradaRef.current?.value || "",
-      codigo_postal: codigoPostalRef.current?.value || "",
-      telefone: telefoneRef.current?.value || "",
-    };
-
+  const onSubmit = async (data: RegisterFormInputs) => {
+    setIsRegistError({error: false, message: ""});
+    
     try {
-      setLoading(true);
-      const payload = { user, empresa, recaptchaToken: "" };
+      const payload = { user: data.user, empresa: data.empresa};
       await registerUser(payload);
       setShowSuccessDialog(true); // Mostra o popup de sucesso
-    } catch (err) {
-      setError(err as string);
-    } finally {
-      setLoading(false);
+    } catch (err: any) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      setIsRegistError({error: true, message: err.message});
     }
   };
 
@@ -95,7 +109,15 @@ function RegisterPage() {
         borderRadius: 2,
       }}
     >
-      <Box sx={{ position: "relative", mb: 3 }}>
+      {/* Exibir erro de registo */}
+      {isRegistError.error && isRegistError.message && (
+        <Fade in={isRegistError.error} timeout={800} >
+          <Alert variant="filled" severity="error" sx={{ mt: -7.5 }}>
+            {isRegistError.message}
+          </Alert>
+        </Fade>
+      )}
+      <Box sx={{ position: "relative", mt: 5, mb:3 }}>
         <Box
           sx={{
             backgroundColor: "primary.main",
@@ -114,12 +136,10 @@ function RegisterPage() {
           />
         </Box>
       </Box>
-
       <Paper elevation={6} sx={{ maxWidth: "1000px", p: isMobile ? 2 : 4 }}>
         <Typography variant="h1" sx={{ mb: 2, mt: 2 }}>
           CRIAR CONTA COM
         </Typography>
-
         <Box
           sx={{ display: "flex", justifyContent: "center", gap: 1, mt: 0.5 }}
         >
@@ -162,263 +182,120 @@ function RegisterPage() {
             />
           </Button>
         </Box>
-
         <Divider sx={{ width: "100%", my: 2 }}>
           <Typography variant="body1" sx={{ px: 2, color: "gray" }}>
             ou
           </Typography>
         </Divider>
-
-        <form onSubmit={handleRegister}>
-          <Box
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <TextField
+            {...register("user.nome")}
+            label="Nome*"
+            error={!!errors.user?.nome}
+            helperText={errors.user?.nome?.message}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            {...register("user.email")}
+            label="Email*"
+            error={!!errors.user?.email}
+            helperText={errors.user?.email?.message}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            {...register("user.telefone")}
+            label="Número de telemóvel"
+            error={!!errors.user?.telefone}
+            helperText={errors.user?.telefone?.message}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            {...register("user.password")}
+            label="Senha*"
+            type="password"
+            error={!!errors.user?.password}
+            helperText={errors.user?.password?.message}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            {...register("user.confirmPassword")}
+            label="Confirmar senha*"
+            type="password"
+            error={!!errors.user?.confirmPassword}
+            helperText={errors.user?.confirmPassword?.message}
+            fullWidth
+            margin="normal"
+          />
+          <Typography variant="h1" sx={{ fontSize: "1.1rem", mt: "8px" }}>
+            Dados da Empresa
+          </Typography>
+          <TextField
+            {...register("empresa.nome")}
+            label="Nome da empresa*"
+            error={!!errors.empresa?.nome}
+            helperText={errors.empresa?.nome?.message}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            {...register("empresa.nif")}
+            label="NIF da empresa*"
+            error={!!errors.empresa?.nif}
+            helperText={errors.empresa?.nif?.message}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            {...register("empresa.localidade")}
+            label="Localidade*"
+            error={!!errors.empresa?.localidade}
+            helperText={errors.empresa?.localidade?.message}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            {...register("empresa.morada")}
+            label="Morada*"
+            error={!!errors.empresa?.morada}
+            helperText={errors.empresa?.morada?.message}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            {...register("empresa.codigo_postal")}
+            label="Código postal*"
+            error={!!errors.empresa?.codigo_postal}
+            helperText={errors.empresa?.codigo_postal?.message}
+            fullWidth
+            margin="normal"
+          />
+          <TextField
+            {...register("empresa.telefone")}
+            label="Telefone da empresa*"
+            error={!!errors.empresa?.telefone}
+            helperText={errors.empresa?.telefone?.message}
+            fullWidth
+            margin="normal"
+          />
+          <Button
+            type="submit"
+            disabled={isSubmitting}
             sx={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 1,
-              mb: "-20px",
-              mt: "-20px",
+              background: "linear-gradient(45deg, #FFA726 30%, #FB8C00 90%)",
+              color: "white",
+              fontWeight: "bold",
+              mt: 2,
+              "&:hover": {
+                background: "linear-gradient(45deg, #FB8C00 30%, #FFA726 90%)",
+              },
             }}
           >
-            <Typography variant="h1" sx={{ fontSize: "1.1rem", mb: "4px" }}>
-              Cria uma conta com teu Email
-            </Typography>
-
-            {isMobile ? (
-              <>
-                <TextField
-                  required
-                  label="Nome"
-                  type="text"
-                  inputRef={nameRef}
-                />
-                <TextField
-                  required
-                  label="Email"
-                  type="email"
-                  inputRef={emailRef}
-                />
-              </>
-            ) : (
-              <Box
-                sx={{ display: "flex", gap: 0.8, width: "100%", mb: "-15px" }}
-              >
-                <TextField
-                  required
-                  label="Nome"
-                  type="text"
-                  sx={{ flex: 1 }}
-                  inputRef={nameRef}
-                />
-                <TextField
-                  required
-                  label="Email"
-                  type="email"
-                  sx={{ flex: 1 }}
-                  inputRef={emailRef}
-                />
-              </Box>
-            )}
-
-            {isMobile ? (
-              <>
-                <TextField
-                  required
-                  label="Senha"
-                  type="password"
-                  inputRef={passwordRef}
-                />
-                <TextField
-                  required
-                  label="Confirmar senha"
-                  type="password"
-                  inputRef={confirmPasswordRef}
-                />
-              </>
-            ) : (
-              <Box
-                sx={{ display: "flex", gap: 0.8, width: "100%", mb: "-15px" }}
-              >
-                <TextField
-                  required
-                  label="Senha"
-                  type="password"
-                  sx={{ flex: 1 }}
-                  inputRef={passwordRef}
-                />
-                <TextField
-                  required
-                  label="Confirmar senha"
-                  type="password"
-                  sx={{ flex: 1 }}
-                  inputRef={confirmPasswordRef}
-                />
-              </Box>
-            )}
-
-            <Typography
-              variant="h1"
-              sx={{ fontSize: "1.1rem", mt: "8px", mb: "4px" }}
-            >
-              Insira os dados da Empresa
-            </Typography>
-
-            {isMobile ? (
-              <TextField
-                required
-                label="Nome da empresa"
-                type="text"
-                inputRef={empresaNameRef}
-                fullWidth
-              />
-            ) : (
-              <Box
-                sx={{
-                  display: "flex",
-                  gap: 2,
-                  width: "100%",
-                  mb: "-15px",
-                  mt: "-15px",
-                }}
-              >
-                <TextField
-                  required
-                  label="Nome da empresa"
-                  type="text"
-                  sx={{ flex: 1 }}
-                  inputRef={empresaNameRef}
-                />
-              </Box>
-            )}
-
-            {isMobile ? (
-              <>
-                <TextField
-                  required
-                  label="NIF da empresa"
-                  type="text"
-                  inputRef={nifRef}
-                />
-                <TextField
-                  required
-                  label="Localidade"
-                  type="text"
-                  inputRef={localidadeRef}
-                />
-              </>
-            ) : (
-              <Box
-                sx={{ display: "flex", gap: 0.8, width: "100%", mb: "-15px" }}
-              >
-                <TextField
-                  required
-                  label="NIF da empresa"
-                  type="text"
-                  sx={{ flex: 1 }}
-                  inputRef={nifRef}
-                />
-                <TextField
-                  required
-                  label="Localidade"
-                  type="text"
-                  sx={{ flex: 1 }}
-                  inputRef={localidadeRef}
-                />
-              </Box>
-            )}
-
-            {isMobile ? (
-              <>
-                <TextField
-                  required
-                  label="Morada"
-                  type="text"
-                  inputRef={moradaRef}
-                />
-                <TextField
-                  required
-                  label="Código postal"
-                  type="text"
-                  inputRef={codigoPostalRef}
-                />
-              </>
-            ) : (
-              <Box sx={{ display: "flex", gap: 0.8, width: "100%" }}>
-                <TextField
-                  required
-                  label="Morada"
-                  type="text"
-                  sx={{ flex: 1 }}
-                  inputRef={moradaRef}
-                />
-                <TextField
-                  required
-                  label="Código postal"
-                  type="text"
-                  sx={{ flex: 1 }}
-                  inputRef={codigoPostalRef}
-                />
-              </Box>
-            )}
-
-            {isMobile ? (
-              <TextField
-                required
-                label="Número de telemóvel"
-                type="text"
-                inputRef={telefoneRef}
-              />
-            ) : (
-              <Box sx={{ display: "flex", width: "100%", mt: "-15px" }}>
-                <TextField
-                  required
-                  label="Número de telemóvel"
-                  type="text"
-                  sx={{ flex: 1 }}
-                  inputRef={telefoneRef}
-                />
-              </Box>
-            )}
-
-            <Button
-              type="submit"
-              disabled={loading}
-              sx={{
-                background: "linear-gradient(45deg, #FFA726 30%, #FB8C00 90%)",
-                color: "white",
-                fontWeight: "bold",
-                mt: 2,
-                "&:hover": {
-                  background:
-                    "linear-gradient(45deg, #FB8C00 30%, #FFA726 90%)",
-                },
-              }}
-            >
-              {loading ? "A criar..." : "CRIAR CONTA"}
-            </Button>
-
-            {error && (
-              <Typography variant="body2" color="error" sx={{ mt: 1 }}>
-                {error}
-              </Typography>
-            )}
-
-            <Typography
-              variant="body1"
-              sx={{ mt: 2, textAlign: "center", color: "black" }}
-            >
-              Já tens uma conta?{" "}
-              <span
-                style={{
-                  color: "#1877F2",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                }}
-                onClick={() => navigate("/login")}
-              >
-                Faça login
-              </span>
-            </Typography>
-          </Box>
+            {isSubmitting ? "A criar..." : "CRIAR CONTA"}
+          </Button>
         </form>
         <Dialog open={showSuccessDialog} onClose={() => navigate("/login")}>
           <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -442,8 +319,8 @@ function RegisterPage() {
               sx={{
                 background:
                   theme.palette.mode === "dark"
-                    ? "linear-gradient(45deg, #43A047, #66BB6A)" // verde escuro para modo escuro
-                    : "linear-gradient(45deg, #4CAF50, #81C784)", // verde claro para modo claro
+                    ? "linear-gradient(45deg, #43A047, #66BB6A)"
+                    : "linear-gradient(45deg, #4CAF50, #81C784)",
                 color: "#fff",
                 fontWeight: "bold",
                 px: 3,
@@ -459,6 +336,14 @@ function RegisterPage() {
             </Button>
           </DialogActions>
         </Dialog>
+        <Typography variant="body1">
+                  Já tens uma conta?{" "}
+                  <Link
+                    to="/login"
+                  >
+                    Inicia sessão
+                  </Link>
+        </Typography>
       </Paper>
     </Container>
   );
