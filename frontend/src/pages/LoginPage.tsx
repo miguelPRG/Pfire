@@ -14,7 +14,6 @@ import { useAuth } from "../hooks/AuthContext";
 import { Link } from "react-router-dom"; // Importa o Link do react-router-dom
 //Importar imagens
 import microsoft from "../assets/images/microsoft.png";
-import facebook from "../assets/images/facebook.png";
 import google from "../assets/images/google.png";
 import logo from "../assets/images/logo.png";
 import { useNavigate } from "react-router-dom";
@@ -205,33 +204,6 @@ function LoginPage() {
                   width: 21, // Tamanho padronizado da imagem
                   height: 21,
                   marginRight: 8, // Espaçamento entre a imagem e o texto
-                }}
-              />
-            </Button>
-
-            {/* Botão do Facebook */}
-            <Button
-              sx={{
-                display: "flex", // Garante que o conteúdo interno seja flexível
-                alignItems: "center", // Centraliza verticalmente o conteúdo
-                backgroundColor: "primary.main",
-                color: "white",
-                transition: "0.3s",
-                px: 1, // Padding horizontal
-                py: 0.57, // Padding vertical
-                width: "200px", // Largura padronizada
-                "&:hover": {
-                  backgroundColor: "primary.dark",
-                },
-              }}
-            >
-              <img
-                src={facebook} // Imagem importada do Facebook
-                alt="Facebook Logo"
-                style={{
-                  width: 37, // Aumenta a largura da imagem
-                  height: 32.5, // Aumenta a altura da imagem
-                  marginRight: 2, // Espaçamento entre a imagem e o texto
                 }}
               />
             </Button>

@@ -18,7 +18,6 @@ import {
 import CheckCircleIcon from "@mui/icons-material/CheckCircle"; // ícone de sucesso
 import { useAuth } from "../hooks/AuthContext";
 import google from "../assets/images/google.png";
-import facebook from "../assets/images/facebook.png";
 import microsoft from "../assets/images/microsoft.png";
 import logo from "../assets/images/logo.png";
 
@@ -141,25 +140,6 @@ function RegisterPage() {
               src={google}
               alt="Google Logo"
               style={{ width: 28, height: 28, marginRight: 8 }}
-            />
-          </Button>
-          <Button
-            onClick={() => navigate("/cadastro-empresa")}
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              backgroundColor: "primary.main",
-              color: "white",
-              px: 1,
-              py: 0.45,
-              width: "200px",
-              "&:hover": { backgroundColor: "primary.dark" },
-            }}
-          >
-            <img
-              src={facebook}
-              alt="Facebook Logo"
-              style={{ width: 52, height: 35.5, marginRight: 2 }}
             />
           </Button>
           <Button
