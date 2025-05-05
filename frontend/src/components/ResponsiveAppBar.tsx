@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { useTheme, useScrollTrigger } from "@mui/material";
 import {
+  useTheme,
+  useScrollTrigger,
   AppBar,
   Box,
   Toolbar,

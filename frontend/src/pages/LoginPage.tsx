@@ -96,12 +96,12 @@ function LoginPage() {
           sx={{
             backgroundColor: "primary.main",
             borderRadius: "50%",
-            marginBottom: 40,
             width: 70,
             height: 70,
             position: "absolute",
             top: "-30px",
             zIndex: 1,
+            marginTop: 5,
           }}
         >
           <img
