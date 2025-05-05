@@ -44,7 +44,7 @@ interface AuthContextType {
     recaptchaToken: string; // Adicionando o token do reCAPTCHA aqui
   }) => void;
 
-  loginWithOAuth: (provider: "google" | "facebook" | "microsoft") => void;
+  loginWithOAuth: (provider: "google" | "microsoft") => void;
   logout: () => void;
   logoutWithOAuth: () => void;
   chooseCompany: (id: string) => void;
@@ -119,9 +119,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
 
       const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.message || "Erro desconhecido do backend");
+        throw new Error(data.detail || "Erro desconhecido do backend");
       }
 
       setUser({
@@ -174,7 +173,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   // Login via Firebase OAuth
-  async function loginWithOAuth(provider: "google" | "facebook" | "microsoft") {
+  async function loginWithOAuth(provider: "google" | "microsoft") {
     try {
       const { user, idToken } = await FirebaseLogin(provider);
 

@@ -3,7 +3,6 @@ import {
   getAuth,
   signInWithPopup,
   GoogleAuthProvider,
-  FacebookAuthProvider,
   OAuthProvider,
   signOut,
 } from "firebase/auth";
@@ -24,7 +23,7 @@ const auth = getAuth(app);
 
 // Funções para login
 const FirebaseLogin = async (
-  providerName: "google" | "facebook" | "microsoft",
+  providerName: "google" | "microsoft",
 ) => {
   let provider;
 
@@ -32,9 +31,7 @@ const FirebaseLogin = async (
     case "google":
       provider = new GoogleAuthProvider();
       break;
-    case "facebook":
-      provider = new FacebookAuthProvider();
-      break;
+
     case "microsoft":
       provider = new OAuthProvider("microsoft.com");
       break;

@@ -9,59 +9,62 @@ import {
   Box,
   Divider,
 } from "@mui/material";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "../hooks/AuthContext";
-import { Link } from "react-router-dom"; // Importa o Link do react-router-dom
-//Importar imagens
+import { Link, useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
+// Importar imagens
 import microsoft from "../assets/images/microsoft.png";
 import google from "../assets/images/google.png";
 import logo from "../assets/images/logo.png";
-import { useNavigate } from "react-router-dom";
+
+// Definir o esquema de validação com Zod
+const loginSchema = z.object({
+  email: z.string().nonempty("O email é obrigatório").email("Email inválido"),
+  password: z.string().nonempty("A password é obrigatória"),
+});
+
+type LoginFormInputs = z.infer<typeof loginSchema>;
 
 function LoginPage() {
-  const emailRef = useRef<HTMLInputElement>(null);
-  const passwordRef = useRef<HTMLInputElement>(null);
-  const [isLoading, setLoading] = useState(false);
-  const [authError, setAuthError] = useState(false);
   const { login, loginWithOAuth } = useAuth();
   const navigate = useNavigate();
+  const [authError, setAuthError] = useState({ isError: false, message: "" });
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setAuthError(false);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting }, // Adicionado isSubmitting
+  } = useForm<LoginFormInputs>({
+    resolver: zodResolver(loginSchema),
+  });
 
-    const email = emailRef.current?.value;
-    const password = passwordRef.current?.value;
-
-    if (!email || !password) return;
-
-    setLoading(true);
+  const onSubmit = async (data: LoginFormInputs) => {
+    setAuthError({ isError: false, message: "" });
 
     try {
-      await login(email, password);
-    } catch (error) {
-      console.error(error);
-      setAuthError(true);
-      if (emailRef.current) emailRef.current.value = "";
-      if (passwordRef.current) passwordRef.current.value = "";
-    } finally {
-      setLoading(false);
+      await login(data.email, data.password);
+    } catch (error: any) {
+      setAuthError({
+        isError: true,
+        message: error?.message || "Ocorreu um erro inesperado.",
+      });
     }
   };
 
-  const handleOAuthLogin = async (
-    provider: "google" | "facebook" | "microsoft",
-  ) => {
+  const handleOAuthLogin = async (provider: "google" | "microsoft") => {
+    setAuthError({ isError: false, message: "" });
+
     try {
-      setLoading(true);
-      setAuthError(false);
-      await new Promise((resolve) => setTimeout(resolve, 1000));
       await loginWithOAuth(provider);
-    } catch (error) {
-      console.error(`Erro no login com ${provider}:`, error);
-      setAuthError(true);
-    } finally {
-      setLoading(false);
+    } catch (error: any) {
+      setAuthError({
+        isError: true,
+        message: error?.message || "Erro ao tentar autenticar com o provedor.",
+      });
     }
   };
 
@@ -69,43 +72,43 @@ function LoginPage() {
     <Container
       maxWidth="sm"
       sx={{
-        textAlign: "center",
-        mt: 4,
+        textAlign: "center", 
         padding: 4,
         borderRadius: 2,
       }}
     >
-      {/* Logo e nome da aplicação no topo */}
-
-      <Fade in={authError}>
-        <Alert variant="filled" severity="error" sx={{ mt: 2 }}>
-          Email ou Password Inválidos
-        </Alert>
-      </Fade>
+      {/* Exibir erro de autenticação */}
+      {authError.isError && authError.message && (
+        <Fade in={authError.isError} timeout={800}>
+          <Alert variant="filled" severity="error" sx={{ mt: -3 }}>
+            {authError.message}
+          </Alert>
+        </Fade>
+      )}
 
       <Box
         sx={{
           position: "relative",
-          marginBottom: 3, // Ajusta conforme necessário
+          marginBottom: 10,
         }}
       >
         <Box
           sx={{
             backgroundColor: "primary.main",
-
             borderRadius: "50%",
-            width: 70, // Tamanho fixo para garantir que seja circular
+            marginBottom: 40,
+            width: 70,
             height: 70,
             position: "absolute",
-            top: "-30px", // Move para cima do Paper
-            zIndex: 1, // Garante que fique sobre o Paper
+            top: "-30px",
+            zIndex: 1,
           }}
         >
           <img
-            src={logo} // Imagem importada da logo
+            src={logo}
             alt="Logo"
             style={{
-              width: "100px", // Ajuste o tamanho da logo
+              width: "100px",
               height: "100px",
             }}
           />
@@ -115,27 +118,32 @@ function LoginPage() {
       <Paper
         elevation={6}
         sx={{
-          maxWidth: "400px", // Define uma largura máxima
+          maxWidth: "400px",
         }}
       >
         <Typography variant="h1" sx={{ marginBottom: 2, marginTop: 2 }}>
           INICIAR SESSÃO
         </Typography>
 
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <TextField
-            required
+            {...register("email")}
             id="email"
             label="Email"
-            type="email"
-            inputRef={emailRef}
+            error={!!errors.email}
+            helperText={errors.email?.message}
+            fullWidth
+            margin="normal"
           />
           <TextField
-            required
+            {...register("password")}
             id="password"
             label="Password"
             type="password"
-            inputRef={passwordRef}
+            error={!!errors.password}
+            helperText={errors.password?.message}
+            fullWidth
+            margin="normal"
           />
           <Box>
             <Typography
@@ -156,7 +164,7 @@ function LoginPage() {
 
           <Button
             type="submit"
-            disabled={isLoading}
+            disabled={isSubmitting} // Botão desativado enquanto o formulário está sendo enviado
             sx={{
               background: "linear-gradient(45deg, #FFA726 30%, #FB8C00 90%)",
               color: "white",
@@ -176,62 +184,64 @@ function LoginPage() {
           <Typography variant="h3">ou</Typography>
           <Box
             sx={{
-              display: "flex", // Garante que os botões fiquem na mesma linha
-              justifyContent: "center", // Centraliza os botões horizontalmente
-              gap: 1, // Espaçamento entre os botões
-              mt: 0.5, // Margem superior
+              display: "flex",
+              justifyContent: "center",
+              gap: 1,
+              mt: 0.5,
             }}
           >
             {/* Botão do Google */}
             <Button
+              onClick={() => handleOAuthLogin("google")}
               sx={{
-                display: "flex", // Garante que o conteúdo interno seja flexível
-                alignItems: "center", // Centraliza verticalmente o conteúdo
+                display: "flex",
+                alignItems: "center",
                 backgroundColor: "#FFFFFF",
                 color: "white",
                 transition: "0.3s",
-                px: 2, // Padding horizontal
-                py: 1.1, // Padding vertical
-                width: "200px", // Largura padronizada
+                px: 2,
+                py: 1.1,
+                width: "200px",
                 border: "1px solid #B0B0B0",
                 "&:hover": { backgroundColor: "background.default" },
               }}
             >
               <img
-                src={google} // Imagem importada do Facebook
+                src={google}
                 alt="Google Logo"
                 style={{
-                  width: 21, // Tamanho padronizado da imagem
+                  width: 21,
                   height: 21,
-                  marginRight: 8, // Espaçamento entre a imagem e o texto
+                  marginRight: 8,
                 }}
               />
             </Button>
 
             {/* Botão do Microsoft */}
             <Button
+              onClick={() => handleOAuthLogin("microsoft")}
               sx={{
-                display: "flex", // Garante que o conteúdo interno seja flexível
-                alignItems: "center", // Centraliza verticalmente o conteúdo
+                display: "flex",
+                alignItems: "center",
                 backgroundColor: "#FFFFFF",
                 color: "white",
                 transition: "0.3s",
-                px: 1.7, // Padding horizontal
-                py: 0.9, // Padding vertical
-                width: "200px", // Largura padronizada
-                border: "1px solid #B0B0B0", // Borda cinza ao redor do botão
+                px: 1.7,
+                py: 0.9,
+                width: "200px",
+                border: "1px solid #B0B0B0",
                 "&:hover": {
                   backgroundColor: "background.default",
                 },
               }}
             >
               <img
-                src={microsoft} // Imagem importada do Microsoft
+                src={microsoft}
                 alt="Microsoft Logo"
                 style={{
-                  width: 24, // Tamanho padronizado da imagem
+                  width: 24,
                   height: 24,
-                  marginRight: 8, // Espaçamento entre a imagem e o texto
+                  marginRight: 8,
                 }}
               />
             </Button>
