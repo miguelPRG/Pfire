@@ -75,7 +75,7 @@ async def login_oauth(request: Request, firebase_token: str):
 @routerUser.post("/login")
 async def login(user: UserLogin, request: Request):
     # Validar el token reCAPTCHA (se descomenta según necesidad)
-    await validar_recaptcha_token(user.recaptchaToken, "login")
+    #await validar_recaptcha_token(user.recaptchaToken, "login")
 
     db_user = await users_collection.find_one({"email": user.email})
 

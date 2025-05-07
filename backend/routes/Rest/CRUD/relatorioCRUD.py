@@ -4,6 +4,7 @@ from models.relatorioModels import RelatorioCreate, RelatorioActivation
 from database import relatorios_collection, modelos_collection, clientes_collection, users_empresas_collection
 from datetime import datetime
 from asyncio import gather
+import re
 from bson import ObjectId
 
 routerRelatorio = APIRouter(prefix="/relatorio")
@@ -14,14 +15,6 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
     # Validar o reCAPTCHA token
     await validar_recaptcha_token(relatorio.recaptchaToken, "create")
 
-    #Converter para ObjectId
-    relatorio.empresa_id = ObjectId(relatorio.empresa_id)
-
-    relatorio_found = await relatorios_collection.find_one({"empresa_id": relatorio.empresa_id,"relatorio_name": relatorio.relatorio_name, "isActive": True})
-
-    if relatorio_found:
-        raise HTTPException(status_code=400, detail="Já existe um relatório com este nome para esta empresa. Por favor insira outro nome")
-
     # Verificar se o cliente existe
     cliente = clientes_collection.find_one({"_id": ObjectId(relatorio.cliente_id), "isActive": True})
 
@@ -30,18 +23,20 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
 
     # Executar as tarefas em paralelo e aguardar os resultados
     cliente, modelo = await gather(cliente, modelo)
-    
+
     if not cliente:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
     
     if not modelo:
         raise HTTPException(status_code=404, detail="Modelo não encontrado")
-
-    if cliente["empresa_id"] != relatorio.empresa_id:
-        raise HTTPException(status_code=403, detail="Este Cliente não pertence a esta empresa")
     
-    if modelo["empresa_id"] != relatorio.empresa_id:
-        raise HTTPException(status_code=403, detail="Este Modelo não pertence a esta empresa")
+    if modelo["empresa_id"] != cliente["empresa_id"]:
+        raise HTTPException(status_code=400, detail="A empresa do cliente e do modelo não corresponde.")
+
+    relatorio_found = await relatorios_collection.find_one({"empresa_id": modelo["empresa_id"],"relatorio_name": relatorio.relatorio_name, "isActive": True})
+
+    if relatorio_found:
+        raise HTTPException(status_code=400, detail="Já existe um relatório com este nome para esta empresa. Por favor insira outro nome")
 
     #Sacar jwt
     jwt = getattr(request.state, "jwt", None)
@@ -49,7 +44,7 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
     if not jwt["isSuperAdmin"]:
 
         # Verificar se o usuário tem permissão para criar relatórios para a empresa
-        user_empresa = await users_empresas_collection.find_one({"user_id": jwt["user_id"], "empresa_id": relatorio.empresa_id})
+        user_empresa = await users_empresas_collection.find_one({"user_id": jwt["user_id"], "empresa_id": modelo["empresa_id"]})
         if not user_empresa:
             raise HTTPException(status_code=403, detail="Usuário não tem permissão para criar relatórios para esta empresa")
     
@@ -64,7 +59,7 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
     relatorio_data["created_by"] = ObjectId(jwt["user_id"])
     relatorio_data["created_at"] = datetime.now()
     relatorio_data["modelo_campos_id"] = ObjectId(relatorio.modelo_campos_id)
-    relatorio_data["empresa_id"] = relatorio.empresa_id
+    relatorio_data["empresa_id"] = modelo["empresa_id"]
     relatorio_data["cliente_id"] = ObjectId(relatorio.cliente_id)
     relatorio_data["isActive"] = True
     del relatorio_data["recaptchaToken"]
@@ -95,12 +90,18 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
             # Verificar o tipo de dado do campo
             if value["datatype"] == "number" and not isinstance(relatorio_fields[key], (int, float)):
                 raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser um número.")
-            elif value["datatype"] == "string" and not isinstance(relatorio_fields[key], str):
+            elif value["datatype"] == "string" or value["datatype"] == "date" and not isinstance(relatorio_fields[key], str):
                 raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser uma string.")
             elif value["datatype"] == "bool" and not isinstance(relatorio_fields[key], bool):
                 raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser um booleano (true/false).")
             elif value["datatype"] == "object" and not isinstance(relatorio_fields[key], dict):
                 raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser um objeto ou dicionário.")
+
+            #Se o campo for de datatype igual a date, temos que verificar por regex se se trata de uma data(DD/MM/YYYY)
+            if value["datatype"] == "date":
+                date_regex = re.compile(r"^\d{2}/\d{2}/\d{4}$")
+                if not date_regex.match(relatorio_fields[key]):
+                    raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser uma data no formato DD/MM/YYYY.")
 
             # Se o campo for um objeto, verificar recursivamente os subcampos
             if value["datatype"] == "object":

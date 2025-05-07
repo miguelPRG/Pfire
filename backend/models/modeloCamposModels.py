@@ -8,7 +8,7 @@ MAIN_FIELDS = {
     "recaptchaToken",
 }
 
-ALLOWED_DATATYPES = {"number", "string", "bool", "object"}  # Tipos de dados permitidos
+ALLOWED_DATATYPES = {"number", "string", "bool", "object", "date"}  # Tipos de dados permitidos
 
 # Função auxiliar para validação de campos personalizados no método de criação
 def validate_fields(key, value):
@@ -94,7 +94,7 @@ def validate_fields(key, value):
 class ModelosCamposCreate(BaseModel):
     model_name: str  # Ex: "extintores", "para-raios", "bocas de incêndio"
     empresa_id: str
-    recaptchaToken:str
+    recaptchaToken: str
     model_config = ConfigDict(extra='allow')  # Permite campos extras
 
     @model_validator(mode="before")
@@ -118,11 +118,11 @@ class ModelosCamposCreate(BaseModel):
 class ModelosCamposUpdate(BaseModel):
     model_name: Optional[str] = None  # Ex: "extintores", "para-raios", "bocas de incêndio"
     empresa_id: str
-    recaptchaToken:str
+    recaptchaToken: str
     model_config = ConfigDict(extra='allow')  # Permite campos extras
 
 class ModelosCamposDelete(BaseModel):
-    recaptchaToken:str
     empresa_id: str
     id: Optional[str] = None  # ID do modelo a ser excluído
     model_name: Optional[str] = None  # Nome do modelo a ser excluído
+    recaptchaToken: str

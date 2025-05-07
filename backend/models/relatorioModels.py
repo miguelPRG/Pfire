@@ -3,12 +3,9 @@ from fastapi import HTTPException
 from typing import Optional
 
 MAIN_FIELDS = {
-    "relatorio_name"
+    "relatorio_name",
     "modelo_campos_id",
     "cliente_id",
-    "empresa_id",
-    "created_at",
-    "isActive",
     "recaptchaToken",
 }
 
@@ -16,7 +13,6 @@ class RelatorioCreate(BaseModel):
     relatorio_name: str
     modelo_campos_id: str
     cliente_id: str
-    empresa_id: str
     recaptchaToken: str
     model_config = ConfigDict(extra='allow') # Permite campos extras
 
