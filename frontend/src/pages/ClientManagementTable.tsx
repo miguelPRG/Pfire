@@ -90,7 +90,7 @@ export default function ClientManagementTable() {
         <Button
           variant="contained"
           color="primary"
-          onClick={() => navigate("/AddNewClientPage")}
+          onClick={() => navigate("/add-client")}
           sx={{
             textTransform: "none",
             height: "40px",

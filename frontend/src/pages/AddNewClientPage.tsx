@@ -4,6 +4,8 @@ import { useTheme } from "@mui/material/styles";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { MuiTelInput } from "mui-tel-input";
+import { Controller } from "react-hook-form";
 
 declare var grecaptcha: any;
 
@@ -37,6 +39,7 @@ export default function AddNewClientPage() {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<AddClientFormInputs>({
     resolver: zodResolver(addClientSchema),
@@ -116,25 +119,28 @@ export default function AddNewClientPage() {
           label="Nome"
           error={!!errors.nome}
           helperText={errors.nome?.message}
-          required
           fullWidth
         />
         <TextField
-          {...register("email")}
-          label="Email"
-          type="email"
-          error={!!errors.email}
-          helperText={errors.email?.message}
-          required
-          fullWidth
+            {...register("email")}
+            label="Email"
+            type="email"
+            error={!!errors.email}
+            helperText={errors.email?.message}
+            fullWidth
         />
-        <TextField
-          {...register("telefone")}
-          label="Telefone"
-          error={!!errors.telefone}
-          helperText={errors.telefone?.message}
-          required
-          fullWidth
+        <Controller
+          name="telefone"
+          control={control}
+          render={({ field }) => (
+            <MuiTelInput
+            {...field}
+            defaultCountry="PT" // Define o país padrão como Portugal
+            error={!!errors.telefone}
+            helperText={errors.telefone?.message}
+            fullWidth
+            />
+          )}
         />
         <TextField
           {...register("nif")}
