@@ -1,5 +1,6 @@
 annotated-types==0.7.0
 anyio==4.9.0
+APScheduler==3.11.0
 argon2-cffi==23.1.0
 argon2-cffi-bindings==21.2.0
 CacheControl==0.14.3
@@ -56,6 +57,7 @@ starlette==0.46.2
 strawberry-graphql==0.266.0
 typing-inspection==0.4.0
 typing_extensions==4.13.2
+tzlocal==5.3.1
 uritemplate==4.1.1
 urllib3==2.4.0
 uvicorn==0.34.2

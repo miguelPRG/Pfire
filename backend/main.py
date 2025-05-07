@@ -7,6 +7,7 @@ from controller.clientIP import rate_limit
 from controller.jwtValidation import verify_jwt  # Função para verificar o JWT
 from fastapi.responses import JSONResponse  # Import necessário
 from controller.token_blacklist import is_token_revoked  # Import necessário
+from database import database_cleaner_scheduler  # Função para iniciar o agendador
 
 app = FastAPI()
 
@@ -89,6 +90,10 @@ async def jwt_authentication_middleware(request: Request, call_next):
     # Passa para a próxima requisição
     response = await call_next(request)
     return response
+
+
+# Inicializar o agendador de limpza de banco de dados
+database_cleaner_scheduler()
 
 # Registrar as rotas REST e GraphQL
 
