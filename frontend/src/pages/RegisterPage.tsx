@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate,Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
   Container,
   Typography,
@@ -22,21 +22,18 @@ import { useAuth } from "../hooks/AuthContext";
 import google from "../assets/images/google.png";
 import microsoft from "../assets/images/microsoft.png";
 import logo from "../assets/images/logo.png";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import PhoneInput from "react-phone-number-input";
+import 'react-phone-number-input/style.css';
+import "../assets/styles/phoneNumberField.css";
 
 // Esquema de validação com Zod
 const registerSchema = z.object({
   user: z.object({
     nome: z.string().nonempty("O nome é obrigatório"),
     email: z.string().nonempty("O email é obrigatório").email("Email inválido"),
-    telefone: z
-      .string()
-      .optional()
-      .refine((telefone) => !telefone || /^\d{9}$/.test(telefone), {
-        message: "O telefone deve ter 9 dígitos",
-      }),
     password: z
       .string()
       .nonempty("A senha é obrigatória")
@@ -63,8 +60,8 @@ const registerSchema = z.object({
     telefone: z
       .string()
       .nonempty("O telefone da empresa é obrigatório")
-      .regex(/^\d{9}$/, "O telefone da empresa deve ter 9 dígitos"),
-  }),
+      .regex(/^\+?[0-9\s\-()]{7,15}$/, "Número de telefone inválido"),
+    }),
 });
 
 type RegisterFormInputs = z.infer<typeof registerSchema>;
@@ -81,21 +78,22 @@ function RegisterPage() {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormInputs>({
     resolver: zodResolver(registerSchema),
   });
 
   const onSubmit = async (data: RegisterFormInputs) => {
-    setIsRegistError({error: false, message: ""});
-    
+    setIsRegistError({ error: false, message: "" });
+
     try {
-      const payload = { user: data.user, empresa: data.empresa};
+      const payload = { user: data.user, empresa: data.empresa };
       await registerUser(payload);
       setShowSuccessDialog(true); // Mostra o popup de sucesso
     } catch (err: any) {
       window.scrollTo({ top: 0, behavior: "smooth" });
-      setIsRegistError({error: true, message: err.message});
+      setIsRegistError({ error: true, message: err.message });
     }
   };
 
@@ -111,13 +109,13 @@ function RegisterPage() {
     >
       {/* Exibir erro de registo */}
       {isRegistError.error && isRegistError.message && (
-        <Fade in={isRegistError.error} timeout={800} >
+        <Fade in={isRegistError.error} timeout={800}>
           <Alert variant="filled" severity="error" sx={{ mt: -7.5 }}>
             {isRegistError.message}
           </Alert>
         </Fade>
       )}
-      <Box sx={{ position: "relative", mt: 5, mb:3 }}>
+      <Box sx={{ position: "relative", mt: 5, mb: 3 }}>
         <Box
           sx={{
             backgroundColor: "primary.main",
@@ -205,14 +203,6 @@ function RegisterPage() {
             margin="normal"
           />
           <TextField
-            {...register("user.telefone")}
-            label="Número de telemóvel"
-            error={!!errors.user?.telefone}
-            helperText={errors.user?.telefone?.message}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
             {...register("user.password")}
             label="Senha*"
             type="password"
@@ -273,14 +263,54 @@ function RegisterPage() {
             fullWidth
             margin="normal"
           />
-          <TextField
-            {...register("empresa.telefone")}
-            label="Telefone da empresa*"
-            error={!!errors.empresa?.telefone}
-            helperText={errors.empresa?.telefone?.message}
-            fullWidth
-            margin="normal"
-          />
+          <div className="telefone-field">
+            <Controller
+              name="empresa.telefone"
+              control={control}
+              render={({ field }) => (
+                <Box>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      border: '1px solid',
+                      borderColor: errors.empresa?.telefone ? 'error.main' : 'rgba(0, 0, 0, 0.23)',
+                      borderRadius: 1,
+                      padding: '18.5px 14px',
+                      fontSize: '16px',
+                      '&:hover': {
+                        borderColor: 'black',
+                      },
+                      '&:focus-within': {
+                        borderColor: 'primary.main',
+                        borderWidth: 2,
+                      },
+                    }}
+                  >
+                  <PhoneInput
+                    {...field}
+                    defaultCountry="PT"
+                    international
+                    countryCallingCodeEditable={false}
+                    placeholder="Insira o número de telefone"
+                    style={{
+                      fontSize: '16px',
+                      border: 'none',
+                      outline: 'none',
+                      width: '100%',
+                      background: 'transparent',
+                    }}
+                  />
+                  </Box>
+                  {errors.empresa?.telefone && (
+                    <Typography color="error" variant="body2" sx={{ mt: 0.5 }}>
+                      {errors.empresa.telefone.message}
+                    </Typography>
+                  )}
+                </Box>
+              )}
+            />
+          </div>
           <Button
             type="submit"
             disabled={isSubmitting}
@@ -337,12 +367,12 @@ function RegisterPage() {
           </DialogActions>
         </Dialog>
         <Typography variant="body1">
-                  Já tens uma conta?{" "}
-                  <Link
-                    to="/login"
-                  >
-                    Inicia sessão
-                  </Link>
+          Já tens uma conta?{" "}
+          <Link
+            to="/login"
+          >
+            Inicia sessão
+          </Link>
         </Typography>
       </Paper>
     </Container>

@@ -11,12 +11,20 @@ import {
   Grid,
 } from "@mui/material";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-
+import PhoneInput from "react-phone-number-input";
+import 'react-phone-number-input/style.css';
+import "../assets/styles/phoneNumberField.css";
 // Esquema de validação com Zod
-const editCompanySchema = z.object({
+const editProfileSchema = z.object({
+  userName: z.string().nonempty("O nome do usuário é obrigatório"),
+  userEmail: z.string().email("O email é inválido").nonempty("O email é obrigatório"),
+  userPhone: z
+    .string()
+    .nonempty("O telefone do usuário é obrigatório")
+    .regex(/^\+?[0-9\s\-()]{7,15}$/, "Número de telefone inválido"),
   companyName: z.string().nonempty("O nome da empresa é obrigatório"),
   nif: z
     .string()
@@ -31,10 +39,10 @@ const editCompanySchema = z.object({
   companyPhone: z
     .string()
     .nonempty("O telefone da empresa é obrigatório")
-    .regex(/^\d{9}$/, "O telefone da empresa deve ter 9 dígitos"),
+    .regex(/^\+?[0-9\s\-()]{7,15}$/, "Número de telefone inválido"),
 });
 
-type EditCompanyFormInputs = z.infer<typeof editCompanySchema>;
+type EditCompanyFormInputs = z.infer<typeof editProfileSchema>;
 
 function EditProfilePage() {
   const [formData, setFormData] = useState({
@@ -53,10 +61,14 @@ function EditProfilePage() {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<EditCompanyFormInputs>({
-    resolver: zodResolver(editCompanySchema),
+    resolver: zodResolver(editProfileSchema),
     defaultValues: {
+      userName: "João Silva",
+      userEmail: "joao@email.com",
+      userPhone: "+351 912 345 678",
       companyName: "João Silva",
       nif: "",
       address: "",
@@ -287,6 +299,36 @@ function EditProfilePage() {
         </Box>
         <Box component="form" onSubmit={handleSubmit(handleSubmitInfo)}>
           <Grid container spacing={2} justifyContent="center">
+            {/* Campos do Usuário */}
+            <Grid item xs={12} md={6}>
+              <TextField
+                {...register("userName")}
+                label="Nome do Usuário"
+                error={!!errors.userName}
+                helperText={errors.userName?.message}
+                fullWidth
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                {...register("userEmail")}
+                label="Email do Usuário"
+                error={!!errors.userEmail}
+                helperText={errors.userEmail?.message}
+                fullWidth
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                {...register("userPhone")}
+                label="Telefone do Usuário"
+                error={!!errors.userPhone}
+                helperText={errors.userPhone?.message}
+                fullWidth
+              />
+            </Grid>
+
+            {/* Campos da Empresa */}
             <Grid item xs={12} md={6}>
               <TextField
                 {...register("companyName")}
@@ -296,7 +338,6 @@ function EditProfilePage() {
                 fullWidth
               />
             </Grid>
-
             <Grid item xs={12} md={6}>
               <TextField
                 {...register("nif")}
@@ -306,7 +347,6 @@ function EditProfilePage() {
                 fullWidth
               />
             </Grid>
-
             <Grid item xs={12} md={6}>
               <TextField
                 {...register("address")}
@@ -316,7 +356,6 @@ function EditProfilePage() {
                 fullWidth
               />
             </Grid>
-
             <Grid item xs={12} md={6}>
               <TextField
                 {...register("locality")}
@@ -326,7 +365,6 @@ function EditProfilePage() {
                 fullWidth
               />
             </Grid>
-
             <Grid item xs={12} md={6}>
               <TextField
                 {...register("postalCode")}
@@ -336,17 +374,56 @@ function EditProfilePage() {
                 fullWidth
               />
             </Grid>
-
             <Grid item xs={12} md={6}>
-              <TextField
-                {...register("companyPhone")}
-                label="Telefone empresa"
-                error={!!errors.companyPhone}
-                helperText={errors.companyPhone?.message}
-                fullWidth
-              />
+              <div className="telefone-field">
+                <Controller
+                  name="companyPhone"
+                  control={control}
+                  render={({ field }) => (
+                    <Box>
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          border: '1px solid',
+                          borderColor: errors.companyPhone ? 'error.main' : 'rgba(0, 0, 0, 0.23)',
+                          borderRadius: 1,
+                          padding: '18.5px 14px',
+                          fontSize: '16px',
+                          '&:hover': {
+                            borderColor: 'black',
+                          },
+                          '&:focus-within': {
+                            borderColor: 'primary.main',
+                            borderWidth: 2,
+                          },
+                        }}
+                      >
+                        <PhoneInput
+                          {...field}
+                          defaultCountry="PT"
+                          international
+                          countryCallingCodeEditable={false}
+                          placeholder="Insira o número de telefone"
+                          style={{
+                            fontSize: '16px',
+                            border: 'none',
+                            outline: 'none',
+                            width: '100%',
+                            background: 'transparent',
+                          }}
+                        />
+                      </Box>
+                      {errors.companyPhone && (
+                        <Typography color="error" variant="body2" sx={{ mt: 0.5 }}>
+                          {errors.companyPhone.message}
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+                />
+              </div>
             </Grid>
-
             <Grid item xs={12}>
               <Box display="flex" justifyContent="center" mt={2}>
                 <Button

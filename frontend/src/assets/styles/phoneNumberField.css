@@ -1,0 +1,11 @@
+div.telefone-field{
+    width: 100%;
+}
+
+div.telefone-field > div > div{
+    width: 100%;
+}
+
+div.PhoneInputCountry + input{
+    height: 35px;
+}

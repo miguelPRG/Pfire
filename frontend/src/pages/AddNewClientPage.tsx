@@ -4,7 +4,9 @@ import { useTheme } from "@mui/material/styles";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { MuiTelInput } from "mui-tel-input";
+import PhoneInput from "react-phone-number-input";
+import 'react-phone-number-input/style.css';
+import "../assets/styles/phoneNumberField.css"
 import { Controller } from "react-hook-form";
 
 declare var grecaptcha: any;
@@ -14,9 +16,9 @@ const addClientSchema = z.object({
   nome: z.string().nonempty("O nome é obrigatório"),
   email: z.string().nonempty("O email é obrigatório").email("Email inválido"),
   telefone: z
-    .string()
-    .nonempty("O telefone é obrigatório")
-    .regex(/^\d{9}$/, "O telefone deve ter 9 dígitos"),
+  .string()
+  .nonempty("O telefone é obrigatório")
+  .regex(/^\+?[0-9\s\-()]{7,15}$/, "Número de telefone inválido"),
   nif: z
     .string()
     .nonempty("O NIF é obrigatório")
@@ -26,8 +28,8 @@ const addClientSchema = z.object({
   codigo_postal: z
     .string()
     .nonempty("O código postal é obrigatório")
-    .regex(/^\d{4}-\d{3}$/, "O código postal deve estar no formato 1234-567"),
-  recaptchaToken: z.string().optional(), // Adiciona o token do reCAPTCHA como opcional
+    .regex(/^\d{4}-\d{3}$/, "O código postal deve ter o formato 0000-000"),
+  recaptchaToken: z.string() // Adiciona o token do reCAPTCHA
 });
 
 type AddClientFormInputs = z.infer<typeof addClientSchema>;
@@ -129,19 +131,54 @@ export default function AddNewClientPage() {
             helperText={errors.email?.message}
             fullWidth
         />
-        <Controller
-          name="telefone"
-          control={control}
-          render={({ field }) => (
-            <MuiTelInput
-            {...field}
-            defaultCountry="PT" // Define o país padrão como Portugal
-            error={!!errors.telefone}
-            helperText={errors.telefone?.message}
-            fullWidth
-            />
-          )}
-        />
+        <div className="telefone-field">
+          <Controller
+            name="telefone"
+            control={control}
+            render={({ field }) => (
+              <Box>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    border: '1px solid',
+                    borderColor: errors.telefone ? 'error.main' : 'rgba(0, 0, 0, 0.23)',
+                    borderRadius: 1,
+                    padding: '18.5px 14px',
+                    fontSize: '16px',
+                    '&:hover': {
+                      borderColor: 'black',
+                    },
+                    '&:focus-within': {
+                      borderColor: 'primary.main',
+                      borderWidth: 2,
+                    },
+                  }}
+                >
+                <PhoneInput
+                  {...field}
+                  defaultCountry="PT"
+                  international
+                  countryCallingCodeEditable={false}
+                  placeholder="Insira o número de telefone"
+                  style={{
+                    fontSize: '16px',
+                    border: 'none',
+                    outline: 'none',
+                    width: '100%',
+                    background: 'transparent',
+                  }}
+                />
+                </Box>
+                {errors.telefone && (
+                  <Typography color="error" variant="body2" sx={{ mt: 0.5 }}>
+                    {errors.telefone.message}
+                  </Typography>
+                )}
+              </Box>
+            )}
+          />
+        </div>
         <TextField
           {...register("nif")}
           label="NIF"

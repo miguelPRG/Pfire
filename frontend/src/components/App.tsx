@@ -16,7 +16,6 @@ import ResponsiveAppBar from "./ResponsiveAppBar";
 
 const Login = lazy(() => import("../pages/LoginPage"));
 const Register = lazy(() => import("../pages/RegisterPage"));
-const CadastroEmpresa = lazy(() => import("../pages/CadastroEmpresaPage"));
 const Home = lazy(() => import("../pages/HomePage"));
 const UserManagementTable = lazy(() => import("../pages/UserManagementTable"));
 const EmpresasPage = lazy(() => import("../pages/EmpresasPage"));
@@ -118,12 +117,6 @@ function App() {
             <Route
               path="/register"
               element={<PublicRoute user={user} element={<Register />} />}
-            />
-            <Route
-              path="/cadastro-empresa"
-              element={
-                <PublicRoute user={user} element={<CadastroEmpresa />} />
-              }
             />
             <Route
               path="/forgot-password"

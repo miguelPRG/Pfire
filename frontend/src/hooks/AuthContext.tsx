@@ -9,7 +9,11 @@ import { FirebaseLogin, FirebaseLogout } from "../firebase"; // Importando as fu
 
 declare global {
   interface Window {
-    grecaptcha: any;
+    grecaptcha: {
+      enterprise: {
+        execute: (siteKey: string, options: { action: string }) => Promise<string>;
+      };
+    };
   }
 }
 
@@ -100,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const token = await grecaptcha.enterprise.execute(
+      const token = await window.grecaptcha.enterprise.execute(
         "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",
         { action: "login" },
       );
