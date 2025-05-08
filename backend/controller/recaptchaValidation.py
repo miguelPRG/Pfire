@@ -1,10 +1,6 @@
 import httpx
 from fastapi import HTTPException
 from os import getenv
-from dotenv import load_dotenv
-
-# Carregar variáveis de ambiente do arquivo .env
-load_dotenv()
 
 # Substitua pelos seus dados do Google Cloud
 PROJECT_ID = getenv("PROJECT_ID")  # ID do seu projeto no Google Cloud

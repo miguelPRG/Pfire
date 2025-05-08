@@ -20,12 +20,18 @@ def main():
         print("Ativando ambiente virtual existente...")
 
         # Desinstalar tudo o que não está no requirements.txt
-        installed_packages = subprocess.run(
-            [venv_python, "-m", "pip", "freeze"],
-            capture_output=True,
-            text=True,
-            check=True
-        ).stdout.splitlines()
+        try:
+            installed_packages = subprocess.run(
+                [venv_python, "-m", "pip", "freeze"],
+                capture_output=True,
+                text=True,
+                check=True
+            ).stdout.splitlines()
+        except subprocess.CalledProcessError:
+            print("pip não está disponível no ambiente virtual. Recriando o ambiente...")
+            os.system("rm -rf venv")
+            create_virtual_env()
+            installed_packages = []
 
         required_packages = []
         if os.path.isfile("requirements.txt"):

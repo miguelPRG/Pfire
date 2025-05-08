@@ -1,17 +1,23 @@
-import os
+from os import getenv
 import jwt
 from pathlib import Path
 from fastapi import HTTPException
 from datetime import datetime
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.backends import default_backend
+from dotenv import load_dotenv
+
+# Carregar variáveis de ambiente do arquivo .env
+load_dotenv()
 
 # Caminhos para as chaves RSA
 PUBLIC_KEY = Path(__file__).parent / "../chaves/publica.pem"
 PRIVATE_KEY = Path(__file__).parent / "../chaves/privada.pem"
 
 # Senha opcional para a chave privada, obtida do ambiente por segurança
-PRIVATE_KEY_PASSWORD = os.getenv("PRIVATE_KEY_PASSWORD")
+PRIVATE_KEY_PASSWORD = getenv("PRIVATE_KEY_PASSWORD")
+if PRIVATE_KEY_PASSWORD == "":
+    PRIVATE_KEY_PASSWORD = None
 
 # Algoritmo seguro para assinatura JWT
 ALGORITHM = "RS256"
