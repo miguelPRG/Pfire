@@ -10,8 +10,15 @@ A primeira coisa a fazer é clonar o repositório, utilizando estes comandos no 
 2. `cd /pfire`
 
 ### Pré-requisitos
+#### Docker
 - O **Docker** e o **Docker Compose** precisam obrigatoriamente de estar instalados para testar como a aplicação se comporta em produção.
 - Se pretender testar a aplicação apenas para desenvolvimento, poderá executar os servidores **frontend** e **backend** individualmente.
+
+#### Python
+Deverá ser instalado o python, de preferência a versão mais recente
+
+#### Nodejs
+Deverá ser insta
 
 **ATENÇÃO!** De modo que o programa consiga rodar sem problemas, é necessária a criação de um ficheiro `.env` na raiz do projeto. Este ficheiro será responsável por guardar dados sensíveis, como por exemplo a URL de acesso à base de dados **MongoDB** e chaves de criptografia que poderão vir a ser necessárias. 
 
@@ -61,7 +68,8 @@ Para executar os servidores, foram criados ficheiros de ativação que não só 
 
 ##### Executar Backend: 
 1. `cd /backend`
-2. `python3 startBackend.py` 
+2. `sudo apt install python3.12-venv`
+3. `python3 startBackend.py` 
 
 ##### Executar Frontend:
 1. `cd /frontend`
