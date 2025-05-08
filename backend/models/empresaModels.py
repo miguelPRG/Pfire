@@ -1,12 +1,12 @@
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, Field
 from typing import Optional
 
 class EmpresaCreate(BaseModel):
     nome: str
-    nif: str
+    nif: str = Field(..., pattern=r'/^[5789]\d{8}$/')
     localidade: str
     morada: str
-    codigo_postal: str = Field(max_length=8)
+    codigo_postal: str = Field(..., pattern=r'^\d{4}-\d{3}$')
     telefone: str
     logo: Optional[bytes] = None
 

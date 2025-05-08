@@ -5,7 +5,6 @@ from .empresaModels import EmpresaCreate
 class UserCreate(BaseModel):
     nome: str = Field(min_length=2, max_length=100)
     email: EmailStr
-    telefone: Optional[str] = None
     password: str
 
 class UserUpdate(BaseModel):

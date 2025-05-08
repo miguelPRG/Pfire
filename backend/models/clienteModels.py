@@ -1,14 +1,14 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr,Field
 from typing import Optional
 
 class ClienteCreate(BaseModel):
     nome: str
     email: EmailStr
-    telefone: str
-    nif: str
+    telefone: str = Field(..., pattern=r'/^\+?[0-9\s\-()]{7,15}$/')
+    nif: str = Field(..., pattern=r'/^[5789]\d{8}$/')	
     localidade: str
     morada: str
-    codigo_postal: str
+    codigo_postal: str = Field(..., pattern=r'/^\d{4}-\d{3}$/')
     empresa_id: str  # Será passado inicialmente como string e depois convertido para ObjectId
     recaptchaToken: str
 
