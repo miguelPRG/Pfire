@@ -3,14 +3,14 @@ from fastapi import HTTPException
 from os import getenv
 
 # Substitua pelos seus dados do Google Cloud
-PROJECT_ID = getenv("PROJECT_ID")  # ID do seu projeto no Google Cloud
-API_KEY = getenv("API_KEY")  # Chave da API do Google Cloud
+PROJECT_ID = getenv("GOOGLE_CLOUD_PROJECT_ID")  # ID do seu projeto no Google Cloud
+GOOGLE_CLOUD_API_KEY = getenv("GOOGLE_CLOUD_API_KEY")  # Chave da API do Google Cloud
 
 async def validar_recaptcha_token(token: str, action:str):
     if not token:
         raise HTTPException(status_code=400, detail="Token reCAPTCHA ausente.")
 
-    url = f"https://recaptchaenterprise.googleapis.com/v1/projects/{PROJECT_ID}/assessments?key={API_KEY}"
+    url = f"https://recaptchaenterprise.googleapis.com/v1/projects/{PROJECT_ID}/assessments?key={GOOGLE_CLOUD_API_KEY}"
 
     payload = {
         "event": {

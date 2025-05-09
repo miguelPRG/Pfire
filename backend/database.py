@@ -10,12 +10,13 @@ uri = os.getenv("MONGO_URL")  # A URI do MongoDB Atlas
 # Conectar ao MongoDB
 client = AsyncIOMotorClient(uri)
 
-try:
-    # Testar a conexão com um comando 'ping'
-    client.admin.command('ping')
-    print("Conexão bem-sucedida com o MongoDB!")
-except Exception as e:
-    print(f"Erro ao conectar-se ao MongoDB: {e}")
+async def testar_database():
+    try:
+        # Testar a conexão com um comando 'ping'
+        await client.admin.command('ping')
+        print("Conexão bem-sucedida com o MongoDB!")
+    except Exception as e:
+        print(f"Erro ao conectar-se ao MongoDB: {e}")
 
 # Acesso ao banco de dados
 db = client["pfire"]  # Substitua pelo nome do banco de dados desejado

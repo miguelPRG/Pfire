@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Request
-from controller.recaptchaValidation import validar_recaptcha_token
+from apis.recaptchaValidation import validar_recaptcha_token
 from models.userEmpresaModels import UserRole
 from database import users_empresas_collection
 from bson import ObjectId

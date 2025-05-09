@@ -1,6 +1,6 @@
 import time
 import jwt
-from controller.redis_client import redis_client
+from apis.redis_client import redis_client
 from controller.jwtValidation import load_public_key, ALGORITHM
 
 # Se carga la clave pública para decodificar el token sin verificar su expiración

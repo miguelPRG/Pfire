@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException, Request
-from controller.recaptchaValidation import validar_recaptcha_token
+from apis.recaptchaValidation import validar_recaptcha_token
 from models.relatorioModels import RelatorioCreate, RelatorioActivation
 from database import relatorios_collection, modelos_collection, clientes_collection, users_empresas_collection
 from datetime import datetime

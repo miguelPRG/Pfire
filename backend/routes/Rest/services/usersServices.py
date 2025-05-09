@@ -1,8 +1,8 @@
 from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
-from controller.recaptchaValidation import validar_recaptcha_token
 from controller.jwtValidation import generate_jwt  # Se usa para generar el JWT
 from controller.token_blacklist import add_token_to_blacklist  # Nueva función para usar Redis
+from apis.recaptchaValidation import validar_recaptcha_token
 from pathlib import Path
 from secrets import choice
 from string import ascii_letters, punctuation, digits

@@ -3,11 +3,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from routes.Rest.services import usersServices, userEmpresaServices
 from routes.Rest.CRUD import userCRUD, empresaCRUD, clienteCRUD, modelosCRUD, relatorioCRUD
 from routes.graphQL.schema import graphql_router
-from controller.clientIP import rate_limit
+from firewall.clientIP import rate_limit
 from controller.jwtValidation import verify_jwt  # Função para verificar o JWT
 from fastapi.responses import JSONResponse  # Import necessário
 from controller.token_blacklist import is_token_revoked  # Import necessário
-from database import database_cleaner_scheduler  # Função para iniciar o agendador
+from database import database_cleaner_scheduler, testar_database  # Função para iniciar o agendador
+from apis.brevo_client import test_brevo_connection
+from apis.redis_client import test_redis_connection
+from asyncio import gather
 
 app = FastAPI()
 
@@ -25,6 +28,16 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Inclua OPTIONS
     allow_headers=["Content-Type", "Host", "Cookie"],  # Permita todos os cabeçalhos necessários
 )
+
+@app.on_event("startup")
+async def startup_event():
+    """Função executada no evento de inicialização do FastAPI."""
+
+    await gather(testar_database(),test_redis_connection())
+
+    # Testar Brevo
+    test_brevo_connection()
+
 # Middleware de limitador de tempo
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next):
@@ -91,8 +104,7 @@ async def jwt_authentication_middleware(request: Request, call_next):
     response = await call_next(request)
     return response
 
-
-# Inicializar o agendador de limpza de banco de dados
+#Limpar base de dados
 database_cleaner_scheduler()
 
 # Registrar as rotas REST e GraphQL
@@ -101,16 +113,17 @@ database_cleaner_scheduler()
 app.include_router(usersServices.routerUser)
 app.include_router(userCRUD.routerUser)
 app.include_router(userEmpresaServices.routerUserEmpresa)
-#Rotas da empresa (REST)
+# Rotas da empresa (REST)
 app.include_router(empresaCRUD.routerEmpresa)
-#Rotas do cliente (REST)
+# Rotas do cliente (REST)
 app.include_router(clienteCRUD.routerCliente)
-#Rotas dis modelos (REST)
+# Rotas dis modelos (REST)
 app.include_router(modelosCRUD.routerModelo)
-#Rotas de relatórios (REST)
+# Rotas de relatórios (REST)
 app.include_router(relatorioCRUD.routerRelatorio)
 # Rotas GraphQL
 app.include_router(graphql_router, prefix="/graphql")
+
 
 
 @app.get("/")
