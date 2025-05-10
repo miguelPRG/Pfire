@@ -25,10 +25,11 @@ Deverá ser insta
 ### Como Criar Ficheiro .env 
 Crie o ficheiro `.env` no diretório raiz do projeto, exatamente com este nome. De seguida, guarde os seguintes dados:
 
-- `MONGO_URL = 'mongodb+srv://<db_username>:<db_password>@pfire.c9mvo.mongodb.net/?retryWrites=true&w=majority&appName=pfire'`
-- `PRIVATE_KEY_PASSWORD='password'`
-- `PROJECT_ID= 'projeto_id'`
-- `API_KEY='api_key'`
+- `MONGO_URL=mongodb+srv://<username>:<password>@pfire.c9mvo.mongodb.net/?retryWrites=true&w=majority&appName=pfire`
+- `PRIVATE_KEY_PASSWORD=password`
+- `GOOGLE_CLOUD_API_KEY_PROJECT_ID=chave`
+- `GOOGLE_CLOUD_API_KEY=chave`
+- `BREVO_API_KEY= chave`
 
 Os dados aqui indicados deverão ser substituidos pelos respetivos dados verdadeiros de cada desenvolvedor
 
