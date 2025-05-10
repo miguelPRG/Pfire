@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, validator
 from typing import Optional
 from .empresaModels import EmpresaCreate
 
@@ -7,6 +7,18 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
 
+    @validator("password")
+    def validate_password(cls, value):
+        if len(value) < 9:
+            raise ValueError("A senha deve ter no mínimo 9 caracteres.")
+        if not any(char.isupper() for char in value):
+            raise ValueError("A senha deve conter pelo menos uma letra maiúscula.")
+        if not any(char.islower() for char in value):
+            raise ValueError("A senha deve conter pelo menos uma letra minúscula.")
+        if not any(char.isdigit() for char in value):
+            raise ValueError("A senha deve conter pelo menos um número.")
+        return value
+
 class UserUpdate(BaseModel):
     recaptchaToken: str
     nome: Optional[str] = Field(None, min_length=2, max_length=100)
@@ -14,6 +26,20 @@ class UserUpdate(BaseModel):
     password: Optional[str] = None
     telefone: Optional[str] = None
     isSuperAdmin: Optional[bool] = None
+
+    @validator("password", pre=True, always=True)
+    def validate_password(cls, value):
+        if value is None:
+            return value
+        if len(value) < 9:
+            raise ValueError("A senha deve ter no mínimo 9 caracteres.")
+        if not any(char.isupper() for char in value):
+            raise ValueError("A senha deve conter pelo menos uma letra maiúscula.")
+        if not any(char.islower() for char in value):
+            raise ValueError("A senha deve conter pelo menos uma letra minúscula.")
+        if not any(char.isdigit() for char in value):
+            raise ValueError("A senha deve conter pelo menos um número.")
+        return value
 
 class UserActivation(BaseModel):
     recaptchaToken: Optional[str] = None

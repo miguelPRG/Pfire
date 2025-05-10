@@ -39,6 +39,7 @@ const registerSchema = z.object({
       .nonempty("A senha é obrigatória")
       .min(9, "A senha deve ter pelo menos 9 caracteres")
       .regex(/[A-Z]/, "A senha deve conter pelo menos uma letra maiúscula")
+      .regex(/[a-z]/, "A senha deve conter pelo menos uma letra minúscula")
       .regex(/\d/, "A senha deve conter pelo menos um número"),
     confirmPassword: z.string().nonempty("A confirmação da senha é obrigatória"),
   }).refine((data) => data.password === data.confirmPassword, {
