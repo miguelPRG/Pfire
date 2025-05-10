@@ -5,7 +5,7 @@ import {
   ReactNode,
   useEffect,
 } from "react";
-import { FirebaseLogin, FirebaseLogout } from "../firebase"; // Importando as funções do Firebase
+import { FirebaseLogin } from "../firebase"; // Importando as funções do Firebase
 
 declare global {
   interface Window {
@@ -18,7 +18,7 @@ declare global {
 }
 
 interface UserLoggedIn {
-  id: string
+  id: string;
   nome: string;
   email: string;
   telefone?: string;
@@ -31,72 +31,55 @@ export interface UserRegistered {
   password: string;
 }
 
-export interface Empresa {
-  nome: string;
-  nif: string;
-  localidade: string;
-  morada: string;
-  codigo_postal: string;
-  telefone: string;
-}
-
 interface AuthContextType {
   user: UserLoggedIn | null;
   loading: boolean;
-  login: (email: string, pwd: string) => void;
+  error: string | null;
+  clearError: () => void;
 
-  registerUser: (payload: {
-    user: UserRegistered;
-    empresa: Empresa;
-  }) => void;
-
-  loginWithOAuth: (provider: "google" | "microsoft") => void;
-  logout: () => void;
-  logoutWithOAuth: () => void;
+  login: (email: string, pwd: string) => Promise<void>;
+  registerUser: (payload: { user: UserRegistered }) => Promise<void>;
+  loginWithOAuth: (provider: "google" | "microsoft") => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserLoggedIn | null>(null);
-  const [loading, setLoading] = useState(true); // Inicializa como true até a verificação de autenticação ser concluída
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Limpa o estado de erro
+  const clearError = () => setError(null);
 
   useEffect(() => {
     async function checkAuth() {
-      //Esta função poderá ser descomentada para verificar a animação de carregamento, mas não deve ser incluida na produção
-      //await new Promise((resolve) => setTimeout(resolve, 1000));
       try {
-        const response = await fetch("backend/user/auth", {
+        const resp = await fetch("/backend/user/auth", {
           method: "GET",
           credentials: "include",
         });
-
-        const data = await response.json();
-
-        if (response.ok) {
-          console.log(data);
+        if (resp.ok) {
+          const text = await resp.text();
+          const data = text ? JSON.parse(text) : {};
           setUser({
             id: data.id,
             nome: data.nome,
             email: data.email,
             telefone: data.telefone,
           });
-
-        } else {
-          
-          throw Error(data.message || "Erro desconhecido do backend");
         }
-      } catch (error) {
-        throw error;
+      } catch {
+        // não autenticado
       } finally {
-        setLoading(false); // Após a verificação (sucesso ou falha), setLoading deve ser false
+        setLoading(false);
       }
     }
-
     checkAuth();
   }, []);
 
-  // Login via Backend
+  // 🚀 Login via Backend
   async function login(email: string, password: string) {
     if (!email || !password) {
       console.error("Email e senha são obrigatórios!");
@@ -131,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: data.id,
         nome: data.nome,
         email: data.email,
+        telefone: data.telefone,
       });
 
     } catch (error) {
@@ -138,106 +122,82 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function registerUser(payload: {
-    user: UserRegistered;
-    empresa: Empresa;
-  }) {
-
-    try{
-        // ✅ Executa o reCAPTCHA antes de enviar os dados
-        const token = await window.grecaptcha.enterprise.execute(
-          "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",
-          {
-            action: "register",
-          },
-        );
 
 
-
-        const response = await fetch(
-          `backend/user/register`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            credentials: "include",
-            body: JSON.stringify({
-              ...payload, // Inclui user e empresa
-              recaptchaToken: token, // Adiciona o recaptchaToken ao payload
-            }),
-          },
-        );
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.detail || "Erro desconhecido do backend");
-        }
-        return data;
-
-      }catch (error) {
-        throw error;
+  // 🚀 Registro de usuário
+  async function registerUser({ user: newUser }: { user: UserRegistered }) {
+    clearError();
+    try {
+      const recaptcha = await window.grecaptcha.enterprise.execute(
+        "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",
+        { action: "register" }
+      );
+      const resp = await fetch("/backend/user/register", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user: newUser, recaptchaToken: recaptcha }),
+      });
+      if (!resp.ok) {
+        const text = await resp.text();
+        const err = text ? JSON.parse(text) : {};
+        throw new Error(err.detail || "Erro no registro");
       }
+      // se precisar do retorno JSON:
+      const text = await resp.text();
+      return text ? JSON.parse(text) : {};
+    } catch (e: any) {
+      setError(e.message);
+      throw e;
+    }
   }
 
-  // Login via Firebase OAuth
+  // 🚀 Login via Firebase OAuth
   async function loginWithOAuth(provider: "google" | "microsoft") {
+    clearError();
     try {
-      const { user, idToken } = await FirebaseLogin(provider);
-
-      const response = await fetch("backend/users/login-oauth", {
+      // 1) Recoge ID Token do Firebase
+      const { user: fbUser, idToken } = await FirebaseLogin(provider);
+      // 2) Troca pelo JWT no backend
+      const resp = await fetch("/backend/user/login-oauth", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: user.email,
-          username: user.displayName,
-          firebase_token: idToken,
-        }),
+        body: JSON.stringify({ firebase_token: idToken }),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        setUser(null);
-        throw data.message || Error("Erro desconhecido do backend!");
+      if (!resp.ok) {
+        const text = await resp.text();
+        const err = text ? JSON.parse(text) : {};
+        throw new Error(err.detail || err.message || "OAuth login fallido");
       }
-
-      if (!user.displayName || !user.email) {
-        setUser(null);
-        throw (
-          data.message ||
-          Error(
-            "Não foi possivel obter alguns dados do provedor de autenticação!",
-          )
-        );
-      }
-
+      // 3) Safe parse
+      const text = await resp.text();
+      const data = text ? JSON.parse(text) : {};
       setUser({
         id: data.id,
-        nome: user.displayName,
-        email: user.email,
+        nome: data.nome,
+        email: data.email,
+        telefone: data.telefone,
       });
-    } catch (error) {
-      throw error;
+    } catch (e: any) {
+      setError(e.message);
+      setUser(null);
+      throw e;
     }
   }
 
-  // Logout via Backend
+  // 🚀 Logout
   async function logout() {
-    await fetch("backend/user/logout", {
-      method: "POST",
-      credentials: "include",
-    });
-
-    setUser(null);
-  }
-
-  // Logout via Firebase
-  async function logoutWithOAuth() {
+    clearError();
     try {
-      await FirebaseLogout();
+      await fetch("/backend/user/logout", {
+        method: "POST",
+        credentials: "include",
+      });
       setUser(null);
-    } catch (error) {
-      throw error;
+    } catch (e: any) {
+      setError(e.message);
+      throw e;
     }
   }
 
@@ -245,12 +205,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         user,
+        loading,
+        error,
+        clearError,
         login,
         registerUser,
-        loading,
         loginWithOAuth,
         logout,
-        logoutWithOAuth,
       }}
     >
       {children}
@@ -259,9 +220,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must ser usado dentro de AuthProvider");
+  return ctx;
 }

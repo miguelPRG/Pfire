@@ -19,6 +19,7 @@ allowed_origins = [
     "http://frontend:80",
     "http://frontend:443",
     "http://localhost:3000",
+    "https://pfireteste-11849.firebaseapp.com",
 ]
 
 app.add_middleware(
@@ -26,7 +27,7 @@ app.add_middleware(
     allow_origins=allowed_origins,  # Domínios permitidos
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Inclua OPTIONS
-    allow_headers=["Content-Type", "Host", "Cookie"],  # Permita todos os cabeçalhos necessários
+    allow_headers=["Content-Type", "Host", "Cookie", "Authorization"],  # Permita todos os cabeçalhos necessários
 )
 
 @app.on_event("startup")

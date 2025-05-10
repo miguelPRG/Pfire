@@ -31,15 +31,9 @@ export default defineConfig({
       "/backend": {
         target: "http://localhost:8000",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/backend/, ""),
-      },
-      "^/backend": {
-        target: "http://localhost:8000",
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/backend/, ""),
+        rewrite: path => path.replace(/^\/backend/, ""),
       },
     },
-
     watch: {
       usePolling: true,
     },
