@@ -11,7 +11,7 @@ from passlib.context import CryptContext
 from models.userModels import UserCreate, UserLogin, RegisterUser
 from models.userEmpresaModels import UserEmpresaCreate
 from datetime import datetime
-from asyncio import to_thread, gather
+from asyncio import gather
 from database import users_collection, empresas_collection, users_empresas_collection
 from datetime import datetime
 

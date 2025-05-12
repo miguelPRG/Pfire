@@ -27,7 +27,7 @@ Crie o ficheiro `.env` no diretório raiz do projeto, exatamente com este nome. 
 
 - `MONGO_URL=mongodb+srv://<username>:<password>@pfire.c9mvo.mongodb.net/?retryWrites=true&w=majority&appName=pfire`
 - `PRIVATE_KEY_PASSWORD=password`
-- `GOOGLE_CLOUD_API_KEY_PROJECT_ID=chave`
+- `GOOGLE_CLOUD_PROJECT_ID=chave`
 - `GOOGLE_CLOUD_API_KEY=chave`
 - `BREVO_API_KEY= chave`
 

@@ -4,3 +4,4 @@ exclude_dirs:
   - venv
   - docs
   - __pycache__
+  - controller

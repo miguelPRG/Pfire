@@ -1,51 +1,20 @@
+import brevo_python
+from brevo_python.rest import ApiException
 from os import getenv
-import sib_api_v3_sdk
-from sib_api_v3_sdk.rest import ApiException
-from sib_api_v3_sdk.configuration import Configuration
-from dotenv import load_dotenv
 
-# Carregar variáveis de ambiente
-load_dotenv()
+# Configure API key authorization: api-key
+configuration = brevo_python.Configuration()
+configuration.api_key['api-key'] = getenv('BREVO_API_KEY')
 
-BREVO_API_KEY = getenv("BREVO_API_KEY")
-
-configuration = Configuration()
-configuration.api_key['api-key'] = BREVO_API_KEY
-
-# Testar conexão com Brevo
 def test_brevo_connection():
-    api_instance = sib_api_v3_sdk.EmailCampaignsApi(sib_api_v3_sdk.ApiClient(configuration))
+# create an instance of the API class
     try:
-        campaigns = api_instance.get_email_campaigns(limit=1)
-        print("Conexão bem sucedida com Brevo!" )
+        api_instance = brevo_python.AccountApi(brevo_python.ApiClient(configuration))
+        # Get your account information, plan and credits details
+        api_response = api_instance.get_account()
+        print("Conexão bem-sucedida com a API Brevo!")
+
     except ApiException as e:
-        print(f"Erro ao conectar com Brevo: {e}")
-        return {"success": False, "error": str(e)}
+        print("Exception when calling AccountApi->get_account: %s\n" % e)
 
-# Enviar email transacional
-def send_email(to_email: str, subject: str, html_content: str, sender_name="MyApp", sender_email="no-reply@myapp.com"):
-    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
-
-    send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
-        to=[{"email": to_email}],
-        sender={"name": sender_name, "email": sender_email},
-        subject=subject,
-        html_content=html_content,
-    )
-
-    try:
-        response = api_instance.send_transac_email(send_smtp_email)
-        return response
-    except ApiException as e:
-        print(f"Erro ao enviar email: {e}")
-        return None
-
-# Enviar campanha existente (já criada no dashboard do Brevo)
-def send_campaign_now(campaign_id: int):
-    api_instance = sib_api_v3_sdk.EmailCampaignsApi(sib_api_v3_sdk.ApiClient(configuration))
-    try:
-        api_instance.send_email_campaign_now(campaign_id)
-        return {"success": True, "message": f"Campanha {campaign_id} enviada com sucesso"}
-    except ApiException as e:
-        print(f"Erro ao enviar campanha: {e}")
-        return {"success": False, "error": str(e)}
+# Função para enviar um modelo transacional de registro
