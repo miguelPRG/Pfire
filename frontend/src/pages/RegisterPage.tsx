@@ -41,7 +41,7 @@ const registerSchema = z.object({
       .regex(/[A-Z]/, "A senha deve conter pelo menos uma letra maiúscula")
       .regex(/[a-z]/, "A senha deve conter pelo menos uma letra minúscula")
       .regex(/\d/, "A senha deve conter pelo menos um número"),
-    confirmPassword: z.string().nonempty("A confirmação da senha é obrigatória"),
+    confirmPassword: z.string().optional(),
   }).refine((data) => data.password === data.confirmPassword, {
     message: "As senhas não coincidem",
     path: ["confirmPassword"],
@@ -87,14 +87,16 @@ function RegisterPage() {
 
   const onSubmit = async (data: RegisterFormInputs) => {
     setIsRegistError({ error: false, message: "" });
-
     try {
+
+      delete data.user.confirmPassword; // Remove o campo confirmPassword do payload
+
       const payload = { user: data.user, empresa: data.empresa };
       await registerUser(payload);
       setShowSuccessDialog(true); // Mostra o popup de sucesso
     } catch (err: any) {
       window.scrollTo({ top: 0, behavior: "smooth" });
-      setIsRegistError({ error: true, message: err.message });
+      setIsRegistError({ error: true, message: err.response?.data?.message || "Ocorreu um erro ao criar a conta" });
     }
   };
 

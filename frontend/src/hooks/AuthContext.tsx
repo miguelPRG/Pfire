@@ -24,11 +24,20 @@ interface UserLoggedIn {
   telefone?: string;
 }
 
-export interface UserRegistered {
+interface UserRegistered {
   nome: string;
   email: string;
-  telefone?: string;
   password: string;
+  confirmar_password?: string;
+}
+
+interface EmpresaRegistered {
+  nome: string;
+  nif: string;
+  localidade: string;
+  morada: string;
+  codigo_postal: string;
+  telefone: string;
 }
 
 interface AuthContextType {
@@ -38,7 +47,7 @@ interface AuthContextType {
   clearError: () => void;
 
   login: (email: string, pwd: string) => Promise<void>;
-  registerUser: (payload: { user: UserRegistered }) => Promise<void>;
+  registerUser: (payload: { user: UserRegistered, empresa: EmpresaRegistered }) => Promise<void>;
   loginWithOAuth: (provider: "google" | "microsoft") => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -122,30 +131,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-
-
   // 🚀 Registro de usuário
-  async function registerUser({ user: newUser }: { user: UserRegistered }) {
+  async function registerUser({ user: newUser, empresa: newEmpresa }: { user: UserRegistered, empresa: EmpresaRegistered }) {
     clearError();
     try {
       const recaptcha = await window.grecaptcha.enterprise.execute(
         "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",
         { action: "register" }
       );
+
+      delete newUser.confirmar_password; // Remove a propriedade confirmar_passwor
+      console.log({ "user": newUser, "empresa": newEmpresa , "recaptchaToken": recaptcha })
+
       const resp = await fetch("/backend/user/register", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user: newUser, recaptchaToken: recaptcha }),
+        body: JSON.stringify({ user: newUser,empresa: newEmpresa, recaptchaToken: recaptcha }),
       });
+
+       const data = await resp.json();
       if (!resp.ok) {
-        const text = await resp.text();
-        const err = text ? JSON.parse(text) : {};
-        throw new Error(err.detail || "Erro no registro");
+        throw new Error(data.detail || "Erro desconhecido do backend");
       }
-      // se precisar do retorno JSON:
-      const text = await resp.text();
-      return text ? JSON.parse(text) : {};
+ 
     } catch (e: any) {
       setError(e.message);
       throw e;
@@ -157,7 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearError();
     try {
       // 1) Recoge ID Token do Firebase
-      const { user: fbUser, idToken } = await FirebaseLogin(provider);
+      const { idToken } = await FirebaseLogin(provider);
       // 2) Troca pelo JWT no backend
       const resp = await fetch("/backend/user/login-oauth", {
         method: "POST",
