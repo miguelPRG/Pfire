@@ -6,15 +6,36 @@ from os import getenv
 configuration = brevo_python.Configuration()
 configuration.api_key['api-key'] = getenv('BREVO_API_KEY')
 
+# Função para testar a conexão com a API da Brevo
 def test_brevo_connection():
-# create an instance of the API class
     try:
         api_instance = brevo_python.AccountApi(brevo_python.ApiClient(configuration))
-        # Get your account information, plan and credits details
         api_response = api_instance.get_account()
-        print("Conexão bem-sucedida com a API Brevo!")
 
+        if api_response:
+            print("Conexão com a API Brevo bem-sucedida!")
     except ApiException as e:
-        print("Exception when calling AccountApi->get_account: %s\n" % e)
+        print("Erro ao conectar à API da Brevo: %s\n" % e)
 
-# Função para enviar um modelo transacional de registro
+# Função para enviar o e-mail usando o modelo 4
+def enviar_email_registo(email_destino: str, name: str, global_id: str):
+    api_instance = brevo_python.TransactionalEmailsApi(brevo_python.ApiClient(configuration))
+
+    # Prepara os dados do e-mail
+    send_smtp_email = brevo_python.SendSmtpEmail(
+        to=[{"email": email_destino}],
+        template_id=4,  # ID do modelo criado na Brevo
+        params={
+            "NOME": name,          # Sem "contact." — usa o nome da variável do modelo
+            "GLOBAL_ID": global_id,
+            "OPERATION": "registo",
+        },
+        headers={"X-Mailin-custom": "custom_header_1:custom_value_1"}
+    )
+
+    try:
+        response = api_instance.send_transac_email(send_smtp_email)
+        print(f"E-mail enviado com sucesso para {email_destino}")
+        print(response)
+    except ApiException as e:
+        print("Erro ao enviar e-mail: %s\n" % e)

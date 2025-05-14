@@ -28,6 +28,7 @@ users_empresas_collection = db["users_empresas"]
 clientes_collection = db["clientes"]
 modelos_collection = db["modelos"]
 relatorios_collection = db["relatorios"]
+global_ids_collection = db["global_ids"]
 
 # Função para remover documentos com isActive = False
 async def delete_inactive_documents():

@@ -3,6 +3,7 @@ from fastapi.responses import JSONResponse
 from controller.jwtValidation import generate_jwt  # Se usa para generar el JWT
 from controller.token_blacklist import add_token_to_blacklist  # Nueva función para usar Redis
 from apis.recaptchaValidation import validar_recaptcha_token
+from apis.brevo_client import enviar_email_registo
 from pathlib import Path
 from secrets import choice
 from string import ascii_letters, punctuation, digits
@@ -12,8 +13,9 @@ from models.userModels import UserCreate, UserLogin, RegisterUser
 from models.userEmpresaModels import UserEmpresaCreate
 from datetime import datetime
 from asyncio import gather
-from database import users_collection, empresas_collection, users_empresas_collection
+from database import users_collection, empresas_collection, users_empresas_collection, global_ids_collection
 from datetime import datetime
+from uuid import uuid4
 
 routerUser = APIRouter(prefix="/user")
 
@@ -197,6 +199,19 @@ async def register_user(data: RegisterUser, request: Request):
 
     if not user_empresa.inserted_id:
         raise HTTPException(status_code=409, detail="Erro na criação do utilizador.")
+
+    # Gerar global ID
+    global_id = str(uuid4())
+    
+    global_id_insertion = await global_ids_collection.insert_one({"global_id": global_id, "user_id": user.inserted_id})
+
+    if not global_id_insertion.inserted_id:
+        raise HTTPException(status_code=409, detail="Erro na criação do ID global.")
+
+    print("Global ID: ", global_id)
+    print("email: ", new_user_data["email"])
+
+    enviar_email_registo(new_user_data["email"],new_user_data["nome"],global_id)
 
     return {"message": "Conta criada! Verifique seu email para ativação."}
 
