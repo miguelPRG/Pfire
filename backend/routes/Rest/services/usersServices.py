@@ -101,7 +101,7 @@ async def login_oauth(response: Response, payload: dict):
     token = generate_jwt(str(db_user["_id"]),db_user["nome"], db_user["email"],db_user["isSuperAdmin"],db_user.get("telefone"))
 
     # 4) Gerar resposta
-    response = JSONResponse({"id":str(db_user["_id"]),"nome": db_user["nome"], "email": db_user["email"], "telefone": db_user.get("telefone")})
+    response = JSONResponse({"id":str(db_user["_id"]),"nome": db_user["nome"], "email": db_user["email"], "telefone": db_user.get("telefone"), "isSuperAdmin": db_user.get("isSuperAdmin")}) 
 
     # Seta cookie HTTP-only e devolve dados
     response.set_cookie(
@@ -135,7 +135,7 @@ async def login(user: UserLogin, request: Request):
 
     token = generate_jwt(str(db_user["_id"]),db_user["nome"], db_user["email"],db_user["isSuperAdmin"],db_user.get("telefone"))
 
-    response = JSONResponse({"id":str(db_user["_id"]),"nome": db_user["nome"], "email": db_user["email"]})
+    response = JSONResponse({"id":str(db_user["_id"]),"nome": db_user["nome"], "email": db_user["email"],"isSuperAdmin": db_user.get("isSuperAdmin", False)})
     response.set_cookie(key="_fp", value=token, httponly=True, samesite="Strict", secure=True)
 
     return response
@@ -221,7 +221,7 @@ async def auth_user(request: Request):
 
     jwt = getattr(request.state, "jwt", None)
 
-    return {"id": jwt["user_id"],"nome": jwt["nome"], "email": jwt["email"] , "telefone": jwt["telefone"]}
+    return {"id": jwt["user_id"],"nome": jwt["nome"], "email": jwt["email"] , "telefone": jwt["telefone"], "isSuperAdmin": jwt["isSuperAdmin"]}
 
 @routerUser.get("/isSuperAdmin")
 async def is_super_admin(request: Request):
@@ -252,7 +252,7 @@ async def logout_user(request: Request, response: Response):
 @routerUser.post("/logout-all")
 async def logout_all_users(email: str):
     try:
-        await revoke_user_tokens(email)  # Revoga tokens JWT no banco de dados
+        await revoke_user_tokens(email)  # ReFvoga tokens JWT no banco de dados
         auth.revoke_refresh_tokens(auth.get_user_by_email(email).uid)  # Revoga tokens Firebase
         return JSONResponse({"message": "Sessões encerradas em todos os dispositivos."})
     except Exception as e:

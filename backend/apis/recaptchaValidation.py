@@ -31,6 +31,9 @@ async def validar_recaptcha_token(token: str, action:str):
         raise HTTPException(status_code=400, detail="Erro na API do reCAPTCHA.")
 
     result = response.json()
+    print("✅ Ação esperada:", action)
+    print("✅ Ação recebida:", result.get("tokenProperties", {}).get("action"))
+
 
     if "error" in result or not result.get("tokenProperties", {}).get("valid", False):
         raise HTTPException(status_code=400, detail="Erro ao validar reCAPTCHA.")

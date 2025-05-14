@@ -22,9 +22,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
 // Funções para login
-const FirebaseLogin = async (
-  providerName: "google" | "microsoft",
-) => {
+const FirebaseLogin = async (providerName: "google" | "microsoft") => {
   let provider;
 
   switch (providerName.toLowerCase()) {

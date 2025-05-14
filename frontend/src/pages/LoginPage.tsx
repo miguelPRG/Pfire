@@ -50,7 +50,8 @@ function LoginPage() {
     } catch (error: any) {
       setAuthError({
         error: true,
-        message: error.message});
+        message: error.message,
+      });
     }
   };
 
@@ -71,7 +72,7 @@ function LoginPage() {
     <Container
       maxWidth="sm"
       sx={{
-        textAlign: "center", 
+        textAlign: "center",
         padding: 4,
         borderRadius: 2,
       }}
@@ -179,7 +180,7 @@ function LoginPage() {
           </Button>
 
           {/* Linha Horizontal */}
-          <Divider/>
+          <Divider />
           <Typography variant="body1">ou</Typography>
           <Box
             sx={{
@@ -246,12 +247,7 @@ function LoginPage() {
             </Button>
           </Box>
           <Typography variant="body1">
-            Não tens uma conta?{" "}
-            <Link
-              to="/register"
-            >
-              Regista-te
-            </Link>
+            Não tens uma conta? <Link to="/register">Regista-te</Link>
           </Typography>
         </form>
       </Paper>

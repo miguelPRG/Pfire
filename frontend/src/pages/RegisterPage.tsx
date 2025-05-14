@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+
 import {
   Container,
   Typography,
@@ -15,7 +16,7 @@ import {
   DialogContent,
   DialogActions,
   Fade,
-  Alert
+  Alert,
 } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle"; // ícone de sucesso
 import { useAuth } from "../hooks/AuthContext";
@@ -23,29 +24,36 @@ import google from "../assets/images/google.png";
 import microsoft from "../assets/images/microsoft.png";
 import logo from "../assets/images/logo.png";
 import { useForm, Controller } from "react-hook-form";
+
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import PhoneInput from "react-phone-number-input";
-import 'react-phone-number-input/style.css';
+import "react-phone-number-input/style.css";
 import "../assets/styles/phoneNumberField.css";
 
 // Esquema de validação com Zod
 const registerSchema = z.object({
-  user: z.object({
-    nome: z.string().nonempty("O nome é obrigatório"),
-    email: z.string().nonempty("O email é obrigatório").email("Email inválido"),
-    password: z
-      .string()
-      .nonempty("A senha é obrigatória")
-      .min(9, "A senha deve ter pelo menos 9 caracteres")
-      .regex(/[A-Z]/, "A senha deve conter pelo menos uma letra maiúscula")
-      .regex(/[a-z]/, "A senha deve conter pelo menos uma letra minúscula")
-      .regex(/\d/, "A senha deve conter pelo menos um número"),
-    confirmPassword: z.string().optional(),
-  }).refine((data) => data.password === data.confirmPassword, {
-    message: "As senhas não coincidem",
-    path: ["confirmPassword"],
-  }),
+  user: z
+    .object({
+      nome: z.string().nonempty("O nome é obrigatório"),
+      email: z
+        .string()
+        .nonempty("O email é obrigatório")
+        .email("Email inválido"),
+      password: z
+        .string()
+        .nonempty("A senha é obrigatória")
+        .min(9, "A senha deve ter pelo menos 9 caracteres")
+        .regex(/[A-Z]/, "A senha deve conter pelo menos uma letra maiúscula")
+        .regex(/\d/, "A senha deve conter pelo menos um número"),
+      confirmPassword: z
+        .string()
+        .nonempty("A confirmação da senha é obrigatória"),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
+      message: "As senhas não coincidem",
+      path: ["confirmPassword"],
+    }),
   empresa: z.object({
     nome: z.string().nonempty("O nome da empresa é obrigatório"),
     nif: z
@@ -62,14 +70,17 @@ const registerSchema = z.object({
       .string()
       .nonempty("O telefone da empresa é obrigatório")
       .regex(/^\+?[0-9\s\-()]{7,15}$/, "Número de telefone inválido"),
-    }),
+  }),
 });
 
 type RegisterFormInputs = z.infer<typeof registerSchema>;
 
 function RegisterPage() {
   const theme = useTheme();
-  const [isRegistError, setIsRegistError] = useState({ error: false, message: "" });
+  const [isRegistError, setIsRegistError] = useState({
+    error: false,
+    message: "",
+  });
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const navigate = useNavigate();
   const { registerUser } = useAuth();
@@ -78,6 +89,7 @@ function RegisterPage() {
   const {
     register,
     handleSubmit,
+
     control,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormInputs>({
@@ -86,16 +98,16 @@ function RegisterPage() {
 
   const onSubmit = async (data: RegisterFormInputs) => {
     setIsRegistError({ error: false, message: "" });
+
+    setIsRegistError({ error: false, message: "" });
+
     try {
-
-      delete data.user.confirmPassword; // Remove o campo confirmPassword do payload
-
       const payload = { user: data.user, empresa: data.empresa };
       await registerUser(payload);
       setShowSuccessDialog(true); // Mostra o popup de sucesso
     } catch (err: any) {
       window.scrollTo({ top: 0, behavior: "smooth" });
-      setIsRegistError({ error: true, message: err.message || "Ocorreu um erro ao criar a conta" });
+      setIsRegistError({ error: true, message: err.message });
     }
   };
 
@@ -117,6 +129,7 @@ function RegisterPage() {
           </Alert>
         </Fade>
       )}
+
       <Box sx={{ position: "relative", mt: 5, mb: 3 }}>
         <Box
           sx={{
@@ -265,7 +278,7 @@ function RegisterPage() {
             fullWidth
             margin="normal"
           />
-          <div className="telefone-field">
+          <div id="telefone-field">
             <Controller
               name="empresa.telefone"
               control={control}
@@ -273,36 +286,38 @@ function RegisterPage() {
                 <Box>
                   <Box
                     sx={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      border: '1px solid',
-                      borderColor: errors.empresa?.telefone ? 'error.main' : 'rgba(0, 0, 0, 0.23)',
+                      display: "flex",
+                      alignItems: "center",
+                      border: "1px solid",
+                      borderColor: errors.empresa?.telefone
+                        ? "error.main"
+                        : "rgba(0, 0, 0, 0.23)",
                       borderRadius: 1,
-                      padding: '18.5px 14px',
-                      fontSize: '16px',
-                      '&:hover': {
-                        borderColor: 'black',
+                      padding: "18.5px 14px",
+                      fontSize: "16px",
+                      "&:hover": {
+                        borderColor: "black",
                       },
-                      '&:focus-within': {
-                        borderColor: 'primary.main',
+                      "&:focus-within": {
+                        borderColor: "primary.main",
                         borderWidth: 2,
                       },
                     }}
                   >
-                  <PhoneInput
-                    {...field}
-                    defaultCountry="PT"
-                    international
-                    countryCallingCodeEditable={false}
-                    placeholder="Insira o número de telefone"
-                    style={{
-                      fontSize: '16px',
-                      border: 'none',
-                      outline: 'none',
-                      width: '100%',
-                      background: 'transparent',
-                    }}
-                  />
+                    <PhoneInput
+                      {...field}
+                      defaultCountry="PT"
+                      international
+                      countryCallingCodeEditable={false}
+                      placeholder="Insira o número de telefone"
+                      style={{
+                        fontSize: "16px",
+                        border: "none",
+                        outline: "none",
+                        width: "100%",
+                        background: "transparent",
+                      }}
+                    />
                   </Box>
                   {errors.empresa?.telefone && (
                     <Typography color="error" variant="body2" sx={{ mt: 0.5 }}>
@@ -369,12 +384,7 @@ function RegisterPage() {
           </DialogActions>
         </Dialog>
         <Typography variant="body1">
-          Já tens uma conta?{" "}
-          <Link
-            to="/login"
-          >
-            Inicia sessão
-          </Link>
+          Já tens uma conta? <Link to="/login">Inicia sessão</Link>
         </Typography>
       </Paper>
     </Container>

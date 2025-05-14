@@ -15,7 +15,7 @@ import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import PhoneInput from "react-phone-number-input";
-import 'react-phone-number-input/style.css';
+import "react-phone-number-input/style.css";
 import "../assets/styles/phoneNumberField.css";
 // Esquema de validação com Zod
 const editProfileSchema = z.object({
@@ -40,6 +40,7 @@ const editProfileSchema = z.object({
     .string()
     .nonempty("O telefone da empresa é obrigatório")
     .regex(/^\+?[0-9\s\-()]{7,15}$/, "Número de telefone inválido"),
+    
 });
 
 type EditCompanyFormInputs = z.infer<typeof editProfileSchema>;
@@ -375,7 +376,7 @@ function EditProfilePage() {
               />
             </Grid>
             <Grid item xs={12} md={6}>
-              <div className="telefone-field">
+              <div id="telefone-field">
                 <Controller
                   name="companyPhone"
                   control={control}
@@ -383,18 +384,20 @@ function EditProfilePage() {
                     <Box>
                       <Box
                         sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          border: '1px solid',
-                          borderColor: errors.companyPhone ? 'error.main' : 'rgba(0, 0, 0, 0.23)',
+                          display: "flex",
+                          alignItems: "center",
+                          border: "1px solid",
+                          borderColor: errors.companyPhone
+                            ? "error.main"
+                            : "rgba(0, 0, 0, 0.23)",
                           borderRadius: 1,
-                          padding: '18.5px 14px',
-                          fontSize: '16px',
-                          '&:hover': {
-                            borderColor: 'black',
+                          padding: "18.5px 14px",
+                          fontSize: "16px",
+                          "&:hover": {
+                            borderColor: "black",
                           },
-                          '&:focus-within': {
-                            borderColor: 'primary.main',
+                          "&:focus-within": {
+                            borderColor: "primary.main",
                             borderWidth: 2,
                           },
                         }}
@@ -406,16 +409,20 @@ function EditProfilePage() {
                           countryCallingCodeEditable={false}
                           placeholder="Insira o número de telefone"
                           style={{
-                            fontSize: '16px',
-                            border: 'none',
-                            outline: 'none',
-                            width: '100%',
-                            background: 'transparent',
+                            fontSize: "16px",
+                            border: "none",
+                            outline: "none",
+                            width: "100%",
+                            background: "transparent",
                           }}
                         />
                       </Box>
                       {errors.companyPhone && (
-                        <Typography color="error" variant="body2" sx={{ mt: 0.5 }}>
+                        <Typography
+                          color="error"
+                          variant="body2"
+                          sx={{ mt: 0.5 }}
+                        >
                           {errors.companyPhone.message}
                         </Typography>
                       )}

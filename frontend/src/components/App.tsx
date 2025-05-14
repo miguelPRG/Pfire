@@ -5,6 +5,7 @@ import {
   Routes,
   Navigate,
   useLocation,
+  useNavigate,
 } from "react-router-dom";
 import { useAuth } from "../hooks/AuthContext";
 import { useTema } from "../hooks/TemaContext";
@@ -14,20 +15,22 @@ import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import ResponsiveAppBar from "./ResponsiveAppBar";
 
+// Lazy-loaded pages
 const Login = lazy(() => import("../pages/LoginPage"));
 const Register = lazy(() => import("../pages/RegisterPage"));
 const Home = lazy(() => import("../pages/HomePage"));
 const UserManagementTable = lazy(() => import("../pages/UserManagementTable"));
-const EmpresasPage = lazy(() => import("../pages/EmpresasPage"));
+
 const ClientManagementTable = lazy(
   () => import("../pages/ClientManagementTable"),
 );
 const AddNewClient = lazy(() => import("../pages/AddNewClientPage"));
-const EditProfilePage = lazy(() => import("../pages/EditProfilePage"));
-const ForgotPasswordPage = lazy(
-  () => import("../pages/ForgotPasswordPage"),
-);
 
+const EditProfilePage = lazy(() => import("../pages/EditProfilePage"));
+const ForgotPasswordPage = lazy(() => import("../pages/ForgotPasswordPage"));
+const ChooseCompany = lazy(() => import("../pages/CompanySelectorPage"));
+
+// Rotas protegidas
 interface RouteProps {
   user: unknown;
   element: ReactElement;
@@ -41,6 +44,7 @@ const PublicRoute = ({ user, element }: RouteProps) => {
   return user ? <Navigate to="/" /> : element;
 };
 
+// Layout base
 const Layout = ({ children }: { children: React.ReactNode }) => {
   const location = useLocation();
   const { user, loading } = useAuth();
@@ -48,14 +52,13 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <>
-      {!isLoginPage && !loading && user &&
-        <ResponsiveAppBar />  
-      }
+      {!isLoginPage && !loading && user && <ResponsiveAppBar />}
       <Box component="main">{children}</Box>
     </>
   );
 };
 
+// Botão de troca de tema
 const ThemeToggleButton = () => {
   const { darkMode, toggleTheme, isChanging } = useTema();
 
@@ -71,7 +74,7 @@ const ThemeToggleButton = () => {
     <IconButton
       disabled={isChanging}
       onClick={() => {
-        sessionStorage.setItem("scrollPosition", window.scrollY.toString()); // Salva a posição antes de mudar o tema
+        sessionStorage.setItem("scrollPosition", window.scrollY.toString());
         toggleTheme();
       }}
       sx={{
@@ -89,6 +92,27 @@ const ThemeToggleButton = () => {
   );
 };
 
+// ✅ Redireciona superadmin automaticamente após login
+const RedirectSuperAdmin = () => {
+  const { user, isSuperAdmin, empresaId } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (
+      user &&
+      isSuperAdmin &&
+      !empresaId &&
+      location.pathname !== "/choose-company"
+    ) {
+      navigate("/choose-company");
+    }
+  }, [user, isSuperAdmin, empresaId, location.pathname, navigate]);
+
+  return null;
+};
+
+// 🚀 App principal
 function App() {
   const { user, loading } = useAuth();
 
@@ -108,6 +132,9 @@ function App() {
   return (
     <Router>
       <Suspense fallback={<CircularProgress />}>
+        {/* 🚨 Redirecionamento só dentro do Suspense/Router para garantir que navigate funciona */}
+        <RedirectSuperAdmin />
+
         <Layout>
           <Routes>
             <Route
@@ -118,12 +145,14 @@ function App() {
               path="/register"
               element={<PublicRoute user={user} element={<Register />} />}
             />
+
             <Route
               path="/forgot-password"
               element={
                 <PublicRoute user={user} element={<ForgotPasswordPage />} />
               }
             />
+
             <Route
               path="/"
               element={<ProtectedRoute user={user} element={<Home />} />}
@@ -151,17 +180,18 @@ function App() {
             />
 
             <Route
-              path="/empresas-list"
-              element={
-                <ProtectedRoute user={user} element={<EmpresasPage />} />
-              }
-            />
-            <Route
               path="/edit-profile"
               element={
                 <ProtectedRoute user={user} element={<EditProfilePage />} />
               }
             />
+            <Route
+              path="/choose-company"
+              element={
+                <ProtectedRoute user={user} element={<ChooseCompany />} />
+              }
+            />
+
             <Route path="*" element={<Navigate to={user ? "/" : "/login"} />} />
           </Routes>
         </Layout>

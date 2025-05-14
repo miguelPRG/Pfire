@@ -3,8 +3,11 @@ from typing import Optional
 from .empresaModels import EmpresaCreate
 
 class UserCreate(BaseModel):
-    nome: str = Field(min_length=2, max_length=100)
+    nome: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
+    telefone: str = Field(..., pattern=r'^\+?[0-9\s\-()]{7,15}$')
+    nif: str = Field(..., pattern=r'^[5789]\d{8}$')
+    codigo_postal: str = Field(..., pattern=r'^\d{4}-\d{3}$')
     password: str
 
     @validator("password")
@@ -19,13 +22,15 @@ class UserCreate(BaseModel):
             raise ValueError("A senha deve conter pelo menos um número.")
         return value
 
+
 class UserUpdate(BaseModel):
     recaptchaToken: str
     nome: Optional[str] = Field(None, min_length=2, max_length=100)
     email: Optional[EmailStr] = None
+    telefone: Optional[str] = Field(None, pattern=r'^\+?[0-9\s\-()]{7,15}$')
+    nif: Optional[str] = Field(None, pattern=r'^[5789]\d{8}$')
+    codigo_postal: Optional[str] = Field(None, pattern=r'^\d{4}-\d{3}$')
     password: Optional[str] = None
-    telefone: Optional[str] = None
-    isSuperAdmin: Optional[bool] = None
 
     @validator("password", pre=True, always=True)
     def validate_password(cls, value):
@@ -41,11 +46,13 @@ class UserUpdate(BaseModel):
             raise ValueError("A senha deve conter pelo menos um número.")
         return value
 
+    isSuperAdmin: Optional[bool] = None
+
 class UserActivation(BaseModel):
     recaptchaToken: Optional[str] = None
     id: Optional[str] = None
     email: Optional[EmailStr] = None
-    
+
 class RegisterUser(BaseModel):
     user: UserCreate
     empresa: EmpresaCreate

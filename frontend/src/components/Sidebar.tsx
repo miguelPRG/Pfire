@@ -23,6 +23,7 @@ import {
 } from "@mui/icons-material";
 import BusinessIcon from "@mui/icons-material/Business";
 import GroupIcon from "@mui/icons-material/Group";
+import { useAuth } from "../hooks/AuthContext";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -33,6 +34,12 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const navigate = useNavigate();
   const [openReports, setOpenReports] = useState(false);
   const [openModels, setOpenModels] = useState(false);
+  const { isSuperAdmin, empresaId } = useAuth();
+
+  // Se for superadmin e ainda não escolheu uma empresa, não renderiza o sidebar
+  if (isSuperAdmin && !empresaId) {
+    return null;
+  }
 
   const handleToggleReports = () => {
     setOpenReports(!openReports);
@@ -118,18 +125,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             <ListItemText primary="Atualizar Plano" />
           </ListItemButton>
         </ListItem>
+
         <ListItem disablePadding>
-          <ListItemButton onClick={() => handleNavigation("/empresas-list")}>
-            <ListItemIcon>
-              <BusinessIcon />
-            </ListItemIcon>
-            <ListItemText primary="Empresas" />
-          </ListItemButton>
-        </ListItem>
-        <ListItem disablePadding>
-          <ListItemButton
-            onClick={() => handleNavigation("/clients-list")}
-          >
+          <ListItemButton onClick={() => handleNavigation("/clients-list")}>
             <ListItemIcon>
               <GroupIcon />
             </ListItemIcon>
@@ -142,9 +140,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       <Box sx={{ display: "flex", flexDirection: "column" }}>
         {/* Utilizadores */}
         <ListItem disablePadding>
-          <ListItemButton
-            onClick={() => handleNavigation("/users-list")}
-          >
+          <ListItemButton onClick={() => handleNavigation("/users-list")}>
             <ListItemIcon>
               <EngineeringIcon />
             </ListItemIcon>

@@ -17,8 +17,9 @@ import { useAuth } from "../hooks/AuthContext";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/images/logo.png";
 import Sidebar from "./Sidebar";
-
-const userSettings = ["Perfil", "Account", "Dashboard", "Logout"];
+import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import BusinessIcon from "@mui/icons-material/Business";
+import LogoutIcon from "@mui/icons-material/Logout";
 
 function ResponsiveAppBar() {
   const { logout } = useAuth();
@@ -37,11 +38,28 @@ function ResponsiveAppBar() {
     setSidebarOpen(!sidebarOpen);
   };
 
-  // dispara quando a página rola
   const trigger = useScrollTrigger({
     disableHysteresis: true,
     threshold: 0,
   });
+
+  const userSettings = [
+    {
+      label: "Perfil",
+      icon: <AccountCircleIcon fontSize="small" sx={{ mr: 1 }} />,
+      action: () => navigate("/edit-profile"),
+    },
+    {
+      label: "Mudar de empresa",
+      icon: <BusinessIcon fontSize="small" sx={{ mr: 1 }} />,
+      action: () => navigate("/choose-company"),
+    },
+    {
+      label: "Logout",
+      icon: <LogoutIcon fontSize="small" sx={{ mr: 1 }} />,
+      action: logout,
+    },
+  ];
 
   return (
     <Box>
@@ -121,29 +139,31 @@ function ResponsiveAppBar() {
               anchorEl={anchorElUser}
               open={Boolean(anchorElUser)}
               onClose={closeUserMenu}
-              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-              transformOrigin={{ vertical: "top", horizontal: "right" }}
+              anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+              transformOrigin={{ vertical: "top", horizontal: "left" }}
               PaperProps={{
                 sx: {
-                  mt: 1,
+                  mt: 3,
                   minWidth: 140,
                   maxWidth: 200,
                   boxShadow: 3,
                 },
               }}
             >
-              {userSettings.map((setting) => (
+              {userSettings.map(({ label, icon, action }) => (
                 <MenuItem
-                  key={setting}
+                  key={label}
                   onClick={() => {
                     closeUserMenu();
-                    if (setting === "Perfil") navigate("/edit-profile");
-                    if (setting === "Logout") logout();
+                    action();
                   }}
                 >
-                  <Typography variant="body2" textAlign="left" width="100%">
-                    {setting}
-                  </Typography>
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    {icon}
+                    <Typography variant="body2" textAlign="left" width="100%">
+                      {label}
+                    </Typography>
+                  </Box>
                 </MenuItem>
               ))}
             </Menu>
@@ -151,7 +171,6 @@ function ResponsiveAppBar() {
         </Toolbar>
       </AppBar>
 
-      {/* Espaço para não sobrepor o conteúdo */}
       <Box sx={{ height: 100 }} />
     </Box>
   );

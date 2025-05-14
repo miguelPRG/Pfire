@@ -14,22 +14,3 @@ export const GET_CLIENTES_BY_EMPRESA = gql`
     }
   }
 `;
-
-
-export const GET_EMPRESAS = gql`
-  query GetEmpresas {
-    empresas {
-      id
-      nome
-      nif
-      telefone
-      morada
-      localidade
-      codigoPostal
-      createdBy
-      createdAt
-      updatedBy
-      updatedAt
-    }
-  }
-`;

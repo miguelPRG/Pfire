@@ -1,9 +1,4 @@
-import {
-  createContext,
-  useContext,
-  ReactNode,
-  useState,
-} from "react";
+import { createContext, useContext, ReactNode, useState } from "react";
 import { ThemeProvider, CssBaseline, createTheme } from "@mui/material";
 import { lightTheme, darkTheme } from "../assets/Theme";
 
@@ -30,7 +25,9 @@ export function TemaProvider({ children }: { children: ReactNode }) {
   });
 
   // Armazena o tema atual sem causar re-renderizações
-  const [theme, setTheme] = useState(createTheme(darkMode ? darkTheme : lightTheme));
+  const [theme, setTheme] = useState(
+    createTheme(darkMode ? darkTheme : lightTheme),
+  );
 
   // Estado para indicar se o tema está a ser alterado
   const [isChanging, setIsChanging] = useState(false);
@@ -73,4 +70,3 @@ export function TemaProvider({ children }: { children: ReactNode }) {
     </TemaContext.Provider>
   );
 }
-

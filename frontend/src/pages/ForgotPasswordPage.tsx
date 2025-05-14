@@ -135,7 +135,8 @@ function ForgotPassword() {
                 whiteSpace: "nowrap",
                 transition: "0.3s",
                 "&:hover": {
-                  background: "linear-gradient(45deg, #FB8C00 30%, #FFA726 90%)",
+                  background:
+                    "linear-gradient(45deg, #FB8C00 30%, #FFA726 90%)",
                 },
               }}
               disabled={isSubmitting}
@@ -150,7 +151,8 @@ function ForgotPassword() {
       <Dialog open={open} onClose={handleClose}>
         <DialogContent>
           <DialogContentText>
-            Se existir uma conta com esse e-mail, receberás um link de recuperação em breve.
+            Se existir uma conta com esse e-mail, receberás um link de
+            recuperação em breve.
           </DialogContentText>
         </DialogContent>
         <DialogActions>

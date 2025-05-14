@@ -5,13 +5,16 @@ import {
   ReactNode,
   useEffect,
 } from "react";
-import { FirebaseLogin } from "../firebase"; // Importando as funções do Firebase
+import { FirebaseLogin, FirebaseLogout } from "../firebase";
 
 declare global {
   interface Window {
     grecaptcha: {
       enterprise: {
-        execute: (siteKey: string, options: { action: string }) => Promise<string>;
+        execute: (
+          siteKey: string,
+          options: { action: string },
+        ) => Promise<string>;
       };
     };
   }
@@ -22,73 +25,84 @@ interface UserLoggedIn {
   nome: string;
   email: string;
   telefone?: string;
+  isSuperAdmin: boolean;
 }
 
-interface UserRegistered {
-  nome: string;
-  email: string;
-  password: string;
-  confirmar_password?: string;
+export interface UserRegistered {
+  nome: string | undefined;
+  email: string | undefined;
+  telefone: string | undefined;
+  password: string | undefined;
 }
 
-interface EmpresaRegistered {
-  nome: string;
-  nif: string;
-  localidade: string;
-  morada: string;
-  codigo_postal: string;
-  telefone: string;
+export interface Empresa {
+  nome: string | undefined;
+  nif: string | undefined;
+  localidade: string | undefined;
+  morada: string | undefined;
+  codigo_postal: string | undefined;
+  telefone: string | undefined;
 }
 
 interface AuthContextType {
   user: UserLoggedIn | null;
+  empresaId: string | null;
   loading: boolean;
-  error: string | null;
-  clearError: () => void;
-
-  login: (email: string, pwd: string) => Promise<void>;
-  registerUser: (payload: { user: UserRegistered, empresa: EmpresaRegistered }) => Promise<void>;
-  loginWithOAuth: (provider: "google" | "microsoft") => Promise<void>;
-  logout: () => Promise<void>;
+  login: (email: string, pwd: string) => void;
+  registerUser: (payload: {
+    user: UserRegistered;
+    empresa: Empresa;
+    recaptchaToken: string;
+  }) => void;
+  loginWithOAuth: (provider: "google" | "microsoft") => void;
+  logout: () => void;
+  logoutWithOAuth: () => void;
+  chooseCompany: (id: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserLoggedIn | null>(null);
+  const [empresaId, setEmpresaId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Limpa o estado de erro
-  const clearError = () => setError(null);
 
   useEffect(() => {
     async function checkAuth() {
       try {
-        const resp = await fetch("/backend/user/auth", {
+        const response = await fetch("/backend/user/auth", {
           method: "GET",
           credentials: "include",
         });
-        if (resp.ok) {
-          const text = await resp.text();
-          const data = text ? JSON.parse(text) : {};
+
+        const data = await response.json();
+
+        if (response.ok) {
           setUser({
             id: data.id,
             nome: data.nome,
             email: data.email,
             telefone: data.telefone,
+            isSuperAdmin: data.isSuperAdmin
           });
+
+          const savedEmpresaId = sessionStorage.getItem("empresaId");
+          if (savedEmpresaId) {
+            setEmpresaId(savedEmpresaId);
+          }
+        } else {
+          throw Error(data.message || "Erro desconhecido do backend");
         }
-      } catch {
-        // não autenticado
+      } catch (error) {
+        console.error("Erro ao verificar autenticação:", error);
       } finally {
         setLoading(false);
       }
     }
+
     checkAuth();
   }, []);
 
-  // 🚀 Login via Backend
   async function login(email: string, password: string) {
     if (!email || !password) {
       console.error("Email e senha são obrigatórios!");
@@ -100,19 +114,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",
         { action: "login" },
       );
-      const response = await fetch(
-        `http://localhost:8000/user/login`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            email: email.trim(),
-            password: password.trim(),
-            recaptchaToken: token, // Adicionando o token do reCAPTCHA aqui
-          }),
-        },
-      );
+      const response = await fetch(`http://localhost:8000/user/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          email: email.trim(),
+          password: password.trim(),
+          recaptchaToken: token,
+        }),
+      });
 
       const data = await response.json();
       if (!response.ok) {
@@ -124,102 +135,116 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nome: data.nome,
         email: data.email,
         telefone: data.telefone,
+        isSuperAdmin: data.isSuperAdmin,
       });
-
     } catch (error) {
+      console.error("Erro no login:", error);
       throw error;
     }
   }
 
-  // 🚀 Registro de usuário
-  async function registerUser({ user: newUser, empresa: newEmpresa }: { user: UserRegistered, empresa: EmpresaRegistered }) {
-    clearError();
+  async function registerUser(payload: {
+    user: UserRegistered;
+    empresa: Empresa;
+    recaptchaToken?: string;
+  }) {
     try {
-      const recaptcha = await window.grecaptcha.enterprise.execute(
+      const token = await window.grecaptcha.enterprise.execute(
         "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",
-        { action: "register" }
+        { action: "register" },
       );
 
-      delete newUser.confirmar_password; // Remove a propriedade confirmar_passwor
+      payload.recaptchaToken = token;
 
-      const resp = await fetch("/backend/user/register", {
+      const response = await fetch(`backend/user/register`, {
         method: "POST",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ user: newUser,empresa: newEmpresa, recaptchaToken: recaptcha }),
+        credentials: "include",
+        body: JSON.stringify(payload),
       });
 
-       const data = await resp.json();
-      if (!resp.ok) {
+      const data = await response.json();
+
+      if (!response.ok) {
         throw new Error(data.detail || "Erro desconhecido do backend");
       }
- 
-    } catch (e: any) {
-      setError(e.message);
-      throw e;
+      return data;
+    } catch (error) {
+      console.error("Erro ao registrar usuário:", error);
+      throw error;
     }
   }
 
-  // 🚀 Login via Firebase OAuth
   async function loginWithOAuth(provider: "google" | "microsoft") {
-    clearError();
     try {
-      // 1) Recoge ID Token do Firebase
       const { idToken } = await FirebaseLogin(provider);
-      // 2) Troca pelo JWT no backend
-      const resp = await fetch("/backend/user/login-oauth", {
+      const response = await fetch("/backend/user/login-oauth", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ firebase_token: idToken }),
       });
-      if (!resp.ok) {
-        const text = await resp.text();
+
+      if (!response.ok) {
+        const text = await response.text();
         const err = text ? JSON.parse(text) : {};
-        throw new Error(err.detail || err.message || "OAuth login fallido");
+        throw new Error(err.detail || err.message || "OAuth login falhou");
       }
-      // 3) Safe parse
-      const text = await resp.text();
+
+      const text = await response.text();
       const data = text ? JSON.parse(text) : {};
       setUser({
         id: data.id,
         nome: data.nome,
         email: data.email,
         telefone: data.telefone,
+        isSuperAdmin: data.isSuperAdmin,
       });
-    } catch (e: any) {
-      setError(e.message);
+    } catch (error) {
+      console.error("Erro no login com OAuth:", error);
       setUser(null);
-      throw e;
+      throw error;
     }
   }
 
-  // 🚀 Logout
   async function logout() {
-    clearError();
+    await fetch("backend/user/logout", {
+      method: "POST",
+      credentials: "include",
+    });
+
+    setUser(null);
+    setEmpresaId(null);
+  }
+
+  async function logoutWithOAuth() {
     try {
-      await fetch("/backend/user/logout", {
-        method: "POST",
-        credentials: "include",
-      });
+      await FirebaseLogout();
       setUser(null);
-    } catch (e: any) {
-      setError(e.message);
-      throw e;
+    } catch (error) {
+      console.error("Erro no logout com OAuth:", error);
+      throw error;
     }
+  }
+
+  function chooseCompany(id: string) {
+    setEmpresaId(id);
+    sessionStorage.setItem("empresaId", id);
+    console.log("ID da empresa escolhida:", id);
   }
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        empresaId,
         loading,
-        error,
-        clearError,
         login,
         registerUser,
         loginWithOAuth,
         logout,
+        logoutWithOAuth,
+        chooseCompany,
       }}
     >
       {children}

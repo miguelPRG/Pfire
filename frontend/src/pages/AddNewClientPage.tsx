@@ -5,8 +5,8 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import PhoneInput from "react-phone-number-input";
-import 'react-phone-number-input/style.css';
-import "../assets/styles/phoneNumberField.css"
+import "react-phone-number-input/style.css";
+import "../assets/styles/phoneNumberField.css";
 import { Controller } from "react-hook-form";
 
 declare var grecaptcha: any;
@@ -16,9 +16,11 @@ const addClientSchema = z.object({
   nome: z.string().nonempty("O nome é obrigatório"),
   email: z.string().nonempty("O email é obrigatório").email("Email inválido"),
   telefone: z
-  .string()
-  .nonempty("O telefone é obrigatório")
-  .regex(/^\+?[0-9\s\-()]{7,15}$/, "Número de telefone inválido"),
+    .string()
+    .nonempty("O telefone é obrigatório")
+    .refine((val) => val?.startsWith("+") && val.length >= 10, {
+      message: "Número de telefone internacional inválido",
+    }),
   nif: z
     .string()
     .nonempty("O NIF é obrigatório")
@@ -28,11 +30,14 @@ const addClientSchema = z.object({
   codigo_postal: z
     .string()
     .nonempty("O código postal é obrigatório")
-    .regex(/^\d{4}-\d{3}$/, "O código postal deve ter o formato 0000-000"),
-  recaptchaToken: z.string() // Adiciona o token do reCAPTCHA
+    .regex(/^\d{4}-\d{3}$/, "Número de telefone inválido"),
+  // ❌ remove esta linha:
+  // recaptchaToken: z.string(),
 });
 
-type AddClientFormInputs = z.infer<typeof addClientSchema>;
+
+type AddClientFormInputs = Omit<z.infer<typeof addClientSchema>, "recaptchaToken">;
+
 
 export default function AddNewClientPage() {
   const navigate = useNavigate();
@@ -47,56 +52,64 @@ export default function AddNewClientPage() {
     resolver: zodResolver(addClientSchema),
   });
 
-  const enviarNovoCliente = async (dados: AddClientFormInputs & { empresa_id: string }) => {
-    try {
-      if (!dados.empresa_id || !/^[a-f\d]{24}$/i.test(dados.empresa_id)) {
-        throw new Error("ID da empresa inválido ou não fornecido.");
-      }
-
-      const recaptchaToken = await grecaptcha.enterprise.execute(
-        "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",
-        { action: "register" }
-      );
-
-      dados.recaptchaToken = recaptchaToken; // Adiciona o token ao payload
-
-      const response = await fetch(`/backend/cliente`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(dados),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || "Erro ao criar cliente");
-      }
-
-      console.log("Cliente criado com sucesso:", data);
-    } catch (error) {
-      console.error("Erro ao criar cliente:", error);
-      throw error;
+ const enviarNovoCliente = async (
+  dados: AddClientFormInputs & { empresa_id: string }
+) => {
+  try {
+    if (!dados.empresa_id || !/^[a-f\d]{24}$/i.test(dados.empresa_id)) {
+      throw new Error("ID da empresa inválido ou não fornecido.");
     }
-  };
+
+    const response = await fetch(`/backend/cliente`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(dados),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.detail || "Erro ao criar cliente");
+    }
+
+    console.log("Cliente criado com sucesso:", data);
+    
+  } catch (error) {
+    console.error("Erro ao criar cliente:", error);
+    throw error;
+  }
+};
+
 
   const onSubmit = async (formData: AddClientFormInputs) => {
-    const empresa_id = prompt("Insere o ID da empresa:");
-    if (!empresa_id) {
-      alert("Erro: empresa_id não fornecido.");
-      return;
-    }
+  const empresa_id = prompt("Insere o ID da empresa:");
+  if (!empresa_id) {
+    alert("Erro: empresa_id não fornecido.");
+    return;
+  }
 
-    try {
-      await enviarNovoCliente({ ...formData, empresa_id });
-      alert("Novo cliente adicionado com sucesso!");
-      navigate("/ClientManagementTable");
-    } catch (error) {
-      alert("Erro ao adicionar cliente.");
-    }
-  };
+  try {
+    const recaptchaToken = await grecaptcha.enterprise.execute(
+      "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",
+      { action: "register" }
+    );
+
+    const dadosCompletos = {
+      ...formData,
+      recaptchaToken,
+      empresa_id,
+    };
+
+    await enviarNovoCliente(dadosCompletos);
+    alert("Novo cliente adicionado com sucesso!");
+    navigate("/ClientManagementTable");
+  } catch (error) {
+    alert("Erro ao adicionar cliente.");
+  }
+};
 
   const handleCancel = () => {
     navigate("/ClientManagementTable");
@@ -124,14 +137,14 @@ export default function AddNewClientPage() {
           fullWidth
         />
         <TextField
-            {...register("email")}
-            label="Email"
-            type="email"
-            error={!!errors.email}
-            helperText={errors.email?.message}
-            fullWidth
+          {...register("email")}
+          label="Email"
+          type="email"
+          error={!!errors.email}
+          helperText={errors.email?.message}
+          fullWidth
         />
-        <div className="telefone-field">
+        <div id="telefone-field">
           <Controller
             name="telefone"
             control={control}
@@ -139,36 +152,38 @@ export default function AddNewClientPage() {
               <Box>
                 <Box
                   sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    border: '1px solid',
-                    borderColor: errors.telefone ? 'error.main' : 'rgba(0, 0, 0, 0.23)',
+                    display: "flex",
+                    alignItems: "center",
+                    border: "1px solid",
+                    borderColor: errors.telefone
+                      ? "error.main"
+                      : "rgba(0, 0, 0, 0.23)",
                     borderRadius: 1,
-                    padding: '18.5px 14px',
-                    fontSize: '16px',
-                    '&:hover': {
-                      borderColor: 'black',
+                    padding: "18.5px 14px",
+                    fontSize: "16px",
+                    "&:hover": {
+                      borderColor: "black",
                     },
-                    '&:focus-within': {
-                      borderColor: 'primary.main',
+                    "&:focus-within": {
+                      borderColor: "primary.main",
                       borderWidth: 2,
                     },
                   }}
                 >
-                <PhoneInput
-                  {...field}
-                  defaultCountry="PT"
-                  international
-                  countryCallingCodeEditable={false}
-                  placeholder="Insira o número de telefone"
-                  style={{
-                    fontSize: '16px',
-                    border: 'none',
-                    outline: 'none',
-                    width: '100%',
-                    background: 'transparent',
-                  }}
-                />
+                  <PhoneInput
+                    {...field}
+                    defaultCountry="PT"
+                    international
+                    countryCallingCodeEditable={false}
+                    placeholder="Insira o número de telefone"
+                    style={{
+                      fontSize: "16px",
+                      border: "none",
+                      outline: "none",
+                      width: "100%",
+                      background: "transparent",
+                    }}
+                  />
                 </Box>
                 {errors.telefone && (
                   <Typography color="error" variant="body2" sx={{ mt: 0.5 }}>
@@ -209,7 +224,9 @@ export default function AddNewClientPage() {
           fullWidth
         />
 
-        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}>
+        <Box
+          sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}
+        >
           <Button
             onClick={handleCancel}
             sx={{

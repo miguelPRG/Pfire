@@ -20,7 +20,7 @@ import {
 } from "@mui/material";
 import { Search } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import { GET_CLIENTES_BY_EMPRESA } from "../graphql/queries";
+import { GET_CLIENTES_BY_EMPRESA } from "../graphql/clientesqueries";
 import { useTheme } from "@mui/material/styles";
 
 interface Cliente {
@@ -83,7 +83,14 @@ export default function ClientManagementTable() {
 
   return (
     <Paper sx={{ width: "100%", p: 2, boxShadow: "none" }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 , gap: 10}}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          mb: 2,
+          gap: 10,
+        }}
+      >
         <Typography variant="h5" sx={{ fontWeight: "bold", fontSize: 30 }}>
           Clientes
         </Typography>
@@ -159,9 +166,7 @@ export default function ClientManagementTable() {
               borderRadius: "25px",
               "&.Mui-focused fieldset": {
                 borderColor:
-                  theme.palette.mode === "dark"
-                    ? "rgb(12, 12, 12)"
-                    : "#f0f0f0",
+                  theme.palette.mode === "dark" ? "rgb(12, 12, 12)" : "#f0f0f0",
               },
             },
             width: "75%",
@@ -192,7 +197,6 @@ export default function ClientManagementTable() {
             <TableHead>
               <TableRow style={{ backgroundColor }}>
                 {[
-  
                   "nome",
                   "email",
                   "telefone",
@@ -233,7 +237,6 @@ export default function ClientManagementTable() {
                         : "#e0e0e0";
                   return (
                     <TableRow key={cliente.id} sx={{ backgroundColor: rowBg }}>
-                  
                       <TableCell>{cliente.nome}</TableCell>
                       <TableCell>{cliente.email}</TableCell>
                       <TableCell>{cliente.telefone}</TableCell>

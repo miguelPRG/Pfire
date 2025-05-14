@@ -59,7 +59,6 @@ const commonComponents: Components = {
   MuiPaper: {
     styleOverrides: {
       root: {
-        
         backgroundImage: "none",
         borderRadius: "15px", // 🔹 Remove qualquer borda arredondada da página
         padding: "14px",
@@ -128,10 +127,10 @@ const commonComponents: Components = {
         backgroundColor: "#1976D2",
         color: "white",
         boxShadow: "0px 3px 6px rgba(0, 0, 0, 0.2)",
-        
+
         "&:hover": {
-        backgroundColor: "#00C8FF",
-      },
+          backgroundColor: "#00C8FF",
+        },
       },
     },
   },
