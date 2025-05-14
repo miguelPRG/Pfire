@@ -141,7 +141,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       );
 
       delete newUser.confirmar_password; // Remove a propriedade confirmar_passwor
-      console.log({ "user": newUser, "empresa": newEmpresa , "recaptchaToken": recaptcha })
 
       const resp = await fetch("/backend/user/register", {
         method: "POST",

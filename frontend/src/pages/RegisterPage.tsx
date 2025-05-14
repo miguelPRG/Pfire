@@ -73,7 +73,6 @@ function RegisterPage() {
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const navigate = useNavigate();
   const { registerUser } = useAuth();
-
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   const {
@@ -96,7 +95,7 @@ function RegisterPage() {
       setShowSuccessDialog(true); // Mostra o popup de sucesso
     } catch (err: any) {
       window.scrollTo({ top: 0, behavior: "smooth" });
-      setIsRegistError({ error: true, message: err.response?.data?.message || "Ocorreu um erro ao criar a conta" });
+      setIsRegistError({ error: true, message: err.message || "Ocorreu um erro ao criar a conta" });
     }
   };
 
