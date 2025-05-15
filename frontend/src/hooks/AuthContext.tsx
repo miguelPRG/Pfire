@@ -5,7 +5,7 @@ import {
   ReactNode,
   useEffect,
 } from "react";
-import { FirebaseLogin, FirebaseLogout } from "../firebase";
+import { FirebaseLogin} from "../firebase";
 
 declare global {
   interface Window {
@@ -25,7 +25,6 @@ interface UserLoggedIn {
   nome: string;
   email: string;
   telefone?: string;
-  isSuperAdmin: boolean;
 }
 
 export interface UserRegistered {
@@ -56,7 +55,6 @@ interface AuthContextType {
   }) => void;
   loginWithOAuth: (provider: "google" | "microsoft") => void;
   logout: () => void;
-  logoutWithOAuth: () => void;
   chooseCompany: (id: string) => void;
 }
 
@@ -83,10 +81,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             nome: data.nome,
             email: data.email,
             telefone: data.telefone,
-            isSuperAdmin: data.isSuperAdmin
           });
 
-          const savedEmpresaId = sessionStorage.getItem("empresaId");
+          const savedEmpresaId = localStorage.getItem("empresaId");
           if (savedEmpresaId) {
             setEmpresaId(savedEmpresaId);
           }
@@ -135,7 +132,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nome: data.nome,
         email: data.email,
         telefone: data.telefone,
-        isSuperAdmin: data.isSuperAdmin,
       });
     } catch (error) {
       console.error("Erro no login:", error);
@@ -198,7 +194,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nome: data.nome,
         email: data.email,
         telefone: data.telefone,
-        isSuperAdmin: data.isSuperAdmin,
       });
     } catch (error) {
       console.error("Erro no login com OAuth:", error);
@@ -215,22 +210,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setUser(null);
     setEmpresaId(null);
-  }
-
-  async function logoutWithOAuth() {
-    try {
-      await FirebaseLogout();
-      setUser(null);
-    } catch (error) {
-      console.error("Erro no logout com OAuth:", error);
-      throw error;
-    }
+    localStorage.removeItem("empresaId");
   }
 
   function chooseCompany(id: string) {
     setEmpresaId(id);
-    sessionStorage.setItem("empresaId", id);
-    console.log("ID da empresa escolhida:", id);
+    localStorage.setItem("empresaId", id);
   }
 
   return (
@@ -243,7 +228,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         registerUser,
         loginWithOAuth,
         logout,
-        logoutWithOAuth,
         chooseCompany,
       }}
     >

@@ -22,7 +22,7 @@ import BusinessIcon from "@mui/icons-material/Business";
 import LogoutIcon from "@mui/icons-material/Logout";
 
 function ResponsiveAppBar() {
-  const { logout } = useAuth();
+  const { logout, empresaId } = useAuth();
   const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const theme = useTheme();
@@ -81,6 +81,7 @@ function ResponsiveAppBar() {
         >
           {/* Lado esquerdo */}
           <Box sx={{ display: "flex", alignItems: "center" }}>
+            {empresaId && (
             <IconButton
               onClick={toggleSidebar}
               color="inherit"
@@ -88,7 +89,7 @@ function ResponsiveAppBar() {
             >
               <MenuIcon />
             </IconButton>
-
+            )}
             <Box
               component="img"
               src={logo}

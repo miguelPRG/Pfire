@@ -4,8 +4,6 @@ import {
   Route,
   Routes,
   Navigate,
-  useLocation,
-  useNavigate,
 } from "react-router-dom";
 import { useAuth } from "../hooks/AuthContext";
 import { useTema } from "../hooks/TemaContext";
@@ -33,26 +31,37 @@ const ChooseCompany = lazy(() => import("../pages/CompanySelectorPage"));
 // Rotas protegidas
 interface RouteProps {
   user: unknown;
+  empresaId: string | null;
   element: ReactElement;
 }
 
-const ProtectedRoute = ({ user, element }: RouteProps) => {
-  return user ? element : <Navigate to="/login" />;
+const ProtectedRoute = ({ user,empresaId, element }: RouteProps) => {
+  
+  if (user){
+    if (!empresaId){
+      return <ChooseCompany/>;
+    }
+    return element
+  }
+  
+  return <Navigate to="/login" />;
 };
 
-const PublicRoute = ({ user, element }: RouteProps) => {
-  return user ? <Navigate to="/" /> : element;
-};
+const PublicRoute = ({ user,empresaId,element }: RouteProps) => {
+  return user ? (
+    <ProtectedRoute user={user} empresaId={empresaId} element={<Home/>} />
+  ) : (
+    element
+  );
+}
 
 // Layout base
 const Layout = ({ children }: { children: React.ReactNode }) => {
-  const location = useLocation();
   const { user, loading } = useAuth();
-  const isLoginPage = location.pathname === "/login";
 
   return (
     <>
-      {!isLoginPage && !loading && user && <ResponsiveAppBar />}
+      {!loading && user && <ResponsiveAppBar />}
       <Box component="main">{children}</Box>
     </>
   );
@@ -92,29 +101,9 @@ const ThemeToggleButton = () => {
   );
 };
 
-// ✅ Redireciona superadmin automaticamente após login
-const RedirectSuperAdmin = () => {
-  const { user, isSuperAdmin, empresaId } = useAuth();
-  const location = useLocation();
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    if (
-      user &&
-      isSuperAdmin &&
-      !empresaId &&
-      location.pathname !== "/choose-company"
-    ) {
-      navigate("/choose-company");
-    }
-  }, [user, isSuperAdmin, empresaId, location.pathname, navigate]);
-
-  return null;
-};
-
 // 🚀 App principal
 function App() {
-  const { user, loading } = useAuth();
+  const { user, loading,empresaId } = useAuth();
 
   if (loading) {
     return (
@@ -132,35 +121,30 @@ function App() {
   return (
     <Router>
       <Suspense fallback={<CircularProgress />}>
-        {/* 🚨 Redirecionamento só dentro do Suspense/Router para garantir que navigate funciona */}
-        <RedirectSuperAdmin />
-
         <Layout>
           <Routes>
             <Route
               path="/login"
-              element={<PublicRoute user={user} element={<Login />} />}
+              element={<PublicRoute user={user} empresaId={empresaId} element={<Login />} />}
             />
             <Route
               path="/register"
-              element={<PublicRoute user={user} element={<Register />} />}
+              element={<PublicRoute user={user} empresaId={empresaId} element={<Register />} />}
             />
-
             <Route
               path="/forgot-password"
               element={
-                <PublicRoute user={user} element={<ForgotPasswordPage />} />
+                <PublicRoute user={user} empresaId={empresaId} element={<ForgotPasswordPage />} />
               }
             />
-
             <Route
               path="/"
-              element={<ProtectedRoute user={user} element={<Home />} />}
+              element={<ProtectedRoute user={user} empresaId={empresaId} element={<Home />} />}
             />
             <Route
               path="/users-list"
               element={
-                <ProtectedRoute user={user} element={<UserManagementTable />} />
+                <ProtectedRoute user={user} empresaId={empresaId} element={<UserManagementTable />} />
               }
             />
             <Route
@@ -168,6 +152,7 @@ function App() {
               element={
                 <ProtectedRoute
                   user={user}
+                  empresaId={empresaId}
                   element={<ClientManagementTable />}
                 />
               }
@@ -175,23 +160,21 @@ function App() {
             <Route
               path="/add-client"
               element={
-                <ProtectedRoute user={user} element={<AddNewClient />} />
+                <ProtectedRoute user={user} empresaId={empresaId} element={<AddNewClient />} />
               }
             />
-
             <Route
               path="/edit-profile"
               element={
-                <ProtectedRoute user={user} element={<EditProfilePage />} />
+                <ProtectedRoute user={user} empresaId={empresaId} element={<EditProfilePage />} />
               }
             />
             <Route
               path="/choose-company"
               element={
-                <ProtectedRoute user={user} element={<ChooseCompany />} />
+                <ProtectedRoute user={user} empresaId={empresaId} element={<ChooseCompany />} />
               }
             />
-
             <Route path="*" element={<Navigate to={user ? "/" : "/login"} />} />
           </Routes>
         </Layout>

@@ -21,9 +21,7 @@ import {
   ArrowForwardIos as ArrowForwardIosIcon,
   Engineering as EngineeringIcon,
 } from "@mui/icons-material";
-import BusinessIcon from "@mui/icons-material/Business";
 import GroupIcon from "@mui/icons-material/Group";
-import { useAuth } from "../hooks/AuthContext";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -34,12 +32,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const navigate = useNavigate();
   const [openReports, setOpenReports] = useState(false);
   const [openModels, setOpenModels] = useState(false);
-  const { isSuperAdmin, empresaId } = useAuth();
-
-  // Se for superadmin e ainda não escolheu uma empresa, não renderiza o sidebar
-  if (isSuperAdmin && !empresaId) {
-    return null;
-  }
+ 
 
   const handleToggleReports = () => {
     setOpenReports(!openReports);
