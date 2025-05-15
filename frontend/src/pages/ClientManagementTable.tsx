@@ -22,6 +22,10 @@ import { Search } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { GET_CLIENTES_BY_EMPRESA } from "../graphql/clientesqueries";
 import { useTheme } from "@mui/material/styles";
+import { useAuth } from "../hooks/AuthContext"; // já no topo
+
+
+
 
 interface Cliente {
   id: string;
@@ -35,7 +39,7 @@ interface Cliente {
 }
 
 export default function ClientManagementTable() {
-  const [empresaId, setEmpresaId] = useState<string>("");
+  
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [search, setSearch] = useState("");
@@ -43,16 +47,17 @@ export default function ClientManagementTable() {
   const [order, setOrder] = useState<"asc" | "desc">("asc");
   const theme = useTheme();
   const navigate = useNavigate();
+  const { empresaId } = useAuth();
 
-  useEffect(() => {
-    const id = prompt("Insere o ID da empresa:");
-    if (id) setEmpresaId(id.trim());
-  }, []);
-
-  const { data } = useQuery(GET_CLIENTES_BY_EMPRESA, {
-    variables: { empresaId, start: page * rowsPerPage, lmt: rowsPerPage },
-    skip: !empresaId,
-  });
+  
+const { data } = useQuery(GET_CLIENTES_BY_EMPRESA, {
+  variables: {
+    empresaId,
+    start: page * rowsPerPage,
+    lmt: rowsPerPage,
+  },
+  skip: !empresaId, // ✅ evita chamada até empresaId estar disponível
+});
 
   const rows: Cliente[] = data?.clientes || [];
 

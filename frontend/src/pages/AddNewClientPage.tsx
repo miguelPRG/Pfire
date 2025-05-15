@@ -112,7 +112,7 @@ export default function AddNewClientPage() {
 };
 
   const handleCancel = () => {
-    navigate("/ClientManagementTable");
+    navigate("/clients-list");
   };
 
   return (

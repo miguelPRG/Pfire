@@ -48,9 +48,8 @@ const registerSchema = z.object({
         .regex(/\d/, "A senha deve conter pelo menos um número"),
       confirmPassword: z
         .string()
-        .nonempty("A confirmação da senha é obrigatória"),
-    })
-    .refine((data) => data.password === data.confirmPassword, {
+        .optional()
+    }).refine((data) => data.password === data.confirmPassword, {
       message: "As senhas não coincidem",
       path: ["confirmPassword"],
     }),
@@ -67,8 +66,11 @@ const registerSchema = z.object({
       .nonempty("O código postal é obrigatório")
       .regex(/^\d{4}-\d{3}$/, "O código postal deve estar no formato 1234-567"),
     telefone: z
-      .string()
-      .nonempty("O telefone da empresa é obrigatório")
+      .string({
+        required_error: "Campo obrigatório",
+        invalid_type_error: "Campo obrigatório",
+      })
+      .min(1, "Campo obrigatório")
       .regex(/^\+?[0-9\s\-()]{7,15}$/, "Número de telefone inválido"),
   }),
 });
@@ -102,6 +104,7 @@ function RegisterPage() {
     setIsRegistError({ error: false, message: "" });
 
     try {
+      delete data.user.confirmPassword; // Remove o campo confirmPassword do payload
       const payload = { user: data.user, empresa: data.empresa };
       await registerUser(payload);
       setShowSuccessDialog(true); // Mostra o popup de sucesso
@@ -303,6 +306,7 @@ function RegisterPage() {
                         borderWidth: 2,
                       },
                     }}
+                    aria-invalid={!!errors.empresa?.telefone}
                   >
                     <PhoneInput
                       {...field}

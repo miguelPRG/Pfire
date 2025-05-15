@@ -5,9 +5,6 @@ from .empresaModels import EmpresaCreate
 class UserCreate(BaseModel):
     nome: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
-    telefone: str = Field(..., pattern=r'^\+?[0-9\s\-()]{7,15}$')
-    nif: str = Field(..., pattern=r'^[5789]\d{8}$')
-    codigo_postal: str = Field(..., pattern=r'^\d{4}-\d{3}$')
     password: str
 
     @validator("password")
