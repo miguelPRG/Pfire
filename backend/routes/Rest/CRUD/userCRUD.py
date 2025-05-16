@@ -60,7 +60,7 @@ async def soft_delete_user(request: Request, user: UserActivation):
         result = await users_collection.update_one({"_id": ObjectId(user.id)}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
 
     else:
-        result = await users_collection.update_one({"email": user.email}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
+        result = await users_collection.update_one({"email": user.email}, {"$set": {"isActive": False}})
 
     if not result.modified_count:
         raise HTTPException(status_code=409, detail="Erro ao apagar utilizador. Verifica se o utilizador existe.")
@@ -83,10 +83,10 @@ async def activate_user(request: Request, user: UserActivation):
         raise HTTPException(status_code=403, detail="Acesso negado! Não tens autorização para ativar utilizadores!")
 
     if user.id:
-        result = await users_collection.update_one({"_id": ObjectId(user.id)}, {"$set": {"isActive": True, "updated_at": datetime.now()}})
+        result = await users_collection.update_one({"_id": ObjectId(user.id)}, {"$set": {"isActive": True}})
 
     else:
-        result = await users_collection.update_one({"email": user.email}, {"$set": {"isActive": True, "updated_at": datetime.now()}})
+        result = await users_collection.update_one({"email": user.email}, {"$set": {"isActive": True}})
 
     if not result.modified_count:
         raise HTTPException(status_code=409, detail="Erro ao ativar utilizador. Verifica se o utilizador existe.")

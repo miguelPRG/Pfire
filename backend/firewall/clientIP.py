@@ -1,46 +1,53 @@
 import time
+import asyncio
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
-# Definir o número máximo de requisições e o intervalo de tempo
-LIMIT = 15  # número de requisições permitidas
-TIME_FRAME = 30  # intervalo de tempo (em segundos)
+# Configurações de limitação
+LIMIT = 20
+TIME_FRAME = 30
+BLOCK_DURATION = 60
 
-# Dicionário em memória para armazenar as requisições por IP
-rate_limiter = {}
+rate_limiter = {}     # {ip: [timestamps]}
+blocked_ips = {}      # {ip: timestamp}
 
 def get_client_ip(request: Request):
-    """Obtém o IP real do cliente considerando proxy reverso (Nginx)"""
+    """Obtém o IP real do cliente"""
     forwarded_for = request.headers.get("X-Forwarded-For")
-    if forwarded_for:
-        ip = forwarded_for.split(",")[0]  # Pega o primeiro IP real do cliente
-    else:
-        ip = request.client.host  # Se não tiver proxy, pega o IP direto
-    return ip
+    return forwarded_for.split(",")[0] if forwarded_for else request.client.host
 
+async def unblock_ip_after_delay(ip: str):
+    """Espera BLOCK_DURATION e desbloqueia o IP"""
+    await asyncio.sleep(BLOCK_DURATION)
+    if ip in blocked_ips:
+        del blocked_ips[ip]
+        print(f"IP {ip} foi desbloqueado automaticamente após {BLOCK_DURATION} segundos.")
 
-# Função de controle de taxa (Rate Limiting) usando slowapi
 async def rate_limit(request: Request):
-    """Verifica e aplica o limite de taxa por IP"""
+    """Verifica e aplica o limite por IP"""
     client_ip = get_client_ip(request)
     current_time = int(time.time())
 
-    # Verifica se o IP já tem requisições registradas
-    if client_ip in rate_limiter:
-        timestamps = rate_limiter[client_ip]
-        # Filtra as requisições dentro do intervalo de tempo permitido
-        timestamps = [timestamp for timestamp in timestamps if current_time - timestamp < TIME_FRAME]
-        rate_limiter[client_ip] = timestamps
-        
-        if len(timestamps) >= LIMIT:
-            # Se o limite de requisições for atingido, lança uma exceção de erro 429
-            return JSONResponse(
-                status_code=429,
-                content={"message": "Limite de requisições excedido. Tente novamente mais tarde."},
-            )
-        
-        # Adiciona o timestamp da nova requisição
-        rate_limiter[client_ip].append(current_time)
-    else:
-        # Se não houver requisições, cria uma nova entrada
-        rate_limiter[client_ip] = [current_time]
+    if client_ip in blocked_ips:
+        return JSONResponse(
+            status_code=429,
+            content={"message": "IP bloqueado temporariamente. Aguarde."},
+        )
+
+    # Limpa timestamps antigos
+    timestamps = rate_limiter.get(client_ip, [])
+    timestamps = [ts for ts in timestamps if current_time - ts < TIME_FRAME]
+    timestamps.append(current_time)
+    rate_limiter[client_ip] = timestamps
+
+    if len(timestamps) > LIMIT:
+        # Bloqueia IP e agenda desbloqueio
+        blocked_ips[client_ip] = current_time
+        print(f"IP {client_ip} foi bloqueado por exceder o limite.")
+        asyncio.create_task(unblock_ip_after_delay(client_ip))
+        return JSONResponse(
+            status_code=429,
+            content={"message": f"IP bloqueado por {BLOCK_DURATION} segundos."},
+        )
+
+    return None  # Requisição permitida

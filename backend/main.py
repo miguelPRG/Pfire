@@ -27,7 +27,7 @@ app.add_middleware(
     allow_origins=allowed_origins,  # Domínios permitidos
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Inclua OPTIONS
-    allow_headers=["Content-Type", "Host", "Cookie", "Authorization"],  # Permita todos os cabeçalhos necessários
+    allow_headers=["Content-Type", "Host", "Cookie"],  # Permita todos os cabeçalhos necessários
 )
 
 @app.on_event("startup")
@@ -68,7 +68,7 @@ async def jwt_authentication_middleware(request: Request, call_next):
             content={"message": "Origem não permitida!"}
         )
     """
-    EXCLUDED_PATHS = {"/user/login", "/user/register", "/user/login-oauth"}
+    EXCLUDED_PATHS = {"/user/login", "/user/register", "/user/login-oauth", "/user/confirm"}
     if request.method == "OPTIONS":
         return await call_next(request)
 

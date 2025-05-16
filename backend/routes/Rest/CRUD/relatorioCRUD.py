@@ -163,12 +163,12 @@ async def delete_relatorio(relatorio: RelatorioActivation, request: Request):
     if relatorio.id:
         relatio_update = await relatorios_collection.update_one(
             {"_id": ObjectId(relatorio.id), "isActive": True},
-            {"$set": {"isActive": False, "updated_at": datetime.now(), "updated_by": ObjectId(jwt["user_id"])}}
+            {"$set": {"isActive": False}}
         )
     else:
         relatio_update = await relatorios_collection.update_one(
             {"relatorio_name": relatorio.relatorio_name, "empresa_id": ObjectId(relatorio.empresa_id), "isActive": True},
-            {"$set": {"isActive": False, "updated_at": datetime.now(), "updated_by": ObjectId(jwt["user_id"])}}
+            {"$set": {"isActive": False}}
         )
 
     if relatio_update.modified_count == 0:
@@ -200,12 +200,12 @@ async def activate_relatorio(relatorio: RelatorioActivation, request: Request):
     if relatorio.id:
         relatio_update = await relatorios_collection.update_one(
             {"_id": ObjectId(relatorio.id), "isActive": False},
-            {"$set": {"isActive": True, "updated_at": datetime.now(), "updated_by": ObjectId(jwt["user_id"])}}
+            {"$set": {"isActive": True}}
         )
     else:
         relatio_update = await relatorios_collection.update_one(
             {"relatorio_name": relatorio.relatorio_name, "empresa_id": ObjectId(relatorio.empresa_id), "isActive": False},
-            {"$set": {"isActive": True, "updated_at": datetime.now(), "updated_by": ObjectId(jwt["user_id"])}}
+            {"$set": {"isActive": True}}
         )
 
     if relatio_update.modified_count == 0:
