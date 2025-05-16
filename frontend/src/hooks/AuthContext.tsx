@@ -28,19 +28,19 @@ interface UserLoggedIn {
 }
 
 export interface UserRegistered {
-  nome: string | undefined;
-  email: string | undefined;
-  telefone: string | undefined;
-  password: string | undefined;
+  nome: string;
+  email: string;
+  password: string;
+  confirmPassword?: string;
 }
 
 export interface Empresa {
-  nome: string | undefined;
-  nif: string | undefined;
-  localidade: string | undefined;
-  morada: string | undefined;
-  codigo_postal: string | undefined;
-  telefone: string | undefined;
+  nome: string;
+  nif: string;
+  localidade: string;
+  morada: string;
+  codigo_postal: string;
+  telefone: string;
 }
 
 interface AuthContextType {
@@ -51,7 +51,7 @@ interface AuthContextType {
   registerUser: (payload: {
     user: UserRegistered;
     empresa: Empresa;
-    recaptchaToken: string;
+    recaptchaToken?: string;
   }) => void;
   loginWithOAuth: (provider: "google" | "microsoft") => void;
   logout: () => void;
@@ -208,14 +208,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       credentials: "include",
     });
 
+    localStorage.removeItem("empresaId");
     setUser(null);
     setEmpresaId(null);
-    localStorage.removeItem("empresaId");
   }
 
   function chooseCompany(id: string) {
-    setEmpresaId(id);
     localStorage.setItem("empresaId", id);
+    setEmpresaId(id);
   }
 
   return (

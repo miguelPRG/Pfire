@@ -18,12 +18,11 @@ const Login = lazy(() => import("../pages/LoginPage"));
 const Register = lazy(() => import("../pages/RegisterPage"));
 const Home = lazy(() => import("../pages/HomePage"));
 const UserManagementTable = lazy(() => import("../pages/UserManagementTable"));
-
 const ClientManagementTable = lazy(
   () => import("../pages/ClientManagementTable"),
 );
+const EmailOperation = lazy(() => import("../components/EmailOperation"));
 const AddNewClient = lazy(() => import("../pages/AddNewClientPage"));
-
 const EditProfilePage = lazy(() => import("../pages/EditProfilePage"));
 const ForgotPasswordPage = lazy(() => import("../pages/ForgotPasswordPage"));
 const ChooseCompany = lazy(() => import("../pages/CompanySelectorPage"));
@@ -123,6 +122,10 @@ function App() {
       <Suspense fallback={<CircularProgress />}>
         <Layout>
           <Routes>
+            <Route 
+              path="/:GLOBAL_ID/:OPERATION"
+              element={<EmailOperation/>}
+            />
             <Route
               path="/login"
               element={<PublicRoute user={user} empresaId={empresaId} element={<Login />} />}

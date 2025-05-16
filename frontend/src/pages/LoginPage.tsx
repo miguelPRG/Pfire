@@ -15,6 +15,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useLocation } from "react-router-dom";
+
 
 // Importar imagens
 import microsoft from "../assets/images/microsoft.png";
@@ -33,6 +35,8 @@ function LoginPage() {
   const { login, loginWithOAuth } = useAuth();
   const navigate = useNavigate();
   const [authError, setAuthError] = useState({ error: false, message: "" });
+  const location = useLocation();
+  const userConfirmation = location.state;
 
   const {
     register,
@@ -78,14 +82,29 @@ function LoginPage() {
       }}
     >
       {/* Exibir erro de autenticação */}
-      {authError.error && authError.message && (
-        <Fade in={authError.error} timeout={800}>
+      <Fade in={authError.error} timeout={{ enter: 800, exit: 800 }} unmountOnExit>
+        <Alert variant="filled" severity="error" sx={{ mt: -3 }}>
+          {authError.message}
+        </Alert>
+      </Fade>
+      {userConfirmation
+        ? (
+          <Fade in={userConfirmation.isConfirmed && userConfirmation.message} timeout={{ enter: 800, exit: 800 }} unmountOnExit>
+        <Alert variant="filled" severity="success" sx={{ mt: -3 }}>
+          {userConfirmation.message}
+        </Alert>
+          </Fade>
+        )
+        : (
+          userConfirmation?.message && (
+        <Fade in={userConfirmation.message} timeout={{ enter: 800, exit: 800 }} unmountOnExit>
           <Alert variant="filled" severity="error" sx={{ mt: -3 }}>
-            {authError.message}
+            {userConfirmation.message}
           </Alert>
         </Fade>
-      )}
-
+          )
+        )
+      }
       <Box
         sx={{
           position: "relative",

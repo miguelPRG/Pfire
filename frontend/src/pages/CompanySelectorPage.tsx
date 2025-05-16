@@ -11,7 +11,7 @@ export default function CompanySelectorPage() {
 
   const handleSelect = (id: string) => {
     chooseCompany(id);
-    navigate("/users");
+    navigate("/");
   };
 
   if (loading) return <p>A carregar empresas...</p>;

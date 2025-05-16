@@ -11,8 +11,24 @@ from database import database_cleaner_scheduler, testar_database  # Função par
 from apis.brevo_client import test_brevo_connection
 from apis.redis_client import test_redis_connection
 from asyncio import gather
+from contextlib import asynccontextmanager
+from re import compile
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Código executado no startup
+    await gather(
+        testar_database(),
+        test_redis_connection()
+    )
+    test_brevo_connection()
+
+    yield  # Aqui o app "vive"
+
+    # Código opcional para shutdown pode ir aqui
+    # Por exemplo: await close_connections()
+
+app = FastAPI(lifespan=lifespan)
 
 # Configuração de CORS
 allowed_origins = [
@@ -30,24 +46,10 @@ app.add_middleware(
     allow_headers=["Content-Type", "Host", "Cookie"],  # Permita todos os cabeçalhos necessários
 )
 
-@app.on_event("startup")
-async def startup_event():
-    """Função executada no evento de inicialização do FastAPI."""
-
-    await gather(testar_database(),test_redis_connection())
-
-    # Testar Brevo
-    test_brevo_connection()
-
 # Middleware de limitador de tempo
 @app.middleware("http")
 async def rate_limit_middleware(request: Request, call_next):
     """Middleware para aplicar o limite de requisições a todas as rotas"""
-
-    EXCLUDED_PATHS = {"/user/auth"}
-
-    if request.url.path in EXCLUDED_PATHS:
-        return await call_next(request)
 
     response = await rate_limit(request)
     if response:
@@ -68,13 +70,20 @@ async def jwt_authentication_middleware(request: Request, call_next):
             content={"message": "Origem não permitida!"}
         )
     """
-    EXCLUDED_PATHS = {"/user/login", "/user/register", "/user/login-oauth", "/user/confirm"}
+    
+    path = request.url.path
+    
+    EXCLUDED_PATHS = {"/user/login", "/user/register", "/user/login-oauth"}
+    DYNAMIC_PATHS_REGEX = compile(r"^/user/email/+")
+
+    if path in EXCLUDED_PATHS or DYNAMIC_PATHS_REGEX.match(path):
+        print("Rota Excluída da autenticação: ", path)
+        return await call_next(request)
+    
+    """ Se houver algum problema com o CORS, descomente a linha abaixo
     if request.method == "OPTIONS":
         return await call_next(request)
-
-    if request.url.path in EXCLUDED_PATHS:
-        return await call_next(request)
-
+    """
     # Tenta extrair o token JWT do cookie "_fp"
     token = request.cookies.get("_fp")
     

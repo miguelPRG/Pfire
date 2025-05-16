@@ -203,7 +203,7 @@ async def register_user(data: RegisterUser, request: Request):
     # Gerar global ID
     global_id = str(uuid4())
     
-    global_id_insertion = await global_ids_collection.insert_one({"global_id": global_id, "user_id": user.inserted_id})
+    global_id_insertion = await global_ids_collection.insert_one({"global_id": global_id, "user_id": user.inserted_id, "created_at": datetime.now()})
 
     if not global_id_insertion.inserted_id:
         raise HTTPException(status_code=409, detail="Erro na criação do ID global.")
@@ -258,3 +258,21 @@ async def logout_all_users(email: str):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro ao deslogar: {str(e)}")
 """
+
+@routerUser.put("/email/activate/{global_id}")
+async def confirm_user(global_id: str, request: Request):
+    # Encontrar o global_id na base de dados
+    global_id_data = await global_ids_collection.find_one({"global_id": global_id})
+    if not global_id_data:
+        raise HTTPException(status_code=404, detail="Global ID não encontrado.")
+    
+    user_id = global_id_data["user_id"]
+    user_update = await users_collection.update_one(
+        {"_id": user_id}, {"$set": {"isActive": True}}
+    )
+
+    if user_update.modified_count == 0:
+        raise HTTPException(status_code=409, detail="Erro ao ativar o utilizador.")
+    
+    await global_ids_collection.delete_one({"global_id": global_id})
+    return {"message": "Conta ativada com sucesso!"}
