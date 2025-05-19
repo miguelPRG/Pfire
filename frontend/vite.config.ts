@@ -4,6 +4,14 @@ import react from "@vitejs/plugin-react-swc";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    // Sempre que forem criados novos ficheiros de teste, estes devem ser adicionados neste array
+    setupFiles: ['./src/tests/setup.ts'], 
+    include: ['tests/**/*.{test,spec}.{js,ts,jsx,tsx}'], // 👈 define a pasta dos testes aqui
+  },
 
   optimizeDeps: {
     include: [], // Remova o @tailwindConfig da otimização
