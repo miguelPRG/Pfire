@@ -103,21 +103,21 @@ def database_cleaner_scheduler():
     # Agendar a execução da função `delete_inactive_documents` a cada 30 minutos
     scheduler.add_job(
         delete_documentos_inativos, 
-        IntervalTrigger(seconds=5),  # Intervalo de 30 dias
+        IntervalTrigger(days=30),  # Intervalo de 30 dias
         id="delete_inactive_documents_job",  # Um ID único para o job
         replace_existing=True  # Caso o job já exista, ele será substituído
     )
 
     scheduler.add_job(
         apagar_users_falsos, 
-        IntervalTrigger(seconds=5),  # Intervalo de 1 dia
+        IntervalTrigger(days=1),  # Intervalo de 1 dia
         id="apagar_users_inativos_job",  # Um ID único para o job
         replace_existing=True  # Caso o job já exista, ele será substituído
     )
     
     scheduler.add_job(
         apagar_empresas_vazias, 
-        IntervalTrigger(seconds=5),  # Intervalo de 1 dia
+        IntervalTrigger(days=1),  # Intervalo de 1 dia
         id="apagar_empresas_vazias_job",  # Um ID único para o job
         replace_existing=True  # Caso o job já exista, ele será substituído
     )

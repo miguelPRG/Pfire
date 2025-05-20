@@ -37,7 +37,7 @@ function LoginPage() {
   const [authError, setAuthError] = useState({ error: false, message: "" });
   const location = useLocation();
   const userConfirmation = location.state;
-
+  
   const {
     register,
     handleSubmit,
@@ -87,7 +87,7 @@ function LoginPage() {
           {authError.message}
         </Alert>
       </Fade>
-      {userConfirmation
+      {userConfirmation && userConfirmation.isConfirmed
         ? (
           <Fade in={userConfirmation.isConfirmed && userConfirmation.message} timeout={{ enter: 800, exit: 800 }} unmountOnExit>
         <Alert variant="filled" severity="success" sx={{ mt: -3 }}>

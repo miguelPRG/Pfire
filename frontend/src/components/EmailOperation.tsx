@@ -18,11 +18,11 @@ function EmailOperation() {
                     if (response.ok) {
                         setUserConfirmation({ isConfirmed: true, message: "Conta confirmada com sucesso!" });
                     } else {
-                        setUserConfirmation({ isConfirmed: false, message: "Erro ao confirmar a conta. Provavelmte já foi ativada." });
+                        setUserConfirmation({ isConfirmed: false, message: "Erro ao confirmar a conta. Provavelmente já foi ativada." });
                     }
                 })
                 .catch(() => {
-                    setUserConfirmation({ isConfirmed: false, message: "Erro ao confirmar a conta. Provavelmte já foi ativada."});
+                    setUserConfirmation({ isConfirmed: false, message: "Erro ao confirmar a conta. Provavelmente já foi ativada." });
                 })
                 .finally(() => {
                     setLoading(false);
