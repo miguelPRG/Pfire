@@ -58,7 +58,7 @@ interface AuthContextType {
   chooseCompany: (id: string) => void;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserLoggedIn | null>(null);
