@@ -73,10 +73,17 @@ async def jwt_authentication_middleware(request: Request, call_next):
     
     path = request.url.path
     
-    EXCLUDED_PATHS = {"/user/login", "/user/register", "/user/login-oauth"}
+    EXCLUDED_PATHS = {
+        "/user/login", 
+        "/user/register", 
+        "/user/login-oauth", 
+        "/user/forgot-password", 
+    }
+    
     DYNAMIC_PATHS_REGEX = compile(r"^/user/email/+")
+    GET_GLOBAL_ID_REGEX = compile(r"^/user/get-global-id(/.*)?$")
 
-    if path in EXCLUDED_PATHS or DYNAMIC_PATHS_REGEX.match(path):
+    if path in EXCLUDED_PATHS or DYNAMIC_PATHS_REGEX.match(path) or GET_GLOBAL_ID_REGEX.match(path):
         print("Rota Excluída da autenticação: ", path)
         return await call_next(request)
     

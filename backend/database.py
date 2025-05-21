@@ -65,23 +65,21 @@ async def delete_documentos_inativos():
     if user_empresa_result and user_empresa_result.deleted_count > 0:
         print(f"[DatabaseCleaner] {user_empresa_result.deleted_count} relação(ões) user_empresa removida(s).")
     
-async def apagar_users_falsos():
-    global_ids_tasks = []
-    user_tasks = []
-    user_empresas_tasks = []
+async def apagar_global_ids_antigos():
 
-    # Listar todos os global_ids com pelo menos 24 horas
-    async for global_id in global_ids_collection.find({"created_at": {"$lt": datetime.now() - timedelta(days=1)}}):
-        apagar_user_task = users_collection.delete_many({"user_id": global_id["user_id"]})
-        user_tasks.append(apagar_user_task)
-        
-        user_empresa_task = users_empresas_collection.delete_many({"user_id": global_id["user_id"]})
-        user_empresas_tasks.append(user_empresa_task)
-        
-        global_ids_tasks.append(global_ids_collection.delete_many({"_id": global_id["_id"]}))
+    # Obter a data atual
+    data_atual = datetime.now()
 
-    # Executar todas as tarefas de exclusão em paralelo
-    results = await gather(*global_ids_tasks, *user_tasks, *user_empresas_tasks)
+    # Calcular a data limite (30 dias atrás)
+    data_limite = data_atual - timedelta(days=1)
+
+    # Deletar os global_ids que são mais antigos que 30 dias
+    result = await global_ids_collection.delete_many({"created_at": {"$lt": data_limite}})
+
+    if result.deleted_count > 0:
+        print(f"[DatabaseCleaner] {result.deleted_count} global_id(s) removido(s) por serem antigos.")
+    else:
+        print("[DatabaseCleaner] Nenhum global_id antigo encontrado para remoção.")
 
 async def apagar_empresas_vazias():
 
@@ -109,7 +107,7 @@ def database_cleaner_scheduler():
     )
 
     scheduler.add_job(
-        apagar_users_falsos, 
+        apagar_global_ids_antigos, 
         IntervalTrigger(days=1),  # Intervalo de 1 dia
         id="apagar_users_inativos_job",  # Um ID único para o job
         replace_existing=True  # Caso o job já exista, ele será substituído

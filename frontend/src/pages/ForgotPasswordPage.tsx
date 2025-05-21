@@ -9,10 +9,8 @@ import {
   TextField,
   Typography,
   Paper,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
+  Fade,
+  Alert,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/images/logo.png";
@@ -30,27 +28,63 @@ type ForgotPasswordFormInputs = z.infer<typeof forgotPasswordSchema>;
 function ForgotPassword() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+  const [alertMsg, setAlertMsg] = useState("");
+  const [alertType, setAlertType] = useState<"success" | "error">("success");
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
+    reset,
   } = useForm<ForgotPasswordFormInputs>({
     resolver: zodResolver(forgotPasswordSchema),
   });
 
-  const onSubmit = (data: ForgotPasswordFormInputs) => {
-    console.log("E-mail enviado para:", data.email);
-    setOpen(true); // Abre o modal
-  };
+  async function onSubmit(data: ForgotPasswordFormInputs) {
+    try {
+      // Gerar recaptcha v3
+      const recaptchaToken = await window.grecaptcha.enterprise.execute(
+        "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",
+        { action: "forgot_password" }
+      );
 
-  const handleClose = () => {
-    setOpen(false);
-    navigate("/login");
-  };
+      const response = await fetch("/backend/user/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: data.email, recaptchaToken }),
+      });
+
+      if (response.ok) {
+        setAlertType("success");
+        setAlertMsg(
+          "Se existir uma conta com esse e-mail, receberás um link de recuperação em breve."
+        );
+        reset();
+      } else {
+        const res = await response.json();
+        setAlertType("error");
+        setAlertMsg(res.message || "Ocorreu um erro ao enviar o pedido.");
+      }
+    } catch (err) {
+      setAlertType("error");
+      setAlertMsg("Ocorreu um erro ao enviar o pedido.");
+    }
+    setOpen(true);
+  }
 
   return (
     <Container maxWidth="sm" sx={{ mt: 10 }}>
+      {/* ALERTA COM FADE */}
+      <Fade in={open} timeout={{ enter: 800, exit: 800 }} unmountOnExit>
+        <Alert
+          variant="filled"
+          severity={alertType}
+          sx={{ mb: 2 }}
+          onClose={() => setOpen(false)}
+        >
+          {alertMsg}
+        </Alert>
+      </Fade>
       <Paper
         elevation={3}
         sx={{
@@ -108,7 +142,6 @@ function ForgotPassword() {
             fullWidth
             error={!!errors.email}
             helperText={errors.email?.message}
-            required
           />
 
           <Box display="flex" justifyContent="space-between" gap={2} mt={4}>
@@ -146,21 +179,6 @@ function ForgotPassword() {
           </Box>
         </Box>
       </Paper>
-
-      {/* MODAL DE CONFIRMAÇÃO */}
-      <Dialog open={open} onClose={handleClose}>
-        <DialogContent>
-          <DialogContentText>
-            Se existir uma conta com esse e-mail, receberás um link de
-            recuperação em breve.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleClose} autoFocus>
-            OK
-          </Button>
-        </DialogActions>
-      </Dialog>
     </Container>
   );
 }

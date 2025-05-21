@@ -31,8 +31,6 @@ const addClientSchema = z.object({
     .string()
     .nonempty("O código postal é obrigatório")
     .regex(/^\d{4}-\d{3}$/, "Número de telefone inválido"),
-  // ❌ remove esta linha:
-  // recaptchaToken: z.string(),
 });
 
 

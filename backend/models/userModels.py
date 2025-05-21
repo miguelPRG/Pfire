@@ -46,7 +46,7 @@ class UserUpdate(BaseModel):
     isSuperAdmin: Optional[bool] = None
 
 class UserActivation(BaseModel):
-    recaptchaToken: Optional[str] = None
+    recaptchaToken: str
     id: Optional[str] = None
     email: Optional[EmailStr] = None
 
@@ -59,3 +59,11 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
     recaptchaToken: Optional[str] = None
+
+class UserForgotPassword(BaseModel):
+    email: EmailStr
+    recaptchaToken: str
+
+class UserResetPassword(BaseModel):
+    password: str
+    global_id: str

@@ -17,7 +17,6 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "react-router-dom";
 
-
 // Importar imagens
 import microsoft from "../assets/images/microsoft.png";
 import google from "../assets/images/google.png";
@@ -37,7 +36,7 @@ function LoginPage() {
   const [authError, setAuthError] = useState({ error: false, message: "" });
   const location = useLocation();
   const userConfirmation = location.state;
-  
+  console.log(userConfirmation);
   const {
     register,
     handleSubmit,
@@ -167,7 +166,6 @@ function LoginPage() {
           <Box>
             <Typography
               component="a"
-              href="#"
               onClick={() => navigate("/forgot-password")}
               sx={{
                 color: "primary.main",

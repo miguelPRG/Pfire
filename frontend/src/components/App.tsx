@@ -22,6 +22,7 @@ const ClientManagementTable = lazy(
   () => import("../pages/ClientManagementTable"),
 );
 const EmailOperation = lazy(() => import("../components/EmailOperation"));
+const NewPassword = lazy(() => import("../pages/NewPasswordPage"));
 const AddNewClient = lazy(() => import("../pages/AddNewClientPage"));
 const EditProfilePage = lazy(() => import("../pages/EditProfilePage"));
 const ForgotPasswordPage = lazy(() => import("../pages/ForgotPasswordPage"));
@@ -123,8 +124,12 @@ function App() {
         <Layout>
           <Routes>
             <Route 
-              path="/:GLOBAL_ID/:OPERATION"
-              element={<EmailOperation/>}
+              path="confirmation/:GLOBAL_ID/:OPERATION"
+              element={<PublicRoute user = {user} empresaId = {empresaId} element = {<EmailOperation/>}/>}
+            />
+            <Route
+              path="/new-password/:GLOBAL_ID/"
+              element={<PublicRoute user={user} empresaId={empresaId} element={<NewPassword/>}/>}
             />
             <Route
               path="/login"

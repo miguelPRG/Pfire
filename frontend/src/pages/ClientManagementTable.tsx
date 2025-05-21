@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@apollo/client";
 import {
   Table,
@@ -23,9 +23,6 @@ import { useNavigate } from "react-router-dom";
 import { GET_CLIENTES_BY_EMPRESA } from "../graphql/clientesqueries";
 import { useTheme } from "@mui/material/styles";
 import { useAuth } from "../hooks/AuthContext"; // já no topo
-
-
-
 
 interface Cliente {
   id: string;

@@ -3,13 +3,13 @@ from fastapi.responses import JSONResponse
 from controller.jwtValidation import generate_jwt  # Se usa para generar el JWT
 from controller.token_blacklist import add_token_to_blacklist  # Nueva función para usar Redis
 from apis.recaptchaValidation import validar_recaptcha_token
-from apis.brevo_client import enviar_email_registo
+from apis.brevo_client import enviar_email_registo, enviar_email_recuperacao
 from pathlib import Path
 from secrets import choice
 from string import ascii_letters, punctuation, digits
 from firebase_admin import credentials, auth, initialize_app
 from passlib.context import CryptContext
-from models.userModels import UserCreate, UserLogin, RegisterUser
+from models.userModels import UserCreate, UserLogin, RegisterUser, UserForgotPassword, UserResetPassword
 from models.userEmpresaModels import UserEmpresaCreate
 from datetime import datetime
 from asyncio import gather
@@ -248,6 +248,46 @@ async def logout_user(request: Request, response: Response):
     return {"message": "Logout efetuado com sucesso!"}
 
 # 🚀 Logout Global (Todos os Dispositivos) - Em desenvolvimento
+
+# Pedido de esquecimento da senha
+@routerUser.post("/forgot-password")
+async def forgot_password(request: Request,user: UserForgotPassword):
+    """
+    Endpoint para solicitar o esquecimento da senha:
+    - Envia um e-mail com um link para redefinir a senha.
+    """
+    # Verifica se o usuário existe
+    user_found = await users_collection.find_one({"email": user.email, "isActive": True})
+    if not user_found:
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
+
+    # Gera um global_id único
+    global_id = str(uuid4())
+    
+    # Insere o global_id na coleção
+    global_id_insertion = await global_ids_collection.insert_one({"global_id": global_id, "user_id": user_found["_id"], "created_at": datetime.now()})
+
+    if not global_id_insertion.inserted_id:
+        raise HTTPException(status_code=409, detail="Erro na criação do ID global.")
+
+    # Envia o e-mail de recuperação
+    enviar_email_recuperacao(user.email, user_found["nome"], global_id)
+
+    return {"message": "E-mail de recuperação enviado!"}
+
+@routerUser.get("/get-global-id/{global_id}")
+async def get_global_id(global_id: str):
+    """
+    Endpoint para obter o global_id:
+    - Retorna o global_id se existir.
+    """
+    # Verifica se o global_id existe
+    global_id_data = await global_ids_collection.find_one({"global_id": global_id})
+    if not global_id_data:
+        raise HTTPException(status_code=404, detail="Global ID não encontrado.")
+    
+    return {"global_id": global_id_data["global_id"]}
+
 """
 @routerUser.post("/logout-all")
 async def logout_all_users(email: str):
@@ -258,6 +298,8 @@ async def logout_all_users(email: str):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Erro ao deslogar: {str(e)}")
 """
+
+"""Serviços de Utilizador - Email"""
 
 @routerUser.put("/email/activate/{global_id}")
 async def confirm_user(global_id: str, request: Request):
@@ -276,3 +318,29 @@ async def confirm_user(global_id: str, request: Request):
     
     await global_ids_collection.delete_one({"global_id": global_id})
     return {"message": "Conta ativada com sucesso!"}
+
+@routerUser.put("/email/reset-password")
+async def reset_password(request: Request, user: UserResetPassword):
+    # Encontrar o global_id na base de dados
+    global_id_data = await global_ids_collection.find_one({"global_id": user.global_id})
+    if not global_id_data:
+        raise HTTPException(status_code=404, detail="Global ID não encontrado.")
+    
+    user_id = global_id_data["user_id"]
+    user_found = await users_collection.find_one({"_id": user_id})
+
+    if not user_found:
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
+    
+    # Atualizar a password do utilizador
+    new_password_hashed = pwd_context.hash(user.password)
+    user_update = await users_collection.update_one(
+        {"_id": user_id}, {"$set": {"password": new_password_hashed}}
+    )
+
+    if user_update.modified_count == 0:
+        raise HTTPException(status_code=409, detail="Erro ao atualizar a password.")
+    
+    await global_ids_collection.delete_one({"global_id": user.global_id})
+    return {"message": "Password atualizada com sucesso!"}
+   
