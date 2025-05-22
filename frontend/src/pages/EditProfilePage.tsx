@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useLayoutEffect } from "react";
+import { useAuth } from "../hooks/AuthContext";
 import {
   Box,
   Button,
@@ -17,14 +18,21 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import "../assets/styles/phoneNumberField.css";
-// Esquema de validação com Zod
-const editProfileSchema = z.object({
-  userName: z.string().nonempty("O nome do usuário é obrigatório"),
-  userEmail: z.string().email("O email é inválido").nonempty("O email é obrigatório"),
-  userPhone: z
+
+// Schemas separados
+const userSchema = z.object({
+  name: z.string().nonempty("O nome é obrigatório"),
+  email: z.string().email("Email inválido").nonempty("O email é obrigatório"),
+  phone: z
     .string()
-    .nonempty("O telefone do usuário é obrigatório")
+    .nonempty("O telefone é obrigatório")
     .regex(/^\+?[0-9\s\-()]{7,15}$/, "Número de telefone inválido"),
+  password: z.string().optional(),
+  newPassword: z.string().optional(),
+  confirmPassword: z.string().optional(),
+});
+
+const companySchema = z.object({
   companyName: z.string().nonempty("O nome da empresa é obrigatório"),
   nif: z
     .string()
@@ -40,43 +48,58 @@ const editProfileSchema = z.object({
     .string()
     .nonempty("O telefone da empresa é obrigatório")
     .regex(/^\+?[0-9\s\-()]{7,15}$/, "Número de telefone inválido"),
-    
 });
 
-type EditCompanyFormInputs = z.infer<typeof editProfileSchema>;
+type UserInputs = z.infer<typeof userSchema>;
+type CompanyInputs = z.infer<typeof companySchema>;
 
 function EditProfilePage() {
-  const [formData, setFormData] = useState({
-    name: "João Silva",
-    email: "joao@email.com",
-    phone: "+351 912 345 678",
+  const [avatarPreview, setAvatarPreview] = useState("/static/images/avatar/2.jpg");
+  const { user } = useAuth();
+  // States para valores padrão do user e da empresa
+  const [defaultUserValues, setDefaultUserValues] = useState<UserInputs>({
+    name: user?.nome || "", 
+    email: user?.email || "",
+    phone: user?.telefone || "",
     password: "",
-    confirmPassword: "",
     newPassword: "",
+    confirmPassword: "",
   });
 
-  const [avatarPreview, setAvatarPreview] = useState(
-    "/static/images/avatar/2.jpg",
-  );
+  const [defaultCompanyValues, setDefaultCompanyValues] = useState<CompanyInputs>({
+    companyName: "",
+    nif: "",
+    address: "",
+    locality: "",
+    postalCode: "",
+    companyPhone: "",
+  });
 
+  useLayoutEffect(() => {
+
+    
+
+  }, []);
+
+  // Formulário do usuário
   const {
-    register,
-    handleSubmit,
-    control,
-    formState: { errors, isSubmitting },
-  } = useForm<EditCompanyFormInputs>({
-    resolver: zodResolver(editProfileSchema),
-    defaultValues: {
-      userName: "João Silva",
-      userEmail: "joao@email.com",
-      userPhone: "+351 912 345 678",
-      companyName: "João Silva",
-      nif: "",
-      address: "",
-      locality: "",
-      postalCode: "",
-      companyPhone: "",
-    },
+    register: registerUser,
+    handleSubmit: handleSubmitUser,
+    formState: { errors: userErrors, isSubmitting: isSubmittingUser },
+  } = useForm<UserInputs>({
+    resolver: zodResolver(userSchema),
+    defaultValues: defaultUserValues,
+  });
+
+  // Formulário da empresa
+  const {
+    register: registerCompany,
+    handleSubmit: handleSubmitCompany,
+    control: controlCompany,
+    formState: { errors: companyErrors, isSubmitting: isSubmittingCompany },
+  } = useForm<CompanyInputs>({
+    resolver: zodResolver(companySchema),
+    defaultValues: defaultCompanyValues,
   });
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -87,45 +110,24 @@ function EditProfilePage() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  // Submissão dos dados do usuário
+  const onSubmitUser = (data: UserInputs) => {
+    // Aqui pode adicionar lógica para atualizar perfil e senha
+    console.log("Dados do usuário:", data);
   };
 
-  const handleSubmitInfo = async (data: EditCompanyFormInputs) => {
-    console.log("Dados atualizados:", data);
-  };
-
-  const handleSubmitPassword = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Nova senha:", formData.password);
+  // Submissão dos dados da empresa
+  const onSubmitCompany = (data: CompanyInputs) => {
+    console.log("Dados da empresa:", data);
   };
 
   return (
     <Container maxWidth={false} sx={{ mt: 5 }}>
-      {/* Formulário de Perfil */}
-      <Paper
-        elevation={3}
-        sx={{
-          p: 3,
-          borderRadius: 3,
-          mx: "auto",
-          width: "100%",
-          maxWidth: "700px",
-        }}
-      >
-        <Box
-          textAlign="center"
-          mb={3}
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-        >
+      {/* Formulário de Perfil do Usuário */}
+      <Paper elevation={3} sx={{ p: 3, borderRadius: 3, mx: "auto", width: "100%", maxWidth: "700px" }}>
+        <Box textAlign="center" mb={3} display="flex" flexDirection="column" alignItems="center">
           <Box position="relative">
-            <Avatar
-              alt="User Avatar"
-              src={avatarPreview}
-              sx={{ width: 80, height: 80 }}
-            />
+            <Avatar alt="User Avatar" src={avatarPreview} sx={{ width: 80, height: 80 }} />
             <label htmlFor="avatar-upload">
               <input
                 accept="image/*"
@@ -142,132 +144,80 @@ function EditProfilePage() {
                   right: -5,
                   backgroundColor: "secondary.main",
                   boxShadow: 1,
-                  "&:hover": {
-                    backgroundColor: "secondary.dark", // Cor ao passar o mouse
-                  },
+                  "&:hover": { backgroundColor: "secondary.dark" },
                 }}
               >
-                <PhotoCameraIcon
-                  fontSize="small"
-                  sx={{
-                    color: (theme) => theme.palette.background.default, // Acessa a cor do tema dinamicamente
-                  }}
-                />
+                <PhotoCameraIcon fontSize="small" sx={{ color: (theme) => theme.palette.background.default }} />
               </IconButton>
             </label>
           </Box>
-
           <Typography variant="h5" fontWeight="bold" mt={2}>
             Editar Perfil
           </Typography>
         </Box>
-
-        <Box component="form" onSubmit={handleSubmitPassword}>
+        <Box component="form" onSubmit={handleSubmitUser(onSubmitUser)}>
           <Grid container spacing={2} justifyContent="center">
-            <Grid item xs={12} md={6}>
+            <Grid size={{xs:12, sm: 6}}>
               <TextField
                 label="Nome"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
+                {...registerUser("name")}
+                error={!!userErrors.name}
+                helperText={userErrors.name?.message}
                 fullWidth
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{xs:12, sm: 6}}>
               <TextField
                 label="Email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
+                {...registerUser("email")}
+                error={!!userErrors.email}
+                helperText={userErrors.email?.message}
                 fullWidth
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{xs:12}}>
               <TextField
                 label="Telefone"
-                name="phone"
-                value={formData.phone}
-                onChange={handleChange}
+                {...registerUser("phone")}
+                error={!!userErrors.phone}
+                helperText={userErrors.phone?.message}
                 fullWidth
               />
             </Grid>
-
-            <Grid item xs={12}>
-              <Box display="flex" justifyContent="center" mt={2}>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color="secondary"
-                  sx={{ width: 200 }}
-                >
-                  Salvar Alterações
-                </Button>
-              </Box>
-            </Grid>
-          </Grid>
-        </Box>
-      </Paper>
-
-      {/* Formulário de Senha */}
-      <Paper
-        elevation={3}
-        sx={{
-          p: 3,
-          borderRadius: 3,
-          mt: 2,
-          mx: "auto",
-          width: "100%",
-          maxWidth: "700px",
-        }}
-      >
-        <Typography variant="h5" fontWeight="bold" textAlign="center" mb={3}>
-          Alterar Senha
-        </Typography>
-
-        <Box component="form" onSubmit={handleSubmitPassword}>
-          <Grid container spacing={2} justifyContent="center">
-            <Grid item xs={12} md={6}>
+            <Grid size={{xs:12, sm: 6}}>
               <TextField
                 label="Senha Atual"
-                name="password"
                 type="password"
-                value={formData.password}
-                onChange={handleChange}
+                {...registerUser("password")}
                 fullWidth
               />
             </Grid>
-
-            <Grid item xs={12} md={6}>
+            <Grid size={{xs:12, sm: 6}}>
               <TextField
                 label="Nova Senha"
-                name="newPassword"
                 type="password"
-                value={formData.newPassword}
-                onChange={handleChange}
+                {...registerUser("newPassword")}
                 fullWidth
               />
             </Grid>
-
-            <Grid item xs={12} md={6}>
+            <Grid size={{xs:12}}>
               <TextField
                 label="Confirmar Nova Senha"
-                name="confirmPassword"
                 type="password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
+                {...registerUser("confirmPassword")}
                 fullWidth
               />
             </Grid>
-
-            <Grid item xs={12}>
+            <Grid size={{xs:12}}>
               <Box display="flex" justifyContent="center" mt={2}>
                 <Button
                   type="submit"
                   variant="contained"
                   color="secondary"
                   sx={{ width: 200 }}
+                  disabled={isSubmittingUser}
                 >
-                  Alterar Senha
+                  {isSubmittingUser ? "Salvando..." : "Salvar Alterações"}
                 </Button>
               </Box>
             </Grid>
@@ -276,177 +226,114 @@ function EditProfilePage() {
       </Paper>
 
       {/* Formulário de Dados da Empresa */}
-      <Paper
-        elevation={3}
-        sx={{
-          p: 3,
-          borderRadius: 3,
-          mt: 2,
-          mx: "auto",
-          width: "100%",
-          maxWidth: "700px",
-        }}
-      >
-        <Box
-          textAlign="center"
-          mb={3}
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-        >
+      <Paper elevation={3} sx={{ p: 3, borderRadius: 3, mt: 2, mx: "auto", width: "100%", maxWidth: "700px" }}>
+        <Box textAlign="center" mb={3} display="flex" flexDirection="column" alignItems="center">
           <Typography variant="h5" fontWeight="bold" mt={2}>
             Editar Dados da Empresa
           </Typography>
         </Box>
-        <Box component="form" onSubmit={handleSubmit(handleSubmitInfo)}>
+        <Box component="form" onSubmit={handleSubmitCompany(onSubmitCompany)}>
           <Grid container spacing={2} justifyContent="center">
-            {/* Campos do Usuário */}
-            <Grid item xs={12} md={6}>
+            <Grid size={{xs:12, sm: 6}}>
               <TextField
-                {...register("userName")}
-                label="Nome do Usuário"
-                error={!!errors.userName}
-                helperText={errors.userName?.message}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                {...register("userEmail")}
-                label="Email do Usuário"
-                error={!!errors.userEmail}
-                helperText={errors.userEmail?.message}
-                fullWidth
-              />
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <TextField
-                {...register("userPhone")}
-                label="Telefone do Usuário"
-                error={!!errors.userPhone}
-                helperText={errors.userPhone?.message}
-                fullWidth
-              />
-            </Grid>
-
-            {/* Campos da Empresa */}
-            <Grid item xs={12} md={6}>
-              <TextField
-                {...register("companyName")}
+                {...registerCompany("companyName")}
                 label="Nome da Empresa"
-                error={!!errors.companyName}
-                helperText={errors.companyName?.message}
+                error={!!companyErrors.companyName}
+                helperText={companyErrors.companyName?.message}
                 fullWidth
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{xs:12, sm: 6}}>
               <TextField
-                {...register("nif")}
+                {...registerCompany("nif")}
                 label="NIF"
-                error={!!errors.nif}
-                helperText={errors.nif?.message}
+                error={!!companyErrors.nif}
+                helperText={companyErrors.nif?.message}
                 fullWidth
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{xs:12, sm: 6}}>
               <TextField
-                {...register("address")}
+                {...registerCompany("address")}
                 label="Morada"
-                error={!!errors.address}
-                helperText={errors.address?.message}
+                error={!!companyErrors.address}
+                helperText={companyErrors.address?.message}
                 fullWidth
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{xs:12, sm: 6}}>
               <TextField
-                {...register("locality")}
+                {...registerCompany("locality")}
                 label="Localidade"
-                error={!!errors.locality}
-                helperText={errors.locality?.message}
+                error={!!companyErrors.locality}
+                helperText={companyErrors.locality?.message}
                 fullWidth
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid size={{xs:12, sm: 6}}>
               <TextField
-                {...register("postalCode")}
+                {...registerCompany("postalCode")}
                 label="Código Postal"
-                error={!!errors.postalCode}
-                helperText={errors.postalCode?.message}
+                error={!!companyErrors.postalCode}
+                helperText={companyErrors.postalCode?.message}
                 fullWidth
               />
             </Grid>
-            <Grid item xs={12} md={6}>
-              <div id="telefone-field">
-                <Controller
-                  name="companyPhone"
-                  control={control}
-                  render={({ field }) => (
-                    <Box>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          border: "1px solid",
-                          borderColor: errors.companyPhone
-                            ? "error.main"
-                            : "rgba(0, 0, 0, 0.23)",
-                          borderRadius: 1,
-                          padding: "18.5px 14px",
+            <Grid size={{xs:12}}>
+              <Controller
+                name="companyPhone"
+                control={controlCompany}
+                render={({ field }) => (
+                  <Box>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        border: "1px solid",
+                        borderColor: companyErrors.companyPhone
+                          ? "error.main"
+                          : "rgba(0, 0, 0, 0.23)",
+                        borderRadius: 1,
+                        padding: "18.5px 14px",
+                        fontSize: "16px",
+                        "&:hover": { borderColor: "black" },
+                        "&:focus-within": { borderColor: "primary.main", borderWidth: 2 },
+                      }}
+                    >
+                      <PhoneInput
+                        {...field}
+                        defaultCountry="PT"
+                        international
+                        countryCallingCodeEditable={false}
+                        placeholder="Insira o número de telefone"
+                        style={{
                           fontSize: "16px",
-                          "&:hover": {
-                            borderColor: "black",
-                          },
-                          "&:focus-within": {
-                            borderColor: "primary.main",
-                            borderWidth: 2,
-                          },
+                          border: "none",
+                          outline: "none",
+                          width: "100%",
+                          background: "transparent",
                         }}
-                      >
-                        <PhoneInput
-                          {...field}
-                          defaultCountry="PT"
-                          international
-                          countryCallingCodeEditable={false}
-                          placeholder="Insira o número de telefone"
-                          style={{
-                            fontSize: "16px",
-                            border: "none",
-                            outline: "none",
-                            width: "100%",
-                            background: "transparent",
-                          }}
-                        />
-                      </Box>
-                      {errors.companyPhone && (
-                        <Typography
-                          color="error"
-                          variant="body2"
-                          sx={{ mt: 0.5 }}
-                        >
-                          {errors.companyPhone.message}
-                        </Typography>
-                      )}
+                      />
                     </Box>
-                  )}
-                />
-              </div>
+                    {companyErrors.companyPhone && (
+                      <Typography color="error" variant="body2" sx={{ mt: 0.5 }}>
+                        {companyErrors.companyPhone.message}
+                      </Typography>
+                    )}
+                  </Box>
+                )}
+              />
             </Grid>
-            <Grid item xs={12}>
+            <Grid size={{xs:12}}>
               <Box display="flex" justifyContent="center" mt={2}>
                 <Button
                   type="submit"
                   variant="contained"
                   color="secondary"
-                  sx={{
-                    width: 200,
-                    boxShadow: 1,
-                    "&:hover": {
-                      backgroundColor: "secondary.dark",
-                    },
-                  }}
-                  disabled={isSubmitting}
+                  sx={{ width: 200, boxShadow: 1, "&:hover": { backgroundColor: "secondary.dark" } }}
+                  disabled={isSubmittingCompany}
                 >
-                  {isSubmitting ? "Salvando..." : "Salvar Alterações"}
+                  {isSubmittingCompany ? "Salvando..." : "Salvar Alterações"}
                 </Button>
               </Box>
             </Grid>

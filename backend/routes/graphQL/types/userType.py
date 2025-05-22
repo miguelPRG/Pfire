@@ -8,7 +8,6 @@ class User:
     nome: str
     email: str
     telefone: Optional[str] = None  # ✅ agora opcional
-    role: Optional[str] = None      # ✅ agora opcional
     isActive: Optional[bool] = None
     isAdmin: Optional[bool] = None
     created_at: Optional[datetime] = None
