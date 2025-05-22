@@ -88,6 +88,19 @@ const commonComponents: Components = {
       },
     },
   },
+  MuiInputLabel: {
+    styleOverrides: {
+      root: ({ theme }: any) => ({
+        color: theme.palette.text.primary,
+        "&.Mui-focused": {
+          color: theme.palette.primary.main,
+        },
+        "&.Mui-error": {
+          color: theme.palette.text.primary,
+        },
+      }),
+    },
+  },
   MuiTypography: {
     styleOverrides: {
       h1: {
