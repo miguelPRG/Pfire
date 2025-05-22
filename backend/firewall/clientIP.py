@@ -4,9 +4,9 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 
 # Configurações de limitação
-LIMIT = 20
+LIMIT = 15
 TIME_FRAME = 30
-BLOCK_DURATION = 60
+BLOCK_DURATION = 120
 
 rate_limiter = {}     # {ip: [timestamps]}
 blocked_ips = {}      # {ip: timestamp}

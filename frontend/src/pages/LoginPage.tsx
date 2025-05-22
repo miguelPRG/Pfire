@@ -36,7 +36,7 @@ function LoginPage() {
   const [authError, setAuthError] = useState({ error: false, message: "" });
   const location = useLocation();
   const userConfirmation = location.state;
-  console.log(userConfirmation);
+
   const {
     register,
     handleSubmit,

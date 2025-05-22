@@ -335,7 +335,7 @@ async def reset_password(request: Request, user: UserResetPassword):
     # Atualizar a password do utilizador
     new_password_hashed = pwd_context.hash(user.password)
     user_update = await users_collection.update_one(
-        {"_id": user_id}, {"$set": {"password": new_password_hashed}}
+        {"_id": user_id}, {"$set": {"password": new_password_hashed, "updated_at": datetime.now()}}
     )
 
     if user_update.modified_count == 0:

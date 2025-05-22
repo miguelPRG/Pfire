@@ -46,31 +46,14 @@ app.add_middleware(
     allow_headers=["Content-Type", "Host", "Cookie"],  # Permita todos os cabeçalhos necessários
 )
 
-# Middleware de limitador de tempo
 @app.middleware("http")
-async def rate_limit_middleware(request: Request, call_next):
+async def fast_api_http_middleware(request: Request, call_next):
     """Middleware para aplicar o limite de requisições a todas as rotas"""
 
     response = await rate_limit(request)
     if response:
         return response  # Retorna a resposta de erro 429 se o limite for excedido
-    return await call_next(request)  # Caso contrário, processa a requisição normalmente
 
-@app.middleware("http")
-async def jwt_authentication_middleware(request: Request, call_next):
-    """Verifica se a rota requer autenticação e valida o JWT a partir do cookie _fp"""
-
-    # Este código deverá ser descomentado em produção
-    """
-    origin = request.headers.get("origin")
-
-    if not origin or origin not in allowed_origins:
-        return JSONResponse(
-            status_code=403,
-            content={"message": "Origem não permitida!"}
-        )
-    """
-    
     path = request.url.path
     
     EXCLUDED_PATHS = {
@@ -87,10 +70,6 @@ async def jwt_authentication_middleware(request: Request, call_next):
         print("Rota Excluída da autenticação: ", path)
         return await call_next(request)
     
-    """ Se houver algum problema com o CORS, descomente a linha abaixo
-    if request.method == "OPTIONS":
-        return await call_next(request)
-    """
     # Tenta extrair o token JWT do cookie "_fp"
     token = request.cookies.get("_fp")
     
@@ -124,8 +103,6 @@ async def jwt_authentication_middleware(request: Request, call_next):
 #Limpar base de dados
 database_cleaner_scheduler()
 
-# Registrar as rotas REST e GraphQL
-
 # Rotas do usuário (REST)
 app.include_router(usersServices.routerUser)
 app.include_router(userCRUD.routerUser)
@@ -140,8 +117,6 @@ app.include_router(modelosCRUD.routerModelo)
 app.include_router(relatorioCRUD.routerRelatorio)
 # Rotas GraphQL
 app.include_router(graphql_router, prefix="/graphql")
-
-
 
 @app.get("/")
 async def root(request: Request):
