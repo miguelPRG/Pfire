@@ -1,24 +1,15 @@
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 from .empresaModels import EmpresaCreate
 
 class UserCreate(BaseModel):
     nome: str = Field(..., min_length=2, max_length=100)
     email: EmailStr
-    password: str
-
-    @validator("password")
-    def validate_password(cls, value):
-        if len(value) < 9:
-            raise ValueError("A senha deve ter no mínimo 9 caracteres.")
-        if not any(char.isupper() for char in value):
-            raise ValueError("A senha deve conter pelo menos uma letra maiúscula.")
-        if not any(char.islower() for char in value):
-            raise ValueError("A senha deve conter pelo menos uma letra minúscula.")
-        if not any(char.isdigit() for char in value):
-            raise ValueError("A senha deve conter pelo menos um número.")
-        return value
-
+    password: str = Field(
+        ...,
+        pattern=r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{9,}$',
+        description="Pelo menos 9 caracteres, uma maiúscula, uma minúscula e um número."
+    )
 
 class UserUpdate(BaseModel):
     recaptchaToken: str
@@ -27,22 +18,11 @@ class UserUpdate(BaseModel):
     telefone: Optional[str] = Field(None, pattern=r'^\+?[0-9\s\-()]{7,15}$')
     nif: Optional[str] = Field(None, pattern=r'^[5789]\d{8}$')
     codigo_postal: Optional[str] = Field(None, pattern=r'^\d{4}-\d{3}$')
-    password: Optional[str] = None
-
-    @validator("password", pre=True, always=True)
-    def validate_password(cls, value):
-        if value is None:
-            return value
-        if len(value) < 9:
-            raise ValueError("A senha deve ter no mínimo 9 caracteres.")
-        if not any(char.isupper() for char in value):
-            raise ValueError("A senha deve conter pelo menos uma letra maiúscula.")
-        if not any(char.islower() for char in value):
-            raise ValueError("A senha deve conter pelo menos uma letra minúscula.")
-        if not any(char.isdigit() for char in value):
-            raise ValueError("A senha deve conter pelo menos um número.")
-        return value
-
+    password: str = Field(
+        ...,
+        pattern=r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{9,}$',
+        description="Pelo menos 9 caracteres, uma maiúscula, uma minúscula e um número."
+    )
     isSuperAdmin: Optional[bool] = None
 
 class UserActivation(BaseModel):
