@@ -32,7 +32,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const navigate = useNavigate();
   const [openReports, setOpenReports] = useState(false);
   const [openModels, setOpenModels] = useState(false);
- 
 
   const handleToggleReports = () => {
     setOpenReports(!openReports);
@@ -73,10 +72,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         <Collapse in={openReports} timeout="auto" unmountOnExit>
           <List component="div" disablePadding>
             <ListItem disablePadding>
-              <ListItemButton sx={{ width: "90%", pl: 4 }}>
+              <ListItemButton
+                sx={{
+                  width: "90%",
+                  pl: 4,
+                }}
+              >
                 <ListItemIcon>
                   <ArrowForwardIosIcon
-                    sx={{ marginRight: 2, fontSize: "small" }}
+                    sx={{
+                      marginRight: 2,
+                      fontSize: "small",
+                    }}
                   />
                 </ListItemIcon>
                 <ListItemText primary="Extintores" />
@@ -98,10 +105,18 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
         <Collapse in={openModels} timeout="auto" unmountOnExit>
           <List component="div" disablePadding>
             <ListItem disablePadding>
-              <ListItemButton sx={{ width: "90%", pl: 4 }}>
+              <ListItemButton
+                sx={{
+                  width: "90%",
+                  pl: 4,
+                }}
+              >
                 <ListItemIcon>
                   <ArrowForwardIosIcon
-                    sx={{ marginRight: 2, fontSize: "small" }}
+                    sx={{
+                      marginRight: 2,
+                      fontSize: "small",
+                    }}
                   />
                 </ListItemIcon>
                 <ListItemText primary="Extintores" />
@@ -157,7 +172,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
     <Drawer
       open={isOpen}
       onClose={toggleSidebar}
-      sx={{ width: 250, flexShrink: 0, "& .MuiDrawer-paper": { width: 250 } }}
+      sx={{
+        width: 250,
+        flexShrink: 0,
+        "& .MuiDrawer-paper": { width: 250 },
+      }}
     >
       {DrawerList}
     </Drawer>

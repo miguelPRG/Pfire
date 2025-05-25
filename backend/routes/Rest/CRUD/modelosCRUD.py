@@ -1,29 +1,34 @@
 from fastapi import APIRouter, HTTPException, Request
 from apis.recaptchaValidation import validar_recaptcha_token
-from models.modeloCamposModels import ModelosCamposCreate, ModelosCamposUpdate,ModelosCamposDelete, validate_fields
-from database import modelos_collection,users_empresas_collection, empresas_collection
+from models.modeloCamposModels import ModelosCamposCreate, ModelosCamposUpdate, ModelosCamposDelete, validate_fields
+from database import modelos_collection, users_empresas_collection, empresas_collection
 from bson import ObjectId
 from datetime import datetime
 
 routerModelo = APIRouter(prefix="/modelo")
 
-#Criar Modelo
+
+# Criar Modelo
 @routerModelo.post("/")
 async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
 
     await validar_recaptcha_token(modelo.recaptchaToken, "register")
 
-    #Verificar se o user tem permissão para criar modelos nesta empresa
+    # Verificar se o user tem permissão para criar modelos nesta empresa
     jwt = getattr(request.state, "jwt", None)
 
     user_id = ObjectId(jwt["user_id"])
 
     if not jwt["isSuperAdmin"]:
         # Verificar se o utilizador é admin da empresa
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": modelo.empresa_id, "user_id":user_id, "isAdmin": True})
-        
+        user_empresa = await users_empresas_collection.find_one(
+            {"empresa_id": modelo.empresa_id, "user_id": user_id, "isAdmin": True}
+        )
+
         if not user_empresa:
-            raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para criar modelos nesta empresa.")
+            raise HTTPException(
+                status_code=403, detail="Acesso negado! Não tens permissão para criar modelos nesta empresa."
+            )
 
     modelo.empresa_id = ObjectId(modelo.empresa_id)
 
@@ -38,7 +43,9 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
     if not empresa_found:
         raise HTTPException(status_code=400, detail="Empresa não encontrada.")
 
-    modelo_existente = await modelos_collection.find_one({"empresa_id": modelo.empresa_id, "model_name": modelo.model_name})
+    modelo_existente = await modelos_collection.find_one(
+        {"empresa_id": modelo.empresa_id, "model_name": modelo.model_name}
+    )
 
     if modelo_existente:
         raise HTTPException(status_code=400, detail="Este modelo já existe nesta empresa.")
@@ -56,8 +63,9 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
 
     return {"message": "Modelo criado com sucesso!"}
 
+
 @routerModelo.put("/")
-async def update_modelo(request: Request,modelo: ModelosCamposUpdate, id: str = None,model_name: str = None):
+async def update_modelo(request: Request, modelo: ModelosCamposUpdate, id: str = None, model_name: str = None):
     if not id and not model_name:
         raise HTTPException(status_code=400, detail="ID ou nome do modelo são obrigatórios.")
 
@@ -68,11 +76,9 @@ async def update_modelo(request: Request,modelo: ModelosCamposUpdate, id: str = 
     modelo.empresa_id = ObjectId(modelo.empresa_id)
 
     if not jwt["isSuperAdmin"]:
-        user_empresa = await users_empresas_collection.find_one({
-            "empresa_id": modelo.empresa_id,
-            "user_id": user_id,
-            "isAdmin": True
-        })
+        user_empresa = await users_empresas_collection.find_one(
+            {"empresa_id": modelo.empresa_id, "user_id": user_id, "isAdmin": True}
+        )
         if not user_empresa:
             raise HTTPException(status_code=403, detail="Acesso negado!")
 
@@ -90,9 +96,11 @@ async def update_modelo(request: Request,modelo: ModelosCamposUpdate, id: str = 
     if "model_name" in data:
         if not isinstance(data["model_name"], str):
             raise HTTPException(400, "O nome do modelo deve ser string.")
-        
-        #Verifica se não existe outro modelo na mesma empresa com este nome
-        modelo_existente = await modelos_collection.find_one({"empresa_id": modelo.empresa_id, "model_name": data["model_name"]})
+
+        # Verifica se não existe outro modelo na mesma empresa com este nome
+        modelo_existente = await modelos_collection.find_one(
+            {"empresa_id": modelo.empresa_id, "model_name": data["model_name"]}
+        )
 
         if modelo_existente:
             raise HTTPException(status_code=400, detail="Modelo com esse nome nesta empresa já existe.")
@@ -109,7 +117,7 @@ async def update_modelo(request: Request,modelo: ModelosCamposUpdate, id: str = 
                         f"Nome de campo inválido: {key}. "
                         "Os campos personalizados devem começar com 'custom_' "
                         "ou ser 'datatype' ou 'required'."
-                    )
+                    ),
                 )
 
             # remoção
@@ -133,15 +141,13 @@ async def update_modelo(request: Request,modelo: ModelosCamposUpdate, id: str = 
                 # 1) atualiza flag do pai se veio
                 if "required" in new_val:
                     if not new_val["required"] and any(
-                        subv.get("required") for subv in old.values()
-                        if isinstance(subv, dict)
+                        subv.get("required") for subv in old.values() if isinstance(subv, dict)
                     ):
                         raise HTTPException(
                             status_code=400,
                             detail=(
-                                f"O campo '{key}' não pode ter 'required': False "
-                                "pois possui subcampos obrigatórios."
-                            )
+                                f"O campo '{key}' não pode ter 'required': False " "pois possui subcampos obrigatórios."
+                            ),
                         )
                     old["required"] = new_val["required"]
 
@@ -158,10 +164,7 @@ async def update_modelo(request: Request,modelo: ModelosCamposUpdate, id: str = 
                         update_nested(old, {subk: subv})
 
                 # 3) recalcula required do pai conforme estado atual dos subcampos
-                sub_required = [
-                    v.get("required") for v in old.values()
-                    if isinstance(v, dict)
-                ]
+                sub_required = [v.get("required") for v in old.values() if isinstance(v, dict)]
                 old["required"] = any(sub_required)
                 continue
 
@@ -176,14 +179,11 @@ async def update_modelo(request: Request,modelo: ModelosCamposUpdate, id: str = 
                                 f"Nome de campo inválido: {subk}. "
                                 "Os campos personalizados devem começar com 'custom_' "
                                 "ou ser 'datatype' ou 'required'."
-                            )
+                            ),
                         )
 
                 # 2) inicializa o objeto novo
-                existing[key] = {
-                    "datatype": new_type,
-                    "required": new_val.get("required", False)
-                }
+                existing[key] = {"datatype": new_type, "required": new_val.get("required", False)}
 
                 # 3) se virou object, insere subcampos
                 if new_type == "object":
@@ -195,13 +195,11 @@ async def update_modelo(request: Request,modelo: ModelosCamposUpdate, id: str = 
 
                     # 4) e recalcula required do pai
                     existing[key]["required"] = any(
-                        v.get("required")
-                        for v in existing[key].values()
-                        if isinstance(v, dict)
+                        v.get("required") for v in existing[key].values() if isinstance(v, dict)
                     )
 
                 continue
-            
+
             # === mesmo datatype (object explicit ou tipo simples) ===
             if new_type == "object":
                 # 1) pai: required se informado
@@ -212,10 +210,7 @@ async def update_modelo(request: Request,modelo: ModelosCamposUpdate, id: str = 
                     if subk.startswith("custom_"):
                         update_nested(old, {subk: subv})
                 # 3) recalc required do pai
-                sub_required = [
-                    v.get("required") for v in old.values()
-                    if isinstance(v, dict)
-                ]
+                sub_required = [v.get("required") for v in old.values() if isinstance(v, dict)]
                 old["required"] = any(sub_required)
             else:
                 # tipo simples: só atualiza flags
@@ -236,15 +231,16 @@ async def update_modelo(request: Request,modelo: ModelosCamposUpdate, id: str = 
 
     return {"message": "Modelo atualizado com sucesso!"}
 
-#Apagar Modelo
+
+# Apagar Modelo
 @routerModelo.delete("/")
-async def apagar_modelo(request:Request,modelo:ModelosCamposDelete):
+async def apagar_modelo(request: Request, modelo: ModelosCamposDelete):
 
     await validar_recaptcha_token(modelo.recaptchaToken, "register")
 
     if not modelo.id and not modelo.model_name:
         raise HTTPException(status_code=400, detail="ID ou nome do modelo são obrigatórios.")
-    
+
     jwt = getattr(request.state, "jwt", None)
 
     user_id = ObjectId(jwt["user_id"])
@@ -252,17 +248,21 @@ async def apagar_modelo(request:Request,modelo:ModelosCamposDelete):
 
     if not jwt["isSuperAdmin"]:
         # Verificar se o utilizador é admin da empresa
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": ObjectId(modelo.empresa_id), "user_id":user_id, "isAdmin": True})
-        
+        user_empresa = await users_empresas_collection.find_one(
+            {"empresa_id": ObjectId(modelo.empresa_id), "user_id": user_id, "isAdmin": True}
+        )
+
         if not user_empresa:
-            raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para apagar modelos nesta empresa.")
+            raise HTTPException(
+                status_code=403, detail="Acesso negado! Não tens permissão para apagar modelos nesta empresa."
+            )
 
     if modelo.id:
         result = await modelos_collection.delete_one({"_id": ObjectId(id)})
 
     else:
         result = await modelos_collection.delete_one({"model_name": modelo.model_name})
-    
+
     if not result.deleted_count:
         raise HTTPException(status_code=500, detail="Erro ao apagar modelo")
 

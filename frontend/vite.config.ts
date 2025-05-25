@@ -4,13 +4,13 @@ import react from "@vitejs/plugin-react-swc";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
-  
+
   test: {
     globals: true,
-    environment: 'jsdom',
+    environment: "jsdom",
     // Sempre que forem criados novos ficheiros de teste, estes devem ser adicionados neste array
-    setupFiles: [], 
-    include: ['src/tests/**/*.{test,spec}.{js,ts,jsx,tsx}'], // 👈 define a pasta dos testes aqui
+    setupFiles: [],
+    include: ["src/tests/**/*.{test,spec}.{js,ts,jsx,tsx}"], // 👈 define a pasta dos testes aqui
   },
 
   optimizeDeps: {
@@ -39,7 +39,7 @@ export default defineConfig({
       "/backend": {
         target: "http://localhost:8000",
         changeOrigin: true,
-        rewrite: path => path.replace(/^\/backend/, ""),
+        rewrite: (path) => path.replace(/^\/backend/, ""),
       },
     },
     watch: {

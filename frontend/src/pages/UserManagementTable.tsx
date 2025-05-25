@@ -1,6 +1,4 @@
-
-
-import { useState} from "react";
+import { useState } from "react";
 import {
   Table,
   TableBody,
@@ -55,28 +53,32 @@ export default function UserManagementTable() {
 
   const users: User[] = (data && data.users) || [];
 
-
   const handleToggleStatus = async (user: User) => {
     const action = user.isActive ? "delete" : "activate";
     const url = user.isActive ? "/backend/user" : "/backend/user/activate";
     const method = user.isActive ? "DELETE" : "PUT";
 
     try {
-      const recaptchaToken = await grecaptcha.enterprise.execute(
-        "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",
-        { action }
-      );
+      const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
+        action,
+      });
 
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         credentials: "include",
-        body: JSON.stringify({ id: user.id,email: user.email, recaptchaToken }),
+        body: JSON.stringify({
+          id: user.id,
+          email: user.email,
+          recaptchaToken,
+        }),
       });
 
       const json = await res.json();
       if (!res.ok) throw new Error(json.detail || "Erro ao atualizar status.");
-      console.log(user)
+      console.log(user);
 
       await refetch();
     } catch (error) {
@@ -90,16 +92,21 @@ export default function UserManagementTable() {
     const endpoint = isAdmin ? "/backend/user/revoke_admin" : "/backend/user/set_admin";
 
     try {
-      const recaptchaToken = await grecaptcha.enterprise.execute(
-        "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",
-        { action: isAdmin ? "revoke_admin" : "set_admin" }
-      );
+      const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
+        action: isAdmin ? "revoke_admin" : "set_admin",
+      });
 
       const res = await fetch(endpoint, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         credentials: "include",
-        body: JSON.stringify({ user_id: user.id, empresa_id: empresaId, recaptchaToken }),
+        body: JSON.stringify({
+          user_id: user.id,
+          empresa_id: empresaId,
+          recaptchaToken,
+        }),
       });
 
       const json = await res.json();
@@ -132,16 +139,14 @@ export default function UserManagementTable() {
     });
 
   const zebraColor = (index: number) =>
-    theme.palette.mode === "dark"
-      ? index % 2 === 0 ? "#252525" : "#1d1d1d"
-      : index % 2 === 0 ? "#f5f5f5" : "#e0e0e0";
+    theme.palette.mode === "dark" ? (index % 2 === 0 ? "#252525" : "#1d1d1d") : index % 2 === 0 ? "#f5f5f5" : "#e0e0e0";
 
   const columnLabels: { [key in keyof User]?: string } = {
     nome: "Nome",
     telefone: "Telefone",
     isActive: "Status",
     email: "Email",
-    isAdmin : "Papel",
+    isAdmin: "Papel",
   };
 
   const columns: (keyof User)[] = ["nome", "telefone", "isActive", "email", "isAdmin"];
@@ -151,18 +156,41 @@ export default function UserManagementTable() {
 
   return (
     <Paper sx={{ width: "100%", p: 2, boxShadow: "none" }}>
-      <Box sx={{ display: "flex", justifyContent: "flex-start", mb: 2 }}>
-        <Typography variant="h5" sx={{ fontWeight: "bold", fontSize: 30 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "flex-start",
+          mb: 2,
+        }}
+      >
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: "bold",
+            fontSize: 30,
+          }}
+        >
           Utilizadores
         </Typography>
       </Box>
 
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 2 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          mb: 2,
+          gap: 2,
+        }}
+      >
         <Select
           value={rowsPerPage}
           onChange={(e) => setRowsPerPage(Number(e.target.value))}
           size="small"
-          sx={{ width: 180, height: "32px", mt: "10px" }}
+          sx={{
+            width: 180,
+            height: "32px",
+            mt: "10px",
+          }}
         >
           <MenuItem value={5}>Mostrar 5</MenuItem>
           <MenuItem value={10}>Mostrar 10</MenuItem>
@@ -182,7 +210,10 @@ export default function UserManagementTable() {
               </InputAdornment>
             ),
           }}
-          sx={{ width: "75%", mt: 1 }}
+          sx={{
+            width: "75%",
+            mt: 1,
+          }}
         />
       </Box>
 
@@ -194,12 +225,13 @@ export default function UserManagementTable() {
                 <TableCell
                   key={key}
                   onClick={() => handleSort(key)}
-                  sx={{ fontWeight: "bold", cursor: "pointer", py: 1 }}
+                  sx={{
+                    fontWeight: "bold",
+                    cursor: "pointer",
+                    py: 1,
+                  }}
                 >
-                  <TableSortLabel
-                    active={orderBy === key}
-                    direction={orderBy === key ? order : "asc"}
-                  >
+                  <TableSortLabel active={orderBy === key} direction={orderBy === key ? order : "asc"}>
                     {columnLabels[key] || key}
                   </TableSortLabel>
                 </TableCell>
@@ -209,26 +241,67 @@ export default function UserManagementTable() {
 
           <TableBody>
             {sortedRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((user, index) => (
-              <TableRow key={user.id} sx={{ backgroundColor: zebraColor(index) }}>
-                <TableCell sx={{ py: 1 }}>{user.nome}</TableCell>
-                <TableCell sx={{ py: 1 }}>{user.telefone}</TableCell>
-                <TableCell sx={{ py: 1 }}>
+              <TableRow
+                key={user.id}
+                sx={{
+                  backgroundColor: zebraColor(index),
+                }}
+              >
+                <TableCell
+                  sx={{
+                    py: 1,
+                  }}
+                >
+                  {user.nome}
+                </TableCell>
+                <TableCell
+                  sx={{
+                    py: 1,
+                  }}
+                >
+                  {user.telefone}
+                </TableCell>
+                <TableCell
+                  sx={{
+                    py: 1,
+                  }}
+                >
                   <Button
                     variant="contained"
                     size="small"
-                    sx={{ borderRadius: "20px", width: "40px", minWidth: "auto", px: 0 }}
+                    sx={{
+                      borderRadius: "20px",
+                      width: "40px",
+                      minWidth: "auto",
+                      px: 0,
+                    }}
                     color={user.isActive ? "success" : "error"}
                     onClick={() => handleToggleStatus(user)}
                   >
                     {user.isActive ? "Ativo" : "Inativo"}
                   </Button>
                 </TableCell>
-                <TableCell sx={{ py: 1 }}>{user.email}</TableCell>
-                <TableCell sx={{ py: 1 }}>
+                <TableCell
+                  sx={{
+                    py: 1,
+                  }}
+                >
+                  {user.email}
+                </TableCell>
+                <TableCell
+                  sx={{
+                    py: 1,
+                  }}
+                >
                   <Button
                     variant="outlined"
                     size="small"
-                    sx={{ borderRadius: "20px", width: "60px", minWidth: "auto", px: 0.5 }}
+                    sx={{
+                      borderRadius: "20px",
+                      width: "60px",
+                      minWidth: "auto",
+                      px: 0.5,
+                    }}
                     color={user.isAdmin ? "primary" : "success"}
                     onClick={() => handleToggleAdmin(user)}
                   >
@@ -241,7 +314,13 @@ export default function UserManagementTable() {
         </Table>
       </TableContainer>
 
-      <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          mt: 2,
+        }}
+      >
         <Pagination
           count={Math.ceil(sortedRows.length / rowsPerPage)}
           page={page + 1}

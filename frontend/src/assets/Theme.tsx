@@ -14,8 +14,14 @@ export const lightTheme = createTheme({
   },
   typography: {
     fontFamily: '"Inter", "Roboto", sans-serif',
-    h1: { fontFamily: '"Poppins", sans-serif', fontSize: "2rem" },
-    h2: { fontFamily: '"Poppins", sans-serif', fontSize: "1.5rem" },
+    h1: {
+      fontFamily: '"Poppins", sans-serif',
+      fontSize: "2rem",
+    },
+    h2: {
+      fontFamily: '"Poppins", sans-serif',
+      fontSize: "1.5rem",
+    },
   },
   components: commonComponents,
 });

@@ -14,19 +14,18 @@ from asyncio import gather
 from contextlib import asynccontextmanager
 from re import compile
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Código executado no startup
-    await gather(
-        testar_database(),
-        test_redis_connection()
-    )
+    await gather(testar_database(), test_redis_connection())
     test_brevo_connection()
 
     yield  # Aqui o app "vive"
 
     # Código opcional para shutdown pode ir aqui
     # Por exemplo: await close_connections()
+
 
 app = FastAPI(lifespan=lifespan)
 
@@ -42,48 +41,47 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=allowed_origins,  # Domínios permitidos
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Inclua OPTIONS
+    allow_methods=["GET", "POST", "PUT", "DELETE"],  # Inclua OPTIONS
     allow_headers=["Content-Type", "Host", "Cookie"],  # Permita todos os cabeçalhos necessários
 )
+
 
 @app.middleware("http")
 async def fast_api_http_middleware(request: Request, call_next):
     """Middleware para aplicar o limite de requisições a todas as rotas"""
+
+    if request.method == "OPTIONS":
+        # Responde imediatamente para requisições OPTIONS
+        return JSONResponse(status_code=204, content={})
 
     response = await rate_limit(request)
     if response:
         return response  # Retorna a resposta de erro 429 se o limite for excedido
 
     path = request.url.path
-    
+
     EXCLUDED_PATHS = {
-        "/user/login", 
-        "/user/register", 
-        "/user/login-oauth", 
-        "/user/forgot-password", 
+        "/user/login",
+        "/user/register",
+        "/user/login-oauth",
+        "/user/forgot-password",
     }
-    
+
     DYNAMIC_PATHS_REGEX = compile(r"^/user/email/+")
     GET_GLOBAL_ID_REGEX = compile(r"^/user/get-global-id(/.*)?$")
 
     if path in EXCLUDED_PATHS or DYNAMIC_PATHS_REGEX.match(path) or GET_GLOBAL_ID_REGEX.match(path):
         print("Rota Excluída da autenticação: ", path)
         return await call_next(request)
-    
+
     # Tenta extrair o token JWT do cookie "_fp"
     token = request.cookies.get("_fp")
-    
+
     if not token:
-        return JSONResponse(
-            status_code=401,
-            content={"message": "Acesso Negado!"}
-        )
+        return JSONResponse(status_code=401, content={"message": "Acesso Negado!"})
 
     if await is_token_revoked(token):
-        return JSONResponse(
-            status_code=401,
-            content={"message": "Token revogado! Por favor, faça login novamente."}
-        )
+        return JSONResponse(status_code=401, content={"message": "Token revogado! Por favor, faça login novamente."})
 
     try:
         # Valida e decodifica o token JWT
@@ -91,16 +89,14 @@ async def fast_api_http_middleware(request: Request, call_next):
         request.state.jwt = user_data  # Armazena os dados do usuário na request
 
     except Exception as e:
-        return JSONResponse(
-            status_code=401,
-            content={"detail": "Erro na autenticação!"}
-        )
+        return JSONResponse(status_code=401, content={"detail": "Erro na autenticação!"})
 
     # Passa para a próxima requisição
     response = await call_next(request)
     return response
 
-#Limpar base de dados
+
+# Limpar base de dados
 database_cleaner_scheduler()
 
 # Rotas do usuário (REST)
@@ -117,6 +113,7 @@ app.include_router(modelosCRUD.routerModelo)
 app.include_router(relatorioCRUD.routerRelatorio)
 # Rotas GraphQL
 app.include_router(graphql_router, prefix="/graphql")
+
 
 @app.get("/")
 async def root(request: Request):

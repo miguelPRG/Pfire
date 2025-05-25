@@ -3,61 +3,71 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Box, CircularProgress } from "@mui/material";
 
 function EmailOperation() {
-    const [userConfirmation, setUserConfirmation] = useState<{ isConfirmed: boolean, message: string }>({ isConfirmed: false, message: "" });
-    const [loading, setLoading] = useState(true);
-    const navigate = useNavigate();
-    const { GLOBAL_ID, OPERATION } = useParams<{ GLOBAL_ID: string, OPERATION: string }>();
+  const [userConfirmation, setUserConfirmation] = useState<{
+    isConfirmed: boolean;
+    message: string;
+  }>({ isConfirmed: false, message: "" });
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const { GLOBAL_ID, OPERATION } = useParams<{
+    GLOBAL_ID: string;
+    OPERATION: string;
+  }>();
 
-    useEffect(() => {
-        if (!OPERATION || !GLOBAL_ID){
-            setLoading(false);
-            return;
-        }
+  useEffect(() => {
+    if (!OPERATION || !GLOBAL_ID) {
+      setLoading(false);
+      return;
+    }
 
-        const operationsMap: Record<string, () => Promise<void>> = {
-            
-            registry: async () => {
-                try {
-                    const response = await fetch(`/backend/user/email/activate/${GLOBAL_ID}`, {
-                        method: "PUT",
-                        headers: { "Content-Type": "application/json" },
-                    });
-
-                    if (response.ok) {
-                        setUserConfirmation({ isConfirmed: true, message: "Conta confirmada com sucesso!" });
-                    } else {
-                        setUserConfirmation({ isConfirmed: false, message: "Erro ao confirmar a conta. Provavelmente já foi ativada." });
-                    }
-                } catch {
-                    setUserConfirmation({ isConfirmed: false, message: "Erro ao confirmar a conta. Provavelmente já foi ativada." });
-                } 
+    const operationsMap: Record<string, () => Promise<void>> = {
+      registry: async () => {
+        try {
+          const response = await fetch(`/backend/user/email/activate/${GLOBAL_ID}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
             },
+          });
 
-        };
-
-        if (operationsMap[OPERATION]) {
-            operationsMap[OPERATION]();
-        } else {
-            setLoading(false);
+          if (response.ok) {
+            setUserConfirmation({
+              isConfirmed: true,
+              message: "Conta confirmada com sucesso!",
+            });
+          } else {
+            setUserConfirmation({
+              isConfirmed: false,
+              message: "Erro ao confirmar a conta. Provavelmente já foi ativada.",
+            });
+          }
+        } catch {
+          setUserConfirmation({
+            isConfirmed: false,
+            message: "Erro ao confirmar a conta. Provavelmente já foi ativada.",
+          });
         }
-    }, []);
+      },
+    };
 
-    useEffect(() => {
-        if (!loading && userConfirmation.message) {
-            navigate("/login", { state: userConfirmation });
-        }
-    }, [userConfirmation, loading]);
+    if (operationsMap[OPERATION]) {
+      operationsMap[OPERATION]();
+    } else {
+      setLoading(false);
+    }
+  }, []);
 
-    return(
-        <Box
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            minHeight="100vh"
-        >
-            {loading && <CircularProgress />}
-        </Box>
-    )
+  useEffect(() => {
+    if (!loading && userConfirmation.message) {
+      navigate("/login", { state: userConfirmation });
+    }
+  }, [userConfirmation, loading]);
+
+  return (
+    <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+      {loading && <CircularProgress />}
+    </Box>
+  );
 }
 
 export default EmailOperation;

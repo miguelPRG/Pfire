@@ -1,14 +1,4 @@
-import {
-  Container,
-  Typography,
-  Paper,
-  TextField,
-  Button,
-  Alert,
-  Fade,
-  Box,
-  Divider,
-} from "@mui/material";
+import { Container, Typography, Paper, TextField, Button, Alert, Fade, Box, Divider } from "@mui/material";
 import { useState } from "react";
 import { useAuth } from "../hooks/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
@@ -33,7 +23,10 @@ type LoginFormInputs = z.infer<typeof loginSchema>;
 function LoginPage() {
   const { login, loginWithOAuth } = useAuth();
   const navigate = useNavigate();
-  const [authError, setAuthError] = useState({ error: false, message: "" });
+  const [authError, setAuthError] = useState({
+    error: false,
+    message: "",
+  });
   const location = useLocation();
   const userConfirmation = location.state;
 
@@ -86,24 +79,47 @@ function LoginPage() {
           {authError.message}
         </Alert>
       </Fade>
-      {userConfirmation && userConfirmation.isConfirmed
-        ? (
-          <Fade in={userConfirmation.isConfirmed && userConfirmation.message} timeout={{ enter: 800, exit: 800 }} unmountOnExit>
-        <Alert variant="filled" severity="success" sx={{ mt: -3 }}>
-          {userConfirmation.message}
-        </Alert>
-          </Fade>
-        )
-        : (
-          userConfirmation?.message && (
-        <Fade in={userConfirmation.message} timeout={{ enter: 800, exit: 800 }} unmountOnExit>
-          <Alert variant="filled" severity="error" sx={{ mt: -3 }}>
+      {userConfirmation && userConfirmation.isConfirmed ? (
+        <Fade
+          in={userConfirmation.isConfirmed && userConfirmation.message}
+          timeout={{
+            enter: 800,
+            exit: 800,
+          }}
+          unmountOnExit
+        >
+          <Alert
+            variant="filled"
+            severity="success"
+            sx={{
+              mt: -3,
+            }}
+          >
             {userConfirmation.message}
           </Alert>
         </Fade>
-          )
+      ) : (
+        userConfirmation?.message && (
+          <Fade
+            in={userConfirmation.message}
+            timeout={{
+              enter: 800,
+              exit: 800,
+            }}
+            unmountOnExit
+          >
+            <Alert
+              variant="filled"
+              severity="error"
+              sx={{
+                mt: -3,
+              }}
+            >
+              {userConfirmation.message}
+            </Alert>
+          </Fade>
         )
-      }
+      )}
       <Box
         sx={{
           position: "relative",
@@ -139,7 +155,13 @@ function LoginPage() {
           maxWidth: "400px",
         }}
       >
-        <Typography variant="h1" sx={{ marginBottom: 2, marginTop: 2 }}>
+        <Typography
+          variant="h1"
+          sx={{
+            marginBottom: 2,
+            marginTop: 2,
+          }}
+        >
           INICIAR SESSÃO
         </Typography>
 
@@ -172,7 +194,9 @@ function LoginPage() {
                 textDecoration: "none",
                 fontSize: "0.900rem",
                 cursor: "pointer",
-                "&:hover": { textDecoration: "underline" },
+                "&:hover": {
+                  textDecoration: "underline",
+                },
               }}
             >
               Esqueceste-te da tua palavra-passe?
@@ -220,7 +244,9 @@ function LoginPage() {
                 py: 1.1,
                 width: "200px",
                 border: "1px solid #B0B0B0",
-                "&:hover": { backgroundColor: "background.default" },
+                "&:hover": {
+                  backgroundColor: "background.default",
+                },
               }}
             >
               <img

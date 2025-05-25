@@ -7,6 +7,7 @@ import strawberry
 from strawberry.types import Info
 from typing import Optional
 
+
 @strawberry.type
 class UserQuery:
     @strawberry.field
@@ -23,7 +24,9 @@ class UserQuery:
         # ✅ Se empresa_id não for fornecido, listar todos os utilizadores se superadmin
         if not empresa_id:
             if not jwt["isSuperAdmin"]:
-                raise HTTPException(status_code=403, detail="Apenas super administradores podem listar todos os utilizadores.")
+                raise HTTPException(
+                    status_code=403, detail="Apenas super administradores podem listar todos os utilizadores."
+                )
 
             async for user in users_collection.find().skip(start).limit(lmt):
                 user_data = {
@@ -50,10 +53,14 @@ class UserQuery:
                 {"user_id": ObjectId(jwt["user_id"]), "empresa_id": ObjectId(empresa_id), "isAdmin": True}
             )
             if not user_empresa:
-                raise HTTPException(status_code=403, detail="Acesso negado. Apenas administradores podem visualizar os utilizadores.")
+                raise HTTPException(
+                    status_code=403, detail="Acesso negado. Apenas administradores podem visualizar os utilizadores."
+                )
 
         # ✅ Listar utilizadores da empresa
-        async for user_empresa in users_empresas_collection.find({"empresa_id": ObjectId(empresa_id)}).skip(start).limit(lmt):
+        async for user_empresa in (
+            users_empresas_collection.find({"empresa_id": ObjectId(empresa_id)}).skip(start).limit(lmt)
+        ):
             user = await users_collection.find_one({"_id": user_empresa["user_id"]})
             if not user:
                 continue

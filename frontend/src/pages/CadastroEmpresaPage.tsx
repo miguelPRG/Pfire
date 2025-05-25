@@ -1,11 +1,4 @@
-import {
-  Container,
-  Typography,
-  Paper,
-  TextField,
-  Button,
-  Box,
-} from "@mui/material";
+import { Container, Typography, Paper, TextField, Button, Box } from "@mui/material";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -169,8 +162,7 @@ function CadastroEmpresaPage() {
                 marginTop: 2,
                 transition: "0.3s",
                 "&:hover": {
-                  background:
-                    "linear-gradient(45deg, #FB8C00 30%, #FFA726 90%)",
+                  background: "linear-gradient(45deg, #FB8C00 30%, #FFA726 90%)",
                 },
               }}
             >

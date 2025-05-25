@@ -7,30 +7,37 @@ from datetime import datetime
 
 routerCliente = APIRouter(prefix="/cliente")
 
-#Criar um novo cliente
+
+# Criar um novo cliente
 @routerCliente.post("/")
 async def criar_cliente(cliente: ClienteCreate, request: Request):
 
     # Validar reCAPTCHA token
-    await validar_recaptcha_token(cliente.recaptchaToken, "register")    
-    
+    await validar_recaptcha_token(cliente.recaptchaToken, "register")
+
     jwt = getattr(request.state, "jwt", None)
 
     empresa_id = ObjectId(cliente.empresa_id)
 
-    #Verificar se existe algum cliente com o mesmo empresa_id E que tenha OU o mesmo NIF OU o mesmo email
-    cliente_existente = await clientes_collection.find_one({"empresa_id": empresa_id, "$or": [{"nif": cliente.nif}, {"email": cliente.email}]})
+    # Verificar se existe algum cliente com o mesmo empresa_id E que tenha OU o mesmo NIF OU o mesmo email
+    cliente_existente = await clientes_collection.find_one(
+        {"empresa_id": empresa_id, "$or": [{"nif": cliente.nif}, {"email": cliente.email}]}
+    )
 
     if cliente_existente:
         raise HTTPException(status_code=409, detail="Esta empresa já tem um cliente com o mesmo NIF ou email.")
 
     if not jwt["isSuperAdmin"]:
-        
-        #Verificar se o utilizador é admin da empresa
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": empresa_id, "user_id": ObjectId(jwt["user_id"]), "isAdmin" : True})
-        
+
+        # Verificar se o utilizador é admin da empresa
+        user_empresa = await users_empresas_collection.find_one(
+            {"empresa_id": empresa_id, "user_id": ObjectId(jwt["user_id"]), "isAdmin": True}
+        )
+
         if not user_empresa:
-            raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para criar clientes nesta empresa.")
+            raise HTTPException(
+                status_code=403, detail="Acesso negado! Não tens permissão para criar clientes nesta empresa."
+            )
 
     cliente_data = cliente.model_dump(by_alias=True)
     user_id = ObjectId(jwt["user_id"])
@@ -47,12 +54,13 @@ async def criar_cliente(cliente: ClienteCreate, request: Request):
 
     if not result.inserted_id:
         raise HTTPException(status_code=500, detail="Erro ao criar o cliente.")
-    
+
     return {"message": "Cliente criado com sucesso!"}
+
 
 # Atualizar um cliente
 @routerCliente.put("/")
-async def atualizar_cliente(cliente: ClienteUpdate, request: Request,id: str = None, nif: str = None):
+async def atualizar_cliente(cliente: ClienteUpdate, request: Request, id: str = None, nif: str = None):
     # Sacar jwt
     jwt = getattr(request.state, "jwt", None)
 
@@ -65,11 +73,15 @@ async def atualizar_cliente(cliente: ClienteUpdate, request: Request,id: str = N
     if not jwt["isSuperAdmin"]:
 
         # Verificar se o utilizador é admin da empresa
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": ObjectId(cliente.empresa_id), "user_id": ObjectId(jwt["user_id"]), "isAdmin" : True})
+        user_empresa = await users_empresas_collection.find_one(
+            {"empresa_id": ObjectId(cliente.empresa_id), "user_id": ObjectId(jwt["user_id"]), "isAdmin": True}
+        )
 
         if not user_empresa:
-            raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para atualizar clientes nesta empresa.")
-    
+            raise HTTPException(
+                status_code=403, detail="Acesso negado! Não tens permissão para atualizar clientes nesta empresa."
+            )
+
     cliente_data = cliente.model_dump(exclude_unset=True)
     cliente_data["updated_by"] = ObjectId(jwt["user_id"])
     cliente_data["updated_at"] = datetime.now()
@@ -77,16 +89,17 @@ async def atualizar_cliente(cliente: ClienteUpdate, request: Request,id: str = N
 
     if id:
         result = await clientes_collection.update_one({"_id": ObjectId(id), "isActive": True}, {"$set": cliente_data})
-    
+
     else:
         result = await clientes_collection.update_one({"nif": nif, "isActive": True}, {"$set": cliente_data})
 
     if not result.modified_count:
         raise HTTPException(status_code=404, detail="Cliente não encontrado. Verifique so o cliente realmente existe.")
-    
+
     return {"message": "Cliente atualizado com sucesso!"}
 
-#Apagar um cliente
+
+# Apagar um cliente
 @routerCliente.delete("/")
 async def apagar_cliente(cliente: ClienteActivion, request: Request):
     # Sacar jwt
@@ -97,25 +110,34 @@ async def apagar_cliente(cliente: ClienteActivion, request: Request):
 
     if not cliente.id and not cliente.nif:
         raise HTTPException(status_code=400, detail="ID ou NIF do cliente são obrigatórios.")
-    
+
     if not jwt["isSuperAdmin"]:
-        
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": ObjectId(cliente.empresa_id), "user_id": ObjectId(jwt["user_id"]), "isAdmin" : True})
-        
+
+        user_empresa = await users_empresas_collection.find_one(
+            {"empresa_id": ObjectId(cliente.empresa_id), "user_id": ObjectId(jwt["user_id"]), "isAdmin": True}
+        )
+
         if not user_empresa:
-            raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para apagar clientes nesta empresa.")
-    
+            raise HTTPException(
+                status_code=403, detail="Acesso negado! Não tens permissão para apagar clientes nesta empresa."
+            )
+
     if cliente.id:
-        result = await clientes_collection.update_one({"_id": ObjectId(cliente.id), "isActive": True}, {"$set": {"isActive": False}})
+        result = await clientes_collection.update_one(
+            {"_id": ObjectId(cliente.id), "isActive": True}, {"$set": {"isActive": False}}
+        )
     else:
-        result = await clientes_collection.update_one({"nif": cliente.nif,"isActive": True}, {"$set": {"isActive": False}})
-    
+        result = await clientes_collection.update_one(
+            {"nif": cliente.nif, "isActive": True}, {"$set": {"isActive": False}}
+        )
+
     if not result.modified_count:
         raise HTTPException(status_code=404, detail="Cliente não encontrado. Verifique se o cliente realmente existe.")
-    
+
     return {"message": "Cliente apagado com sucesso!"}
 
-#Ativar um cliente
+
+# Ativar um cliente
 @routerCliente.put("/activate")
 async def reativar_cliente(cliente: ClienteActivion, request: Request):
     # Sacar jwt
@@ -126,21 +148,29 @@ async def reativar_cliente(cliente: ClienteActivion, request: Request):
 
     if not cliente.id and not cliente.nif:
         raise HTTPException(status_code=400, detail="ID ou NIF do cliente são obrigatórios.")
-    
+
     if not jwt["isSuperAdmin"]:
 
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": ObjectId(cliente.empresa_id), "user_id": ObjectId(jwt["user_id"]), "isAdmin" : True})
+        user_empresa = await users_empresas_collection.find_one(
+            {"empresa_id": ObjectId(cliente.empresa_id), "user_id": ObjectId(jwt["user_id"]), "isAdmin": True}
+        )
 
         if not user_empresa:
-            raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para ativar clientes nesta empresa.")
-    
+            raise HTTPException(
+                status_code=403, detail="Acesso negado! Não tens permissão para ativar clientes nesta empresa."
+            )
+
     if cliente.id:
-        result = await clientes_collection.update_one({"_id": ObjectId(cliente.id), "isActive": False}, {"$set": {"isActive": True}})
-    
+        result = await clientes_collection.update_one(
+            {"_id": ObjectId(cliente.id), "isActive": False}, {"$set": {"isActive": True}}
+        )
+
     else:
-        result = await clientes_collection.update_one({"nif": cliente.nif, "isActive": False}, {"$set": {"isActive": True}})
-    
+        result = await clientes_collection.update_one(
+            {"nif": cliente.nif, "isActive": False}, {"$set": {"isActive": True}}
+        )
+
     if not result.modified_count:
-            raise HTTPException(status_code=404, detail="Cliente não encontrado. É possivel que o cliente já esteja ativo.")
+        raise HTTPException(status_code=404, detail="Cliente não encontrado. É possivel que o cliente já esteja ativo.")
 
     return {"message": "Cliente ativado com sucesso!"}

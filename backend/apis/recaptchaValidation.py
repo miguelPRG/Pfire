@@ -6,7 +6,8 @@ from os import getenv
 PROJECT_ID = getenv("GOOGLE_CLOUD_PROJECT_ID")  # ID do seu projeto no Google Cloud
 GOOGLE_CLOUD_API_KEY = getenv("GOOGLE_CLOUD_API_KEY")  # Chave da API do Google Cloud
 
-async def validar_recaptcha_token(token: str, action:str):
+
+async def validar_recaptcha_token(token: str, action: str):
     if not token:
         raise HTTPException(status_code=400, detail="Token reCAPTCHA ausente.")
 
@@ -16,7 +17,7 @@ async def validar_recaptcha_token(token: str, action:str):
         "event": {
             "token": token,
             "siteKey": "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",  # Chave do site (frontend)
-            "expectedAction": action  # Nome da ação definida no frontend
+            "expectedAction": action,  # Nome da ação definida no frontend
         }
     }
 
@@ -25,7 +26,7 @@ async def validar_recaptcha_token(token: str, action:str):
     async with httpx.AsyncClient() as client:
         response = await client.post(url, json=payload, headers=headers)
 
-    print("Resposta do reCAPTCHA: \n"+ response.text)
+    print("Resposta do reCAPTCHA: \n" + response.text)
 
     if response.status_code != 200:
         raise HTTPException(status_code=400, detail="Erro na API do reCAPTCHA.")
@@ -34,7 +35,6 @@ async def validar_recaptcha_token(token: str, action:str):
     print("✅ Ação esperada:", action)
     print("✅ Ação recebida:", result.get("tokenProperties", {}).get("action"))
 
-
     if "error" in result or not result.get("tokenProperties", {}).get("valid", False):
         raise HTTPException(status_code=400, detail="Erro ao validar reCAPTCHA.")
 
@@ -42,5 +42,5 @@ async def validar_recaptcha_token(token: str, action:str):
 
     if risk_score < 0.5:
         raise HTTPException(status_code=400, detail="reCAPTCHA falhou: interação suspeita.")
-    
+
     print("reCAPTCHA Válido!")

@@ -1,14 +1,16 @@
 from pydantic import BaseModel, Field
 from typing import Optional
 
+
 class EmpresaCreate(BaseModel):
     nome: str
-    nif: str = Field(..., pattern=r'^[5789]\d{8}$')
+    nif: str = Field(..., pattern=r"^[5789]\d{8}$")
     localidade: str
     morada: str
-    codigo_postal: str = Field(..., pattern=r'^\d{4}-\d{3}$')
-    telefone: str = Field(..., pattern=r'^\+?[0-9\s\-()]{7,15}$')  # Correção aqui
+    codigo_postal: str = Field(..., pattern=r"^\d{4}-\d{3}$")
+    telefone: str = Field(..., pattern=r"^\+?[0-9\s\-()]{7,15}$")  # Correção aqui
     logo: Optional[bytes] = None
+
 
 class EmpresaUpdate(BaseModel):
     recaptchaToken: str

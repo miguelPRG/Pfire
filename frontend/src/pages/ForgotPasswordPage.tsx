@@ -2,25 +2,13 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import {
-  Box,
-  Button,
-  Container,
-  TextField,
-  Typography,
-  Paper,
-  Fade,
-  Alert,
-} from "@mui/material";
+import { Box, Button, Container, TextField, Typography, Paper, Fade, Alert } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/images/logo.png";
 
 // Esquema de validação com Zod
 const forgotPasswordSchema = z.object({
-  email: z
-    .string()
-    .nonempty("O email é obrigatório")
-    .email("Insira um email válido"),
+  email: z.string().nonempty("O email é obrigatório").email("Insira um email válido"),
 });
 
 type ForgotPasswordFormInputs = z.infer<typeof forgotPasswordSchema>;
@@ -43,22 +31,24 @@ function ForgotPassword() {
   async function onSubmit(data: ForgotPasswordFormInputs) {
     try {
       // Gerar recaptcha v3
-      const recaptchaToken = await window.grecaptcha.enterprise.execute(
-        "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",
-        { action: "forgot_password" }
-      );
+      const recaptchaToken = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
+        action: "forgot_password",
+      });
 
       const response = await fetch("/backend/user/forgot-password", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: data.email, recaptchaToken }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: data.email,
+          recaptchaToken,
+        }),
       });
 
       if (response.ok) {
         setAlertType("success");
-        setAlertMsg(
-          "Se existir uma conta com esse e-mail, receberás um link de recuperação em breve."
-        );
+        setAlertMsg("Se existir uma conta com esse e-mail, receberás um link de recuperação em breve.");
         reset();
       } else {
         const res = await response.json();
@@ -76,12 +66,7 @@ function ForgotPassword() {
     <Container maxWidth="sm" sx={{ mt: 10 }}>
       {/* ALERTA COM FADE */}
       <Fade in={open} timeout={{ enter: 800, exit: 800 }} unmountOnExit>
-        <Alert
-          variant="filled"
-          severity={alertType}
-          sx={{ mb: 2 }}
-          onClose={() => setOpen(false)}
-        >
+        <Alert variant="filled" severity={alertType} sx={{ mb: 2 }} onClose={() => setOpen(false)}>
           {alertMsg}
         </Alert>
       </Fade>
@@ -128,13 +113,7 @@ function ForgotPassword() {
           Introduz em baixo o email associado à tua conta Pfire.
         </Typography>
 
-        <Box
-          component="form"
-          onSubmit={handleSubmit(onSubmit)}
-          display="flex"
-          flexDirection="column"
-          gap={2}
-        >
+        <Box component="form" onSubmit={handleSubmit(onSubmit)} display="flex" flexDirection="column" gap={2}>
           <TextField
             {...register("email")}
             label="Email"
@@ -168,8 +147,7 @@ function ForgotPassword() {
                 whiteSpace: "nowrap",
                 transition: "0.3s",
                 "&:hover": {
-                  background:
-                    "linear-gradient(45deg, #FB8C00 30%, #FFA726 90%)",
+                  background: "linear-gradient(45deg, #FB8C00 30%, #FFA726 90%)",
                 },
               }}
               disabled={isSubmitting}

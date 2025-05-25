@@ -68,27 +68,41 @@ function ResponsiveAppBar() {
       <AppBar
         position="fixed"
         elevation={trigger ? 4 : 0}
-        sx={{ backgroundColor: theme.palette.primary.main, borderRadius: 0 }}
+        sx={{
+          backgroundColor: theme.palette.primary.main,
+          borderRadius: 0,
+        }}
       >
         <Toolbar
           disableGutters
           sx={{
             minHeight: 54,
-            px: { xs: 1, sm: 2, md: 3 },
+            px: {
+              xs: 1,
+              sm: 2,
+              md: 3,
+            },
             display: "flex",
             justifyContent: "space-between",
           }}
         >
           {/* Lado esquerdo */}
-          <Box sx={{ display: "flex", alignItems: "center" }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
             {empresaId && (
-            <IconButton
-              onClick={toggleSidebar}
-              color="inherit"
-              sx={{ marginRight: 2 }}
-            >
-              <MenuIcon />
-            </IconButton>
+              <IconButton
+                onClick={toggleSidebar}
+                color="inherit"
+                sx={{
+                  marginRight: 2,
+                }}
+              >
+                <MenuIcon />
+              </IconButton>
             )}
             <Box
               component="img"
@@ -118,8 +132,16 @@ function ResponsiveAppBar() {
                 letterSpacing: ".2rem",
                 color: "inherit",
                 textDecoration: "none",
-                fontSize: { xs: "1.2rem", sm: "1.8rem", md: "2.0rem" },
-                ml: { xs: 1.65, sm: 3.4, md: 3.8 },
+                fontSize: {
+                  xs: "1.2rem",
+                  sm: "1.8rem",
+                  md: "2.0rem",
+                },
+                ml: {
+                  xs: 1.65,
+                  sm: 3.4,
+                  md: 3.8,
+                },
                 cursor: "pointer",
               }}
               onClick={() => navigate("/")}
@@ -129,9 +151,19 @@ function ResponsiveAppBar() {
           </Box>
 
           {/* Lado direito */}
-          <Box sx={{ display: "flex", alignItems: "center" }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
             <Tooltip title="Open settings">
-              <IconButton onClick={openUserMenu} sx={{ p: 0 }}>
+              <IconButton
+                onClick={openUserMenu}
+                sx={{
+                  p: 0,
+                }}
+              >
                 <Avatar alt="User Avatar" src="/static/images/avatar/2.jpg" />
               </IconButton>
             </Tooltip>
@@ -140,8 +172,14 @@ function ResponsiveAppBar() {
               anchorEl={anchorElUser}
               open={Boolean(anchorElUser)}
               onClose={closeUserMenu}
-              anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-              transformOrigin={{ vertical: "top", horizontal: "left" }}
+              anchorOrigin={{
+                vertical: "bottom",
+                horizontal: "left",
+              }}
+              transformOrigin={{
+                vertical: "top",
+                horizontal: "left",
+              }}
               PaperProps={{
                 sx: {
                   mt: 3,
@@ -159,7 +197,12 @@ function ResponsiveAppBar() {
                     action();
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
                     {icon}
                     <Typography variant="body2" textAlign="left" width="100%">
                       {label}

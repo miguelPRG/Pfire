@@ -33,9 +33,7 @@ const addClientSchema = z.object({
     .regex(/^\d{4}-\d{3}$/, "Número de telefone inválido"),
 });
 
-
 type AddClientFormInputs = Omit<z.infer<typeof addClientSchema>, "recaptchaToken">;
-
 
 export default function AddNewClientPage() {
   const navigate = useNavigate();
@@ -50,64 +48,59 @@ export default function AddNewClientPage() {
     resolver: zodResolver(addClientSchema),
   });
 
- const enviarNovoCliente = async (
-  dados: AddClientFormInputs & { empresa_id: string }
-) => {
-  try {
-    if (!dados.empresa_id || !/^[a-f\d]{24}$/i.test(dados.empresa_id)) {
-      throw new Error("ID da empresa inválido ou não fornecido.");
+  const enviarNovoCliente = async (dados: AddClientFormInputs & { empresa_id: string }) => {
+    try {
+      if (!dados.empresa_id || !/^[a-f\d]{24}$/i.test(dados.empresa_id)) {
+        throw new Error("ID da empresa inválido ou não fornecido.");
+      }
+
+      const response = await fetch(`/backend/cliente`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(dados),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Erro ao criar cliente");
+      }
+
+      console.log("Cliente criado com sucesso:", data);
+    } catch (error) {
+      console.error("Erro ao criar cliente:", error);
+      throw error;
     }
-
-    const response = await fetch(`/backend/cliente`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-      body: JSON.stringify(dados),
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.detail || "Erro ao criar cliente");
-    }
-
-    console.log("Cliente criado com sucesso:", data);
-    
-  } catch (error) {
-    console.error("Erro ao criar cliente:", error);
-    throw error;
-  }
-};
-
+  };
 
   const onSubmit = async (formData: AddClientFormInputs) => {
-  const empresa_id = prompt("Insere o ID da empresa:");
-  if (!empresa_id) {
-    alert("Erro: empresa_id não fornecido.");
-    return;
-  }
+    const empresa_id = prompt("Insere o ID da empresa:");
+    if (!empresa_id) {
+      alert("Erro: empresa_id não fornecido.");
+      return;
+    }
 
-  try {
-    const recaptchaToken = await grecaptcha.enterprise.execute(
-      "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",
-      { action: "register" }
-    );
+    try {
+      const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
+        action: "register",
+      });
 
-    const dadosCompletos = {
-      ...formData,
-      recaptchaToken,
-      empresa_id,
-    };
+      const dadosCompletos = {
+        ...formData,
+        recaptchaToken,
+        empresa_id,
+      };
 
-    await enviarNovoCliente(dadosCompletos);
-    alert("Novo cliente adicionado com sucesso!");
-    navigate("/ClientManagementTable");
-  } catch (error) {
-    alert("Erro ao adicionar cliente.");
-  }
-};
+      await enviarNovoCliente(dadosCompletos);
+      alert("Novo cliente adicionado com sucesso!");
+      navigate("/ClientManagementTable");
+    } catch (error) {
+      alert("Erro ao adicionar cliente.");
+    }
+  };
 
   const handleCancel = () => {
     navigate("/clients-list");
@@ -117,7 +110,11 @@ export default function AddNewClientPage() {
     <Paper sx={{ maxWidth: 600, mx: "auto", mt: 5, p: 4 }}>
       <Typography
         variant="h5"
-        sx={{ fontWeight: "bold", fontSize: 30, textAlign: "center" }}
+        sx={{
+          fontWeight: "bold",
+          fontSize: 30,
+          textAlign: "center",
+        }}
       >
         Adicionar novo Cliente
       </Typography>
@@ -125,7 +122,11 @@ export default function AddNewClientPage() {
       <Box
         component="form"
         onSubmit={handleSubmit(onSubmit)}
-        sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 2,
+        }}
       >
         <TextField
           {...register("nome")}
@@ -153,9 +154,7 @@ export default function AddNewClientPage() {
                     display: "flex",
                     alignItems: "center",
                     border: "1px solid",
-                    borderColor: errors.telefone
-                      ? "error.main"
-                      : "rgba(0, 0, 0, 0.23)",
+                    borderColor: errors.telefone ? "error.main" : "rgba(0, 0, 0, 0.23)",
                     borderRadius: 1,
                     padding: "18.5px 14px",
                     fontSize: "16px",
@@ -184,7 +183,13 @@ export default function AddNewClientPage() {
                   />
                 </Box>
                 {errors.telefone && (
-                  <Typography color="error" variant="body2" sx={{ mt: 0.5 }}>
+                  <Typography
+                    color="error"
+                    variant="body2"
+                    sx={{
+                      mt: 0.5,
+                    }}
+                  >
                     {errors.telefone.message}
                   </Typography>
                 )}
@@ -223,7 +228,12 @@ export default function AddNewClientPage() {
         />
 
         <Box
-          sx={{ display: "flex", justifyContent: "flex-end", gap: 2, mt: 2 }}
+          sx={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 2,
+            mt: 2,
+          }}
         >
           <Button
             onClick={handleCancel}
@@ -241,7 +251,9 @@ export default function AddNewClientPage() {
             sx={{
               backgroundColor: theme.palette.success.main,
               color: "white",
-              "&:hover": { backgroundColor: theme.palette.success.dark },
+              "&:hover": {
+                backgroundColor: theme.palette.success.dark,
+              },
               minWidth: 140,
             }}
             disabled={isSubmitting}

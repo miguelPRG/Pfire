@@ -5,13 +5,15 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Box, Button, TextField, Typography, Paper, CircularProgress } from "@mui/material";
 import { useState, useLayoutEffect, useEffect } from "react";
 
-const newPasswordSchema = z.object({
-  password: z.string().min(6, "A nova palavra-passe deve ter pelo menos 6 caracteres"),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "As palavras-passe não coincidem",
-  path: ["confirmPassword"],
-});
+const newPasswordSchema = z
+  .object({
+    password: z.string().min(6, "A nova palavra-passe deve ter pelo menos 6 caracteres"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "As palavras-passe não coincidem",
+    path: ["confirmPassword"],
+  });
 
 type NewPasswordFormInputs = z.infer<typeof newPasswordSchema>;
 
@@ -19,7 +21,10 @@ export default function NewPasswordPage() {
   const { GLOBAL_ID } = useParams<{ GLOBAL_ID: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true); // loading começa como true
-  const [userConfirmation, setUserConfirmation] = useState<{ isConfirmed: boolean, message: string }>({ isConfirmed: false, message: "" });  
+  const [userConfirmation, setUserConfirmation] = useState<{
+    isConfirmed: boolean;
+    message: string;
+  }>({ isConfirmed: false, message: "" });
   const {
     register,
     handleSubmit,
@@ -33,30 +38,37 @@ export default function NewPasswordPage() {
       setLoading(false);
       return;
     }
-    
+
     const checkToken = async () => {
       try {
         const response = await fetch(`/backend/user/get-global-id/${GLOBAL_ID}`, {
           method: "GET",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+          },
         });
 
         if (!response.ok) {
-          setUserConfirmation({ isConfirmed: false, message: "O botão que foi enviado no email já não funciona" });
+          setUserConfirmation({
+            isConfirmed: false,
+            message: "O botão que foi enviado no email já não funciona",
+          });
         }
       } catch (error) {
-        setUserConfirmation({ isConfirmed: false, message: "O botão que foi enviado no email já não funciona" });
+        setUserConfirmation({
+          isConfirmed: false,
+          message: "O botão que foi enviado no email já não funciona",
+        });
       }
 
       setLoading(false);
     };
-      
-    checkToken();
 
+    checkToken();
   }, []);
 
   useEffect(() => {
-    if (!loading &&userConfirmation.message) {
+    if (!loading && userConfirmation.message) {
       navigate("/login", { state: userConfirmation });
     }
   }, [userConfirmation]);
@@ -65,31 +77,52 @@ export default function NewPasswordPage() {
     try {
       const response = await fetch(`/backend/user/email/reset-password`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           password: data.password.trim(),
           global_id: GLOBAL_ID,
-      }),
+        }),
       });
 
       if (!response.ok) {
         const res = await response.json();
-        setUserConfirmation({ isConfirmed: false, message: res.message });
+        setUserConfirmation({
+          isConfirmed: false,
+          message: res.message,
+        });
         return;
       }
 
-      setUserConfirmation({ isConfirmed: true, message: "Palavra-passe atualizada com sucesso!" });
+      setUserConfirmation({
+        isConfirmed: true,
+        message: "Palavra-passe atualizada com sucesso!",
+      });
     } catch (error) {
-      setUserConfirmation({ isConfirmed: false, message: "Erro ao atualizar a palavra-passe" });
+      setUserConfirmation({
+        isConfirmed: false,
+        message: "Erro ao atualizar a palavra-passe",
+      });
     }
-    
   };
 
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-        <Paper elevation={3} sx={{ p: 4, minWidth: 350, textAlign: "center" }}>
-          <CircularProgress sx={{ mb: 2 }} />
+        <Paper
+          elevation={3}
+          sx={{
+            p: 4,
+            minWidth: 350,
+            textAlign: "center",
+          }}
+        >
+          <CircularProgress
+            sx={{
+              mb: 2,
+            }}
+          />
           <Typography>Carregando...</Typography>
         </Paper>
       </Box>
@@ -127,7 +160,10 @@ export default function NewPasswordPage() {
             color="primary"
             fullWidth
             disabled={isSubmitting}
-            sx={{ mt: 2, position: "relative" }}
+            sx={{
+              mt: 2,
+              position: "relative",
+            }}
           >
             Atualizar Palavra-Passe
           </Button>

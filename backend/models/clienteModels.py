@@ -1,19 +1,21 @@
-from pydantic import BaseModel, EmailStr,Field
+from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 
+
 class ClienteCreate(BaseModel):
     nome: str
     email: EmailStr
-    telefone: str = Field(..., pattern=r'^\+?[0-9\s\-()]{7,15}$')
-    nif: str = Field(..., pattern=r'^[5789]\d{8}$')
+    telefone: str = Field(..., pattern=r"^\+?[0-9\s\-()]{7,15}$")
+    nif: str = Field(..., pattern=r"^[5789]\d{8}$")
     localidade: str
     morada: str
-    codigo_postal: str = Field(..., pattern=r'^\d{4}-\d{3}$')
+    codigo_postal: str = Field(..., pattern=r"^\d{4}-\d{3}$")
     empresa_id: str
     recaptchaToken: str
+
 
 class ClienteUpdate(BaseModel):
     empresa_id: str
@@ -26,9 +28,9 @@ class ClienteUpdate(BaseModel):
     codigo_postal: Optional[str] = None
     recaptchaToken: str
 
+
 class ClienteActivion(BaseModel):
     id: Optional[str] = None
     nif: Optional[str] = None
     empresa_id: str
     recaptchaToken: str
-    

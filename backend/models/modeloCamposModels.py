@@ -4,24 +4,25 @@ from fastapi import HTTPException
 
 MAIN_FIELDS = {
     "model_name",
-    "empresa_id", 
+    "empresa_id",
     "recaptchaToken",
 }
 
 ALLOWED_DATATYPES = {"number", "string", "bool", "object", "date"}  # Tipos de dados permitidos
+
 
 # Função auxiliar para validação de campos personalizados no método de criação
 def validate_fields(key, value):
     if not key.startswith("custom_"):
         raise HTTPException(
             status_code=400,
-            detail=f"O campo que está a tentar criar é inválido: {key}. Os campos personalizados devem começar com 'custom_'."
+            detail=f"O campo que está a tentar criar é inválido: {key}. Os campos personalizados devem começar com 'custom_'.",
         )
 
     if not isinstance(value, dict):
         raise HTTPException(
             status_code=400,
-            detail=f"O campo que está a tentar criar:  {key} deve ser um dicionário com 'datatype' e 'required'."
+            detail=f"O campo que está a tentar criar:  {key} deve ser um dicionário com 'datatype' e 'required'.",
         )
 
     # Estas são as chaves permitidas por padrão
@@ -33,18 +34,18 @@ def validate_fields(key, value):
 
         # Verificar se existem subcampos personalizados que não começam com "custom_"
         bad_fields = {k for k in custom_fields if not k.startswith("custom_")}
-        
+
         if bad_fields:
             raise HTTPException(
                 status_code=400,
-                detail=f"Foram encontrados subcampos inválidos: {bad_fields}. Os campos personalizados devem começar com 'custom_'."
+                detail=f"Foram encontrados subcampos inválidos: {bad_fields}. Os campos personalizados devem começar com 'custom_'.",
             )
 
         # Verificar se o campo do tipo object possui pelo menos um subcampo custom_
         if not custom_fields:
             raise HTTPException(
                 status_code=400,
-                detail=f"O campo que está a tentar criar:  {key} do tipo 'object' deve conter pelo menos um subcampo personalizado (custom_)."
+                detail=f"O campo que está a tentar criar:  {key} do tipo 'object' deve conter pelo menos um subcampo personalizado (custom_).",
             )
 
         for subkey, subvalue in custom_fields.items():
@@ -61,8 +62,7 @@ def validate_fields(key, value):
     extra_keys = set(value.keys()) - allowed_keys
     if extra_keys:
         raise HTTPException(
-            status_code=400,
-            detail=f"O campo que está a tentar criar: {key} contém chaves inválidas: {extra_keys}."
+            status_code=400, detail=f"O campo que está a tentar criar: {key} contém chaves inválidas: {extra_keys}."
         )
 
     # Validação do formato do campo
@@ -70,15 +70,12 @@ def validate_fields(key, value):
     required = value.get("required")
 
     if datatype is None:
-        raise HTTPException(
-            status_code=400,
-            detail=f"O campo que está a tentar criar: {key} deve conter 'datatype'."
-        )
+        raise HTTPException(status_code=400, detail=f"O campo que está a tentar criar: {key} deve conter 'datatype'.")
 
     if datatype not in ALLOWED_DATATYPES:
         raise HTTPException(
             status_code=400,
-            detail=f"Tipo de dado inválido para o novo campo {key}: {datatype}. Tipos permitidos: {ALLOWED_DATATYPES}."
+            detail=f"Tipo de dado inválido para o novo campo {key}: {datatype}. Tipos permitidos: {ALLOWED_DATATYPES}.",
         )
 
     if required is None:
@@ -86,16 +83,16 @@ def validate_fields(key, value):
 
     elif not isinstance(required, bool):
         raise HTTPException(
-            status_code=400,
-            detail=f"O campo 'required' de {key} deve ser um booleano (true ou false)."
+            status_code=400, detail=f"O campo 'required' de {key} deve ser um booleano (true ou false)."
         )
+
 
 # Classe ModelosCamposCreate
 class ModelosCamposCreate(BaseModel):
     model_name: str  # Ex: "extintores", "para-raios", "bocas de incêndio"
     empresa_id: str
     recaptchaToken: str
-    model_config = ConfigDict(extra='allow')  # Permite campos extras
+    model_config = ConfigDict(extra="allow")  # Permite campos extras
 
     @model_validator(mode="before")
     @classmethod
@@ -103,7 +100,7 @@ class ModelosCamposCreate(BaseModel):
         if len(values.keys()) < 3:
             raise HTTPException(
                 status_code=400,
-                detail="Modelo deve conter pelo menos 3 campos: 'model_name', 'empresa_id' e um campo personalizado."
+                detail="Modelo deve conter pelo menos 3 campos: 'model_name', 'empresa_id' e um campo personalizado.",
             )
 
         # Valida todos os campos personalizados no nível principal
@@ -114,12 +111,14 @@ class ModelosCamposCreate(BaseModel):
 
         return values
 
+
 # Classe ModelosCamposUpdate
 class ModelosCamposUpdate(BaseModel):
     model_name: Optional[str] = None  # Ex: "extintores", "para-raios", "bocas de incêndio"
     empresa_id: str
     recaptchaToken: str
-    model_config = ConfigDict(extra='allow')  # Permite campos extras
+    model_config = ConfigDict(extra="allow")  # Permite campos extras
+
 
 class ModelosCamposDelete(BaseModel):
     empresa_id: str

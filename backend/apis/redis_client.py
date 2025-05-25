@@ -17,9 +17,10 @@ redis_client = aioredis.Redis(
     host=redis_host,
     port=redis_port,
     password=redis_password,
-    ssl=True,             # Habilita SSL para conexiones seguras
-    decode_responses=True # Para trabajar con strings en vez de bytes
+    ssl=True,  # Habilita SSL para conexiones seguras
+    decode_responses=True,  # Para trabajar con strings en vez de bytes
 )
+
 
 # Función para probar la conexión
 async def test_redis_connection():

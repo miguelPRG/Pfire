@@ -36,20 +36,16 @@ const registerSchema = z.object({
   user: z
     .object({
       nome: z.string().nonempty("O nome é obrigatório"),
-      email: z
-        .string()
-        .nonempty("O email é obrigatório")
-        .email("Email inválido"),
+      email: z.string().nonempty("O email é obrigatório").email("Email inválido"),
       password: z
         .string()
         .nonempty("A senha é obrigatória")
         .min(9, "A senha deve ter pelo menos 9 caracteres")
         .regex(/[A-Z]/, "A senha deve conter pelo menos uma letra maiúscula")
         .regex(/\d/, "A senha deve conter pelo menos um número"),
-      confirmPassword: z
-        .string()
-        .optional()
-    }).refine((data) => data.password === data.confirmPassword, {
+      confirmPassword: z.string().optional(),
+    })
+    .refine((data) => data.password === data.confirmPassword, {
       message: "As senhas não coincidem",
       path: ["confirmPassword"],
     }),
@@ -105,12 +101,18 @@ function RegisterPage() {
 
     try {
       delete data.user.confirmPassword; // Remove o campo confirmPassword do payload
-      const payload = { user: data.user, empresa: data.empresa };
+      const payload = {
+        user: data.user,
+        empresa: data.empresa,
+      };
       await registerUser(payload);
       setShowSuccessDialog(true); // Mostra o popup de sucesso
     } catch (err: any) {
       window.scrollTo({ top: 0, behavior: "smooth" });
-      setIsRegistError({ error: true, message: err.message });
+      setIsRegistError({
+        error: true,
+        message: err.message,
+      });
     }
   };
 
@@ -127,7 +129,13 @@ function RegisterPage() {
       {/* Exibir erro de registo */}
       {isRegistError.error && isRegistError.message && (
         <Fade in={isRegistError.error} timeout={800}>
-          <Alert variant="filled" severity="error" sx={{ mt: -7.5 }}>
+          <Alert
+            variant="filled"
+            severity="error"
+            sx={{
+              mt: -7.5,
+            }}
+          >
             {isRegistError.message}
           </Alert>
         </Fade>
@@ -148,16 +156,36 @@ function RegisterPage() {
           <img
             src={logo}
             alt="Logo"
-            style={{ width: "100px", height: "100px" }}
+            style={{
+              width: "100px",
+              height: "100px",
+            }}
           />
         </Box>
       </Box>
-      <Paper elevation={6} sx={{ maxWidth: "1000px", p: isMobile ? 2 : 4 }}>
-        <Typography variant="h1" sx={{ mb: 2, mt: 2 }}>
+      <Paper
+        elevation={6}
+        sx={{
+          maxWidth: "1000px",
+          p: isMobile ? 2 : 4,
+        }}
+      >
+        <Typography
+          variant="h1"
+          sx={{
+            mb: 2,
+            mt: 2,
+          }}
+        >
           CRIAR CONTA COM
         </Typography>
         <Box
-          sx={{ display: "flex", justifyContent: "center", gap: 1, mt: 0.5 }}
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            gap: 1,
+            mt: 0.5,
+          }}
         >
           <Button
             onClick={() => navigate("/cadastro-empresa")}
@@ -169,13 +197,19 @@ function RegisterPage() {
               py: 0.7,
               width: "200px",
               border: "1px solid #B0B0B0",
-              "&:hover": { backgroundColor: "background.default" },
+              "&:hover": {
+                backgroundColor: "background.default",
+              },
             }}
           >
             <img
               src={google}
               alt="Google Logo"
-              style={{ width: 28, height: 28, marginRight: 8 }}
+              style={{
+                width: 28,
+                height: 28,
+                marginRight: 8,
+              }}
             />
           </Button>
           <Button
@@ -188,18 +222,30 @@ function RegisterPage() {
               py: 0.7,
               width: "200px",
               border: "1px solid #B0B0B0",
-              "&:hover": { backgroundColor: "background.default" },
+              "&:hover": {
+                backgroundColor: "background.default",
+              },
             }}
           >
             <img
               src={microsoft}
               alt="Microsoft Logo"
-              style={{ width: 33, height: 32, marginRight: 8 }}
+              style={{
+                width: 33,
+                height: 32,
+                marginRight: 8,
+              }}
             />
           </Button>
         </Box>
         <Divider sx={{ width: "100%", my: 2 }}>
-          <Typography variant="body1" sx={{ px: 2, color: "gray" }}>
+          <Typography
+            variant="body1"
+            sx={{
+              px: 2,
+              color: "gray",
+            }}
+          >
             ou
           </Typography>
         </Divider>
@@ -238,7 +284,13 @@ function RegisterPage() {
             fullWidth
             margin="normal"
           />
-          <Typography variant="h1" sx={{ fontSize: "1.1rem", mt: "8px" }}>
+          <Typography
+            variant="h1"
+            sx={{
+              fontSize: "1.1rem",
+              mt: "8px",
+            }}
+          >
             Dados da Empresa
           </Typography>
           <TextField
@@ -292,9 +344,7 @@ function RegisterPage() {
                       display: "flex",
                       alignItems: "center",
                       border: "1px solid",
-                      borderColor: errors.empresa?.telefone
-                        ? "error.main"
-                        : "rgba(0, 0, 0, 0.23)",
+                      borderColor: errors.empresa?.telefone ? "error.main" : "rgba(0, 0, 0, 0.23)",
                       borderRadius: 1,
                       padding: "18.5px 14px",
                       fontSize: "16px",
@@ -324,7 +374,13 @@ function RegisterPage() {
                     />
                   </Box>
                   {errors.empresa?.telefone && (
-                    <Typography color="error" variant="body2" sx={{ mt: 0.5 }}>
+                    <Typography
+                      color="error"
+                      variant="body2"
+                      sx={{
+                        mt: 0.5,
+                      }}
+                    >
                       {errors.empresa.telefone.message}
                     </Typography>
                   )}
@@ -349,7 +405,13 @@ function RegisterPage() {
           </Button>
         </form>
         <Dialog open={showSuccessDialog} onClose={() => navigate("/login")}>
-          <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <DialogTitle
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
             <CheckCircleIcon color="success" fontSize="large" />
             <Typography variant="h6" fontWeight="bold">
               Conta criada com sucesso!
@@ -357,13 +419,21 @@ function RegisterPage() {
           </DialogTitle>
 
           <DialogContent>
-            <Typography sx={{ mt: 1 }}>
-              O teu registo foi concluído. Por favor, verifica o teu email para
-              ativar a conta.
+            <Typography
+              sx={{
+                mt: 1,
+              }}
+            >
+              O teu registo foi concluído. Por favor, verifica o teu email para ativar a conta.
             </Typography>
           </DialogContent>
 
-          <DialogActions sx={{ justifyContent: "center", pb: 2 }}>
+          <DialogActions
+            sx={{
+              justifyContent: "center",
+              pb: 2,
+            }}
+          >
             <Button
               onClick={() => navigate("/login")}
               variant="contained"

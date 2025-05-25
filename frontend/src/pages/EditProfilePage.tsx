@@ -1,16 +1,6 @@
 import { useState, useLayoutEffect } from "react";
 import { useAuth } from "../hooks/AuthContext";
-import {
-  Box,
-  Button,
-  Container,
-  TextField,
-  Typography,
-  Avatar,
-  Paper,
-  IconButton,
-  Grid,
-} from "@mui/material";
+import { Box, Button, Container, TextField, Typography, Avatar, Paper, IconButton, Grid } from "@mui/material";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
 import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
@@ -58,7 +48,7 @@ function EditProfilePage() {
   const { user } = useAuth();
   // States para valores padrão do user e da empresa
   const [defaultUserValues, setDefaultUserValues] = useState<UserInputs>({
-    name: user?.nome || "", 
+    name: user?.nome || "",
     email: user?.email || "",
     phone: user?.telefone || "",
     password: "",
@@ -75,11 +65,7 @@ function EditProfilePage() {
     companyPhone: "",
   });
 
-  useLayoutEffect(() => {
-
-    
-
-  }, []);
+  useLayoutEffect(() => {}, []);
 
   // Formulário do usuário
   const {
@@ -124,16 +110,34 @@ function EditProfilePage() {
   return (
     <Container maxWidth={false} sx={{ mt: 5 }}>
       {/* Formulário de Perfil do Usuário */}
-      <Paper elevation={3} sx={{ p: 3, borderRadius: 3, mx: "auto", width: "100%", maxWidth: "700px" }}>
+      <Paper
+        elevation={3}
+        sx={{
+          p: 3,
+          borderRadius: 3,
+          mx: "auto",
+          width: "100%",
+          maxWidth: "700px",
+        }}
+      >
         <Box textAlign="center" mb={3} display="flex" flexDirection="column" alignItems="center">
           <Box position="relative">
-            <Avatar alt="User Avatar" src={avatarPreview} sx={{ width: 80, height: 80 }} />
+            <Avatar
+              alt="User Avatar"
+              src={avatarPreview}
+              sx={{
+                width: 80,
+                height: 80,
+              }}
+            />
             <label htmlFor="avatar-upload">
               <input
                 accept="image/*"
                 id="avatar-upload"
                 type="file"
-                style={{ display: "none" }}
+                style={{
+                  display: "none",
+                }}
                 onChange={handleFileChange}
               />
               <IconButton
@@ -144,10 +148,17 @@ function EditProfilePage() {
                   right: -5,
                   backgroundColor: "secondary.main",
                   boxShadow: 1,
-                  "&:hover": { backgroundColor: "secondary.dark" },
+                  "&:hover": {
+                    backgroundColor: "secondary.dark",
+                  },
                 }}
               >
-                <PhotoCameraIcon fontSize="small" sx={{ color: (theme) => theme.palette.background.default }} />
+                <PhotoCameraIcon
+                  fontSize="small"
+                  sx={{
+                    color: (theme) => theme.palette.background.default,
+                  }}
+                />
               </IconButton>
             </label>
           </Box>
@@ -157,7 +168,12 @@ function EditProfilePage() {
         </Box>
         <Box component="form" onSubmit={handleSubmitUser(onSubmitUser)}>
           <Grid container spacing={2} justifyContent="center">
-            <Grid size={{xs:12, sm: 6}}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+              }}
+            >
               <TextField
                 label="Nome"
                 {...registerUser("name")}
@@ -166,7 +182,12 @@ function EditProfilePage() {
                 fullWidth
               />
             </Grid>
-            <Grid size={{xs:12, sm: 6}}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+              }}
+            >
               <TextField
                 label="Email"
                 {...registerUser("email")}
@@ -175,7 +196,11 @@ function EditProfilePage() {
                 fullWidth
               />
             </Grid>
-            <Grid size={{xs:12}}>
+            <Grid
+              size={{
+                xs: 12,
+              }}
+            >
               <TextField
                 label="Telefone"
                 {...registerUser("phone")}
@@ -184,37 +209,42 @@ function EditProfilePage() {
                 fullWidth
               />
             </Grid>
-            <Grid size={{xs:12, sm: 6}}>
-              <TextField
-                label="Senha Atual"
-                type="password"
-                {...registerUser("password")}
-                fullWidth
-              />
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+              }}
+            >
+              <TextField label="Senha Atual" type="password" {...registerUser("password")} fullWidth />
             </Grid>
-            <Grid size={{xs:12, sm: 6}}>
-              <TextField
-                label="Nova Senha"
-                type="password"
-                {...registerUser("newPassword")}
-                fullWidth
-              />
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+              }}
+            >
+              <TextField label="Nova Senha" type="password" {...registerUser("newPassword")} fullWidth />
             </Grid>
-            <Grid size={{xs:12}}>
-              <TextField
-                label="Confirmar Nova Senha"
-                type="password"
-                {...registerUser("confirmPassword")}
-                fullWidth
-              />
+            <Grid
+              size={{
+                xs: 12,
+              }}
+            >
+              <TextField label="Confirmar Nova Senha" type="password" {...registerUser("confirmPassword")} fullWidth />
             </Grid>
-            <Grid size={{xs:12}}>
+            <Grid
+              size={{
+                xs: 12,
+              }}
+            >
               <Box display="flex" justifyContent="center" mt={2}>
                 <Button
                   type="submit"
                   variant="contained"
                   color="secondary"
-                  sx={{ width: 200 }}
+                  sx={{
+                    width: 200,
+                  }}
                   disabled={isSubmittingUser}
                 >
                   {isSubmittingUser ? "Salvando..." : "Salvar Alterações"}
@@ -226,7 +256,17 @@ function EditProfilePage() {
       </Paper>
 
       {/* Formulário de Dados da Empresa */}
-      <Paper elevation={3} sx={{ p: 3, borderRadius: 3, mt: 2, mx: "auto", width: "100%", maxWidth: "700px" }}>
+      <Paper
+        elevation={3}
+        sx={{
+          p: 3,
+          borderRadius: 3,
+          mt: 2,
+          mx: "auto",
+          width: "100%",
+          maxWidth: "700px",
+        }}
+      >
         <Box textAlign="center" mb={3} display="flex" flexDirection="column" alignItems="center">
           <Typography variant="h5" fontWeight="bold" mt={2}>
             Editar Dados da Empresa
@@ -234,7 +274,12 @@ function EditProfilePage() {
         </Box>
         <Box component="form" onSubmit={handleSubmitCompany(onSubmitCompany)}>
           <Grid container spacing={2} justifyContent="center">
-            <Grid size={{xs:12, sm: 6}}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+              }}
+            >
               <TextField
                 {...registerCompany("companyName")}
                 label="Nome da Empresa"
@@ -243,7 +288,12 @@ function EditProfilePage() {
                 fullWidth
               />
             </Grid>
-            <Grid size={{xs:12, sm: 6}}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+              }}
+            >
               <TextField
                 {...registerCompany("nif")}
                 label="NIF"
@@ -252,7 +302,12 @@ function EditProfilePage() {
                 fullWidth
               />
             </Grid>
-            <Grid size={{xs:12, sm: 6}}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+              }}
+            >
               <TextField
                 {...registerCompany("address")}
                 label="Morada"
@@ -261,7 +316,12 @@ function EditProfilePage() {
                 fullWidth
               />
             </Grid>
-            <Grid size={{xs:12, sm: 6}}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+              }}
+            >
               <TextField
                 {...registerCompany("locality")}
                 label="Localidade"
@@ -270,7 +330,12 @@ function EditProfilePage() {
                 fullWidth
               />
             </Grid>
-            <Grid size={{xs:12, sm: 6}}>
+            <Grid
+              size={{
+                xs: 12,
+                sm: 6,
+              }}
+            >
               <TextField
                 {...registerCompany("postalCode")}
                 label="Código Postal"
@@ -279,7 +344,11 @@ function EditProfilePage() {
                 fullWidth
               />
             </Grid>
-            <Grid size={{xs:12}}>
+            <Grid
+              size={{
+                xs: 12,
+              }}
+            >
               <Controller
                 name="companyPhone"
                 control={controlCompany}
@@ -290,14 +359,17 @@ function EditProfilePage() {
                         display: "flex",
                         alignItems: "center",
                         border: "1px solid",
-                        borderColor: companyErrors.companyPhone
-                          ? "error.main"
-                          : "rgba(0, 0, 0, 0.23)",
+                        borderColor: companyErrors.companyPhone ? "error.main" : "rgba(0, 0, 0, 0.23)",
                         borderRadius: 1,
                         padding: "18.5px 14px",
                         fontSize: "16px",
-                        "&:hover": { borderColor: "black" },
-                        "&:focus-within": { borderColor: "primary.main", borderWidth: 2 },
+                        "&:hover": {
+                          borderColor: "black",
+                        },
+                        "&:focus-within": {
+                          borderColor: "primary.main",
+                          borderWidth: 2,
+                        },
                       }}
                     >
                       <PhoneInput
@@ -316,7 +388,13 @@ function EditProfilePage() {
                       />
                     </Box>
                     {companyErrors.companyPhone && (
-                      <Typography color="error" variant="body2" sx={{ mt: 0.5 }}>
+                      <Typography
+                        color="error"
+                        variant="body2"
+                        sx={{
+                          mt: 0.5,
+                        }}
+                      >
                         {companyErrors.companyPhone.message}
                       </Typography>
                     )}
@@ -324,13 +402,23 @@ function EditProfilePage() {
                 )}
               />
             </Grid>
-            <Grid size={{xs:12}}>
+            <Grid
+              size={{
+                xs: 12,
+              }}
+            >
               <Box display="flex" justifyContent="center" mt={2}>
                 <Button
                   type="submit"
                   variant="contained"
                   color="secondary"
-                  sx={{ width: 200, boxShadow: 1, "&:hover": { backgroundColor: "secondary.dark" } }}
+                  sx={{
+                    width: 200,
+                    boxShadow: 1,
+                    "&:hover": {
+                      backgroundColor: "secondary.dark",
+                    },
+                  }}
                   disabled={isSubmittingCompany}
                 >
                   {isSubmittingCompany ? "Salvando..." : "Salvar Alterações"}

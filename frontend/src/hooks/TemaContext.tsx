@@ -25,9 +25,7 @@ export function TemaProvider({ children }: { children: ReactNode }) {
   });
 
   // Armazena o tema atual sem causar re-renderizações
-  const [theme, setTheme] = useState(
-    createTheme(darkMode ? darkTheme : lightTheme),
-  );
+  const [theme, setTheme] = useState(createTheme(darkMode ? darkTheme : lightTheme));
 
   // Estado para indicar se o tema está a ser alterado
   const [isChanging, setIsChanging] = useState(false);

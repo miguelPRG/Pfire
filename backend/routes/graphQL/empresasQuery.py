@@ -6,11 +6,12 @@ from strawberry.types import Info
 from bson import ObjectId
 from base64 import b64encode  # Importa o módulo base64 para conversão
 
+
 @strawberry.type
 class EmpresaQuery:
     @strawberry.field
     async def empresas(self, info: Info, id: str = None, start: int = 0, lmt: int = 10) -> list[Empresa]:
-        
+
         if lmt <= 0 or lmt > 10:
             lmt = 10
 
@@ -19,7 +20,7 @@ class EmpresaQuery:
 
         request = info.context["request"]  # Obtém o objeto de requisição
         jwt = getattr(request.state, "jwt", None)
-        
+
         empresas = []
 
         # Se o id for fornecido, quero apenas essa empresa
@@ -37,29 +38,33 @@ class EmpresaQuery:
             filtro = {"_id": {"$in": empresa_ids}}
 
         async for empresa in empresas_collection.find(filtro).skip(start).limit(lmt):
-            empresa_data = filter_null_fields({
-                "id": str(empresa.get("_id")),
-                "nome": empresa.get("nome"),
-                "nif": empresa.get("nif"),
-                "telefone": empresa.get("telefone"),
-                "morada": empresa.get("morada"),
-                "localidade": empresa.get("localidade"),
-                "codigo_postal": empresa.get("codigo_postal"),
-                "created_by": empresa.get("created_by"),
-                "created_at": empresa.get("created_at"),
-                "updated_by": empresa.get("updated_by"),
-                "updated_at": empresa.get("updated_at"),
-            })
-            
-             # Adiciona o campo logo apenas se existir
+            empresa_data = filter_null_fields(
+                {
+                    "id": str(empresa.get("_id")),
+                    "nome": empresa.get("nome"),
+                    "nif": empresa.get("nif"),
+                    "telefone": empresa.get("telefone"),
+                    "morada": empresa.get("morada"),
+                    "localidade": empresa.get("localidade"),
+                    "codigo_postal": empresa.get("codigo_postal"),
+                    "created_by": empresa.get("created_by"),
+                    "created_at": empresa.get("created_at"),
+                    "updated_by": empresa.get("updated_by"),
+                    "updated_at": empresa.get("updated_at"),
+                }
+            )
+
+            # Adiciona o campo logo apenas se existir
             if empresa.get("logo"):
                 # Converte a imagem em base64
-                logo_base64 = b64encode(empresa["logo"]).decode('utf-8')
+                logo_base64 = b64encode(empresa["logo"]).decode("utf-8")
                 empresa_data["logo"] = logo_base64
 
             if not jwt["isSuperAdmin"]:
-                empresa_data = {k: v for k, v in empresa_data.items() if k not in ["created_by", "updated_by", "updated_at"]}
-            
+                empresa_data = {
+                    k: v for k, v in empresa_data.items() if k not in ["created_by", "updated_by", "updated_at"]
+                }
+
             # Filtra os campos nulos
             empresas.append(Empresa(**filter_null_fields(empresa_data)))
 

@@ -20,18 +20,19 @@ from uuid import uuid4
 routerUser = APIRouter(prefix="/user")
 
 pwd_context = CryptContext(
-    schemes=["argon2"], 
+    schemes=["argon2"],
     deprecated="auto",
     argon2__memory_cost=65536,
     argon2__time_cost=3,
 )
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent 
+BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 SERVICE_ACCOUNT_PATH = BASE_DIR / "chaves" / "serviceAccountKey.json"  # Camino correcto
 
 # Inicializa el Firebase usando el archivo de credenciales
 cred = credentials.Certificate(str(SERVICE_ACCOUNT_PATH))
 initialize_app(cred)
+
 
 # 🚀 Login via Firebase OAuth
 @routerUser.post("/login-oauth")
@@ -74,14 +75,16 @@ async def login_oauth(response: Response, payload: dict):
         )
         # define campos Pydantic (created_at/updated_at/isActive/isSuperAdmin...)
         doc = new_user.model_dump(by_alias=True)
-        doc.update({
-            "password": pwd_context.hash(doc["password"]),
-            "isSuperAdmin": False,
-            "isActive": True,
-            "created_at": datetime.now(),
-            "updated_at": datetime.now(),
-            "last_login": datetime.now(),
-        })
+        doc.update(
+            {
+                "password": pwd_context.hash(doc["password"]),
+                "isSuperAdmin": False,
+                "isActive": True,
+                "created_at": datetime.now(),
+                "updated_at": datetime.now(),
+                "last_login": datetime.now(),
+            }
+        )
         res = await users_collection.insert_one(doc)
         if not res.inserted_id:
             raise HTTPException(500, "Erro ao criar o utilizador.")
@@ -92,16 +95,23 @@ async def login_oauth(response: Response, payload: dict):
         if not db_user.get("isActive", True):
             raise HTTPException(403, "sta conta foi desativada.")
         # atualiza last_login
-        await users_collection.update_one(
-            {"_id": db_user["_id"]},
-            {"$set": {"last_login": datetime.now()}}
-        )
+        await users_collection.update_one({"_id": db_user["_id"]}, {"$set": {"last_login": datetime.now()}})
 
     # 3) Gera JWT com lista vazia de empresas
-    token = generate_jwt(str(db_user["_id"]),db_user["nome"], db_user["email"],db_user["isSuperAdmin"],db_user.get("telefone"))
+    token = generate_jwt(
+        str(db_user["_id"]), db_user["nome"], db_user["email"], db_user["isSuperAdmin"], db_user.get("telefone")
+    )
 
     # 4) Gerar resposta
-    response = JSONResponse({"id":str(db_user["_id"]),"nome": db_user["nome"], "email": db_user["email"], "telefone": db_user.get("telefone"), "isSuperAdmin": db_user.get("isSuperAdmin")}) 
+    response = JSONResponse(
+        {
+            "id": str(db_user["_id"]),
+            "nome": db_user["nome"],
+            "email": db_user["email"],
+            "telefone": db_user.get("telefone"),
+            "isSuperAdmin": db_user.get("isSuperAdmin"),
+        }
+    )
 
     # Seta cookie HTTP-only e devolve dados
     response.set_cookie(
@@ -114,11 +124,12 @@ async def login_oauth(response: Response, payload: dict):
 
     return response
 
+
 # 🚀 Login via Email e Senha
 @routerUser.post("/login")
 async def login(user: UserLogin, request: Request):
     # Validar el token reCAPTCHA (se descomenta según necesidad)
-    #await validar_recaptcha_token(user.recaptchaToken, "login")
+    # await validar_recaptcha_token(user.recaptchaToken, "login")
 
     db_user = await users_collection.find_one({"email": user.email})
 
@@ -133,12 +144,22 @@ async def login(user: UserLogin, request: Request):
     if not atualizar_user.modified_count:
         raise HTTPException(status_code=500, detail="Erro ao atualizar o último login.")
 
-    token = generate_jwt(str(db_user["_id"]),db_user["nome"], db_user["email"],db_user["isSuperAdmin"],db_user.get("telefone"))
+    token = generate_jwt(
+        str(db_user["_id"]), db_user["nome"], db_user["email"], db_user["isSuperAdmin"], db_user.get("telefone")
+    )
 
-    response = JSONResponse({"id":str(db_user["_id"]),"nome": db_user["nome"], "email": db_user["email"],"isSuperAdmin": db_user.get("isSuperAdmin", False)})
+    response = JSONResponse(
+        {
+            "id": str(db_user["_id"]),
+            "nome": db_user["nome"],
+            "email": db_user["email"],
+            "isSuperAdmin": db_user.get("isSuperAdmin", False),
+        }
+    )
     response.set_cookie(key="_fp", value=token, httponly=True, samesite="Strict", secure=True)
 
     return response
+
 
 # 🚀 Registar um novo User
 @routerUser.post("/register")
@@ -156,7 +177,7 @@ async def register_user(data: RegisterUser, request: Request):
 
     if existing_user:
         raise HTTPException(status_code=401, detail="O utilizador que tem este email já existe.")
-    
+
     if existing_empresa:
         raise HTTPException(status_code=401, detail="A empresa que tem este NIF já existe.")
 
@@ -182,7 +203,7 @@ async def register_user(data: RegisterUser, request: Request):
 
     if not empresa.inserted_id:
         raise HTTPException(status_code=500, detail="Erro ao criar a empresa.")
-    
+
     # Crear UserEmpresa
     new_user_empresa = UserEmpresaCreate(
         user_id=user.inserted_id,
@@ -191,7 +212,7 @@ async def register_user(data: RegisterUser, request: Request):
         created_by=user.inserted_id,
         created_at=datetime.now(),
         updated_by=user.inserted_id,
-        updated_at=datetime.now()
+        updated_at=datetime.now(),
     )
 
     user_empresa_data = new_user_empresa.model_dump(by_alias=True)
@@ -202,8 +223,10 @@ async def register_user(data: RegisterUser, request: Request):
 
     # Gerar global ID
     global_id = str(uuid4())
-    
-    global_id_insertion = await global_ids_collection.insert_one({"global_id": global_id, "user_id": user.inserted_id, "created_at": datetime.now()})
+
+    global_id_insertion = await global_ids_collection.insert_one(
+        {"global_id": global_id, "user_id": user.inserted_id, "created_at": datetime.now()}
+    )
 
     if not global_id_insertion.inserted_id:
         raise HTTPException(status_code=409, detail="Erro na criação do ID global.")
@@ -211,9 +234,10 @@ async def register_user(data: RegisterUser, request: Request):
     print("Global ID: ", global_id)
     print("email: ", new_user_data["email"])
 
-    enviar_email_registo(new_user_data["email"],new_user_data["nome"],global_id)
+    enviar_email_registo(new_user_data["email"], new_user_data["nome"], global_id)
 
     return {"message": "Conta criada! Verifique seu email para ativação."}
+
 
 # 🚀 Autenticação do Usuário (Verificar JWT)
 @routerUser.get("/auth")
@@ -221,13 +245,21 @@ async def auth_user(request: Request):
 
     jwt = getattr(request.state, "jwt", None)
 
-    return {"id": jwt["user_id"],"nome": jwt["nome"], "email": jwt["email"] , "telefone": jwt["telefone"], "isSuperAdmin": jwt["isSuperAdmin"]}
+    return {
+        "id": jwt["user_id"],
+        "nome": jwt["nome"],
+        "email": jwt["email"],
+        "telefone": jwt["telefone"],
+        "isSuperAdmin": jwt["isSuperAdmin"],
+    }
+
 
 @routerUser.get("/isSuperAdmin")
 async def is_super_admin(request: Request):
     jwt = getattr(request.state, "jwt", None)
-    
+
     return jwt["isSuperAdmin"]
+
 
 # 🚀 Logout
 @routerUser.post("/logout")
@@ -239,19 +271,21 @@ async def logout_user(request: Request, response: Response):
     token = request.cookies.get("_fp")
     if not token:
         raise HTTPException(status_code=401, detail="Token não encontrado.")
-    
+
     # Agrega el token a Redis con el TTL correspondiente (basado en su expiración)
     await add_token_to_blacklist(token)
-    
+
     # Elimina la cookie del JWT
     response.delete_cookie("_fp", httponly=True, samesite="Strict", secure=True)
     return {"message": "Logout efetuado com sucesso!"}
 
+
 # 🚀 Logout Global (Todos os Dispositivos) - Em desenvolvimento
+
 
 # Pedido de esquecimento da senha
 @routerUser.post("/forgot-password")
-async def forgot_password(request: Request,user: UserForgotPassword):
+async def forgot_password(request: Request, user: UserForgotPassword):
     """
     Endpoint para solicitar o esquecimento da senha:
     - Envia um e-mail com um link para redefinir a senha.
@@ -263,9 +297,11 @@ async def forgot_password(request: Request,user: UserForgotPassword):
 
     # Gera um global_id único
     global_id = str(uuid4())
-    
+
     # Insere o global_id na coleção
-    global_id_insertion = await global_ids_collection.insert_one({"global_id": global_id, "user_id": user_found["_id"], "created_at": datetime.now()})
+    global_id_insertion = await global_ids_collection.insert_one(
+        {"global_id": global_id, "user_id": user_found["_id"], "created_at": datetime.now()}
+    )
 
     if not global_id_insertion.inserted_id:
         raise HTTPException(status_code=409, detail="Erro na criação do ID global.")
@@ -274,6 +310,7 @@ async def forgot_password(request: Request,user: UserForgotPassword):
     enviar_email_recuperacao(user.email, user_found["nome"], global_id)
 
     return {"message": "E-mail de recuperação enviado!"}
+
 
 @routerUser.get("/get-global-id/{global_id}")
 async def get_global_id(global_id: str):
@@ -285,8 +322,9 @@ async def get_global_id(global_id: str):
     global_id_data = await global_ids_collection.find_one({"global_id": global_id})
     if not global_id_data:
         raise HTTPException(status_code=404, detail="Global ID não encontrado.")
-    
+
     return {"global_id": global_id_data["global_id"]}
+
 
 """
 @routerUser.post("/logout-all")
@@ -301,23 +339,23 @@ async def logout_all_users(email: str):
 
 """Serviços de Utilizador - Email"""
 
+
 @routerUser.put("/email/activate/{global_id}")
 async def confirm_user(global_id: str, request: Request):
     # Encontrar o global_id na base de dados
     global_id_data = await global_ids_collection.find_one({"global_id": global_id})
     if not global_id_data:
         raise HTTPException(status_code=404, detail="Global ID não encontrado.")
-    
+
     user_id = global_id_data["user_id"]
-    user_update = await users_collection.update_one(
-        {"_id": user_id}, {"$set": {"isActive": True}}
-    )
+    user_update = await users_collection.update_one({"_id": user_id}, {"$set": {"isActive": True}})
 
     if user_update.modified_count == 0:
         raise HTTPException(status_code=409, detail="Erro ao ativar o utilizador.")
-    
+
     await global_ids_collection.delete_one({"global_id": global_id})
     return {"message": "Conta ativada com sucesso!"}
+
 
 @routerUser.put("/email/reset-password")
 async def reset_password(request: Request, user: UserResetPassword):
@@ -325,13 +363,13 @@ async def reset_password(request: Request, user: UserResetPassword):
     global_id_data = await global_ids_collection.find_one({"global_id": user.global_id})
     if not global_id_data:
         raise HTTPException(status_code=404, detail="Global ID não encontrado.")
-    
+
     user_id = global_id_data["user_id"]
     user_found = await users_collection.find_one({"_id": user_id})
 
     if not user_found:
         raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
-    
+
     # Atualizar a password do utilizador
     new_password_hashed = pwd_context.hash(user.password)
     user_update = await users_collection.update_one(
@@ -340,7 +378,6 @@ async def reset_password(request: Request, user: UserResetPassword):
 
     if user_update.modified_count == 0:
         raise HTTPException(status_code=409, detail="Erro ao atualizar a password.")
-    
+
     await global_ids_collection.delete_one({"global_id": user.global_id})
     return {"message": "Password atualizada com sucesso!"}
-   

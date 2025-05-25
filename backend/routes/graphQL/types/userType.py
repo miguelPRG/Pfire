@@ -2,6 +2,7 @@ import strawberry
 from datetime import datetime
 from typing import Optional
 
+
 @strawberry.type
 class User:
     id: str

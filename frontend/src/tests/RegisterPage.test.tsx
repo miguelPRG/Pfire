@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeAll } from "vitest";
-import '@testing-library/jest-dom';
+import "@testing-library/jest-dom";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import RegisterPage from "../pages/RegisterPage";
 import { AuthContext } from "../hooks/AuthContext";
@@ -42,17 +42,37 @@ describe("RegisterPage", () => {
       </AuthContext.Provider>
     );
 
-    fireEvent.change(screen.getByLabelText(/Nome\*/i), { target: { value: "Teste Nome" } });
-    fireEvent.change(screen.getByLabelText(/Email\*/i), { target: { value: "teste@email.com" } });
-    fireEvent.change(screen.getByLabelText(/^Senha\*/i), { target: { value: "Senha1234" } });
-    fireEvent.change(screen.getByLabelText(/Confirmar senha\*/i), { target: { value: "Senha1234" } });
-    fireEvent.change(screen.getByLabelText(/Nome da empresa\*/i), { target: { value: "Empresa Teste" } });
-    fireEvent.change(screen.getByLabelText(/NIF da empresa\*/i), { target: { value: "512345678" } });
-    fireEvent.change(screen.getByLabelText(/Localidade\*/i), { target: { value: "Lisboa" } });
-    fireEvent.change(screen.getByLabelText(/Morada\*/i), { target: { value: "Rua Exemplo" } });
-    fireEvent.change(screen.getByLabelText(/Código postal\*/i), { target: { value: "1234-567" } });
+    fireEvent.change(screen.getByLabelText(/Nome\*/i), {
+      target: { value: "Teste Nome" },
+    });
+    fireEvent.change(screen.getByLabelText(/Email\*/i), {
+      target: { value: "teste@email.com" },
+    });
+    fireEvent.change(screen.getByLabelText(/^Senha\*/i), {
+      target: { value: "Senha1234" },
+    });
+    fireEvent.change(screen.getByLabelText(/Confirmar senha\*/i), {
+      target: { value: "Senha1234" },
+    });
+    fireEvent.change(screen.getByLabelText(/Nome da empresa\*/i), {
+      target: { value: "Empresa Teste" },
+    });
+    fireEvent.change(screen.getByLabelText(/NIF da empresa\*/i), {
+      target: { value: "512345678" },
+    });
+    fireEvent.change(screen.getByLabelText(/Localidade\*/i), {
+      target: { value: "Lisboa" },
+    });
+    fireEvent.change(screen.getByLabelText(/Morada\*/i), {
+      target: { value: "Rua Exemplo" },
+    });
+    fireEvent.change(screen.getByLabelText(/Código postal\*/i), {
+      target: { value: "1234-567" },
+    });
     const telefoneInput = screen.getByPlaceholderText("Insira o número de telefone");
-    fireEvent.change(telefoneInput, { target: { value: "+351912345678" } });
+    fireEvent.change(telefoneInput, {
+      target: { value: "+351912345678" },
+    });
 
     fireEvent.click(screen.getByRole("button", { name: /CRIAR CONTA/i }));
 

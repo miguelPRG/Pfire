@@ -6,11 +6,14 @@ import strawberry
 from strawberry.types import Info
 from bson import ObjectId
 
+
 @strawberry.type
 class RelatorioQuery:
     @strawberry.field
-    async def relatorios(self, info: Info, empresa_id: str, id: str = None, start: int = 0, lmt: int = 10) -> list[Relatorio]:
-        
+    async def relatorios(
+        self, info: Info, empresa_id: str, id: str = None, start: int = 0, lmt: int = 10
+    ) -> list[Relatorio]:
+
         empresa_id = ObjectId(empresa_id)
 
         if lmt <= 0 or lmt > 10:
@@ -31,9 +34,13 @@ class RelatorioQuery:
 
         # Verificar permissões
         if not jwt["isSuperAdmin"]:
-            user_empresa = await users_empresas_collection.find_one({"user_id": jwt["user_id"], "empresa_id": empresa_id})
+            user_empresa = await users_empresas_collection.find_one(
+                {"user_id": jwt["user_id"], "empresa_id": empresa_id}
+            )
             if not user_empresa:
-                raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para ver relatórios nesta empresa.")
+                raise HTTPException(
+                    status_code=403, detail="Acesso negado! Não tens permissão para ver relatórios nesta empresa."
+                )
 
         # Buscar relatórios no banco de dados
         async for relatorio in relatorios_collection.find(filtro).skip(start).limit(lmt):

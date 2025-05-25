@@ -20,7 +20,13 @@ export default function CompanySelectorPage() {
   return (
     <Box sx={{ p: 4, maxWidth: "1300px", mx: "auto" }}>
       <Paper sx={{ p: 4, borderRadius: 4 }} elevation={3}>
-        <Box sx={{ width: "100%", mb: 4, textAlign: "center" }}>
+        <Box
+          sx={{
+            width: "100%",
+            mb: 4,
+            textAlign: "center",
+          }}
+        >
           <Typography variant="h1" fontWeight="bold">
             Selecionar Empresa
           </Typography>
@@ -42,9 +48,7 @@ export default function CompanySelectorPage() {
                     justifyContent: "space-between",
                     borderRadius: 3,
                     backgroundColor: isSelected ? "#f3fef8" : "white",
-                    border: isSelected
-                      ? "2px solid #2e7d32"
-                      : "1px solid #e0e0e0",
+                    border: isSelected ? "2px solid #2e7d32" : "1px solid #e0e0e0",
                     minHeight: 260,
                     transition: "transform 0.2s ease",
                     "&:hover": {
@@ -56,15 +60,9 @@ export default function CompanySelectorPage() {
                     <Typography variant="h6" gutterBottom>
                       {empresa.nome}
                     </Typography>
-                    <Typography variant="body2">
-                      Localidade: {empresa.localidade}
-                    </Typography>
-                    <Typography variant="body2">
-                      Morada: {empresa.morada}
-                    </Typography>
-                    <Typography variant="body2">
-                      Código Postal: {empresa.codigoPostal}
-                    </Typography>
+                    <Typography variant="body2">Localidade: {empresa.localidade}</Typography>
+                    <Typography variant="body2">Morada: {empresa.morada}</Typography>
+                    <Typography variant="body2">Código Postal: {empresa.codigoPostal}</Typography>
                     <Typography variant="body2">NIF: {empresa.nif}</Typography>
                   </Box>
 
@@ -80,9 +78,7 @@ export default function CompanySelectorPage() {
                       cursor: isSelected ? "default" : "pointer",
                     }}
                   >
-                    {isSelected
-                      ? "Empresa selecionada"
-                      : "Gerenciar esta empresa"}
+                    {isSelected ? "Empresa selecionada" : "Gerenciar esta empresa"}
                   </Button>
                 </Paper>
               </Grid>

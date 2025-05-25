@@ -1,11 +1,5 @@
-import {
-  createContext,
-  useState,
-  useContext,
-  ReactNode,
-  useEffect,
-} from "react";
-import { FirebaseLogin} from "../firebase";
+import { createContext, useState, useContext, ReactNode, useEffect } from "react";
+import { FirebaseLogin } from "../firebase";
 
 declare global {
   interface Window {
@@ -13,7 +7,9 @@ declare global {
       enterprise: {
         execute: (
           siteKey: string,
-          options: { action: string },
+          options: {
+            action: string;
+          }
         ) => Promise<string>;
       };
     };
@@ -48,11 +44,7 @@ interface AuthContextType {
   empresaId: string | null;
   loading: boolean;
   login: (email: string, pwd: string) => void;
-  registerUser: (payload: {
-    user: UserRegistered;
-    empresa: Empresa;
-    recaptchaToken?: string;
-  }) => void;
+  registerUser: (payload: { user: UserRegistered; empresa: Empresa; recaptchaToken?: string }) => void;
   loginWithOAuth: (provider: "google" | "microsoft") => void;
   logout: () => void;
   chooseCompany: (id: string) => void;
@@ -107,13 +99,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const token = await window.grecaptcha.enterprise.execute(
-        "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",
-        { action: "login" },
-      );
+      const token = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
+        action: "login",
+      });
       const response = await fetch(`http://localhost:8000/user/login`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         credentials: "include",
         body: JSON.stringify({
           email: email.trim(),
@@ -139,22 +132,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function registerUser(payload: {
-    user: UserRegistered;
-    empresa: Empresa;
-    recaptchaToken?: string;
-  }) {
+  async function registerUser(payload: { user: UserRegistered; empresa: Empresa; recaptchaToken?: string }) {
     try {
-      const token = await window.grecaptcha.enterprise.execute(
-        "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",
-        { action: "register" },
-      );
+      const token = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
+        action: "register",
+      });
 
       payload.recaptchaToken = token;
 
       const response = await fetch(`backend/user/register`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         credentials: "include",
         body: JSON.stringify(payload),
       });
@@ -177,8 +167,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await fetch("/backend/user/login-oauth", {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ firebase_token: idToken }),
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firebase_token: idToken,
+        }),
       });
 
       if (!response.ok) {

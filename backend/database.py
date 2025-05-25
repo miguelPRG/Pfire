@@ -11,13 +11,15 @@ uri = os.getenv("MONGO_URL")  # A URI do MongoDB Atlas
 # Conectar ao MongoDB
 client = AsyncIOMotorClient(uri)
 
+
 async def testar_database():
     try:
         # Testar a conexão com um comando 'ping'
-        await client.admin.command('ping')
+        await client.admin.command("ping")
         print("Conexão bem-sucedida com o MongoDB!")
     except Exception as e:
         print(f"Erro ao conectar-se ao MongoDB: {e}")
+
 
 # Acesso ao banco de dados
 db = client["pfire"]  # Substitua pelo nome do banco de dados desejado
@@ -30,6 +32,7 @@ clientes_collection = db["clientes"]
 modelos_collection = db["modelos"]
 relatorios_collection = db["relatorios"]
 global_ids_collection = db["global_ids"]
+
 
 async def delete_documentos_inativos():
     # Etapa 1: Deletar clientes e relatórios em paralelo (independentes)
@@ -44,7 +47,7 @@ async def delete_documentos_inativos():
     if inactive_user_ids:
         # Etapa 3: Remover relações user_empresa associadas aos utilizadores inativos
         user_empresa_result = users_empresas_collection.delete_many({"user_id": {"$in": inactive_user_ids}})
-        
+
         # Etapa 4: Remover os próprios utilizadores inativos
         user_result = users_collection.delete_many({"_id": {"$in": inactive_user_ids}})
 
@@ -64,7 +67,8 @@ async def delete_documentos_inativos():
         print(f"[DatabaseCleaner] {user_result.deleted_count} utilizador(es) inativo(s) removido(s).")
     if user_empresa_result and user_empresa_result.deleted_count > 0:
         print(f"[DatabaseCleaner] {user_empresa_result.deleted_count} relação(ões) user_empresa removida(s).")
-    
+
+
 async def apagar_global_ids_antigos():
 
     # Obter a data atual
@@ -81,18 +85,19 @@ async def apagar_global_ids_antigos():
     else:
         print("[DatabaseCleaner] Nenhum global_id antigo encontrado para remoção.")
 
+
 async def apagar_empresas_vazias():
 
     # Listar todas as empresas com pelo menos 24 horas
     async for empresa in empresas_collection.find():
         # Verificar se a empresa não tem utilizadores associados
         user_count = await users_empresas_collection.count_documents({"empresa_id": empresa["_id"]})
-        
+
         if user_count == 0:
             # Deletar a empresa se não houver utilizadores associados
             await empresas_collection.delete_one({"_id": empresa["_id"]})
             print(f"[DatabaseCleaner] Empresa {empresa['_id']} removida por estar vazia.")
-        
+
 
 # Configuração do agendador com APScheduler
 def database_cleaner_scheduler():
@@ -100,24 +105,24 @@ def database_cleaner_scheduler():
 
     # Agendar a execução da função `delete_inactive_documents` a cada 30 minutos
     scheduler.add_job(
-        delete_documentos_inativos, 
+        delete_documentos_inativos,
         IntervalTrigger(days=30),  # Intervalo de 30 dias
         id="delete_inactive_documents_job",  # Um ID único para o job
-        replace_existing=True  # Caso o job já exista, ele será substituído
+        replace_existing=True,  # Caso o job já exista, ele será substituído
     )
 
     scheduler.add_job(
-        apagar_global_ids_antigos, 
+        apagar_global_ids_antigos,
         IntervalTrigger(days=1),  # Intervalo de 1 dia
         id="apagar_users_inativos_job",  # Um ID único para o job
-        replace_existing=True  # Caso o job já exista, ele será substituído
+        replace_existing=True,  # Caso o job já exista, ele será substituído
     )
-    
+
     scheduler.add_job(
-        apagar_empresas_vazias, 
+        apagar_empresas_vazias,
         IntervalTrigger(days=30),  # Intervalo de 1 dia
         id="apagar_empresas_vazias_job",  # Um ID único para o job
-        replace_existing=True  # Caso o job já exista, ele será substituído
+        replace_existing=True,  # Caso o job já exista, ele será substituído
     )
 
     scheduler.start()

@@ -3,6 +3,7 @@ from datetime import datetime
 from strawberry.scalars import JSON  # Importa o tipo JSON
 from typing import Optional
 
+
 @strawberry.type
 class Modelo:
     id: str

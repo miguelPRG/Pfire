@@ -6,12 +6,13 @@ import strawberry
 from strawberry.types import Info
 from bson import ObjectId
 
+
 @strawberry.type
 class ModeloQuery:
     @strawberry.field
-    async def modelos(self, info:Info, empresa_id:str, start:int=0, lmt:int = 10) -> list[Modelo]:
+    async def modelos(self, info: Info, empresa_id: str, start: int = 0, lmt: int = 10) -> list[Modelo]:
 
-        if lmt<=0 or lmt > 10:
+        if lmt <= 0 or lmt > 10:
             lmt = 10
 
         if start < 0:
@@ -22,10 +23,14 @@ class ModeloQuery:
         empresa_id = ObjectId(empresa_id)
 
         if not jwt["isSuperAdmin"]:
-            user_empresa = await users_empresas_collection.find_one({"empresa_id": empresa_id, "user_id": jwt["user_id"]})
-            
+            user_empresa = await users_empresas_collection.find_one(
+                {"empresa_id": empresa_id, "user_id": jwt["user_id"]}
+            )
+
             if not user_empresa:
-                raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para ver modelos nesta empresa.")
+                raise HTTPException(
+                    status_code=403, detail="Acesso negado! Não tens permissão para ver modelos nesta empresa."
+                )
 
         modelos = []
 
@@ -47,8 +52,10 @@ class ModeloQuery:
             }
 
             if not jwt["isSuperAdmin"]:
-                modelo_data = {k: v for k, v in modelo_data.items() if k not in ["created_by", "updated_by", "updated_at"]}
-            
-            modelos.append(Modelo(**filter_null_fields(modelo_data))) 
+                modelo_data = {
+                    k: v for k, v in modelo_data.items() if k not in ["created_by", "updated_by", "updated_at"]
+                }
+
+            modelos.append(Modelo(**filter_null_fields(modelo_data)))
 
         return modelos

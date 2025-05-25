@@ -90,7 +90,9 @@ const Footer = () => {
                 sx={{
                   mb: 1,
                   cursor: "pointer",
-                  "&:hover": { color: theme.palette.secondary.main },
+                  "&:hover": {
+                    color: theme.palette.secondary.main,
+                  },
                 }}
               >
                 {link}
@@ -100,18 +102,28 @@ const Footer = () => {
 
           <Box flex="1" minWidth={250} width="100%">
             <Box display="flex" mb={1}>
-              <MailOutlineIcon style={{ marginRight: 8 }} />
+              <MailOutlineIcon
+                style={{
+                  marginRight: 8,
+                }}
+              />
               <Typography variant="body2">info@company.com</Typography>
             </Box>
             <Box display="flex" mb={1}>
-              <LocalPhoneOutlinedIcon style={{ marginRight: 8 }} />
+              <LocalPhoneOutlinedIcon
+                style={{
+                  marginRight: 8,
+                }}
+              />
               <Typography variant="body2">+1 (555) 123-4567</Typography>
             </Box>
             <Box display="flex">
-              <LocationOnOutlinedIcon style={{ marginRight: 8 }} />
-              <Typography variant="body2">
-                123 Business Street, City, Country
-              </Typography>
+              <LocationOnOutlinedIcon
+                style={{
+                  marginRight: 8,
+                }}
+              />
+              <Typography variant="body2">123 Business Street, City, Country</Typography>
             </Box>
           </Box>
         </Box>
@@ -127,7 +139,9 @@ const Footer = () => {
               onChange={(e) => setEmail(e.target.value)}
               sx={{
                 backgroundColor: "transparent",
-                input: { color: "black" },
+                input: {
+                  color: "black",
+                },
                 paddingRight: "8px",
                 mb: 2,
               }}
@@ -147,7 +161,12 @@ const Footer = () => {
           justifyContent="space-between"
           alignItems="center"
         >
-          <Typography variant="body2" sx={{ mb: isMobile ? 2 : 0 }}>
+          <Typography
+            variant="body2"
+            sx={{
+              mb: isMobile ? 2 : 0,
+            }}
+          >
             © {new Date().getFullYear()} PFIRE. All rights reserved.
           </Typography>
           <Box>

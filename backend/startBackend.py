@@ -3,10 +3,12 @@ import subprocess
 import platform
 import venv
 
+
 def create_virtual_env():
     """Cria o ambiente virtual usando o módulo venv."""
     print("Criando novo ambiente virtual...")
     venv.create("venv", with_pip=True)
+
 
 def main():
     # Caminho para o interpretador Python dentro do ambiente virtual
@@ -22,10 +24,7 @@ def main():
         # Desinstalar tudo o que não está no requirements.txt
         try:
             installed_packages = subprocess.run(
-                [venv_python, "-m", "pip", "freeze"],
-                capture_output=True,
-                text=True,
-                check=True
+                [venv_python, "-m", "pip", "freeze"], capture_output=True, text=True, check=True
             ).stdout.splitlines()
         except subprocess.CalledProcessError:
             print("pip não está disponível no ambiente virtual. Recriando o ambiente...")
@@ -42,10 +41,7 @@ def main():
 
         if packages_to_remove:
             print(f"Removendo pacotes não listados em requirements.txt: {', '.join(packages_to_remove)}")
-            subprocess.run(
-                [venv_python, "-m", "pip", "uninstall", "-y", *packages_to_remove],
-                check=True
-            )
+            subprocess.run([venv_python, "-m", "pip", "uninstall", "-y", *packages_to_remove], check=True)
     else:
         create_virtual_env()
 
@@ -63,6 +59,7 @@ def main():
     # Executar o Uvicorn usando o interpretador do ambiente virtual
     print("Iniciando o servidor Uvicorn...")
     subprocess.run([venv_python, "-m", "uvicorn", "main:app", "--reload"], check=True)
+
 
 if __name__ == "__main__":
     main()

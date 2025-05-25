@@ -9,12 +9,13 @@ MAIN_FIELDS = {
     "recaptchaToken",
 }
 
+
 class RelatorioCreate(BaseModel):
     relatorio_name: str
     modelo_campos_id: str
     cliente_id: str
     recaptchaToken: str
-    model_config = ConfigDict(extra='allow') # Permite campos extras
+    model_config = ConfigDict(extra="allow")  # Permite campos extras
 
     @model_validator(mode="before")
     @classmethod
@@ -28,9 +29,13 @@ class RelatorioCreate(BaseModel):
                 continue
 
             if not key.startswith("custom_"):
-                raise HTTPException(status_code=400, detail=f"Nome de campo inválido: {key}. Os campos personalizados devem começar com 'custom_'.")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Nome de campo inválido: {key}. Os campos personalizados devem começar com 'custom_'.",
+                )
 
         return values
+
 
 class RelatorioActivation(BaseModel):
     id: Optional[str] = None
