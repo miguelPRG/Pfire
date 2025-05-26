@@ -51,8 +51,7 @@ async def fast_api_http_middleware(request: Request, call_next):
     """Middleware para aplicar o limite de requisições a todas as rotas"""
 
     if request.method == "OPTIONS":
-        # Responde imediatamente para requisições OPTIONS
-        return JSONResponse(status_code=204, content={})
+        return await call_next(request)
 
     response = await rate_limit(request)
     if response:

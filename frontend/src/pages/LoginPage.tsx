@@ -6,7 +6,6 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "react-router-dom";
-
 // Importar imagens
 import microsoft from "../assets/images/microsoft.png";
 import google from "../assets/images/google.png";
@@ -43,6 +42,7 @@ function LoginPage() {
 
     try {
       await login(data.email, data.password);
+      navigate("/");
     } catch (error: any) {
       setAuthError({
         error: true,

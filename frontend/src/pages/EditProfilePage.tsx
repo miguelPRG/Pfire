@@ -1,4 +1,4 @@
-import { useState, useLayoutEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../hooks/AuthContext";
 import { Box, Button, Container, TextField, Typography, Avatar, Paper, IconButton, Grid } from "@mui/material";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
@@ -45,33 +45,30 @@ type CompanyInputs = z.infer<typeof companySchema>;
 
 function EditProfilePage() {
   const [avatarPreview, setAvatarPreview] = useState("/static/images/avatar/2.jpg");
-  const { user } = useAuth();
-  // States para valores padrão do user e da empresa
-  const [defaultUserValues, setDefaultUserValues] = useState<UserInputs>({
-    name: user?.nome || "",
-    email: user?.email || "",
+  const { user, empresa } = useAuth();
+
+  const defaultUserValues = {
+    name: user?.nome,
+    email: user?.email,
     phone: user?.telefone || "",
-    password: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
+  };
 
-  const [defaultCompanyValues, setDefaultCompanyValues] = useState<CompanyInputs>({
-    companyName: "",
-    nif: "",
-    address: "",
-    locality: "",
-    postalCode: "",
-    companyPhone: "",
-  });
-
-  useLayoutEffect(() => {}, []);
+  const defaultCompanyValues = {
+    companyName: empresa?.nome,
+    nif: empresa?.nif,
+    address: empresa?.morada,
+    locality: empresa?.localidade,
+    postalCode: empresa?.codigoPostal,
+    companyPhone: empresa?.telefone,
+    logo: empresa?.logo || "",
+  };
 
   // Formulário do usuário
   const {
     register: registerUser,
     handleSubmit: handleSubmitUser,
     formState: { errors: userErrors, isSubmitting: isSubmittingUser },
+    reset: resetUserForm, // ADICIONE reset
   } = useForm<UserInputs>({
     resolver: zodResolver(userSchema),
     defaultValues: defaultUserValues,
@@ -83,10 +80,32 @@ function EditProfilePage() {
     handleSubmit: handleSubmitCompany,
     control: controlCompany,
     formState: { errors: companyErrors, isSubmitting: isSubmittingCompany },
+    reset: resetCompanyForm, // ADICIONE reset
   } = useForm<CompanyInputs>({
     resolver: zodResolver(companySchema),
     defaultValues: defaultCompanyValues,
   });
+
+  // Atualiza formulário do usuário quando user mudar
+  useEffect(() => {
+    resetUserForm({
+      name: user?.nome || "",
+      email: user?.email || "",
+      phone: user?.telefone || "",
+    });
+  }, [user, resetUserForm]);
+
+  // Atualiza formulário da empresa quando empresa mudar
+  useEffect(() => {
+    resetCompanyForm({
+      companyName: empresa?.nome || "",
+      nif: empresa?.nif || "",
+      address: empresa?.morada || "",
+      locality: empresa?.localidade || "",
+      postalCode: empresa?.codigoPostal || "",
+      companyPhone: empresa?.telefone || "",
+    });
+  }, [empresa, resetCompanyForm]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -330,12 +349,7 @@ function EditProfilePage() {
                 fullWidth
               />
             </Grid>
-            <Grid
-              size={{
-                xs: 12,
-                sm: 6,
-              }}
-            >
+            <Grid size={{ xs: 12 }}>
               <TextField
                 {...registerCompany("postalCode")}
                 label="Código Postal"
@@ -344,63 +358,52 @@ function EditProfilePage() {
                 fullWidth
               />
             </Grid>
-            <Grid
-              size={{
-                xs: 12,
-              }}
-            >
-              <Controller
-                name="companyPhone"
-                control={controlCompany}
-                render={({ field }) => (
-                  <Box>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        border: "1px solid",
-                        borderColor: companyErrors.companyPhone ? "error.main" : "rgba(0, 0, 0, 0.23)",
-                        borderRadius: 1,
-                        padding: "18.5px 14px",
-                        fontSize: "16px",
-                        "&:hover": {
-                          borderColor: "black",
-                        },
-                        "&:focus-within": {
-                          borderColor: "primary.main",
-                          borderWidth: 2,
-                        },
-                      }}
-                    >
-                      <PhoneInput
-                        {...field}
-                        defaultCountry="PT"
-                        international
-                        countryCallingCodeEditable={false}
-                        placeholder="Insira o número de telefone"
-                        style={{
-                          fontSize: "16px",
-                          border: "none",
-                          outline: "none",
-                          width: "100%",
-                          background: "transparent",
-                        }}
-                      />
-                    </Box>
-                    {companyErrors.companyPhone && (
-                      <Typography
-                        color="error"
-                        variant="body2"
+            <Grid size={{ xs: 12 }}>
+              <div id="telefone-field">
+                <Controller
+                  name="companyPhone"
+                  control={controlCompany}
+                  render={({ field }) => (
+                    <Box>
+                      <Box
                         sx={{
-                          mt: 0.5,
+                          display: "flex",
+                          alignItems: "center",
+                          border: "1px solid",
+                          borderColor: companyErrors.companyPhone
+                            ? "error.main"
+                            : "rgba(0, 0, 0, 0.23)",
+                          borderRadius: 1,
+                          padding: "18.5px 14px",
+                          fontSize: "16px",
+                          "&:hover": { borderColor: "black" },
+                          "&:focus-within": { borderColor: "primary.main", borderWidth: 2 },
                         }}
                       >
-                        {companyErrors.companyPhone.message}
-                      </Typography>
-                    )}
-                  </Box>
-                )}
-              />
+                        <PhoneInput
+                          {...field}
+                          defaultCountry="PT"
+                          international
+                          countryCallingCodeEditable={false}
+                          placeholder="Insira o número de telefone"
+                          style={{
+                            fontSize: "16px",
+                            border: "none",
+                            outline: "none",
+                            width: "100%",
+                            background: "transparent",
+                          }}
+                        />
+                      </Box>
+                      {companyErrors.companyPhone && (
+                        <Typography color="error" variant="body2" sx={{ mt: 0.5 }}>
+                          {companyErrors.companyPhone.message}
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
+                />
+              </div>
             </Grid>
             <Grid
               size={{

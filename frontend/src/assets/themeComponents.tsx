@@ -83,8 +83,11 @@ const commonComponents: Components = {
         },
         width: "100%",
         "& .MuiInputBase-root": { height: 50 }, // Ajusta altura do campo
-        "& .MuiInputLabel-root": { top: -5 }, // Move o label para cima
-        "& .MuiInputLabel-shrink": { top: 0 }, // Ajusta label quando o usuário digita
+        "& .MuiInputLabel-root": { 
+          lineHeight: "1.2", // Aumenta a altura do label
+          fontSize: "1.1rem", //
+        },
+        "& .MuiInputLabel-shrink": { top: 0 },
       },
     },
   },

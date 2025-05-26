@@ -6,11 +6,11 @@ import { useNavigate } from "react-router-dom";
 
 export default function CompanySelectorPage() {
   const { data, loading, error } = useQuery(GET_EMPRESAS);
-  const { chooseCompany, empresaId } = useAuth();
+  const { chooseCompany, empresa } = useAuth();
   const navigate = useNavigate();
 
-  const handleSelect = (id: string) => {
-    chooseCompany(id);
+  const handleSelect = (emp: any) => {
+    chooseCompany(emp);
     navigate("/");
   };
 
@@ -33,11 +33,11 @@ export default function CompanySelectorPage() {
         </Box>
 
         <Grid container spacing={3} alignItems="stretch">
-          {data.empresas.map((empresa: any) => {
-            const isSelected = empresa.id === empresaId;
+          {data.empresas.map((emp: any) => {
+            const isSelected = emp.id === empresa?.id;
 
             return (
-              <Grid item xs={12} sm={6} md={4} key={empresa.id}>
+              <Grid size={{xs:12, sm: 6}} key={emp.id}>
                 <Paper
                   elevation={4}
                   sx={{
@@ -58,18 +58,18 @@ export default function CompanySelectorPage() {
                 >
                   <Box display="flex" flexDirection="column" gap={0.5}>
                     <Typography variant="h6" gutterBottom>
-                      {empresa.nome}
+                      {emp.nome}
                     </Typography>
-                    <Typography variant="body2">Localidade: {empresa.localidade}</Typography>
-                    <Typography variant="body2">Morada: {empresa.morada}</Typography>
-                    <Typography variant="body2">Código Postal: {empresa.codigoPostal}</Typography>
-                    <Typography variant="body2">NIF: {empresa.nif}</Typography>
+                    <Typography variant="body2">Localidade: {emp.localidade}</Typography>
+                    <Typography variant="body2">Morada: {emp.morada}</Typography>
+                    <Typography variant="body2">Código Postal: {emp.codigoPostal}</Typography>
+                    <Typography variant="body2">NIF: {emp.nif}</Typography>
                   </Box>
 
                   <Button
                     variant="contained"
                     color={isSelected ? "success" : "primary"}
-                    onClick={() => handleSelect(empresa.id)}
+                    onClick={() => handleSelect(emp)}
                     sx={{
                       mt: 3,
                       fontWeight: "bold",

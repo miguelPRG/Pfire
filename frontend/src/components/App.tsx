@@ -24,14 +24,15 @@ const ChooseCompany = lazy(() => import("../pages/CompanySelectorPage"));
 // Rotas protegidas
 interface RouteProps {
   user: unknown;
-  empresaId: string | null;
+  empresa: unknown;
   element: ReactElement;
 }
 
-const ProtectedRoute = ({ user, empresaId, element }: RouteProps) => {
-  if (user) {
-    if (!empresaId) {
-      return <ChooseCompany />;
+const ProtectedRoute = ({ user,empresa, element }: RouteProps) => {
+  
+  if (user){
+    if (!empresa){
+      return <ChooseCompany/>;
     }
     return element;
   }
@@ -39,9 +40,13 @@ const ProtectedRoute = ({ user, empresaId, element }: RouteProps) => {
   return <Navigate to="/login" />;
 };
 
-const PublicRoute = ({ user, empresaId, element }: RouteProps) => {
-  return user ? <ProtectedRoute user={user} empresaId={empresaId} element={<Home />} /> : element;
-};
+const PublicRoute = ({ user,empresa,element }: RouteProps) => {
+  return user ? (
+    <ProtectedRoute user={user} empresa={empresa} element={<Home/>} />
+  ) : (
+    element
+  );
+}
 
 // Layout base
 const Layout = ({ children }: { children: React.ReactNode }) => {
@@ -93,7 +98,8 @@ const ThemeToggleButton = () => {
 
 // 🚀 App principal
 function App() {
-  const { user, loading, empresaId } = useAuth();
+  const { user, loading ,empresa} = useAuth();
+  
 
   if (loading) {
     return (
@@ -110,41 +116,65 @@ function App() {
           <Routes>
             <Route
               path="confirmation/:GLOBAL_ID/:OPERATION"
-              element={<PublicRoute user={user} empresaId={empresaId} element={<EmailOperation />} />}
+              element={<PublicRoute user = {user} empresa = {empresa} element = {<EmailOperation/>}/>}
             />
             <Route
               path="/new-password/:GLOBAL_ID/"
-              element={<PublicRoute user={user} empresaId={empresaId} element={<NewPassword />} />}
+              element={<PublicRoute user={user} empresa={empresa} element={<NewPassword/>}/>}
             />
-            <Route path="/login" element={<PublicRoute user={user} empresaId={empresaId} element={<Login />} />} />
+            <Route
+              path="/login"
+              element={<PublicRoute user={user} empresa={empresa} element={<Login />} />}
+            />
+            <Route path="/login" element={<PublicRoute user={user} empresa={empresa} element={<Login />} />} />
             <Route
               path="/register"
-              element={<PublicRoute user={user} empresaId={empresaId} element={<Register />} />}
+              element={<PublicRoute user={user} empresa={empresa} element={<Register />} />}
             />
             <Route
               path="/forgot-password"
-              element={<PublicRoute user={user} empresaId={empresaId} element={<ForgotPasswordPage />} />}
+              element={
+                <PublicRoute user={user} empresa={empresa} element={<ForgotPasswordPage />} />
+              }
             />
-            <Route path="/" element={<ProtectedRoute user={user} empresaId={empresaId} element={<Home />} />} />
+            <Route
+              path="/"
+              element={<ProtectedRoute user={user} empresa={empresa} element={<Home />} />}
+            />
+            <Route path="/" element={<ProtectedRoute user={user} empresa={empresa} element={<Home />} />} />
             <Route
               path="/users-list"
-              element={<ProtectedRoute user={user} empresaId={empresaId} element={<UserManagementTable />} />}
+              element={
+                <ProtectedRoute user={user} empresa={empresa} element={<UserManagementTable />} />
+              }
             />
             <Route
               path="/clients-list"
-              element={<ProtectedRoute user={user} empresaId={empresaId} element={<ClientManagementTable />} />}
+              element={
+                <ProtectedRoute
+                  user={user}
+                  empresa={empresa}
+                  element={<ClientManagementTable />}
+                />
+              }
             />
             <Route
               path="/add-client"
-              element={<ProtectedRoute user={user} empresaId={empresaId} element={<AddNewClient />} />}
+              element={
+                <ProtectedRoute user={user} empresa={empresa} element={<AddNewClient />} />
+              }
             />
             <Route
               path="/edit-profile"
-              element={<ProtectedRoute user={user} empresaId={empresaId} element={<EditProfilePage />} />}
+              element={
+                <ProtectedRoute user={user} empresa={empresa} element={<EditProfilePage />} />
+              }
             />
             <Route
               path="/choose-company"
-              element={<ProtectedRoute user={user} empresaId={empresaId} element={<ChooseCompany />} />}
+              element={
+                <ProtectedRoute user={user} empresa={empresa} element={<ChooseCompany/>} />
+              }
             />
             <Route path="*" element={<Navigate to={user ? "/" : "/login"} />} />
           </Routes>

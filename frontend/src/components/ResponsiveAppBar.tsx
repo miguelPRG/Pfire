@@ -22,7 +22,7 @@ import BusinessIcon from "@mui/icons-material/Business";
 import LogoutIcon from "@mui/icons-material/Logout";
 
 function ResponsiveAppBar() {
-  const { logout, empresaId } = useAuth();
+  const { logout, empresa } = useAuth();
   const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const theme = useTheme();
@@ -87,67 +87,67 @@ function ResponsiveAppBar() {
           }}
         >
           {/* Lado esquerdo */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            {empresaId && (
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            {empresa && (
               <IconButton
                 onClick={toggleSidebar}
                 color="inherit"
-                sx={{
-                  marginRight: 2,
-                }}
+                sx={{ marginRight: 2 }}
               >
                 <MenuIcon />
               </IconButton>
             )}
             <Box
-              component="img"
-              src={logo}
-              alt="Logo"
               sx={{
-                cursor: "pointer",
-                height: 40,
-                transform: {
-                  xs: "scale(2.1)",
-                  sm: "scale(2.75)",
-                  md: "scale(2.8)",
-                },
-                transformOrigin: "left center",
-                mr: 2,
-                ml: 2,
+                display: "flex",
+                alignItems: "center",
               }}
-              onClick={() => navigate("/")}
-            />
-
-            <Typography
-              variant="h6"
-              component="span"
-              sx={{
-                fontFamily: "monospace",
-                fontWeight: 700,
-                letterSpacing: ".2rem",
-                color: "inherit",
-                textDecoration: "none",
-                fontSize: {
-                  xs: "1.2rem",
-                  sm: "1.8rem",
-                  md: "2.0rem",
-                },
-                ml: {
-                  xs: 1.65,
-                  sm: 3.4,
-                  md: 3.8,
-                },
-                cursor: "pointer",
-              }}
-              onClick={() => navigate("/")}
             >
-              PFIRE
-            </Typography>
+              <Box
+                component="img"
+                src={logo}
+                alt="Logo"
+                sx={{
+                  cursor: "pointer",
+                  height: 40,
+                  transform: {
+                    xs: "scale(2.1)",
+                    sm: "scale(2.75)",
+                    md: "scale(2.8)",
+                  },
+                  transformOrigin: "left center",
+                  mr: 2,
+                  ml: 2,
+                }}
+                onClick={() => navigate("/")}
+              />
+
+              <Typography
+                variant="h6"
+                component="span"
+                sx={{
+                  fontFamily: "monospace",
+                  fontWeight: 700,
+                  letterSpacing: ".2rem",
+                  color: "inherit",
+                  textDecoration: "none",
+                  fontSize: {
+                    xs: "1.2rem",
+                    sm: "1.8rem",
+                    md: "2.0rem",
+                  },
+                  ml: {
+                    xs: 1.65,
+                    sm: 3.4,
+                    md: 3.8,
+                  },
+                  cursor: "pointer",
+                }}
+                onClick={() => navigate("/")}
+              >
+                PFIRE
+              </Typography>
+            </Box>
           </Box>
 
           {/* Lado direito */}

@@ -12,7 +12,8 @@ class Empresa:
     morada: str
     localidade: str
     codigo_postal: str
-    logo: Optional[str] = None  # Use Base64-encoded string for the logo
+    logo: Optional[str] = None # Use Base64-encoded string for the logo
+    isAdmin: Optional[bool] = None
     created_at: datetime
     created_by: Optional[str] = None
     updated_by: Optional[str] = None

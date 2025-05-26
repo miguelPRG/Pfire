@@ -21,6 +21,7 @@ interface UserLoggedIn {
   nome: string;
   email: string;
   telefone?: string;
+  isSuperAdmin: boolean;
 }
 
 export interface UserRegistered {
@@ -30,7 +31,7 @@ export interface UserRegistered {
   confirmPassword?: string;
 }
 
-export interface Empresa {
+export interface EmpresaRegistered {
   nome: string;
   nif: string;
   localidade: string;
@@ -39,22 +40,38 @@ export interface Empresa {
   telefone: string;
 }
 
+interface Empresa {
+  id: string
+  nome: string
+  nif: string
+  telefone: string
+  morada: string
+  localidade: string
+  codigoPostal: string
+  logo: string | null
+  isAdmin: boolean | null
+  createdAt: Date
+  createdBy: string | null
+  updatedBy: string | null
+  updatedAt: Date | null
+}
+
 interface AuthContextType {
   user: UserLoggedIn | null;
-  empresaId: string | null;
+  empresa: Empresa | null;
   loading: boolean;
   login: (email: string, pwd: string) => void;
-  registerUser: (payload: { user: UserRegistered; empresa: Empresa; recaptchaToken?: string }) => void;
+  registerUser: (payload: { user: UserRegistered; empresa: EmpresaRegistered;}) => void;
   loginWithOAuth: (provider: "google" | "microsoft") => void;
   logout: () => void;
-  chooseCompany: (id: string) => void;
+  chooseCompany: (empresa: Empresa) => void;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserLoggedIn | null>(null);
-  const [empresaId, setEmpresaId] = useState<string | null>(null);
+  const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -73,15 +90,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             nome: data.nome,
             email: data.email,
             telefone: data.telefone,
+            isSuperAdmin: data.isSuperAdmin,
           });
-
-          const savedEmpresaId = localStorage.getItem("empresaId");
-          if (savedEmpresaId) {
-            setEmpresaId(savedEmpresaId);
-          }
-        } else {
-          throw Error(data.message || "Erro desconhecido do backend");
         }
+        
+        const empresaData = localStorage.getItem("Empresa");
+        if (empresaData) {
+          const parsedEmpresa = JSON.parse(empresaData);
+          setEmpresa(parsedEmpresa);
+        }
+
       } catch (error) {
         console.error("Erro ao verificar autenticação:", error);
       } finally {
@@ -125,6 +143,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nome: data.nome,
         email: data.email,
         telefone: data.telefone,
+        isSuperAdmin: data.isSuperAdmin,
+
       });
     } catch (error) {
       console.error("Erro no login:", error);
@@ -132,7 +152,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function registerUser(payload: { user: UserRegistered; empresa: Empresa; recaptchaToken?: string }) {
+  async function registerUser(payload: { user: UserRegistered; empresa: EmpresaRegistered } & Record<string, unknown>) {
     try {
       const token = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
         action: "register",
@@ -188,6 +208,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nome: data.nome,
         email: data.email,
         telefone: data.telefone,
+        isSuperAdmin: data.isSuperAdmin,
       });
     } catch (error) {
       console.error("Erro no login com OAuth:", error);
@@ -201,22 +222,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       method: "POST",
       credentials: "include",
     });
-
-    localStorage.removeItem("empresaId");
+    setEmpresa(null);
     setUser(null);
-    setEmpresaId(null);
+    localStorage.removeItem("Empresa");
   }
 
-  function chooseCompany(id: string) {
-    localStorage.setItem("empresaId", id);
-    setEmpresaId(id);
+  function chooseCompany(empresa: Empresa) {
+
+      localStorage.setItem("Empresa", JSON.stringify(empresa));
+      setEmpresa(empresa); // Make sure setEmpresa is defined in your scope
   }
 
   return (
     <AuthContext.Provider
       value={{
         user,
-        empresaId,
+        empresa,
         loading,
         login,
         registerUser,
