@@ -76,6 +76,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     async function checkAuth() {
+      
+      if(user){
+        return
+      }
+
       try {
         const response = await fetch("/backend/user/auth", {
           method: "GET",
@@ -108,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     checkAuth();
-  }, []);
+  }, [user]);
 
   async function login(email: string, password: string) {
     if (!email || !password) {
@@ -218,13 +223,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
-    await fetch("backend/user/logout", {
-      method: "POST",
-      credentials: "include",
-    });
-    setEmpresa(null);
-    setUser(null);
-    localStorage.removeItem("Empresa");
+    console.log("Fazendo logout")
+    try{
+        await fetch("backend/user/logout", {
+          method: "POST",
+          credentials: "include",
+        });
+
+        setEmpresa(null);
+        setUser(null);
+
+    } catch (error){
+      console.error("Erro ao fazer logout")
+    }
   }
 
   function chooseCompany(empresa: Empresa) {

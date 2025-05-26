@@ -32,6 +32,7 @@ function LoginPage() {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting }, // Adicionado isSubmitting
   } = useForm<LoginFormInputs>({
     resolver: zodResolver(loginSchema),
@@ -44,10 +45,17 @@ function LoginPage() {
       await login(data.email, data.password);
       navigate("/");
     } catch (error: any) {
+      
+      reset({
+        email: "",
+        password: ""
+      })
+      
       setAuthError({
         error: true,
         message: error.message,
       });
+
     }
   };
 

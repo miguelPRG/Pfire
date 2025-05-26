@@ -2,18 +2,16 @@ import { useEffect, useState } from "react";
 import { useAuth } from "../hooks/AuthContext";
 import { Box, Button, Container, TextField, Typography, Avatar, Paper, IconButton, Grid } from "@mui/material";
 import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
-import { useForm, Controller } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import PhoneInput from "react-phone-number-input";
-import "react-phone-number-input/style.css";
-import "../assets/styles/phoneNumberField.css";
+import GlobalPhone from "../components/GlobalPhone";
 
 // Schemas separados
 const userSchema = z.object({
   name: z.string().nonempty("O nome é obrigatório"),
   email: z.string().email("Email inválido").nonempty("O email é obrigatório"),
-  phone: z
+  userPhone: z
     .string()
     .nonempty("O telefone é obrigatório")
     .regex(/^\+?[0-9\s\-()]{7,15}$/, "Número de telefone inválido"),
@@ -78,8 +76,8 @@ function EditProfilePage() {
   const {
     register: registerCompany,
     handleSubmit: handleSubmitCompany,
-    control: controlCompany,
-    formState: { errors: companyErrors, isSubmitting: isSubmittingCompany },
+    control,
+    formState: { errors, isSubmitting },
     reset: resetCompanyForm, // ADICIONE reset
   } = useForm<CompanyInputs>({
     resolver: zodResolver(companySchema),
@@ -91,7 +89,7 @@ function EditProfilePage() {
     resetUserForm({
       name: user?.nome || "",
       email: user?.email || "",
-      phone: user?.telefone || "",
+      userPhone: user?.telefone || "",
     });
   }, [user, resetUserForm]);
 
@@ -140,47 +138,6 @@ function EditProfilePage() {
         }}
       >
         <Box textAlign="center" mb={3} display="flex" flexDirection="column" alignItems="center">
-          <Box position="relative">
-            <Avatar
-              alt="User Avatar"
-              src={avatarPreview}
-              sx={{
-                width: 80,
-                height: 80,
-              }}
-            />
-            <label htmlFor="avatar-upload">
-              <input
-                accept="image/*"
-                id="avatar-upload"
-                type="file"
-                style={{
-                  display: "none",
-                }}
-                onChange={handleFileChange}
-              />
-              <IconButton
-                component="span"
-                sx={{
-                  position: "absolute",
-                  bottom: -5,
-                  right: -5,
-                  backgroundColor: "secondary.main",
-                  boxShadow: 1,
-                  "&:hover": {
-                    backgroundColor: "secondary.dark",
-                  },
-                }}
-              >
-                <PhotoCameraIcon
-                  fontSize="small"
-                  sx={{
-                    color: (theme) => theme.palette.background.default,
-                  }}
-                />
-              </IconButton>
-            </label>
-          </Box>
           <Typography variant="h5" fontWeight="bold" mt={2}>
             Editar Perfil
           </Typography>
@@ -220,13 +177,7 @@ function EditProfilePage() {
                 xs: 12,
               }}
             >
-              <TextField
-                label="Telefone"
-                {...registerUser("phone")}
-                error={!!userErrors.phone}
-                helperText={userErrors.phone?.message}
-                fullWidth
-              />
+              <GlobalPhone fieldName="userPhone" control={control} errors={errors}/>
             </Grid>
             <Grid
               size={{
@@ -302,8 +253,8 @@ function EditProfilePage() {
               <TextField
                 {...registerCompany("companyName")}
                 label="Nome da Empresa"
-                error={!!companyErrors.companyName}
-                helperText={companyErrors.companyName?.message}
+                error={!!errors.companyName}
+                helperText={errors.companyName?.message}
                 fullWidth
               />
             </Grid>
@@ -316,8 +267,8 @@ function EditProfilePage() {
               <TextField
                 {...registerCompany("nif")}
                 label="NIF"
-                error={!!companyErrors.nif}
-                helperText={companyErrors.nif?.message}
+                error={!!errors.nif}
+                helperText={errors.nif?.message}
                 fullWidth
               />
             </Grid>
@@ -330,8 +281,8 @@ function EditProfilePage() {
               <TextField
                 {...registerCompany("address")}
                 label="Morada"
-                error={!!companyErrors.address}
-                helperText={companyErrors.address?.message}
+                error={!!errors.address}
+                helperText={errors.address?.message}
                 fullWidth
               />
             </Grid>
@@ -344,8 +295,8 @@ function EditProfilePage() {
               <TextField
                 {...registerCompany("locality")}
                 label="Localidade"
-                error={!!companyErrors.locality}
-                helperText={companyErrors.locality?.message}
+                error={!!errors.locality}
+                helperText={errors.locality?.message}
                 fullWidth
               />
             </Grid>
@@ -353,57 +304,13 @@ function EditProfilePage() {
               <TextField
                 {...registerCompany("postalCode")}
                 label="Código Postal"
-                error={!!companyErrors.postalCode}
-                helperText={companyErrors.postalCode?.message}
+                error={!!errors.postalCode}
+                helperText={errors.postalCode?.message}
                 fullWidth
               />
             </Grid>
             <Grid size={{ xs: 12 }}>
-              <div id="telefone-field">
-                <Controller
-                  name="companyPhone"
-                  control={controlCompany}
-                  render={({ field }) => (
-                    <Box>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          border: "1px solid",
-                          borderColor: companyErrors.companyPhone
-                            ? "error.main"
-                            : "rgba(0, 0, 0, 0.23)",
-                          borderRadius: 1,
-                          padding: "18.5px 14px",
-                          fontSize: "16px",
-                          "&:hover": { borderColor: "black" },
-                          "&:focus-within": { borderColor: "primary.main", borderWidth: 2 },
-                        }}
-                      >
-                        <PhoneInput
-                          {...field}
-                          defaultCountry="PT"
-                          international
-                          countryCallingCodeEditable={false}
-                          placeholder="Insira o número de telefone"
-                          style={{
-                            fontSize: "16px",
-                            border: "none",
-                            outline: "none",
-                            width: "100%",
-                            background: "transparent",
-                          }}
-                        />
-                      </Box>
-                      {companyErrors.companyPhone && (
-                        <Typography color="error" variant="body2" sx={{ mt: 0.5 }}>
-                          {companyErrors.companyPhone.message}
-                        </Typography>
-                      )}
-                    </Box>
-                  )}
-                />
-              </div>
+              <GlobalPhone fieldName="companyPhone" control={control} errors={errors}/>
             </Grid>
             <Grid
               size={{
@@ -422,9 +329,9 @@ function EditProfilePage() {
                       backgroundColor: "secondary.dark",
                     },
                   }}
-                  disabled={isSubmittingCompany}
+                  disabled={isSubmitting}
                 >
-                  {isSubmittingCompany ? "Salvando..." : "Salvar Alterações"}
+                  {isSubmitting ? "Salvando..." : "Salvar Alterações"}
                 </Button>
               </Box>
             </Grid>

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-
 import {
   Container,
   Typography,
@@ -23,13 +22,10 @@ import { useAuth } from "../hooks/AuthContext";
 import google from "../assets/images/google.png";
 import microsoft from "../assets/images/microsoft.png";
 import logo from "../assets/images/logo.png";
-import { useForm, Controller } from "react-hook-form";
-
+import { useForm} from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import PhoneInput from "react-phone-number-input";
-import "react-phone-number-input/style.css";
-import "../assets/styles/phoneNumberField.css";
+import GlobalPhone from "../components/GlobalPhone";
 
 // Esquema de validação com Zod
 const registerSchema = z.object({
@@ -87,7 +83,6 @@ function RegisterPage() {
   const {
     register,
     handleSubmit,
-
     control,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormInputs>({
@@ -333,61 +328,7 @@ function RegisterPage() {
             fullWidth
             margin="normal"
           />
-          <div id="telefone-field">
-            <Controller
-              name="empresa.telefone"
-              control={control}
-              render={({ field }) => (
-                <Box>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      border: "1px solid",
-                      borderColor: errors.empresa?.telefone ? "error.main" : "rgba(0, 0, 0, 0.23)",
-                      borderRadius: 1,
-                      padding: "18.5px 14px",
-                      fontSize: "16px",
-                      "&:hover": {
-                        borderColor: "black",
-                      },
-                      "&:focus-within": {
-                        borderColor: "primary.main",
-                        borderWidth: 2,
-                      },
-                    }}
-                    aria-invalid={!!errors.empresa?.telefone}
-                  >
-                    <PhoneInput
-                      {...field}
-                      defaultCountry="PT"
-                      international
-                      countryCallingCodeEditable={false}
-                      placeholder="Insira o número de telefone"
-                      style={{
-                        fontSize: "16px",
-                        border: "none",
-                        outline: "none",
-                        width: "100%",
-                        background: "transparent",
-                      }}
-                    />
-                  </Box>
-                  {errors.empresa?.telefone && (
-                    <Typography
-                      color="error"
-                      variant="body2"
-                      sx={{
-                        mt: 0.5,
-                      }}
-                    >
-                      {errors.empresa.telefone.message}
-                    </Typography>
-                  )}
-                </Box>
-              )}
-            />
-          </div>
+          <GlobalPhone fieldName="empresa.telefone" control={control} errors={errors}/>
           <Button
             type="submit"
             disabled={isSubmitting}
