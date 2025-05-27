@@ -253,14 +253,6 @@ async def auth_user(request: Request):
         "isSuperAdmin": jwt["isSuperAdmin"],
     }
 
-
-@routerUser.get("/isSuperAdmin")
-async def is_super_admin(request: Request):
-    jwt = getattr(request.state, "jwt", None)
-
-    return jwt["isSuperAdmin"]
-
-
 # 🚀 Logout
 @routerUser.post("/logout")
 async def logout_user(request: Request, response: Response):

@@ -3,6 +3,7 @@ from database import empresas_collection, users_empresas_collection
 from .utils.limpar import filter_null_fields
 import strawberry
 from strawberry.types import Info
+from fastapi import HTTPException
 from bson import ObjectId
 from base64 import b64encode  # Importa o módulo base64 para conversão
 
@@ -10,7 +11,7 @@ from base64 import b64encode  # Importa o módulo base64 para conversão
 @strawberry.type
 class EmpresaQuery:
     @strawberry.field
-    async def empresas(self, info: Info, start: int = 0, lmt: int = 10) -> list[Empresa]:
+    async def empresas(self, info: Info, id: str = None, start: int = 0, lmt: int = 10) -> list[Empresa]:
 
         if lmt <= 0 or lmt > 10:
             lmt = 10
@@ -23,8 +24,21 @@ class EmpresaQuery:
 
         empresas = []
 
+        # Se o id for fornecido, quero apenas essa empresa
+        user_empresas = None
+        if id:
+            if not jwt["isSuperAdmin"]:
+                # Verifica se o utilizador tem acesso à empresa
+                user_empresas= await users_empresas_collection.find_one(
+                    {"user_id": ObjectId(jwt["user_id"]), "empresa_id": ObjectId(id)}
+                )
+                if not user_empresas:
+                    raise HTTPException( status_code=403, detail="Acesso negado! Não tens permissão para ver esta empresa.")
+
+            filtro = {"_id": ObjectId(id)}
+
         # Se for super administrador, quero todas as empresas
-        if jwt["isSuperAdmin"]:
+        elif jwt["isSuperAdmin"]:
             filtro = {}
 
         # Caso contrário, quero as empresas associadas ao utilizador
@@ -32,8 +46,6 @@ class EmpresaQuery:
             user_empresas = await users_empresas_collection.find({"user_id": ObjectId(jwt["user_id"])}).to_list(None)
             empresa_ids = [user_empresa["empresa_id"] for user_empresa in user_empresas]
             filtro = {"_id": {"$in": empresa_ids}}
-            # Cria um dicionário para mapear empresa_id -> isAdmin
-            empresa_admin_map = {ue["empresa_id"]: ue.get("isAdmin", False) for ue in user_empresas}
 
         async for empresa in empresas_collection.find(filtro).skip(start).limit(lmt):
             empresa_data = {
@@ -50,22 +62,27 @@ class EmpresaQuery:
                 "updated_at": empresa.get("updated_at"),
             }
 
-            # Adiciona o campo logo apenas se existir
             if empresa.get("logo"):
-                # Converte a imagem em base64
                 logo_base64 = b64encode(empresa["logo"]).decode("utf-8")
                 empresa_data["logo"] = logo_base64
 
-            if not jwt["isSuperAdmin"]:
-                empresa_data = {
-                    k: v for k, v in empresa_data.items() if k not in ["created_by", "updated_by", "updated_at"]
-                }
+            if jwt["isSuperAdmin"]:
+                empresa_data["isAdmin"] = True
+            else:
+                if isinstance(user_empresas, list):
+                    empresa_data["isAdmin"] = any(
+                        user_empresa["empresa_id"] == empresa["_id"] and user_empresa.get("isAdmin", False)
+                        for user_empresa in user_empresas
+                    )
+                elif isinstance(user_empresas, dict):
+                    empresa_data["isAdmin"] = user_empresas.get("isAdmin", False)
+                else:
+                    empresa_data["isAdmin"] = False
 
-                # Adiciona o campo isAdmin se existir na relação user-empresa
-                empresa_id = empresa.get("_id")
-                empresa_data["isAdmin"] = empresa_admin_map.get(empresa_id, False)
-                empresa_data = {k: v for k, v in empresa_data.items() if k not in ["created_by", "updated_by", "updated_at"]}
-            
+            empresa_data = {
+                k: v for k, v in empresa_data.items() if k not in ["created_by", "updated_by", "updated_at"]
+            }
+
             empresas.append(Empresa(**filter_null_fields(empresa_data)))
 
         return empresas

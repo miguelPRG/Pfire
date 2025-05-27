@@ -1,7 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect} from "react";
 import { useAuth } from "../hooks/AuthContext";
-import { Box, Button, Container, TextField, Typography, Avatar, Paper, IconButton, Grid } from "@mui/material";
-import PhotoCameraIcon from "@mui/icons-material/PhotoCamera";
+import { Box, Button, Container, TextField, Typography, Paper, Grid } from "@mui/material";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -42,7 +41,6 @@ type UserInputs = z.infer<typeof userSchema>;
 type CompanyInputs = z.infer<typeof companySchema>;
 
 function EditProfilePage() {
-  const [avatarPreview, setAvatarPreview] = useState("/static/images/avatar/2.jpg");
   const { user, empresa } = useAuth();
 
   const defaultUserValues = {
@@ -77,7 +75,7 @@ function EditProfilePage() {
     register: registerCompany,
     handleSubmit: handleSubmitCompany,
     control,
-    formState: { errors, isSubmitting },
+    formState: { errors: companyErrors, isSubmitting: isSubmittingEmpresa },
     reset: resetCompanyForm, // ADICIONE reset
   } = useForm<CompanyInputs>({
     resolver: zodResolver(companySchema),
@@ -91,10 +89,7 @@ function EditProfilePage() {
       email: user?.email || "",
       userPhone: user?.telefone || "",
     });
-  }, [user, resetUserForm]);
 
-  // Atualiza formulário da empresa quando empresa mudar
-  useEffect(() => {
     resetCompanyForm({
       companyName: empresa?.nome || "",
       nif: empresa?.nif || "",
@@ -103,15 +98,7 @@ function EditProfilePage() {
       postalCode: empresa?.codigoPostal || "",
       companyPhone: empresa?.telefone || "",
     });
-  }, [empresa, resetCompanyForm]);
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const imageUrl = URL.createObjectURL(file);
-      setAvatarPreview(imageUrl);
-    }
-  };
+  }, []);
 
   // Submissão dos dados do usuário
   const onSubmitUser = (data: UserInputs) => {
@@ -177,7 +164,7 @@ function EditProfilePage() {
                 xs: 12,
               }}
             >
-              <GlobalPhone fieldName="userPhone" control={control} errors={errors}/>
+              <GlobalPhone fieldName="userPhone" control={control} errors={userErrors}/>
             </Grid>
             <Grid
               size={{
@@ -253,8 +240,8 @@ function EditProfilePage() {
               <TextField
                 {...registerCompany("companyName")}
                 label="Nome da Empresa"
-                error={!!errors.companyName}
-                helperText={errors.companyName?.message}
+                error={!!companyErrors.companyName}
+                helperText={companyErrors.companyName?.message}
                 fullWidth
               />
             </Grid>
@@ -267,8 +254,8 @@ function EditProfilePage() {
               <TextField
                 {...registerCompany("nif")}
                 label="NIF"
-                error={!!errors.nif}
-                helperText={errors.nif?.message}
+                error={!!companyErrors.nif}
+                helperText={companyErrors.nif?.message}
                 fullWidth
               />
             </Grid>
@@ -281,8 +268,8 @@ function EditProfilePage() {
               <TextField
                 {...registerCompany("address")}
                 label="Morada"
-                error={!!errors.address}
-                helperText={errors.address?.message}
+                error={!!companyErrors.address}
+                helperText={companyErrors.address?.message}
                 fullWidth
               />
             </Grid>
@@ -295,8 +282,8 @@ function EditProfilePage() {
               <TextField
                 {...registerCompany("locality")}
                 label="Localidade"
-                error={!!errors.locality}
-                helperText={errors.locality?.message}
+                error={!!companyErrors.locality}
+                helperText={companyErrors.locality?.message}
                 fullWidth
               />
             </Grid>
@@ -304,13 +291,13 @@ function EditProfilePage() {
               <TextField
                 {...registerCompany("postalCode")}
                 label="Código Postal"
-                error={!!errors.postalCode}
-                helperText={errors.postalCode?.message}
+                error={!!companyErrors.postalCode}
+                helperText={companyErrors.postalCode?.message}
                 fullWidth
               />
             </Grid>
             <Grid size={{ xs: 12 }}>
-              <GlobalPhone fieldName="companyPhone" control={control} errors={errors}/>
+              <GlobalPhone fieldName="companyPhone" control={control} errors={companyErrors}/>
             </Grid>
             <Grid
               size={{
@@ -329,9 +316,9 @@ function EditProfilePage() {
                       backgroundColor: "secondary.dark",
                     },
                   }}
-                  disabled={isSubmitting}
+                  disabled={isSubmittingEmpresa}
                 >
-                  {isSubmitting ? "Salvando..." : "Salvar Alterações"}
+                  {isSubmittingEmpresa ? "Salvando..." : "Salvar Alterações"}
                 </Button>
               </Box>
             </Grid>

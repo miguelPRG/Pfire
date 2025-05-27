@@ -13,7 +13,7 @@ import logo from "../assets/images/logo.png";
 
 // Definir o esquema de validação com Zod
 const loginSchema = z.object({
-  email: z.string().nonempty("O email é obrigatório").email("Email inválido"),
+  email: z.string().nonempty("O email é obrigatório").email("Email inválido").trim(),
   password: z.string().nonempty("A password é obrigatória"),
 });
 
@@ -43,19 +43,13 @@ function LoginPage() {
 
     try {
       await login(data.email, data.password);
-      navigate("/");
+      //      navigate("/");
     } catch (error: any) {
-      
-      reset({
-        email: "",
-        password: ""
-      })
-      
+      reset(); // Limpa todos os campos e estados do formulário
       setAuthError({
         error: true,
         message: error.message,
       });
-
     }
   };
 
@@ -177,7 +171,7 @@ function LoginPage() {
           <TextField
             {...register("email")}
             id="email"
-            label="Email*"
+            label="Email *"
             error={!!errors.email}
             helperText={errors.email?.message}
             fullWidth
@@ -186,7 +180,7 @@ function LoginPage() {
           <TextField
             {...register("password")}
             id="password"
-            label="Password*"
+            label="Password *"
             type="password"
             error={!!errors.password}
             helperText={errors.password?.message}

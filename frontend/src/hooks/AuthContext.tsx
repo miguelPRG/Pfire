@@ -50,18 +50,14 @@ interface Empresa {
   codigoPostal: string
   logo: string | null
   isAdmin: boolean | null
-  createdAt: Date
-  createdBy: string | null
-  updatedBy: string | null
-  updatedAt: Date | null
 }
 
 interface AuthContextType {
   user: UserLoggedIn | null;
   empresa: Empresa | null;
-  loading: boolean;
-  login: (email: string, pwd: string) => void;
-  registerUser: (payload: { user: UserRegistered; empresa: EmpresaRegistered;}) => void;
+  loading: boolean; // <--- adicione isto
+  registerUser: (payload: { user: UserRegistered; empresa: EmpresaRegistered; }) => void;
+  login: (email: string, password: string) => void;
   loginWithOAuth: (provider: "google" | "microsoft") => void;
   logout: () => void;
   chooseCompany: (empresa: Empresa) => void;
@@ -72,48 +68,54 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserLoggedIn | null>(null);
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // <--- adicione isto
 
   useEffect(() => {
     async function checkAuth() {
-      
-      if(user){
-        return
-      }
-
       try {
         const response = await fetch("/backend/user/auth", {
           method: "GET",
           credentials: "include",
         });
 
-        const data = await response.json();
+        const userData = await response.json();
 
         if (response.ok) {
           setUser({
-            id: data.id,
-            nome: data.nome,
-            email: data.email,
-            telefone: data.telefone,
-            isSuperAdmin: data.isSuperAdmin,
+            id: userData.id,
+            nome: userData.nome,
+            email: userData.email,
+            telefone: userData.telefone,
+            isSuperAdmin: userData.isSuperAdmin,
           });
         }
-        
+
         const empresaData = localStorage.getItem("Empresa");
         if (empresaData) {
-          const parsedEmpresa = JSON.parse(empresaData);
-          setEmpresa(parsedEmpresa);
+          setEmpresa(JSON.parse(empresaData));
+        } else {
+          const empresaResponse = await fetch("/backend/empresa/get-empresa", {
+            method: "GET",
+            credentials: "include",
+          });
+
+          if (empresaResponse.ok) {
+            const empresaJson = await empresaResponse.json();
+            setEmpresa(empresaJson);
+            localStorage.setItem("Empresa", JSON.stringify(empresaJson));
+          } else {
+            console.error("Erro ao obter empresa:", await empresaResponse.text());
+          }
         }
 
       } catch (error) {
         console.error("Erro ao verificar autenticação:", error);
       } finally {
-        setLoading(false);
+        setLoading(false); // <--- finalize o loading
       }
     }
-
     checkAuth();
-  }, [user]);
+  }, []);
 
   async function login(email: string, password: string) {
     if (!email || !password) {
@@ -125,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
         action: "login",
       });
-      const response = await fetch(`http://localhost:8000/user/login`, {
+      const response = await fetch(`backend/user/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -151,6 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isSuperAdmin: data.isSuperAdmin,
 
       });
+
     } catch (error) {
       console.error("Erro no login:", error);
       throw error;
@@ -224,24 +227,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     console.log("Fazendo logout")
-    try{
-        await fetch("backend/user/logout", {
-          method: "POST",
-          credentials: "include",
-        });
+    try {
+      await fetch("backend/user/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+      setEmpresa(null)
+      setUser(null);
 
-        setEmpresa(null);
-        setUser(null);
-
-    } catch (error){
+    } catch (error) {
       console.error("Erro ao fazer logout")
     }
   }
 
   function chooseCompany(empresa: Empresa) {
 
-      localStorage.setItem("Empresa", JSON.stringify(empresa));
-      setEmpresa(empresa); // Make sure setEmpresa is defined in your scope
+    localStorage.setItem("Empresa", JSON.stringify(empresa));
+    setEmpresa(empresa); // Make sure setEmpresa is defined in your scope
   }
 
   return (
@@ -249,7 +251,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       value={{
         user,
         empresa,
-        loading,
+        loading, // <--- adicione isto
         login,
         registerUser,
         loginWithOAuth,
