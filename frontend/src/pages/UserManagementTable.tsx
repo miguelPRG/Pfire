@@ -45,10 +45,10 @@ export default function UserManagementTable() {
   const [search, setSearch] = useState("");
   const [orderBy, setOrderBy] = useState<keyof User | null>(null);
   const [order, setOrder] = useState<"asc" | "desc">("asc");
-  const { empresaId } = useAuth();
+  const { empresa } = useAuth();
   const { data, loading, error, refetch } = useQuery(GET_USERS, {
-    variables: { empresaId },
-    fetchPolicy: "no-cache",
+    variables: { empresaId: empresa?.id },
+    fetchPolicy: "cache-first",
   });
 
   const users: User[] = (data && data.users) || [];
@@ -104,7 +104,7 @@ export default function UserManagementTable() {
         credentials: "include",
         body: JSON.stringify({
           user_id: user.id,
-          empresa_id: empresaId,
+          empresa_id: empresa?.id,
           recaptchaToken,
         }),
       });

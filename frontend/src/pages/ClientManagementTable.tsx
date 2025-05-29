@@ -43,15 +43,14 @@ export default function ClientManagementTable() {
   const [order, setOrder] = useState<"asc" | "desc">("asc");
   const theme = useTheme();
   const navigate = useNavigate();
-  const { empresaId } = useAuth();
+  const { empresa } = useAuth();
 
   const { data } = useQuery(GET_CLIENTES_BY_EMPRESA, {
     variables: {
-      empresaId,
+      empresaId:empresa?.id,
       start: page * rowsPerPage,
       lmt: rowsPerPage,
     },
-    skip: !empresaId, // ✅ evita chamada até empresaId estar disponível
   });
 
   const rows: Cliente[] = data?.clientes || [];
