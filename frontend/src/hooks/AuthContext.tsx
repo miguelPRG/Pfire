@@ -1,5 +1,7 @@
 import { createContext, useState, useContext, ReactNode, useEffect } from "react";
 import { FirebaseLogin } from "../firebase";
+import { GET_EMPRESAS } from "../graphql/empresasqueries";
+import { useQuery } from "@apollo/client";
 
 declare global {
   interface Window {
@@ -68,7 +70,17 @@ export const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserLoggedIn | null>(null);
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
-  const [loading, setLoading] = useState(true); // <--- adicione isto
+  const [loading, setLoading] = useState(true);
+
+  // Pega o empresaId do localStorage
+  const empresaId = typeof window !== "undefined" ? localStorage.getItem("empresaId") : null;
+
+  // Use o hook useQuery no topo do componente
+  const { data, error } = useQuery(GET_EMPRESAS, {
+    variables: { id: empresaId },
+    skip: !user || !empresaId, // Só executa se houver user e empresaId
+    fetchPolicy: "network-only",
+  });
 
   useEffect(() => {
     async function checkAuth() {
@@ -88,34 +100,56 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             telefone: userData.telefone,
             isSuperAdmin: userData.isSuperAdmin,
           });
-        }
-
-        const empresaData = localStorage.getItem("Empresa");
-        if (empresaData) {
-          setEmpresa(JSON.parse(empresaData));
         } else {
-          const empresaResponse = await fetch("/backend/empresa/get-empresa", {
-            method: "GET",
-            credentials: "include",
-          });
-
-          if (empresaResponse.ok) {
-            const empresaJson = await empresaResponse.json();
-            setEmpresa(empresaJson);
-            localStorage.setItem("Empresa", JSON.stringify(empresaJson));
-          } else {
-            console.error("Erro ao obter empresa:", await empresaResponse.text());
-          }
+          setLoading(false);
+          throw new Error(userData.detail || "Erro ao autenticar utilizador");
         }
-
       } catch (error) {
+        setLoading(false);
         console.error("Erro ao verificar autenticação:", error);
-      } finally {
-        setLoading(false); // <--- finalize o loading
       }
     }
     checkAuth();
   }, []);
+
+  useEffect(() => {
+    if (!user ) {
+      return;
+    }
+
+    console.log("Utilizador logado!")
+
+    if (!empresaId) {
+      console.log("Nenhuma empresa selecionada");
+      setLoading(false);
+      return;
+    }
+
+    if (error) {
+      console.error("Erro ao buscar empresa:", error);
+      setLoading(false);
+      return;
+    }
+
+    if (data) {
+      
+      const empresaData = data.empresas[0]
+      console.log("Empresa data:", empresaData);
+      
+      setEmpresa({
+        id: empresaData.id,
+        nome: empresaData.nome,
+        nif: empresaData.nif,
+        telefone: empresaData.telefone,
+        morada: empresaData.morada,
+        localidade: empresaData.localidade,
+        codigoPostal: empresaData.codigoPostal,
+        logo: empresaData.logo || null,
+        isAdmin: empresaData.isAdmin || null,
+      });
+      setLoading(false);
+    }
+}, [data,user,error]); // <-- user removido
 
   async function login(email: string, password: string) {
     if (!email || !password) {
@@ -142,7 +176,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.detail || "Erro desconhecido do backend");
+        throw new Error(data.detail || "Erro desconhecido do servidor");
       }
 
       setUser({
@@ -153,6 +187,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isSuperAdmin: data.isSuperAdmin,
 
       });
+      
+      setLoading(true); // <--- adicione isto para indicar que o login está em progresso
 
     } catch (error) {
       console.error("Erro no login:", error);
@@ -242,8 +278,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   function chooseCompany(empresa: Empresa) {
 
-    localStorage.setItem("Empresa", JSON.stringify(empresa));
-    setEmpresa(empresa); // Make sure setEmpresa is defined in your scope
+    localStorage.setItem("empresaId", empresa.id);
+
+    console.log("Empresa escolhida:", empresa);
+
+    setEmpresa({
+        id: empresa.id,
+        nome: empresa.nome,
+        nif: empresa.nif,
+        telefone: empresa.telefone,
+        morada: empresa.morada,
+        localidade: empresa.localidade,
+        codigoPostal: empresa.codigoPostal,
+        logo: empresa.logo || null,
+        isAdmin: empresa.isAdmin || null,
+      });
   }
 
   return (

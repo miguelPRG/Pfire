@@ -57,7 +57,10 @@ function ResponsiveAppBar() {
     {
       label: "Logout",
       icon: <LogoutIcon fontSize="small" sx={{ mr: 1 }} />,
-      action: logout,
+      action: () => {
+        navigate("/login");
+        logout();
+      },
     },
   ];
 

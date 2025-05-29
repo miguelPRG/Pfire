@@ -4,7 +4,6 @@ import { GET_EMPRESAS } from "../graphql/empresasqueries";
 import { useAuth } from "../hooks/AuthContext";
 import { useNavigate } from "react-router-dom";
 
-
 export default function CompanySelectorPage() {
   const { data, loading, error } = useQuery(GET_EMPRESAS);
   const { chooseCompany, empresa} = useAuth();
