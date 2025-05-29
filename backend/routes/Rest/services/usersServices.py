@@ -9,7 +9,7 @@ from secrets import choice
 from string import ascii_letters, punctuation, digits
 from firebase_admin import credentials, auth, initialize_app
 from passlib.context import CryptContext
-from models.userModels import UserCreate, UserLogin, RegisterUser, UserForgotPassword, UserResetPassword
+from models.userModels import UserCreate, UserLogin, RegisterUser, UserForgotPassword, UserResetPassword, UserUpdatePassword
 from models.userEmpresaModels import UserEmpresaCreate
 from datetime import datetime
 from asyncio import gather
@@ -304,19 +304,36 @@ async def forgot_password(request: Request, user: UserForgotPassword):
 
     return {"message": "E-mail de recuperação enviado!"}
 
+@routerUser.put("/update-password")
+async def update_password(user: UserUpdatePassword, request: Request):
 
-@routerUser.get("/get-global-id/{global_id}")
-async def get_global_id(global_id: str):
-    """
-    Endpoint para obter o global_id:
-    - Retorna o global_id se existir.
-    """
-    # Verifica se o global_id existe
-    global_id_data = await global_ids_collection.find_one({"global_id": global_id})
-    if not global_id_data:
-        raise HTTPException(status_code=404, detail="Global ID não encontrado.")
+    # Validar o reCAPTCHA token
+    await validar_recaptcha_token(user.recaptchaToken, "update_password")
+    
+    jwt = getattr(request.state, "jwt", None)
 
-    return {"global_id": global_id_data["global_id"]}
+    # Verificar se o user tem aquela password
+
+    db_user = await users_collection.find_one({"_id": jwt["user_id"]})
+
+    if not db_user:
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
+    
+    if not pwd_context.verify(user.password, db_user["password"]):
+        raise HTTPException(status_code=400, detail="Senha atual inválida.")
+    
+    # Atualizar a password para a nova password
+    
+    new_password_hashed = pwd_context.hash(user.newPassword)
+    user_update = await users_collection.update_one(
+        {"_id": db_user["_id"]},
+        {"$set": {"password": new_password_hashed, "updated_at": datetime.now()}}
+    )
+
+    if user_update.modified_count == 0:
+        raise HTTPException(status_code=409, detail="Erro ao atualizar a senha.")
+    
+    return {"message": "Senha atualizada com sucesso!"}
 
 
 """
@@ -351,9 +368,10 @@ async def confirm_user(global_id: str, request: Request):
 
 
 @routerUser.put("/email/reset-password")
-async def reset_password(request: Request, user: UserResetPassword):
+async def reset_password(request: Request, global_id: str, user: UserResetPassword):
+
     # Encontrar o global_id na base de dados
-    global_id_data = await global_ids_collection.find_one({"global_id": user.global_id})
+    global_id_data = await global_ids_collection.find_one({"global_id": global_id})
     if not global_id_data:
         raise HTTPException(status_code=404, detail="Global ID não encontrado.")
 
@@ -372,5 +390,5 @@ async def reset_password(request: Request, user: UserResetPassword):
     if user_update.modified_count == 0:
         raise HTTPException(status_code=409, detail="Erro ao atualizar a password.")
 
-    await global_ids_collection.delete_one({"global_id": user.global_id})
+    await global_ids_collection.delete_one({"global_id": global_id})
     return {"message": "Password atualizada com sucesso!"}

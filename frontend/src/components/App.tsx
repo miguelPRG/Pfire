@@ -50,7 +50,7 @@ const PublicRoute = ({ element }: { element: ReactElement }) => {
 };
 
 const ChooseCompanyRoute = () => {
-  const { user } = useAuth();
+  const { user} = useAuth();
 
   if (user) {
     return <ChooseCompany />;

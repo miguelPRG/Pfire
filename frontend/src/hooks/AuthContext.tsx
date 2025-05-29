@@ -26,14 +26,26 @@ interface UserLoggedIn {
   isSuperAdmin: boolean;
 }
 
-export interface UserRegistered {
+interface UserRegistered {
   nome: string;
   email: string;
   password: string;
   confirmPassword?: string;
 }
 
-export interface EmpresaRegistered {
+interface UserUpdate {
+  nome?: string;
+  email?: string;
+  telefone?: string;
+}
+
+interface PasswordUpdate {
+  password: string;
+  novaPassword : string;
+  confirmarPassword: string;
+}
+
+interface EmpresaRegistered {
   nome: string;
   nif: string;
   localidade: string;
@@ -54,6 +66,16 @@ interface Empresa {
   isAdmin: boolean | null;
 }
 
+interface EmpresaUpdate {
+  nome ?: string;
+  nif ?: string;
+  telefone ?: string;
+  morada ?: string;
+  localidade ?: string;
+  codigoPostal ?: string;
+  logo ?: BinaryType;
+}
+
 interface AuthContextType {
   user: UserLoggedIn | null;
   empresa: Empresa | null;
@@ -63,6 +85,8 @@ interface AuthContextType {
   loginWithOAuth: (provider: "google" | "microsoft") => void;
   logout: () => void;
   chooseCompany: (empresa: Empresa) => void;
+  updateUser: (user: UserUpdate) => void;
+  updateCompany: (empresa: EmpresaUpdate) => void
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -77,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const empresaId = typeof window !== "undefined" ? localStorage.getItem("empresaId") : null;
 
   // Use o hook useQuery no topo do componente
-  const { data, error } = useQuery(GET_EMPRESAS, {
+  const { data} = useQuery(GET_EMPRESAS, {
     variables: { id: empresaId },
     skip: !user || !empresaId, // Só executa se houver user e empresaId
     fetchPolicy: "network-only",
@@ -92,6 +116,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
         const userData = await response.json();
+        console.log("Dados do utilizador autenticado:", userData);
 
         if (response.ok) {
           setUser({
@@ -114,33 +139,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!user) {
-      //Esta verificação é necessária pois o user será nulo na primeira renderização e quando o utilizador fizer logout
-      if (firstRendering) {
+    
+    if(!user){
+      if(firstRendering){
         setFirstRendering(false);
         return;
-      } else {
-        console.log("Utilizador fez logout!");
-        setLoading(false);
-        return;
+      }
+      else{
+        setLoading(false)
       }
     }
-
-    console.log("Utilizador logado!");
-
     if (!empresaId) {
-      console.log("Nenhuma empresa selecionada");
       setLoading(false);
       return;
     }
 
-    if (error) {
-      console.error("Erro ao buscar empresa:", error);
-      setLoading(false);
-      return;
-    }
 
-    if (data) {
+    if (data && !empresa) {
       const empresaData = data.empresas[0];
       setEmpresa({
         id: empresaData.id,
@@ -153,9 +168,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logo: empresaData.logo || null,
         isAdmin: empresaData.isAdmin || null,
       });
+    }
+  }, [data, user]); 
+
+  useEffect(() => {
+    if (empresa) {
+      localStorage.setItem("empresaId", empresa.id);
       setLoading(false);
     }
-  }, [data, user, error]); // <-- user removido
+  }, [empresa]);
 
   async function login(email: string, password: string) {
     if (!email || !password) {
@@ -175,7 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         credentials: "include",
         body: JSON.stringify({
           email: email.trim(),
-          password: password.trim(),
+          password: password,
           recaptchaToken: token,
         }),
       });
@@ -185,6 +206,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.detail || "Erro desconhecido do servidor");
       }
 
+
+      setLoading(true); // <--- adicione isto para indicar que o login está em progresso
+
       setUser({
         id: data.id,
         nome: data.nome,
@@ -193,7 +217,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isSuperAdmin: data.isSuperAdmin,
       });
 
-      setLoading(true); // <--- adicione isto para indicar que o login está em progresso
     } catch (error) {
       console.error("Erro no login:", error);
       throw error;
@@ -243,14 +266,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }),
       });
 
-      if (!response.ok) {
-        const text = await response.text();
-        const err = text ? JSON.parse(text) : {};
-        throw new Error(err.detail || err.message || "OAuth login falhou");
-      }
+      const data = await response.json();
 
-      const text = await response.text();
-      const data = text ? JSON.parse(text) : {};
+      if (!response.ok) {
+        throw new Error(data.detail || "Erro desconhecido do backend");
+      } 
+      
+      setLoading(true); // <--- adicione isto para indicar que o login está em progresso
+      
       setUser({
         id: data.id,
         nome: data.nome,
@@ -259,7 +282,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isSuperAdmin: data.isSuperAdmin,
       });
 
-      setLoading(true); // <--- adicione isto para indicar que o login está em progresso
     } catch (error) {
       console.error("Erro no login com OAuth:", error);
       setUser(null);
@@ -268,13 +290,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
+    
+    setLoading(true); // <--- adicione isto para indicar que o logout está em progresso
     console.log("Fazendo logout");
     try {
       await fetch("backend/user/logout", {
         method: "POST",
         credentials: "include",
       });
-      setLoading(true); // <--- adicione isto para indicar que o logout está em progresso
+    
       setEmpresa(null);
       setUser(null);
     } catch (error) {
@@ -283,10 +307,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function chooseCompany(empresa: Empresa) {
-    localStorage.setItem("empresaId", empresa.id);
-
-    console.log("Empresa escolhida:", empresa);
-
+    setLoading(true); // <--- adicione isto para indicar que a escolha da empresa está em progresso
     setEmpresa({
       id: empresa.id,
       nome: empresa.nome,
@@ -300,6 +321,62 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }
 
+  async function updateUser(user: UserUpdate){
+
+    const recaptchaToken = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
+        action: "register",
+      });
+
+      if (user.nome) user.nome = user?.nome?.trim();
+      if (user.email) user.email = user?.email?.trim();
+      if (user.telefone) user.telefone = user?.telefone?.trim();
+      
+      const body = JSON.stringify({
+        recaptchaToken,
+        nome: user.nome,
+        telefone: user.telefone,
+      });
+
+      console.log("Atualizando usuário com o seguinte corpo:", body);
+
+    try {
+      const response = await fetch("/backend/user/", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.detail || "Erro ao atualizar usuário");
+      }
+
+      // Atualizar o nome email ou telefone caso tenham sido alterados
+      setUser((prevUser) => {
+        if (!prevUser) return prevUser;
+        return {
+          ...prevUser,
+          id: prevUser.id,
+          nome: user.nome !== undefined ? user.nome : prevUser.nome,
+          email: user.email !== undefined ? user.email : prevUser.email,
+          telefone: user.telefone !== undefined ? user.telefone : prevUser.telefone,
+        };
+      });
+
+
+    } catch (error) {
+      console.error("Erro ao atualizar usuário:", error);
+      throw error;
+    }
+  }
+
+  async function updateCompany(){
+
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -311,6 +388,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginWithOAuth,
         logout,
         chooseCompany,
+        updateUser,
+        updateCompany
       }}
     >
       {children}

@@ -53,9 +53,9 @@ async def fast_api_http_middleware(request: Request, call_next):
     if request.method == "OPTIONS":
         return await call_next(request)
 
-    response = await rate_limit(request)
+    """response = await rate_limit(request)
     if response:
-        return response  # Retorna a resposta de erro 429 se o limite for excedido
+        return response  # Retorna a resposta de erro 429 se o limite for excedido"""
 
     path = request.url.path
 

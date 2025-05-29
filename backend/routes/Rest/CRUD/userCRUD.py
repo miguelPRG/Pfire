@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Request
 from apis.recaptchaValidation import validar_recaptcha_token
 from bson import ObjectId
 from passlib.context import CryptContext
-from models.userModels import UserUpdate, UserActivation
+from models.userModels import UserUpdate,UserUpdatePassword, UserActivation
 from datetime import datetime
 from database import users_collection
 
@@ -28,10 +28,6 @@ async def update_user(user: UserUpdate, request: Request):
     # Validar o reCAPTCHA token
     await validar_recaptcha_token(user.recaptchaToken, "update")
 
-    # Atualizar senha se esta foi enviada
-    if user.password:
-        user.password = pwd_context.hash(user.password)
-
     update_data = user.model_dump(exclude_unset=True)
     update_data["updated_at"] = datetime.now()
 
@@ -45,7 +41,6 @@ async def update_user(user: UserUpdate, request: Request):
         )
 
     return {"message": "Utilizador atualizado com sucesso!"}
-
 
 # 🚀 Apagar Usuário
 @routerUser.delete("/")
