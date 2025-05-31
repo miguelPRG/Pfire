@@ -47,7 +47,7 @@ export default function ClientManagementTable() {
 
   const { data } = useQuery(GET_CLIENTES_BY_EMPRESA, {
     variables: {
-      empresaId:empresa?.id,
+      empresaId: empresa?.id,
       start: page * rowsPerPage,
       lmt: rowsPerPage,
     },

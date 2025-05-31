@@ -43,22 +43,22 @@ export interface EmpresaRegistered {
 }
 
 interface Empresa {
-  id: string
-  nome: string
-  nif: string
-  telefone: string
-  morada: string
-  localidade: string
-  codigoPostal: string
-  logo: string | null
-  isAdmin: boolean | null
+  id: string;
+  nome: string;
+  nif: string;
+  telefone: string;
+  morada: string;
+  localidade: string;
+  codigoPostal: string;
+  logo: string | null;
+  isAdmin: boolean | null;
 }
 
 interface AuthContextType {
   user: UserLoggedIn | null;
   empresa: Empresa | null;
   loading: boolean; // <--- adicione isto
-  registerUser: (payload: { user: UserRegistered; empresa: EmpresaRegistered; }) => void;
+  registerUser: (payload: { user: UserRegistered; empresa: EmpresaRegistered }) => void;
   login: (email: string, password: string) => void;
   loginWithOAuth: (provider: "google" | "microsoft") => void;
   logout: () => void;
@@ -71,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserLoggedIn | null>(null);
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [loading, setLoading] = useState(true);
+  const [firstRendering, setFirstRendering] = useState(true);
 
   // Pega o empresaId do localStorage
   const empresaId = typeof window !== "undefined" ? localStorage.getItem("empresaId") : null;
@@ -113,11 +114,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (!user ) {
-      return;
+    if (!user) {
+      //Esta verificação é necessária pois o user será nulo na primeira renderização e quando o utilizador fizer logout
+      if (firstRendering) {
+        setFirstRendering(false);
+        return;
+      } else {
+        console.log("Utilizador fez logout!");
+        setLoading(false);
+        return;
+      }
     }
 
-    console.log("Utilizador logado!")
+    console.log("Utilizador logado!");
 
     if (!empresaId) {
       console.log("Nenhuma empresa selecionada");
@@ -132,10 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (data) {
-      
-      const empresaData = data.empresas[0]
-      console.log("Empresa data:", empresaData);
-      
+      const empresaData = data.empresas[0];
       setEmpresa({
         id: empresaData.id,
         nome: empresaData.nome,
@@ -149,7 +155,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       setLoading(false);
     }
-}, [data,user,error]); // <-- user removido
+  }, [data, user, error]); // <-- user removido
 
   async function login(email: string, password: string) {
     if (!email || !password) {
@@ -185,11 +191,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: data.email,
         telefone: data.telefone,
         isSuperAdmin: data.isSuperAdmin,
-
       });
-      
-      setLoading(true); // <--- adicione isto para indicar que o login está em progresso
 
+      setLoading(true); // <--- adicione isto para indicar que o login está em progresso
     } catch (error) {
       console.error("Erro no login:", error);
       throw error;
@@ -254,6 +258,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         telefone: data.telefone,
         isSuperAdmin: data.isSuperAdmin,
       });
+
+      setLoading(true); // <--- adicione isto para indicar que o login está em progresso
     } catch (error) {
       console.error("Erro no login com OAuth:", error);
       setUser(null);
@@ -262,37 +268,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
-    console.log("Fazendo logout")
+    console.log("Fazendo logout");
     try {
       await fetch("backend/user/logout", {
         method: "POST",
         credentials: "include",
       });
-      setEmpresa(null)
+      setLoading(true); // <--- adicione isto para indicar que o logout está em progresso
+      setEmpresa(null);
       setUser(null);
-
     } catch (error) {
-      console.error("Erro ao fazer logout")
+      console.error("Erro ao fazer logout");
     }
   }
 
   function chooseCompany(empresa: Empresa) {
-
     localStorage.setItem("empresaId", empresa.id);
 
     console.log("Empresa escolhida:", empresa);
 
     setEmpresa({
-        id: empresa.id,
-        nome: empresa.nome,
-        nif: empresa.nif,
-        telefone: empresa.telefone,
-        morada: empresa.morada,
-        localidade: empresa.localidade,
-        codigoPostal: empresa.codigoPostal,
-        logo: empresa.logo || null,
-        isAdmin: empresa.isAdmin || null,
-      });
+      id: empresa.id,
+      nome: empresa.nome,
+      nif: empresa.nif,
+      telefone: empresa.telefone,
+      morada: empresa.morada,
+      localidade: empresa.localidade,
+      codigoPostal: empresa.codigoPostal,
+      logo: empresa.logo || null,
+      isAdmin: empresa.isAdmin || null,
+    });
   }
 
   return (

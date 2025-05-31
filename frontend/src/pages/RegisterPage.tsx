@@ -22,7 +22,7 @@ import { useAuth } from "../hooks/AuthContext";
 import google from "../assets/images/google.png";
 import microsoft from "../assets/images/microsoft.png";
 import logo from "../assets/images/logo.png";
-import { useForm} from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import GlobalPhone from "../components/GlobalPhone";
@@ -328,7 +328,7 @@ function RegisterPage() {
             fullWidth
             margin="normal"
           />
-          <GlobalPhone fieldName="empresa.telefone" control={control} errors={errors}/>
+          <GlobalPhone fieldName="empresa.telefone" control={control} errors={errors} />
           <Button
             type="submit"
             disabled={isSubmitting}

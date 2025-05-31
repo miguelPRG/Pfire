@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 
 export default function CompanySelectorPage() {
   const { data, loading, error } = useQuery(GET_EMPRESAS);
-  const { chooseCompany, empresa} = useAuth();
+  const { chooseCompany, empresa } = useAuth();
   const navigate = useNavigate();
 
   const handleSelect = (emp: any) => {

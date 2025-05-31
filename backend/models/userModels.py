@@ -21,6 +21,7 @@ class UserCreate(BaseModel):
             raise ValueError("A senha deve conter pelo menos um dígito.")
         return value
 
+
 class UserUpdate(BaseModel):
     recaptchaToken: str
     nome: Optional[str] = Field(None, min_length=2, max_length=100)
@@ -43,6 +44,7 @@ class UserUpdate(BaseModel):
         if not any(c.isdigit() for c in value):
             raise ValueError("A senha deve conter pelo menos um dígito.")
         return value
+
 
 class UserActivation(BaseModel):
     recaptchaToken: str

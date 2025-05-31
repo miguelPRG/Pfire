@@ -4,7 +4,15 @@ import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import "../assets/styles/phoneNumberField.css";
 
-export default function GlobalPhone({fieldName,control, errors}: {fieldName:string,control:Control<any>, errors: FieldErrors<any>}) {
+export default function GlobalPhone({
+  fieldName,
+  control,
+  errors,
+}: {
+  fieldName: string;
+  control: Control<any>;
+  errors: FieldErrors<any>;
+}) {
   return (
     <div id="telefone-field">
       <Controller

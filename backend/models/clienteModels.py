@@ -1,9 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field
-from typing import Optional
-
 
 class ClienteCreate(BaseModel):
     nome: str

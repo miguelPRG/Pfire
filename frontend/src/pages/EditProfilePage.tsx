@@ -1,4 +1,4 @@
-import { useEffect} from "react";
+import { useEffect } from "react";
 import { useAuth } from "../hooks/AuthContext";
 import { Box, Button, Container, TextField, Typography, Paper, Grid } from "@mui/material";
 import { useForm } from "react-hook-form";
@@ -164,7 +164,7 @@ function EditProfilePage() {
                 xs: 12,
               }}
             >
-              <GlobalPhone fieldName="userPhone" control={control} errors={userErrors}/>
+              <GlobalPhone fieldName="userPhone" control={control} errors={userErrors} />
             </Grid>
             <Grid
               size={{
@@ -297,7 +297,7 @@ function EditProfilePage() {
               />
             </Grid>
             <Grid size={{ xs: 12 }}>
-              <GlobalPhone fieldName="companyPhone" control={control} errors={companyErrors}/>
+              <GlobalPhone fieldName="companyPhone" control={control} errors={companyErrors} />
             </Grid>
             <Grid
               size={{

@@ -29,11 +29,13 @@ class EmpresaQuery:
         if id:
             if not jwt["isSuperAdmin"]:
                 # Verifica se o utilizador tem acesso à empresa
-                user_empresas= await users_empresas_collection.find_one(
+                user_empresas = await users_empresas_collection.find_one(
                     {"user_id": ObjectId(jwt["user_id"]), "empresa_id": ObjectId(id)}
                 )
                 if not user_empresas:
-                    raise HTTPException( status_code=403, detail="Acesso negado! Não tens permissão para ver esta empresa.")
+                    raise HTTPException(
+                        status_code=403, detail="Acesso negado! Não tens permissão para ver esta empresa."
+                    )
 
             filtro = {"_id": ObjectId(id)}
 

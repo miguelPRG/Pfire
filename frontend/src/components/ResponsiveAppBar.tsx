@@ -92,11 +92,7 @@ function ResponsiveAppBar() {
           {/* Lado esquerdo */}
           <Box sx={{ display: "flex", alignItems: "center" }}>
             {empresa && (
-              <IconButton
-                onClick={toggleSidebar}
-                color="inherit"
-                sx={{ marginRight: 2 }}
-              >
+              <IconButton onClick={toggleSidebar} color="inherit" sx={{ marginRight: 2 }}>
                 <MenuIcon />
               </IconButton>
             )}

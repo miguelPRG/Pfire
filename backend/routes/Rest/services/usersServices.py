@@ -253,6 +253,7 @@ async def auth_user(request: Request):
         "isSuperAdmin": jwt["isSuperAdmin"],
     }
 
+
 # 🚀 Logout
 @routerUser.post("/logout")
 async def logout_user(request: Request, response: Response):
