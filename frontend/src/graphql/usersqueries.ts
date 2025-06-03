@@ -8,11 +8,11 @@ export const GET_USERS = gql`
       nome
       email
       telefone
-      isActive
-      isAdmin
+      role
       createdAt
       updatedAt
       lastLogin
+      isActive
     }
   }
 `;

@@ -296,7 +296,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localidade: empresa.localidade,
       codigoPostal: empresa.codigoPostal,
       logo: empresa.logo || null,
-      isAdmin: empresa.isAdmin || null,
+      isAdmin: empresa.isAdmin,
     });
   }
 
