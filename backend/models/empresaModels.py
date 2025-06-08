@@ -11,6 +11,9 @@ class EmpresaCreate(BaseModel):
     telefone: str = Field(..., pattern=r"^\+?[0-9\s\-()]{7,15}$")  # Correção aqui
     logo: Optional[bytes] = None
 
+    def __init__(self, **data):
+        super().__init__(**{k: v.strip() if isinstance(v, str) else v for k, v in data.items()})
+
 
 class EmpresaUpdate(BaseModel):
     recaptchaToken: str
@@ -21,3 +24,6 @@ class EmpresaUpdate(BaseModel):
     codigo_postal: Optional[str] = None
     telefone: Optional[str] = None
     logo: Optional[bytes] = None
+
+    def __init__(self, **data):
+        super().__init__(**{k: v.strip() if isinstance(v, str) else v for k, v in data.items()})

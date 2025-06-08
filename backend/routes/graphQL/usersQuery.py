@@ -5,7 +5,6 @@ from bson import ObjectId
 from fastapi import HTTPException
 import strawberry
 from strawberry.types import Info
-from typing import Optional
 
 
 @strawberry.type

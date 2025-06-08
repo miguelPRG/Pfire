@@ -17,6 +17,14 @@ class RelatorioCreate(BaseModel):
     recaptchaToken: str
     model_config = ConfigDict(extra="allow")  # Permite campos extras
 
+    def __init__(self, **data):
+        # Strip all string values
+        for key, value in data.items():
+            if isinstance(value, str):
+                data[key] = value.strip()
+        super().__init__(**data)
+
+
     @model_validator(mode="before")
     @classmethod
     def validate_custom_fields(cls, values):

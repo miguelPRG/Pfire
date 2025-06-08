@@ -3,7 +3,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from routes.Rest.services import usersServices, userEmpresaServices
 from routes.Rest.CRUD import userCRUD, empresaCRUD, clienteCRUD, modelosCRUD, relatorioCRUD
 from routes.graphQL.schema import graphql_router
-from firewall.clientIP import rate_limit
 from controller.jwtValidation import verify_jwt  # Função para verificar o JWT
 from fastapi.responses import JSONResponse  # Import necessário
 from controller.token_blacklist import is_token_revoked  # Import necessário

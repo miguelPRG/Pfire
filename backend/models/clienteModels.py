@@ -13,6 +13,12 @@ class ClienteCreate(BaseModel):
     empresa_id: str
     recaptchaToken: str
 
+    def __init__(self, **data):
+        super().__init__(**data)
+        for field, value in self.__dict__.items():
+            if isinstance(value, str):
+                object.__setattr__(self, field, value.strip())
+
 
 class ClienteUpdate(BaseModel):
     empresa_id: str
@@ -25,6 +31,12 @@ class ClienteUpdate(BaseModel):
     codigo_postal: Optional[str] = None
     recaptchaToken: str
 
+
+    def __init__(self, **data):
+        super().__init__(**data)
+        for field, value in self.__dict__.items():
+            if isinstance(value, str):
+                object.__setattr__(self, field, value.strip())
 
 class ClienteActivion(BaseModel):
     id: Optional[str] = None

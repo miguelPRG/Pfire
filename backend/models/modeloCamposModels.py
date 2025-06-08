@@ -13,6 +13,9 @@ ALLOWED_DATATYPES = {"number", "string", "bool", "object", "date"}  # Tipos de d
 
 # Função auxiliar para validação de campos personalizados no método de criação
 def validate_fields(key, value):
+
+    key = key.strip()  # Remove espaços em branco no início e no final
+
     if not key.startswith("custom_"):
         raise HTTPException(
             status_code=400,
@@ -24,7 +27,7 @@ def validate_fields(key, value):
             status_code=400,
             detail=f"O campo que está a tentar criar:  {key} deve ser um dicionário com 'datatype' e 'required'.",
         )
-
+    
     # Estas são as chaves permitidas por padrão
     allowed_keys = {"datatype", "required"}
 
@@ -89,7 +92,7 @@ def validate_fields(key, value):
 
 # Classe ModelosCamposCreate
 class ModelosCamposCreate(BaseModel):
-    model_name: str  # Ex: "extintores", "para-raios", "bocas de incêndio"
+    model_name: str
     empresa_id: str
     recaptchaToken: str
     model_config = ConfigDict(extra="allow")  # Permite campos extras
@@ -97,6 +100,9 @@ class ModelosCamposCreate(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def validate_fields(cls, values):
+        if "model_name" in values and isinstance(values["model_name"], str):
+            values["model_name"] = values["model_name"].strip()
+
         if len(values.keys()) < 3:
             raise HTTPException(
                 status_code=400,
@@ -119,6 +125,44 @@ class ModelosCamposUpdate(BaseModel):
     recaptchaToken: str
     model_config = ConfigDict(extra="allow")  # Permite campos extras
 
+    @model_validator(mode="before")
+    @classmethod
+    def validate_fields(cls, values):
+        if "model_name" in values and isinstance(values["model_name"], str):
+            values["model_name"] = values["model_name"].strip()
+
+        # Aplica strip aos nomes dos campos personalizados e aos valores string
+        new_values = {}
+        for key, value in values.items():
+            trimmed_key = key.strip() if isinstance(key, str) else key
+
+            # Se for campo principal, apenas copia
+            if trimmed_key in MAIN_FIELDS:
+                new_values[trimmed_key] = value
+                continue
+
+            # Se for campo personalizado
+            def trim_strings_in_dict(d):
+                if isinstance(d, dict):
+                    return {
+                        (k.strip() if isinstance(k, str) else k): trim_strings_in_dict(v)
+                        for k, v in d.items()
+                    }
+                elif isinstance(d, str):
+                    return d.strip()
+                else:
+                    return d
+
+            new_values[trimmed_key] = trim_strings_in_dict(value)
+
+        # Valida todos os campos personalizados no nível principal
+        for key, value in new_values.items():
+            if key in MAIN_FIELDS:
+                continue
+            validate_fields(key, value)
+
+        return new_values
+   
 
 class ModelosCamposDelete(BaseModel):
     empresa_id: str
