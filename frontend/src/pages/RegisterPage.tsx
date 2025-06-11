@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState} from "react";
 import { useNavigate, Link } from "react-router-dom";
+
 import {
   Container,
   Typography,
@@ -17,22 +18,27 @@ import {
   Fade,
   Alert,
 } from "@mui/material";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle"; // ícone de sucesso
-import { useAuth } from "../hooks/AuthContext";
-import google from "../assets/images/google.png";
-import microsoft from "../assets/images/microsoft.png";
-import logo from "../assets/images/logo.png";
-import { useForm } from "react-hook-form";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import { useForm, Controller } from "react-hook-form";
+import PhoneInput from "react-phone-number-input";
+import "react-phone-number-input/style.css";
+import "../assets/styles/phoneNumberField.css";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import GlobalPhone from "../components/GlobalPhone";
+import { useAuth } from "../hooks/AuthContext";
+import logo from "../assets/images/logo.png";
+import microsoftIcon from "../assets/images/microsoft.png";
+import googleIcon from "../assets/images/google.png";
 
-// Esquema de validação com Zod
+// --- esquema de validación con Zod ---
 const registerSchema = z.object({
   user: z
     .object({
       nome: z.string().nonempty("O nome é obrigatório"),
-      email: z.string().nonempty("O email é obrigatório").email("Email inválido"),
+      email: z
+        .string()
+        .nonempty("O email é obrigatório")
+        .email("Email inválido"),
       password: z
         .string()
         .nonempty("A senha é obrigatória")
@@ -41,7 +47,7 @@ const registerSchema = z.object({
         .regex(/\d/, "A senha deve conter pelo menos um número"),
       confirmPassword: z.string().optional(),
     })
-    .refine((data) => data.password === data.confirmPassword, {
+    .refine((d) => d.password === d.confirmPassword, {
       message: "As senhas não coincidem",
       path: ["confirmPassword"],
     }),
@@ -69,15 +75,15 @@ const registerSchema = z.object({
 
 type RegisterFormInputs = z.infer<typeof registerSchema>;
 
-function RegisterPage() {
+export default function RegisterPage() {
+  const navigate = useNavigate();
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const { registerUser, loginWithOAuth } = useAuth();
   const [isRegistError, setIsRegistError] = useState({
     error: false,
     message: "",
   });
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const navigate = useNavigate();
-  const { registerUser } = useAuth();
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
   const {
@@ -89,24 +95,33 @@ function RegisterPage() {
     resolver: zodResolver(registerSchema),
   });
 
+    // 1) SUBMIT tradicional: Firebase + sendEmailVerification + backend /empresa/
   const onSubmit = async (data: RegisterFormInputs) => {
     setIsRegistError({ error: false, message: "" });
-
-    setIsRegistError({ error: false, message: "" });
-
     try {
-      delete data.user.confirmPassword; // Remove o campo confirmPassword do payload
-      const payload = {
-        user: data.user,
-        empresa: data.empresa,
-      };
-      await registerUser(payload);
-      setShowSuccessDialog(true); // Mostra o popup de sucesso
+      delete data.user.confirmPassword;
+      await registerUser({ user: data.user, empresa: data.empresa });
+      // Abre diálogo de sucesso (o usuário deve confirmar e-mail)
+      setShowSuccessDialog(true);
     } catch (err: any) {
       window.scrollTo({ top: 0, behavior: "smooth" });
+      setIsRegistError({ error: true, message: err.message });
+    }
+  };
+
+  // Handler genérico para qualquer provedor
+  const handleOAuth = (provider: "google" | "microsoft") => async () => {
+    try {
+
+      await loginWithOAuth(provider);
+      // após login, deixamos o useEffect cuidar do redirecionamento
+    } catch (e: any) {
       setIsRegistError({
         error: true,
-        message: err.message,
+        message:
+          e.code === "auth/popup-closed-by-user"
+            ? "Login cancelado pelo usuário."
+            : e.message,
       });
     }
   };
@@ -121,16 +136,9 @@ function RegisterPage() {
         borderRadius: 2,
       }}
     >
-      {/* Exibir erro de registo */}
       {isRegistError.error && isRegistError.message && (
-        <Fade in={isRegistError.error} timeout={800}>
-          <Alert
-            variant="filled"
-            severity="error"
-            sx={{
-              mt: -7.5,
-            }}
-          >
+        <Fade in timeout={800}>
+          <Alert variant="filled" severity="error" sx={{ mt: -7.5 }}>
             {isRegistError.message}
           </Alert>
         </Fade>
@@ -151,100 +159,67 @@ function RegisterPage() {
           <img
             src={logo}
             alt="Logo"
-            style={{
-              width: "100px",
-              height: "100px",
-            }}
+            style={{ width: "100px", height: "100px" }}
           />
         </Box>
       </Box>
-      <Paper
-        elevation={6}
-        sx={{
-          maxWidth: "1000px",
-          p: isMobile ? 2 : 4,
-        }}
-      >
-        <Typography
-          variant="h1"
-          sx={{
-            mb: 2,
-            mt: 2,
-          }}
-        >
+
+      <Paper elevation={6} sx={{ p: isMobile ? 2 : 4 }}>
+        <Typography variant="h5" sx={{ mb: 2 }}>
           CRIAR CONTA COM
         </Typography>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            gap: 1,
-            mt: 0.5,
-          }}
-        >
+
+        <Box sx={{ display: "flex", justifyContent: "center", gap: 1, mb: 2 }}>
+          {/* Botão Google */}
           <Button
-            onClick={() => navigate("/cadastro-empresa")}
+            onClick={handleOAuth("google")}
             sx={{
               display: "flex",
               alignItems: "center",
-              backgroundColor: "#FFF",
+              backgroundColor: "#FFFFFF",
               px: 1.7,
               py: 0.7,
               width: "200px",
               border: "1px solid #B0B0B0",
-              "&:hover": {
-                backgroundColor: "background.default",
-              },
+              "&:hover": { backgroundColor: "background.default" },
             }}
           >
             <img
-              src={google}
+              src={googleIcon}
               alt="Google Logo"
-              style={{
-                width: 28,
-                height: 28,
-                marginRight: 8,
-              }}
+              style={{ width: 32, height: 32, marginRight: 8 }}
             />
           </Button>
+          {/* Botão Microsoft */}
           <Button
-            onClick={() => navigate("/cadastro-empresa")}
+            onClick={handleOAuth("microsoft")}
             sx={{
               display: "flex",
               alignItems: "center",
-              backgroundColor: "#FFF",
+              backgroundColor: "#FFFFFF",
               px: 1.7,
               py: 0.7,
               width: "200px",
               border: "1px solid #B0B0B0",
-              "&:hover": {
-                backgroundColor: "background.default",
-              },
+              "&:hover": { backgroundColor: "background.default" },
             }}
           >
             <img
-              src={microsoft}
+              src={microsoftIcon}
               alt="Microsoft Logo"
-              style={{
-                width: 33,
-                height: 32,
-                marginRight: 8,
-              }}
+              style={{ width: 32, height: 32, marginRight: 8 }}
             />
           </Button>
         </Box>
-        <Divider sx={{ width: "100%", my: 2 }}>
-          <Typography
-            variant="body1"
-            sx={{
-              px: 2,
-              color: "gray",
-            }}
-          >
+
+        <Divider sx={{ my: 2 }}>
+          <Typography variant="body2" color="text.secondary">
             ou
           </Typography>
         </Divider>
+
         <form onSubmit={handleSubmit(onSubmit)}>
+          {/* Campos do usuário */}
           <TextField
             {...register("user.nome")}
             label="Nome*"
@@ -279,13 +254,9 @@ function RegisterPage() {
             fullWidth
             margin="normal"
           />
-          <Typography
-            variant="h1"
-            sx={{
-              fontSize: "1.1rem",
-              mt: "8px",
-            }}
-          >
+
+          {/* Dados da empresa */}
+          <Typography variant="h6" sx={{ mt: 3, mb: 1 }}>
             Dados da Empresa
           </Typography>
           <TextField
@@ -328,53 +299,87 @@ function RegisterPage() {
             fullWidth
             margin="normal"
           />
-          <GlobalPhone fieldName="empresa.telefone" control={control} errors={errors} />
+          <Box id="telefone-field" sx={{ mt: 2, mb: 1 }}>
+            <Controller
+              name="empresa.telefone"
+              control={control}
+              render={({ field }) => (
+                <Box>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      border: "1px solid",
+                      borderColor: errors.empresa?.telefone
+                        ? "error.main"
+                        : "rgba(0, 0, 0, 0.23)",
+                      borderRadius: 1,
+                      padding: "18.5px 14px",
+                      fontSize: "16px",
+                      "&:hover": { borderColor: "black" },
+                      "&:focus-within": {
+                        borderColor: "primary.main",
+                        borderWidth: 2,
+                      },
+                    }}
+                    aria-invalid={!!errors.empresa?.telefone}
+                  >
+                    <PhoneInput
+                      {...field}
+                      defaultCountry="PT"
+                      international
+                      countryCallingCodeEditable={false}
+                      placeholder="Insira o número de telefone"
+                      style={{
+                        fontSize: "16px",
+                        border: "none",
+                        outline: "none",
+                        width: "100%",
+                        background: "transparent",
+                      }}
+                    />
+                  </Box>
+                  {errors.empresa?.telefone && (
+                    <Typography
+                      color="error"
+                      variant="body2"
+                      sx={{ mt: 0.5 }}
+                    >
+                      {errors.empresa.telefone.message}
+                    </Typography>
+                  )}
+                </Box>
+              )}
+            />
+          </Box>
+
           <Button
             type="submit"
             disabled={isSubmitting}
+            fullWidth
             sx={{
+              mt: 2,
               background: "linear-gradient(45deg, #FFA726 30%, #FB8C00 90%)",
               color: "white",
               fontWeight: "bold",
-              mt: 2,
-              "&:hover": {
-                background: "linear-gradient(45deg, #FB8C00 30%, #FFA726 90%)",
-              },
             }}
           >
             {isSubmitting ? "A criar..." : "CRIAR CONTA"}
           </Button>
         </form>
-        <Dialog open={showSuccessDialog} onClose={() => navigate("/login")}>
-          <DialogTitle
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-            }}
-          >
-            <CheckCircleIcon color="success" fontSize="large" />
-            <Typography variant="h6" fontWeight="bold">
-              Conta criada com sucesso!
-            </Typography>
-          </DialogTitle>
 
+        <Dialog open={showSuccessDialog} onClose={() => navigate("/login")}>
+          <DialogTitle sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <CheckCircleIcon color="success" fontSize="large" />
+            Conta criada com sucesso!
+          </DialogTitle>
           <DialogContent>
-            <Typography
-              sx={{
-                mt: 1,
-              }}
-            >
-              O teu registo foi concluído. Por favor, verifica o teu email para ativar a conta.
+            <Typography sx={{ mt: 1 }}>
+              O teu registo foi concluído. Por favor, verifica o teu email para
+              ativar a conta.
             </Typography>
           </DialogContent>
-
-          <DialogActions
-            sx={{
-              justifyContent: "center",
-              pb: 2,
-            }}
-          >
+          <DialogActions sx={{ justifyContent: "center", pb: 2 }}>
             <Button
               onClick={() => navigate("/login")}
               variant="contained"
@@ -398,7 +403,8 @@ function RegisterPage() {
             </Button>
           </DialogActions>
         </Dialog>
-        <Typography variant="body1">
+
+        <Typography variant="body2" sx={{ mt: 2 }}>
           Já tens uma conta? <Link to="/login">Inicia sessão</Link>
         </Typography>
       </Paper>
@@ -406,4 +412,3 @@ function RegisterPage() {
   );
 }
 
-export default RegisterPage;

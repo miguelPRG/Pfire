@@ -1,7 +1,8 @@
-import { createContext, useState, useContext, ReactNode, useEffect } from "react";
+import { createContext, useState, useContext, ReactNode, useEffect} from "react";
 import { FirebaseLogin } from "../firebase";
 import { GET_EMPRESAS } from "../graphql/empresasqueries";
 import { useQuery } from "@apollo/client";
+import { useApolloClient } from "@apollo/client";
 
 declare global {
   interface Window {
@@ -80,13 +81,13 @@ interface AuthContextType {
   user: UserLoggedIn | null;
   empresa: Empresa | null;
   loading: boolean; // <--- adicione isto
-  registerUser: (payload: { user: UserRegistered; empresa: EmpresaRegistered }) => void;
-  login: (email: string, password: string) => void;
-  loginWithOAuth: (provider: "google" | "microsoft") => void;
-  logout: () => void;
+  registerUser: (payload: { user: UserRegistered; empresa: EmpresaRegistered }) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  loginWithOAuth: (provider: "google" | "microsoft") => Promise<boolean>;
+  logout: () => Promise<void>;
   chooseCompany: (empresa: Empresa) => void;
-  updateUser: (user: UserUpdate) => void;
-  updateCompany: (empresa: EmpresaUpdate) => void
+  updateUser: (user: UserUpdate) => Promise<void>;
+  updateCompany: (empresa: EmpresaUpdate) => Promise<void>
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -96,13 +97,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [loading, setLoading] = useState(true);
   const [firstRendering, setFirstRendering] = useState(true);
+  const apolloClient = useApolloClient();
+
 
   // Pega o empresaId do localStorage
   const empresaId = typeof window !== "undefined" ? localStorage.getItem("empresaId") : null;
 
   // Use o hook useQuery no topo do componente
-  const { data} = useQuery(GET_EMPRESAS, {
-    variables: { id: empresaId },
+  const { data, refetch} = useQuery(GET_EMPRESAS, {
+    variables: { id: empresaId || ""},
     skip: !user || !empresaId, // Só executa se houver user e empresaId
     fetchPolicy: "network-only",
   });
@@ -139,23 +142,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    
-    if(!user){
-      if(firstRendering){
-        setFirstRendering(false);
-        return;
-      }
-      else{
-        setLoading(false)
-      }
-    }
-    if (!empresaId) {
-      setLoading(false);
-      return;
-    }
-
 
     if (data && !empresa) {
+      console.log("Dados recebidos do GraphQL:", data);
       const empresaData = data.empresas[0];
       setEmpresa({
         id: empresaData.id,
@@ -165,11 +154,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         morada: empresaData.morada,
         localidade: empresaData.localidade,
         codigoPostal: empresaData.codigoPostal,
-        logo: empresaData.logo || null,
+        logo: empresaData.logo,
         isAdmin: empresaData.isAdmin || null,
       });
     }
-  }, [data, user]); 
+  }, [data]); 
+
+  useEffect(() => {
+
+     if(!user){
+      if(firstRendering){
+        setFirstRendering(false);
+        return;
+      }
+      else{
+        setLoading(false)
+      }
+    }
+    if (!empresaId ) {
+      setLoading(false);
+      return;
+    }
+
+  }, [user])
 
   useEffect(() => {
     if (empresa) {
@@ -206,7 +213,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.detail || "Erro desconhecido do servidor");
       }
 
-
       setLoading(true); // <--- adicione isto para indicar que o login está em progresso
 
       setUser({
@@ -216,6 +222,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         telefone: data.telefone,
         isSuperAdmin: data.isSuperAdmin,
       });
+
+      await refetch(); // <--- força o Apollo a buscar novamente os dados da empresa
 
     } catch (error) {
       console.error("Erro no login:", error);
@@ -252,7 +260,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function loginWithOAuth(provider: "google" | "microsoft") {
+  async function loginWithOAuth(provider: "google" | "microsoft"): Promise<boolean> {
     try {
       const { idToken } = await FirebaseLogin(provider);
       const response = await fetch("/backend/user/login-oauth", {
@@ -267,11 +275,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       const data = await response.json();
-
+     
+     // 1) tenta ler JSON (pode falhar se não houver corpo)
+      /*let data: any = null;
+      const contentType = response.headers.get("content-type");
+      if (contentType?.includes("application/json")) {
+       data = await response.json();
+      }*/
       if (!response.ok) {
-        throw new Error(data.detail || "Erro desconhecido do backend");
-      } 
-      
+       const msg = data?.detail || (await response.text()) || "OAuth login falhou";
+       throw new Error(msg);
+    }
+
+    //sacar o atributo dos dados do user, sacar dato newuser dos dados que el envia
+    if(data.newUser){
+      //Apagar dados da empresa do localStorage
+      localStorage.removeItem("empresaId");
+    }
+
       setLoading(true); // <--- adicione isto para indicar que o login está em progresso
       
       setUser({
@@ -281,7 +302,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         telefone: data.telefone,
         isSuperAdmin: data.isSuperAdmin,
       });
-
+      return data.newUser as boolean;
     } catch (error) {
       console.error("Erro no login com OAuth:", error);
       setUser(null);
@@ -301,6 +322,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
       setEmpresa(null);
       setUser(null);
+      await apolloClient.clearStore(); // Limpa cache e queries
     } catch (error) {
       console.error("Erro ao fazer logout");
     }

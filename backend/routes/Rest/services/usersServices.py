@@ -4,12 +4,11 @@ from controller.jwtValidation import generate_jwt  # Se usa para generar el JWT
 from controller.token_blacklist import add_token_to_blacklist  # Nueva función para usar Redis
 from apis.recaptchaValidation import validar_recaptcha_token
 from apis.brevo_client import enviar_email_registo, enviar_email_recuperacao
+from apis.firebase_admin_client import verify_firebase_token  # Si se usa para verificar el token de Firebase
 from pathlib import Path
-from secrets import choice
-from string import ascii_letters, punctuation, digits
-from firebase_admin import credentials, auth, initialize_app
+from firebase_admin import  initialize_app, credentials #as chaves
 from passlib.context import CryptContext
-from models.userModels import UserCreate, UserLogin, RegisterUser, UserForgotPassword, UserResetPassword, UserUpdatePassword
+from models.userModels import UserLogin, RegisterUser, UserForgotPassword, UserResetPassword, UserUpdatePassword
 from models.userEmpresaModels import UserEmpresaCreate
 from datetime import datetime
 from asyncio import gather
@@ -29,101 +28,99 @@ pwd_context = CryptContext(
 BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
 SERVICE_ACCOUNT_PATH = BASE_DIR / "chaves" / "serviceAccountKey.json"  # Camino correcto
 
-# Inicializa el Firebase usando el archivo de credenciales
+# Inicializa el Firebase usando el archivo de chaves
 cred = credentials.Certificate(str(SERVICE_ACCOUNT_PATH))
 initialize_app(cred)
 
 
 # 🚀 Login via Firebase OAuth
 @routerUser.post("/login-oauth")
-async def login_oauth(response: Response, payload: dict):
+async def login_oauth(request: Request):
     """
-    Autenticação via Firebase OAuth (Google / Microsoft):
-    - payload: { "firebase_token": "<ID Token do Firebase>" }
-    - Cria ou atualiza apenas o USUÁRIO em Mongo.
-    - Não cria empresa aqui.
-    - Retorna JWT com empresas=[] e userRef=null.
+    Autenticação via Firebase OAuth (Google/Microsoft):
+    - Recebe { "firebase_token": "<ID Token do Firebase>" }
+    - Se usuário não existe, cria novo (isSuperAdmin=False, firebaseUid=uid) → newUser = True
+    - Se já existe, apenas atualiza last_login → newUser = False
+    - Gera JWT e retorna JSON com newUser
     """
-    firebase_token = payload.get("firebase_token")
+    body = await request.json()
+    firebase_token = body.get("firebase_token")
     if not firebase_token:
         raise HTTPException(status_code=400, detail="firebase_token é obrigatório.")
 
     # 1) Verifica ID Token no Firebase
     try:
-        decoded = auth.verify_id_token(firebase_token)
+        firebase_data = await verify_firebase_token(firebase_token)
+        # firebase_data: { "uid", "email", "name", "phone" }
     except Exception as e:
-        raise HTTPException(401, f"Token Firebase inválido: {e}")
+        raise HTTPException(status_code=401, detail=f"Token Firebase inválido: {e}")
 
-    email = decoded.get("email")
-    nome = decoded.get("name")
-
-    print("Email: ", email),
-    print("Nome: ", nome)
+    email = firebase_data.get("email")
+    nome = firebase_data.get("name", "")
+    telefone = firebase_data.get("phone", "")
 
     if not email:
-        raise HTTPException(400, "Email não disponível no token OAuth.")
+        raise HTTPException(status_code=400, detail="Email não disponível no token OAuth.")
+    if not nome:
+        raise HTTPException(status_code=400, detail="Nome não disponível no token OAuth.")
 
-    # 2) Cria ou busca usuário em MongoDB
-    db_user = await users_collection.find_one({"email": email})
-    if not db_user:
-        # gera senha aleatória porque não usaremos login por senha
-        random_pass = "".join(choice(ascii_letters + digits + punctuation) for _ in range(15))
-        new_user = UserCreate(
-            nome=nome,
-            email=email,
-            password=random_pass,
-        )
-        # define campos Pydantic (created_at/updated_at/isActive/isSuperAdmin...)
-        doc = new_user.model_dump(by_alias=True)
-        doc.update(
-            {
-                "password": pwd_context.hash(doc["password"]),
-                "isSuperAdmin": False,
-                "isActive": True,
-                "created_at": datetime.now(),
-                "updated_at": datetime.now(),
-                "last_login": datetime.now(),
-            }
-        )
-        res = await users_collection.insert_one(doc)
-        if not res.inserted_id:
-            raise HTTPException(500, "Erro ao criar o utilizador.")
+    # 2) Busca ou cria usuário no MongoDB
+    user_doc = await users_collection.find_one({"email": email})
+    new_user_flag = False
 
-        db_user = await users_collection.find_one({"_id": res.inserted_id})
-
-    else:
-        if not db_user.get("isActive", True):
-            raise HTTPException(403, "sta conta foi desativada.")
-        # atualiza last_login
-        await users_collection.update_one({"_id": db_user["_id"]}, {"$set": {"last_login": datetime.now()}})
-
-    # 3) Gera JWT com lista vazia de empresas
-    token = generate_jwt(
-        str(db_user["_id"]), db_user["nome"], db_user["email"], db_user["isSuperAdmin"], db_user.get("telefone")
-    )
-
-    # 4) Gerar resposta
-    response = JSONResponse(
-        {
-            "id": str(db_user["_id"]),
-            "nome": db_user["nome"],
-            "email": db_user["email"],
-            "telefone": db_user.get("telefone"),
-            "isSuperAdmin": db_user.get("isSuperAdmin"),
+    if not user_doc:
+        new_user_flag = True
+        insert_data = {
+            "nome": nome,
+            "email": email,
+            "telefone": telefone,
+            "isSuperAdmin": False,
+            "isActive": True,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+            "last_login": datetime.now(),
         }
+        result = await users_collection.insert_one(insert_data)
+        if not result.inserted_id:
+            raise HTTPException(status_code=500, detail="Erro ao criar usuário no MongoDB.")
+        user_id = result.inserted_id
+        user_doc = { **insert_data, "_id": user_id }
+    else:
+        if not user_doc.get("isActive", True):
+            raise HTTPException(status_code=403, detail="Usuário inativo.")
+        # atualiza last_login
+        await users_collection.update_one({"_id": user_doc["_id"]}, {"$set": {"last_login": datetime.now()}})
+        user_id = user_doc["_id"]
+
+    # 3) Gera JWT (sem listar empresas aqui)
+    jwt_token = generate_jwt(
+        str(user_id),
+        user_doc.get("nome", ""),
+        user_doc.get("email", ""),
+        user_doc.get("isSuperAdmin", False),
+        user_doc.get("telefone", ""),
     )
 
-    # Seta cookie HTTP-only e devolve dados
+    # 4) Monta payload de resposta
+    response_payload = {
+        "id": str(user_id),
+        "nome": user_doc.get("nome", ""),
+        "email": user_doc.get("email", ""),
+        "telefone": user_doc.get("telefone", ""),
+        "isSuperAdmin": user_doc.get("isSuperAdmin", False),
+        "newUser": new_user_flag,
+    }
+
+    response = JSONResponse(content=response_payload)
+    # seta cookie HTTP-only com o JWT
     response.set_cookie(
         key="_fp",
-        value=token,
+        value=jwt_token,
         httponly=True,
         secure=True,
         samesite="Strict",
     )
-
     return response
-
 
 # 🚀 Login via Email e Senha
 @routerUser.post("/login")
