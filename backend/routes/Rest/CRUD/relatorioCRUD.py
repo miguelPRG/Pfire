@@ -4,7 +4,7 @@ from models.relatorioModels import RelatorioCreate, RelatorioActivation
 from database import relatorios_collection, modelos_collection, clientes_collection, users_empresas_collection
 from datetime import datetime
 from asyncio import gather
-import re
+from re import compile
 from bson import ObjectId
 
 routerRelatorio = APIRouter(prefix="/relatorio")
@@ -115,7 +115,7 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
 
             # Se o campo for de datatype igual a date, temos que verificar por regex se se trata de uma data(DD/MM/YYYY)
             if value["datatype"] == "date":
-                date_regex = re.compile(r"^\d{2}/\d{2}/\d{4}$")
+                date_regex = compile(r"^\d{2}/\d{2}/\d{4}$")
                 if not date_regex.match(relatorio_fields[key]):
                     raise HTTPException(
                         status_code=400, detail=f"O campo {full_key} deve ser uma data no formato DD/MM/YYYY."

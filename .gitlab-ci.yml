@@ -18,9 +18,9 @@ rebase_develop:
     - git fetch --unshallow || true
     - >
       if [ "$CI_COMMIT_REF_NAME" != "develop" ]; then
-        git rebase origin/develop || exit 1;
+        git merge origin/develop || exit 1;
       else
-        echo "Já estamos na branch develop. Nenhum rebase necessário.";
+        echo "Já estamos na branch develop. Nenhum merge necessário.";
       fi
 
 # Backend Security Check
