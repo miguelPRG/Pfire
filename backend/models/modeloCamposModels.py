@@ -103,10 +103,10 @@ class ModelosCamposCreate(BaseModel):
         if "model_name" in values and isinstance(values["model_name"], str):
             values["model_name"] = values["model_name"].strip()
 
-        if len(values.keys()) < 3:
+        if len(values.keys()) < 4:
             raise HTTPException(
                 status_code=400,
-                detail="Modelo deve conter pelo menos 3 campos: 'model_name', 'empresa_id' e um campo personalizado.",
+                detail="Modelo deve conter pelo menos 4 campos: 'model_name', 'empresa_id', 'recaptchaToken' e um campo personalizado.",
             )
 
         # Valida todos os campos personalizados no nível principal

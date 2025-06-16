@@ -16,7 +16,7 @@ class ClienteCreate(BaseModel):
     def __init__(self, **data):
         super().__init__(**data)
         for field, value in self.__dict__.items():
-            if isinstance(value, str):
+            if isinstance(value, str) or isinstance(value, EmailStr):
                 object.__setattr__(self, field, value.strip())
 
 
@@ -34,7 +34,7 @@ class ClienteUpdate(BaseModel):
     def __init__(self, **data):
         super().__init__(**data)
         for field, value in self.__dict__.items():
-            if isinstance(value, str):
+            if isinstance(value, str) or isinstance(value, EmailStr):
                 object.__setattr__(self, field, value.strip())
 
 

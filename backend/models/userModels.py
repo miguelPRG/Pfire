@@ -96,7 +96,7 @@ class UserActivation(BaseModel):
     @field_validator("email", mode="before")
     @classmethod
     def strip_strings(cls, v):
-        if isinstance(v, str):
+        if isinstance(v, EmailStr):
             return v.strip()
 
 
@@ -117,7 +117,7 @@ class UserLogin(BaseModel):
     @field_validator("email", mode="before")
     @classmethod
     def strip_strings(cls, v):
-        if isinstance(v, str):
+        if isinstance(v, EmailStr):
             return v.strip()
 
 
@@ -128,7 +128,7 @@ class UserForgotPassword(BaseModel):
     @field_validator("email", mode="before")
     @classmethod
     def strip_strings(cls, v):
-        if isinstance(v, str):
+        if isinstance(v, EmailStr):
             return v.strip()
 
 
