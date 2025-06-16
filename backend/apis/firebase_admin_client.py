@@ -4,7 +4,6 @@ from pathlib import Path
 SERVICE_ACCOUNT_PATH = Path(__file__).parent / "../chaves/serviceAccountKey.json"
 
 
-
 async def verify_firebase_token(id_token: str) -> dict:
     """
     Verifica o ID Token enviado pelo frontend (Firebase OAuth) e retorna um dict com:

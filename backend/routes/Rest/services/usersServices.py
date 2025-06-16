@@ -6,7 +6,7 @@ from apis.recaptchaValidation import validar_recaptcha_token
 from apis.brevo_client import enviar_email_registo, enviar_email_recuperacao
 from apis.firebase_admin_client import verify_firebase_token  # Si se usa para verificar el token de Firebase
 from pathlib import Path
-from firebase_admin import  initialize_app, credentials #as chaves
+from firebase_admin import initialize_app, credentials  # as chaves
 from passlib.context import CryptContext
 from models.userModels import UserLogin, RegisterUser, UserForgotPassword, UserResetPassword, UserUpdatePassword
 from models.userEmpresaModels import UserEmpresaCreate
@@ -84,7 +84,7 @@ async def login_oauth(request: Request):
         if not result.inserted_id:
             raise HTTPException(status_code=500, detail="Erro ao criar usuário no MongoDB.")
         user_id = result.inserted_id
-        user_doc = { **insert_data, "_id": user_id }
+        user_doc = {**insert_data, "_id": user_id}
     else:
         if not user_doc.get("isActive", True):
             raise HTTPException(status_code=403, detail="Usuário inativo.")
@@ -121,6 +121,7 @@ async def login_oauth(request: Request):
         samesite="Strict",
     )
     return response
+
 
 # 🚀 Login via Email e Senha
 @routerUser.post("/login")
@@ -301,12 +302,13 @@ async def forgot_password(request: Request, user: UserForgotPassword):
 
     return {"message": "E-mail de recuperação enviado!"}
 
+
 @routerUser.put("/update-password")
 async def update_password(user: UserUpdatePassword, request: Request):
 
     # Validar o reCAPTCHA token
     await validar_recaptcha_token(user.recaptchaToken, "update_password")
-    
+
     jwt = getattr(request.state, "jwt", None)
 
     # Verificar se o user tem aquela password
@@ -315,21 +317,20 @@ async def update_password(user: UserUpdatePassword, request: Request):
 
     if not db_user:
         raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
-    
+
     if not pwd_context.verify(user.password, db_user["password"]):
         raise HTTPException(status_code=400, detail="Senha atual inválida.")
-    
+
     # Atualizar a password para a nova password
-    
+
     new_password_hashed = pwd_context.hash(user.newPassword)
     user_update = await users_collection.update_one(
-        {"_id": db_user["_id"]},
-        {"$set": {"password": new_password_hashed, "updated_at": datetime.now()}}
+        {"_id": db_user["_id"]}, {"$set": {"password": new_password_hashed, "updated_at": datetime.now()}}
     )
 
     if user_update.modified_count == 0:
         raise HTTPException(status_code=409, detail="Erro ao atualizar a senha.")
-    
+
     return {"message": "Senha atualizada com sucesso!"}
 
 

@@ -50,10 +50,7 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
     )
 
     if modelo_existente:
-        raise HTTPException(
-            status_code=400,
-            detail="Modelo com esse nome nesta empresa já existe."
-        )
+        raise HTTPException(status_code=400, detail="Modelo com esse nome nesta empresa já existe.")
 
     # 6) Preparar dados para inserção
     modelo_data = modelo.model_dump(by_alias=True)
@@ -75,10 +72,7 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
 @routerModelo.put("/")
 async def update_modelo(request: Request, modelo: ModelosCamposUpdate, id: str = None, model_name: str = None):
     if not id and not model_name:
-        raise HTTPException(
-            status_code=400,
-            detail="ID ou nome do modelo são obrigatórios."
-        )
+        raise HTTPException(status_code=400, detail="ID ou nome do modelo são obrigatórios.")
 
     # 1) Validar token reCAPTCHA
     await validar_recaptcha_token(modelo.recaptchaToken, "register")
@@ -243,10 +237,7 @@ async def update_modelo(request: Request, modelo: ModelosCamposUpdate, id: str =
     modelo_found["updated_at"] = datetime.now()
 
     # 10) Persistir no banco
-    res = await modelos_collection.replace_one(
-        {"_id": modelo_found["_id"]},
-        modelo_found
-    )
+    res = await modelos_collection.replace_one({"_id": modelo_found["_id"]}, modelo_found)
     if res.modified_count == 0:
         raise HTTPException(status_code=500, detail="Erro ao atualizar o modelo.")
 
@@ -282,9 +273,7 @@ async def apagar_modelo(request: Request, modelo: ModelosCamposDelete):
 
     # 4) Executar deleção
     if modelo.id:
-        result = await modelos_collection.delete_one(
-            {"_id": ObjectId(modelo.id), "empresa_id": empresa_id}
-        )
+        result = await modelos_collection.delete_one({"_id": ObjectId(modelo.id), "empresa_id": empresa_id})
     else:
         result = await modelos_collection.delete_one({"model_name": modelo.model_name})
 

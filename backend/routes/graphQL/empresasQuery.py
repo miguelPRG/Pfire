@@ -48,7 +48,7 @@ class EmpresaQuery:
             user_empresas = await users_empresas_collection.find({"user_id": ObjectId(jwt["user_id"])}).to_list(None)
             empresa_ids = [user_empresa["empresa_id"] for user_empresa in user_empresas]
             filtro = {"_id": {"$in": empresa_ids}}
-            
+
         async for empresa in empresas_collection.find(filtro).skip(start).limit(lmt):
             empresa_data = {
                 "id": str(empresa.get("_id")),

@@ -1,4 +1,4 @@
-import { useState} from "react";
+import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 
 import {
@@ -35,10 +35,7 @@ const registerSchema = z.object({
   user: z
     .object({
       nome: z.string().nonempty("O nome é obrigatório"),
-      email: z
-        .string()
-        .nonempty("O email é obrigatório")
-        .email("Email inválido"),
+      email: z.string().nonempty("O email é obrigatório").email("Email inválido"),
       password: z
         .string()
         .nonempty("A senha é obrigatória")
@@ -95,7 +92,7 @@ export default function RegisterPage() {
     resolver: zodResolver(registerSchema),
   });
 
-    // 1) SUBMIT tradicional: Firebase + sendEmailVerification + backend /empresa/
+  // 1) SUBMIT tradicional: Firebase + sendEmailVerification + backend /empresa/
   const onSubmit = async (data: RegisterFormInputs) => {
     setIsRegistError({ error: false, message: "" });
     try {
@@ -112,16 +109,12 @@ export default function RegisterPage() {
   // Handler genérico para qualquer provedor
   const handleOAuth = (provider: "google" | "microsoft") => async () => {
     try {
-
       await loginWithOAuth(provider);
       // após login, deixamos o useEffect cuidar do redirecionamento
     } catch (e: any) {
       setIsRegistError({
         error: true,
-        message:
-          e.code === "auth/popup-closed-by-user"
-            ? "Login cancelado pelo usuário."
-            : e.message,
+        message: e.code === "auth/popup-closed-by-user" ? "Login cancelado pelo usuário." : e.message,
       });
     }
   };
@@ -156,11 +149,7 @@ export default function RegisterPage() {
             zIndex: 1,
           }}
         >
-          <img
-            src={logo}
-            alt="Logo"
-            style={{ width: "100px", height: "100px" }}
-          />
+          <img src={logo} alt="Logo" style={{ width: "100px", height: "100px" }} />
         </Box>
       </Box>
 
@@ -184,11 +173,7 @@ export default function RegisterPage() {
               "&:hover": { backgroundColor: "background.default" },
             }}
           >
-            <img
-              src={googleIcon}
-              alt="Google Logo"
-              style={{ width: 32, height: 32, marginRight: 8 }}
-            />
+            <img src={googleIcon} alt="Google Logo" style={{ width: 32, height: 32, marginRight: 8 }} />
           </Button>
           {/* Botão Microsoft */}
           <Button
@@ -204,11 +189,7 @@ export default function RegisterPage() {
               "&:hover": { backgroundColor: "background.default" },
             }}
           >
-            <img
-              src={microsoftIcon}
-              alt="Microsoft Logo"
-              style={{ width: 32, height: 32, marginRight: 8 }}
-            />
+            <img src={microsoftIcon} alt="Microsoft Logo" style={{ width: 32, height: 32, marginRight: 8 }} />
           </Button>
         </Box>
 
@@ -310,9 +291,7 @@ export default function RegisterPage() {
                       display: "flex",
                       alignItems: "center",
                       border: "1px solid",
-                      borderColor: errors.empresa?.telefone
-                        ? "error.main"
-                        : "rgba(0, 0, 0, 0.23)",
+                      borderColor: errors.empresa?.telefone ? "error.main" : "rgba(0, 0, 0, 0.23)",
                       borderRadius: 1,
                       padding: "18.5px 14px",
                       fontSize: "16px",
@@ -340,11 +319,7 @@ export default function RegisterPage() {
                     />
                   </Box>
                   {errors.empresa?.telefone && (
-                    <Typography
-                      color="error"
-                      variant="body2"
-                      sx={{ mt: 0.5 }}
-                    >
+                    <Typography color="error" variant="body2" sx={{ mt: 0.5 }}>
                       {errors.empresa.telefone.message}
                     </Typography>
                   )}
@@ -375,8 +350,7 @@ export default function RegisterPage() {
           </DialogTitle>
           <DialogContent>
             <Typography sx={{ mt: 1 }}>
-              O teu registo foi concluído. Por favor, verifica o teu email para
-              ativar a conta.
+              O teu registo foi concluído. Por favor, verifica o teu email para ativar a conta.
             </Typography>
           </DialogContent>
           <DialogActions sx={{ justifyContent: "center", pb: 2 }}>
@@ -411,4 +385,3 @@ export default function RegisterPage() {
     </Container>
   );
 }
-

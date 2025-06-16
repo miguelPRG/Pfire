@@ -24,7 +24,6 @@ class RelatorioCreate(BaseModel):
                 data[key] = value.strip()
         super().__init__(**data)
 
-
     @model_validator(mode="before")
     @classmethod
     def validate_custom_fields(cls, values):

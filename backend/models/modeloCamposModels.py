@@ -27,7 +27,7 @@ def validate_fields(key, value):
             status_code=400,
             detail=f"O campo que está a tentar criar:  {key} deve ser um dicionário com 'datatype' e 'required'.",
         )
-    
+
     # Estas são as chaves permitidas por padrão
     allowed_keys = {"datatype", "required"}
 
@@ -144,10 +144,7 @@ class ModelosCamposUpdate(BaseModel):
             # Se for campo personalizado
             def trim_strings_in_dict(d):
                 if isinstance(d, dict):
-                    return {
-                        (k.strip() if isinstance(k, str) else k): trim_strings_in_dict(v)
-                        for k, v in d.items()
-                    }
+                    return {(k.strip() if isinstance(k, str) else k): trim_strings_in_dict(v) for k, v in d.items()}
                 elif isinstance(d, str):
                     return d.strip()
                 else:
@@ -162,7 +159,7 @@ class ModelosCamposUpdate(BaseModel):
             validate_fields(key, value)
 
         return new_values
-   
+
 
 class ModelosCamposDelete(BaseModel):
     empresa_id: str

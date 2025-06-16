@@ -1,4 +1,4 @@
-import { createContext, useState, useContext, ReactNode, useEffect} from "react";
+import { createContext, useState, useContext, ReactNode, useEffect } from "react";
 import { FirebaseLogin } from "../firebase";
 import { GET_EMPRESAS } from "../graphql/empresasqueries";
 import { useQuery } from "@apollo/client";
@@ -42,7 +42,7 @@ interface UserUpdate {
 
 interface PasswordUpdate {
   password: string;
-  novaPassword : string;
+  novaPassword: string;
   confirmarPassword: string;
 }
 
@@ -68,13 +68,13 @@ interface Empresa {
 }
 
 interface EmpresaUpdate {
-  nome ?: string;
-  nif ?: string;
-  telefone ?: string;
-  morada ?: string;
-  localidade ?: string;
-  codigoPostal ?: string;
-  logo ?: BinaryType;
+  nome?: string;
+  nif?: string;
+  telefone?: string;
+  morada?: string;
+  localidade?: string;
+  codigoPostal?: string;
+  logo?: BinaryType;
 }
 
 interface AuthContextType {
@@ -87,7 +87,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   chooseCompany: (empresa: Empresa) => void;
   updateUser: (user: UserUpdate) => Promise<void>;
-  updateCompany: (empresa: EmpresaUpdate) => Promise<void>
+  updateCompany: (empresa: EmpresaUpdate) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -99,13 +99,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [firstRendering, setFirstRendering] = useState(true);
   const apolloClient = useApolloClient();
 
-
   // Pega o empresaId do localStorage
   const empresaId = typeof window !== "undefined" ? localStorage.getItem("empresaId") : null;
 
   // Use o hook useQuery no topo do componente
-  const { data, refetch} = useQuery(GET_EMPRESAS, {
-    variables: { id: empresaId || ""},
+  const { data, refetch } = useQuery(GET_EMPRESAS, {
+    variables: { id: empresaId || "" },
     skip: !user || !empresaId, // Só executa se houver user e empresaId
     fetchPolicy: "network-only",
   });
@@ -142,7 +141,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-
     if (data && !empresa) {
       console.log("Dados recebidos do GraphQL:", data);
       const empresaData = data.empresas[0];
@@ -158,25 +156,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAdmin: empresaData.isAdmin || null,
       });
     }
-  }, [data]); 
+  }, [data]);
 
   useEffect(() => {
-
-     if(!user){
-      if(firstRendering){
+    if (!user) {
+      if (firstRendering) {
         setFirstRendering(false);
         return;
-      }
-      else{
-        setLoading(false)
+      } else {
+        setLoading(false);
       }
     }
-    if (!empresaId ) {
+    if (!empresaId) {
       setLoading(false);
       return;
     }
-
-  }, [user])
+  }, [user]);
 
   useEffect(() => {
     if (empresa) {
@@ -224,7 +219,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       await refetch(); // <--- força o Apollo a buscar novamente os dados da empresa
-
     } catch (error) {
       console.error("Erro no login:", error);
       throw error;
@@ -275,26 +269,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       const data = await response.json();
-     
-     // 1) tenta ler JSON (pode falhar se não houver corpo)
+
+      // 1) tenta ler JSON (pode falhar se não houver corpo)
       /*let data: any = null;
       const contentType = response.headers.get("content-type");
       if (contentType?.includes("application/json")) {
        data = await response.json();
       }*/
       if (!response.ok) {
-       const msg = data?.detail || (await response.text()) || "OAuth login falhou";
-       throw new Error(msg);
-    }
+        const msg = data?.detail || (await response.text()) || "OAuth login falhou";
+        throw new Error(msg);
+      }
 
-    //sacar o atributo dos dados do user, sacar dato newuser dos dados que el envia
-    if(data.newUser){
-      //Apagar dados da empresa do localStorage
-      localStorage.removeItem("empresaId");
-    }
+      //sacar o atributo dos dados do user, sacar dato newuser dos dados que el envia
+      if (data.newUser) {
+        //Apagar dados da empresa do localStorage
+        localStorage.removeItem("empresaId");
+      }
 
       setLoading(true); // <--- adicione isto para indicar que o login está em progresso
-      
+
       setUser({
         id: data.id,
         nome: data.nome,
@@ -311,7 +305,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
-    
     setLoading(true); // <--- adicione isto para indicar que o logout está em progresso
     console.log("Fazendo logout");
     try {
@@ -319,7 +312,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: "POST",
         credentials: "include",
       });
-    
+
       setEmpresa(null);
       setUser(null);
       await apolloClient.clearStore(); // Limpa cache e queries
@@ -343,23 +336,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }
 
-  async function updateUser(user: UserUpdate){
-
+  async function updateUser(user: UserUpdate) {
     const recaptchaToken = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-        action: "register",
-      });
+      action: "register",
+    });
 
-      if (user.nome) user.nome = user?.nome?.trim();
-      if (user.email) user.email = user?.email?.trim();
-      if (user.telefone) user.telefone = user?.telefone?.trim();
-      
-      const body = JSON.stringify({
-        recaptchaToken,
-        nome: user.nome,
-        telefone: user.telefone,
-      });
+    if (user.nome) user.nome = user?.nome?.trim();
+    if (user.email) user.email = user?.email?.trim();
+    if (user.telefone) user.telefone = user?.telefone?.trim();
 
-      console.log("Atualizando usuário com o seguinte corpo:", body);
+    const body = JSON.stringify({
+      recaptchaToken,
+      nome: user.nome,
+      telefone: user.telefone,
+    });
+
+    console.log("Atualizando usuário com o seguinte corpo:", body);
 
     try {
       const response = await fetch("/backend/user/", {
@@ -368,9 +360,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body
+        body,
       });
-      
+
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.detail || "Erro ao atualizar usuário");
@@ -387,17 +379,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           telefone: user.telefone !== undefined ? user.telefone : prevUser.telefone,
         };
       });
-
-
     } catch (error) {
       console.error("Erro ao atualizar usuário:", error);
       throw error;
     }
   }
 
-  async function updateCompany(){
-
-  }
+  async function updateCompany() {}
 
   return (
     <AuthContext.Provider
@@ -411,7 +399,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logout,
         chooseCompany,
         updateUser,
-        updateCompany
+        updateCompany,
       }}
     >
       {children}

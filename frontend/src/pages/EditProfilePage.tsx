@@ -11,7 +11,7 @@ import { useEffect } from "react";
 // Schemas separados
 const userInfoSchema = z.object({
   name: z.string(),
-  telefone: z.string().regex(/^\+?[0-9\s\-()]{7,15}$/, "Número de telefone inválido")
+  telefone: z.string().regex(/^\+?[0-9\s\-()]{7,15}$/, "Número de telefone inválido"),
 });
 
 const userEmailSchema = z.object({
@@ -39,7 +39,7 @@ const companySchema = z.object({
   address: z.string(),
   locality: z.string(),
   postalCode: z.string().regex(/^\d{4}-\d{3}$/, "O código postal deve estar no formato 1234-567"),
-  companyPhone: z.string().regex(/^\+?[0-9\s\-()]{7,15}$/, "Número de telefone inválido")
+  companyPhone: z.string().regex(/^\+?[0-9\s\-()]{7,15}$/, "Número de telefone inválido"),
 });
 
 type UserInfoInputs = z.infer<typeof userInfoSchema>;
@@ -50,7 +50,10 @@ type CompanyInputs = z.infer<typeof companySchema>;
 // Componente da página
 function EditProfilePage() {
   const { user, empresa, updateUser } = useAuth();
-  const [onSubmitMessage, setOnSubmitMessage] = useState<{ error: boolean; message: string }>({ error: false, message: "" });
+  const [onSubmitMessage, setOnSubmitMessage] = useState<{ error: boolean; message: string }>({
+    error: false,
+    message: "",
+  });
   const [showAlert, setShowAlert] = useState(false);
 
   // Mostrar o alert sempre que a mensagem mudar
@@ -111,23 +114,30 @@ function EditProfilePage() {
     }
   };
 
-  const handleSubmitUserEmail = (data: UserEmailInputs) => {
-  };
+  const handleSubmitUserEmail = (data: UserEmailInputs) => {};
 
-  const handleSubmitUserPassword = (data: UserPasswordInputs) => {
-
-  };
+  const handleSubmitUserPassword = (data: UserPasswordInputs) => {};
 
   const handleSubmitCompany = (data: CompanyInputs) => {
     console.log("Empresa atualizada:", data);
   };
 
   // Componente reutilizável de formulário
-  function SectionForm({ title, onSubmit, children }: { title: string; onSubmit: () => void; children: React.ReactNode }) {
+  function SectionForm({
+    title,
+    onSubmit,
+    children,
+  }: {
+    title: string;
+    onSubmit: () => void;
+    children: React.ReactNode;
+  }) {
     return (
       <Paper elevation={3} sx={{ p: 3, borderRadius: 3, mt: 2, mx: "auto", width: "100%", maxWidth: "700px" }}>
         <Box textAlign="center" mb={3}>
-          <Typography variant="h6" fontWeight="bold">{title}</Typography>
+          <Typography variant="h6" fontWeight="bold">
+            {title}
+          </Typography>
         </Box>
         <Box component="form" onSubmit={onSubmit}>
           {children}
@@ -140,17 +150,22 @@ function EditProfilePage() {
     <Container maxWidth={false} sx={{ mt: 5 }}>
       {/* ALERTA DE SUBMISSÃO */}
       <Fade in={showAlert}>
-        <Box sx={{ position: "fixed", top: 24, left: 0, right: 0, zIndex: 1300, display: "flex", justifyContent: "center" }}>
+        <Box
+          sx={{
+            position: "fixed",
+            top: 24,
+            left: 0,
+            right: 0,
+            zIndex: 1300,
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
           {onSubmitMessage.message && (
             <Alert
               severity={onSubmitMessage.error ? "error" : "success"}
               action={
-                <IconButton
-                  aria-label="close"
-                  color="inherit"
-                  size="small"
-                  onClick={() => setShowAlert(false)}
-                >
+                <IconButton aria-label="close" color="inherit" size="small" onClick={() => setShowAlert(false)}>
                   <CloseIcon fontSize="inherit" />
                 </IconButton>
               }
@@ -167,14 +182,22 @@ function EditProfilePage() {
       <SectionForm title="Alterar Nome e Telefone" onSubmit={userInfoForm.handleSubmit(handleSubmitUserInfo)}>
         <Grid container spacing={2}>
           <Grid size={{ xs: 12 }}>
-            <TextField label="Nome" fullWidth {...userInfoForm.register("name")} error={!!userInfoForm.formState.errors.name} helperText={userInfoForm.formState.errors.name?.message} />
+            <TextField
+              label="Nome"
+              fullWidth
+              {...userInfoForm.register("name")}
+              error={!!userInfoForm.formState.errors.name}
+              helperText={userInfoForm.formState.errors.name?.message}
+            />
           </Grid>
           <Grid size={{ xs: 12 }}>
             <GlobalPhone fieldName="telefone" control={userInfoForm.control} errors={userInfoForm.formState.errors} />
           </Grid>
           <Grid size={{ xs: 12 }}>
             <Box display="flex" justifyContent="center" mt={2}>
-              <Button type="submit" variant="contained" color="secondary" sx={{ width: 200 }}>Salvar</Button>
+              <Button type="submit" variant="contained" color="secondary" sx={{ width: 200 }}>
+                Salvar
+              </Button>
             </Box>
           </Grid>
         </Grid>
@@ -184,11 +207,19 @@ function EditProfilePage() {
       <SectionForm title="Alterar Email" onSubmit={userEmailForm.handleSubmit(handleSubmitUserEmail)}>
         <Grid container spacing={2}>
           <Grid size={{ xs: 12 }}>
-            <TextField label="Email" fullWidth {...userEmailForm.register("email")} error={!!userEmailForm.formState.errors.email} helperText={userEmailForm.formState.errors.email?.message} />
+            <TextField
+              label="Email"
+              fullWidth
+              {...userEmailForm.register("email")}
+              error={!!userEmailForm.formState.errors.email}
+              helperText={userEmailForm.formState.errors.email?.message}
+            />
           </Grid>
           <Grid size={{ xs: 12 }}>
             <Box display="flex" justifyContent="center" mt={2}>
-              <Button type="submit" variant="contained" color="secondary" sx={{ width: 200 }}>Salvar</Button>
+              <Button type="submit" variant="contained" color="secondary" sx={{ width: 200 }}>
+                Salvar
+              </Button>
             </Box>
           </Grid>
         </Grid>
@@ -198,17 +229,40 @@ function EditProfilePage() {
       <SectionForm title="Alterar Senha" onSubmit={userPasswordForm.handleSubmit(handleSubmitUserPassword)}>
         <Grid container spacing={2}>
           <Grid size={{ xs: 12 }}>
-            <TextField label="Senha Atual" type="password" fullWidth {...userPasswordForm.register("password")} error={!!userPasswordForm.formState.errors.password} helperText={userPasswordForm.formState.errors.password?.message} />
+            <TextField
+              label="Senha Atual"
+              type="password"
+              fullWidth
+              {...userPasswordForm.register("password")}
+              error={!!userPasswordForm.formState.errors.password}
+              helperText={userPasswordForm.formState.errors.password?.message}
+            />
           </Grid>
           <Grid size={{ xs: 12 }}>
-            <TextField label="Nova Senha" type="password" fullWidth {...userPasswordForm.register("newPassword")} error={!!userPasswordForm.formState.errors.newPassword} helperText={userPasswordForm.formState.errors.newPassword?.message} />
+            <TextField
+              label="Nova Senha"
+              type="password"
+              fullWidth
+              {...userPasswordForm.register("newPassword")}
+              error={!!userPasswordForm.formState.errors.newPassword}
+              helperText={userPasswordForm.formState.errors.newPassword?.message}
+            />
           </Grid>
           <Grid size={{ xs: 12 }}>
-            <TextField label="Confirmar Nova Senha" type="password" fullWidth {...userPasswordForm.register("confirmPassword")} error={!!userPasswordForm.formState.errors.confirmPassword} helperText={userPasswordForm.formState.errors.confirmPassword?.message} />
+            <TextField
+              label="Confirmar Nova Senha"
+              type="password"
+              fullWidth
+              {...userPasswordForm.register("confirmPassword")}
+              error={!!userPasswordForm.formState.errors.confirmPassword}
+              helperText={userPasswordForm.formState.errors.confirmPassword?.message}
+            />
           </Grid>
           <Grid size={{ xs: 12 }}>
             <Box display="flex" justifyContent="center" mt={2}>
-              <Button type="submit" variant="contained" color="secondary" sx={{ width: 200 }}>Salvar</Button>
+              <Button type="submit" variant="contained" color="secondary" sx={{ width: 200 }}>
+                Salvar
+              </Button>
             </Box>
           </Grid>
         </Grid>
@@ -218,26 +272,58 @@ function EditProfilePage() {
       <SectionForm title="Editar Dados da Empresa" onSubmit={companyForm.handleSubmit(handleSubmitCompany)}>
         <Grid container spacing={2}>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField label="Nome da Empresa" fullWidth {...companyForm.register("companyName")} error={!!companyForm.formState.errors.companyName} helperText={companyForm.formState.errors.companyName?.message} />
+            <TextField
+              label="Nome da Empresa"
+              fullWidth
+              {...companyForm.register("companyName")}
+              error={!!companyForm.formState.errors.companyName}
+              helperText={companyForm.formState.errors.companyName?.message}
+            />
           </Grid>
           <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField label="NIF" fullWidth {...companyForm.register("nif")} error={!!companyForm.formState.errors.nif} helperText={companyForm.formState.errors.nif?.message} />
+            <TextField
+              label="NIF"
+              fullWidth
+              {...companyForm.register("nif")}
+              error={!!companyForm.formState.errors.nif}
+              helperText={companyForm.formState.errors.nif?.message}
+            />
           </Grid>
           <Grid size={{ xs: 12 }}>
-            <TextField label="Morada" fullWidth {...companyForm.register("address")} error={!!companyForm.formState.errors.address} helperText={companyForm.formState.errors.address?.message} />
+            <TextField
+              label="Morada"
+              fullWidth
+              {...companyForm.register("address")}
+              error={!!companyForm.formState.errors.address}
+              helperText={companyForm.formState.errors.address?.message}
+            />
           </Grid>
           <Grid size={{ xs: 12 }}>
-            <TextField label="Localidade" fullWidth {...companyForm.register("locality")} error={!!companyForm.formState.errors.locality} helperText={companyForm.formState.errors.locality?.message} />
+            <TextField
+              label="Localidade"
+              fullWidth
+              {...companyForm.register("locality")}
+              error={!!companyForm.formState.errors.locality}
+              helperText={companyForm.formState.errors.locality?.message}
+            />
           </Grid>
           <Grid size={{ xs: 12 }}>
-            <TextField label="Código Postal" fullWidth {...companyForm.register("postalCode")} error={!!companyForm.formState.errors.postalCode} helperText={companyForm.formState.errors.postalCode?.message} />
+            <TextField
+              label="Código Postal"
+              fullWidth
+              {...companyForm.register("postalCode")}
+              error={!!companyForm.formState.errors.postalCode}
+              helperText={companyForm.formState.errors.postalCode?.message}
+            />
           </Grid>
           <Grid size={{ xs: 12 }}>
             <GlobalPhone fieldName="companyPhone" control={companyForm.control} errors={companyForm.formState.errors} />
           </Grid>
           <Grid size={{ xs: 12 }}>
             <Box display="flex" justifyContent="center" mt={2}>
-              <Button type="submit" variant="contained" color="secondary" sx={{ width: 200 }}>Salvar</Button>
+              <Button type="submit" variant="contained" color="secondary" sx={{ width: 200 }}>
+                Salvar
+              </Button>
             </Box>
           </Grid>
         </Grid>

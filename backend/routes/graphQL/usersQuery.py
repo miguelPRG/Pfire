@@ -41,7 +41,7 @@ class UserQuery:
             user = await users_collection.find_one({"_id": user_empresa["user_id"]})
             if not user:
                 continue
-                
+
             role = "SuperAdmin" if jwt["isSuperAdmin"] else "Admin" if user_empresa.get("isAdmin") else "User"
 
             user_data = {

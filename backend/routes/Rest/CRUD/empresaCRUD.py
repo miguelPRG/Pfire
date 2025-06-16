@@ -8,11 +8,12 @@ from datetime import datetime
 
 routerEmpresa = APIRouter(prefix="/empresa")
 
+
 # Criar Empresa
 @routerEmpresa.post("/")
 async def create_empresa(empresa: EmpresaCreateAsLoggedUser, request: Request):
 
-    #Validar o token reCAPTCHA
+    # Validar o token reCAPTCHA
     await validar_recaptcha_token(empresa.recaptchaToken, "create")
 
     # Sacar jwt
@@ -23,12 +24,12 @@ async def create_empresa(empresa: EmpresaCreateAsLoggedUser, request: Request):
 
     if empresa_found:
         raise HTTPException(status_code=400, detail="Empresa com este NIF já existe.")
-    
+
     data_atual = datetime.now()
 
     empresa_data = empresa.model_dump(exclude_unset=True)
     empresa_data["created_by"] = empresa_data["updated_by"] = logged_user_id
-    empresa_data["created_at"] = empresa_data["updated_at"] =  data_atual
+    empresa_data["created_at"] = empresa_data["updated_at"] = data_atual
     del empresa_data["recaptchaToken"]
 
     # Inserir a empresa na coleção de empresas
@@ -44,7 +45,7 @@ async def create_empresa(empresa: EmpresaCreateAsLoggedUser, request: Request):
             created_by=logged_user_id,
             created_at=data_atual,
             updated_by=logged_user_id,
-            updated_at=data_atual
+            updated_at=data_atual,
         ).model_dump(exclude_unset=True)
     )
 
@@ -52,6 +53,7 @@ async def create_empresa(empresa: EmpresaCreateAsLoggedUser, request: Request):
         raise HTTPException(status_code=500, detail="Erro ao associar utilizador à empresa.")
 
     return {"message": "Empresa Criada com Sucesso!"}
+
 
 # Atualizar Empresa
 @routerEmpresa.put("/")

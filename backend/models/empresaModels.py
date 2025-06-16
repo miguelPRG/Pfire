@@ -14,9 +14,11 @@ class EmpresaCreate(BaseModel):
     def __init__(self, **data):
         super().__init__(**{k: v.strip() if isinstance(v, str) else v for k, v in data.items()})
 
+
 class EmpresaCreateAsLoggedUser(EmpresaCreate):
     recaptchaToken: str
     pass
+
 
 class EmpresaUpdate(BaseModel):
     recaptchaToken: str
