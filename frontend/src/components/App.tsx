@@ -2,11 +2,11 @@ import { lazy, ReactElement, Suspense, useEffect, memo } from "react";
 import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
 import { useAuth } from "../hooks/AuthContext";
 import { useTema } from "../hooks/TemaContext";
-import CircularProgress from "@mui/material/CircularProgress";
 import { Box, IconButton } from "@mui/material";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import ResponsiveAppBar from "./ResponsiveAppBar";
+import LoadingAnimation from "./LoadingAnimation";
 
 /* Função utilitária para simular delay e visualizar animação de carregamento
 
@@ -104,14 +104,6 @@ const ThemeToggleButton = () => {
     </IconButton>
   );
 };
-
-function LoadingAnimation() {
-  return (
-    <Box display="flex" justifyContent="center" alignItems="center" minHeight="80vh">
-      <CircularProgress />
-    </Box>
-  );
-}
 
 // 🚀 App principal
 function App() {

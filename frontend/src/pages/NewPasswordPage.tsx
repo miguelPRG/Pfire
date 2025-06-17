@@ -2,8 +2,9 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useParams, useNavigate } from "react-router-dom";
-import { Box, Button, TextField, Typography, Paper, CircularProgress } from "@mui/material";
-import { useState, useLayoutEffect, useEffect } from "react";
+import { Box, Button, TextField, Typography, Paper } from "@mui/material";
+import { useState, useEffect } from "react";
+import LoadingAnimation from "../components/LoadingAnimation";
 
 const newPasswordSchema = z
   .object({
@@ -33,10 +34,13 @@ export default function NewPasswordPage() {
     resolver: zodResolver(newPasswordSchema),
   });
 
-  useLayoutEffect(() => {
+  useEffect(() => {
+    console.log("GLOBAL_ID:", GLOBAL_ID);
     if (!GLOBAL_ID) {
-      setLoading(false);
-      return;
+      setUserConfirmation({
+        isConfirmed: false,
+        message: "Erro ao efetuar operação! Não foi possível encontrar o ID global.",
+      });
     }
 
     const checkToken = async () => {
@@ -68,20 +72,21 @@ export default function NewPasswordPage() {
   }, []);
 
   useEffect(() => {
-    if (!loading && userConfirmation.message) {
+    if (userConfirmation.message) {
       navigate("/login", { state: userConfirmation });
     }
   }, [userConfirmation]);
 
   const onSubmit = async (data: NewPasswordFormInputs) => {
     try {
-      const response = await fetch(`/backend/user/email/reset-password`, {
+      const response = await fetch(`/backend/user/email/change-password/`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          password: data.password.trim(),
+          password: data.password,
+          confirmPassword: data.confirmPassword,
           global_id: GLOBAL_ID,
         }),
       });
@@ -109,23 +114,7 @@ export default function NewPasswordPage() {
 
   if (loading) {
     return (
-      <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
-        <Paper
-          elevation={3}
-          sx={{
-            p: 4,
-            minWidth: 350,
-            textAlign: "center",
-          }}
-        >
-          <CircularProgress
-            sx={{
-              mb: 2,
-            }}
-          />
-          <Typography>Carregando...</Typography>
-        </Paper>
-      </Box>
+      <LoadingAnimation />
     );
   }
 

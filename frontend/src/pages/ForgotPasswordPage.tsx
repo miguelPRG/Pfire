@@ -23,7 +23,6 @@ function ForgotPassword() {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    reset,
   } = useForm<ForgotPasswordFormInputs>({
     resolver: zodResolver(forgotPasswordSchema),
   });
@@ -48,12 +47,11 @@ function ForgotPassword() {
 
       if (response.ok) {
         setAlertType("success");
-        setAlertMsg("Se existir uma conta com esse e-mail, receberás um link de recuperação em breve.");
-        reset();
+        setAlertMsg("Foi enviado um email para poder confirmar o pedido de alteração da password.");
       } else {
         const res = await response.json();
         setAlertType("error");
-        setAlertMsg(res.message || "Ocorreu um erro ao enviar o pedido.");
+        setAlertMsg(res.detail || "Ocorreu um erro ao enviar o pedido.");
       }
     } catch (err) {
       setAlertType("error");
@@ -63,14 +61,15 @@ function ForgotPassword() {
   }
 
   return (
-    <Container maxWidth="sm" sx={{ mt: 10 }}>
+    <Container>
       {/* ALERTA COM FADE */}
       <Fade in={open} timeout={{ enter: 800, exit: 800 }} unmountOnExit>
-        <Alert variant="filled" severity={alertType} sx={{ mb: 2 }} onClose={() => setOpen(false)}>
+        <Alert variant="filled" severity={alertType} sx={{  }} onClose={() => setOpen(false)}>
           {alertMsg}
         </Alert>
       </Fade>
-      <Paper
+        <Container maxWidth="sm" sx={{ mt: 10 }}>
+           <Paper
         elevation={3}
         sx={{
           p: 4,
@@ -157,6 +156,7 @@ function ForgotPassword() {
           </Box>
         </Box>
       </Paper>
+        </Container>
     </Container>
   );
 }

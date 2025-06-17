@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 
 
@@ -13,11 +13,11 @@ class ClienteCreate(BaseModel):
     empresa_id: str
     recaptchaToken: str
 
-    def __init__(self, **data):
-        super().__init__(**data)
-        for field, value in self.__dict__.items():
-            if isinstance(value, str) or isinstance(value, EmailStr):
-                object.__setattr__(self, field, value.strip())
+    @field_validator("nome", "localidade", "morada", mode="before")
+    @classmethod
+    def strip_strings(cls, v):
+        """Remove leading and trailing whitespace from strings."""
+        return v.strip()
 
 
 class ClienteUpdate(BaseModel):
@@ -31,12 +31,12 @@ class ClienteUpdate(BaseModel):
     codigo_postal: Optional[str] = None
     recaptchaToken: str
 
-    def __init__(self, **data):
-        super().__init__(**data)
-        for field, value in self.__dict__.items():
-            if isinstance(value, str) or isinstance(value, EmailStr):
-                object.__setattr__(self, field, value.strip())
-
+    @field_validator("nome", "cidade", "morada", mode="before")
+    @classmethod
+    def strip_strings(cls, v):
+        """Remove leading and trailing whitespace from strings."""
+        return v.strip() if v else v
+    
 
 class ClienteActivion(BaseModel):
     id: Optional[str] = None

@@ -46,15 +46,19 @@ app.add_middleware(
 
 
 @app.middleware("http")
+async def options_method_middleware(request: Request, call_next):
+    """Middleware para lidar especificamente com requisições OPTIONS."""
+    if request.method == "OPTIONS":
+        # Permite que requisições OPTIONS passem imediatamente
+        return await call_next(request)
+    return await call_next(request)
+
+@app.middleware("http")
 async def fast_api_http_middleware(request: Request, call_next):
     """Middleware para aplicar o limite de requisições a todas as rotas"""
 
     if request.method == "OPTIONS":
         return await call_next(request)
-
-    """response = await rate_limit(request)
-    if response:
-        return response  # Retorna a resposta de erro 429 se o limite for excedido"""
 
     path = request.url.path
 
@@ -68,8 +72,8 @@ async def fast_api_http_middleware(request: Request, call_next):
     DYNAMIC_PATHS_REGEX = compile(r"^/user/email/+")
     GET_GLOBAL_ID_REGEX = compile(r"^/user/get-global-id(/.*)?$")
 
+    # Se a rota for excluída ou corresponder ao regex, pula verificação JWT
     if path in EXCLUDED_PATHS or DYNAMIC_PATHS_REGEX.match(path) or GET_GLOBAL_ID_REGEX.match(path):
-        print("Rota Excluída da autenticação: ", path)
         return await call_next(request)
 
     # Tenta extrair o token JWT do cookie "_fp"
@@ -86,7 +90,7 @@ async def fast_api_http_middleware(request: Request, call_next):
         user_data = verify_jwt(token)
         request.state.jwt = user_data  # Armazena os dados do usuário na request
 
-    except Exception as e:
+    except Exception:
         return JSONResponse(status_code=401, content={"detail": "Erro na autenticação!"})
 
     # Passa para a próxima requisição

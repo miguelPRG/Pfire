@@ -14,7 +14,7 @@ class UserCreate(BaseModel):
         description="A senha deve ter pelo menos 9 caracteres, incluindo uma letra minúscula, uma maiúscula e um dígito.",
     )
 
-    @field_validator("nome", "email", mode="before")
+    @field_validator("nome", mode="before")
     @classmethod
     def strip_fields(cls, v):
         if isinstance(v, str):
@@ -42,8 +42,7 @@ class UserUpdate(BaseModel):
     @field_validator("nome", "telefone", mode="before")
     @classmethod
     def strip_strings(cls, v):
-        if isinstance(v, str):
-            return v.strip()
+        return v.strip()
 
 
 class UserUpdatePassword(BaseModel):
@@ -76,12 +75,6 @@ class UserUpdateEmail(BaseModel):
     email: EmailStr
     recaptchaToken: str
 
-    @field_validator("email", mode="before")
-    @classmethod
-    def strip_strings(cls, v):
-        if isinstance(v, str):
-            return v.strip()
-
 
 class UserUpdateIsSuperAdmin(BaseModel):
     isSuperAdmin: bool
@@ -92,12 +85,6 @@ class UserActivation(BaseModel):
     recaptchaToken: str
     id: Optional[str] = None
     email: Optional[EmailStr] = None
-
-    @field_validator("email", mode="before")
-    @classmethod
-    def strip_strings(cls, v):
-        if isinstance(v, EmailStr):
-            return v.strip()
 
 
 class RegisterUser(BaseModel):
@@ -114,24 +101,21 @@ class UserLogin(BaseModel):
     password: str
     recaptchaToken: Optional[str] = None
 
-    @field_validator("email", mode="before")
-    @classmethod
-    def strip_strings(cls, v):
-        if isinstance(v, EmailStr):
-            return v.strip()
-
 
 class UserForgotPassword(BaseModel):
     email: EmailStr
     recaptchaToken: str
 
-    @field_validator("email", mode="before")
-    @classmethod
-    def strip_strings(cls, v):
-        if isinstance(v, EmailStr):
-            return v.strip()
 
 
-class UserResetPassword(BaseModel):
+class UserChangePassword(BaseModel):
     password: str
+    confirmPassword: str
     global_id: str
+
+    @model_validator(mode="before")
+    @classmethod
+    def check_passwords_match(cls, values):
+        if values.get("password") != values.get("confirmPassword"):
+            raise ValueError("As senhas não coincidem.")
+        return values
