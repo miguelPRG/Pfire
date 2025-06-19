@@ -75,9 +75,9 @@ class UserUpdateEmail(BaseModel):
     email: EmailStr
     recaptchaToken: str
 
-
-class UserUpdateIsSuperAdmin(BaseModel):
-    isSuperAdmin: bool
+class UserToggleSuperAdmin(BaseModel):
+    id: str
+    value: bool
     recaptchaToken: str
 
 

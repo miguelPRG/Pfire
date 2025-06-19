@@ -36,6 +36,7 @@ interface User {
   lastLogin?: string;
   isActive?: boolean;
   isAdmin?: boolean;
+  isSuperAdmin?: boolean;
 }
 
 export default function UserManagementTable() {
@@ -60,7 +61,7 @@ export default function UserManagementTable() {
 
     try {
       const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-        action,
+        action
       });
 
       const res = await fetch(url, {
@@ -89,18 +90,18 @@ export default function UserManagementTable() {
 
   const handleToggleAdmin = async (user: User) => {
     const isAdmin = user.isAdmin;
-    const endpoint = isAdmin ? "/backend/user/revoke_admin" : "/backend/user/set_admin";
+    const endpoint = isAdmin
+      ? "/backend/user/revoke_admin"
+      : "/backend/user/set_admin";
 
     try {
-      const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-        action: isAdmin ? "revoke_admin" : "set_admin",
-      });
-
+      const recaptchaToken = await grecaptcha.enterprise.execute(
+        "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",
+        { action: isAdmin ? "revoke_admin" : "set_admin" }
+      );
       const res = await fetch(endpoint, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           user_id: user.id,
@@ -117,12 +118,14 @@ export default function UserManagementTable() {
       } else {
         alert("Nenhuma alteração foi feita.");
       }
-    } catch (error) {
+    } catch (err) {
       alert("Erro ao validar reCAPTCHA ou alterar papel.");
-      console.error("Erro no handleToggleAdmin:", error);
+      console.error("Erro no handleToggleAdmin:", err);
     }
   };
 
+  
+  // Função para lidar com a ordenação
   const handleSort = (property: keyof User) => {
     const isAsc = orderBy === property && order === "asc";
     setOrder(isAsc ? "desc" : "asc");
@@ -203,7 +206,7 @@ export default function UserManagementTable() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Pesquisar por nome"
-          InputProps={{
+          InputProps={{ //revisar esto porque no funciona
             startAdornment: (
               <InputAdornment position="start">
                 <Search />
