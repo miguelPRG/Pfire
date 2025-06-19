@@ -8,6 +8,7 @@ class User:
     id: str
     nome: str
     email: str
+    role: str  # ✅ agora é um campo calculado
     telefone: Optional[str] = None  # ✅ agora opcional
     isActive: Optional[bool] = None
     isAdmin: Optional[bool] = None
