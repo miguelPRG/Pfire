@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Request
 from apis.recaptchaValidation import validar_recaptcha_token
 from bson import ObjectId
 from passlib.context import CryptContext
-from models.userModels import UserUpdate, UserUpdatePassword, UserActivation
+from models.userModels import UserUpdate,UserActivation
 from datetime import datetime
 from database import users_collection
 

@@ -197,7 +197,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
         credentials: "include",
         body: JSON.stringify({
-          email: email.trim(),
+          email: email.trim(), /**jhdjshjfkhsdjkfh@gmail.com / */
           password: password,
           recaptchaToken: token,
         }),

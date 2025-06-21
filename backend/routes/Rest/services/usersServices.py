@@ -8,14 +8,13 @@ from apis.firebase_admin_client import verify_firebase_token  # Si se usa para v
 from pathlib import Path
 from firebase_admin import initialize_app, credentials  # as chaves
 from passlib.context import CryptContext
-from models.userModels import UserLogin, RegisterUser, UserForgotPassword, UserChangePassword,UserUpdatePassword, UserToggleSuperAdmin
+from models.userModels import UserLogin, RegisterUser, UserForgotPassword, UserChangePassword,UserUpdatePassword
 from models.userEmpresaModels import UserEmpresaCreate
 from datetime import datetime
 from asyncio import gather
 from database import users_collection, empresas_collection, users_empresas_collection, global_ids_collection
 from datetime import datetime
 from uuid import uuid4
-from bson import ObjectId
 
 
 routerUser = APIRouter(prefix="/user")

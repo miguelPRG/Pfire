@@ -101,10 +101,22 @@ class UserLogin(BaseModel):
     password: str
     recaptchaToken: Optional[str] = None
 
+    @field_validator('email', mode="before")
+    def strip_email(cls, v):
+        if isinstance(v, str):
+            return v.strip()  # Aqui ainda é str
+        return v
+
 
 class UserForgotPassword(BaseModel):
     email: EmailStr
     recaptchaToken: str
+
+    @field_validator('email', mode="before")
+    def strip_email(cls, v):
+        if isinstance(v, str):
+            return v.strip()  # Aqui ainda é str
+        return v
 
 
 
