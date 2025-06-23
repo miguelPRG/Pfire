@@ -13,19 +13,30 @@ export default function GlobalPhone({
   control: Control<any>;
   errors: FieldErrors<any>;
 }) {
+  // Suporte para erros aninhados e não aninhados
+  function getError() {
+    // Para campos como "empresa.telefone" ou "companyPhone"
+    if (fieldName.includes(".")) {
+      const [parent, child] = fieldName.split(".");
+      return errors?.[parent]?.[child];
+    }
+    return errors?.[fieldName];
+  }
+  const errorObj = getError();
+
   return (
     <div id="telefone-field">
       <Controller
         name={fieldName}
         control={control}
         render={({ field }) => (
-          <Box>
+          <Box sx={{ width: "100%" }}>
             <Box
               sx={{
                 display: "flex",
                 alignItems: "center",
                 border: "1px solid",
-                borderColor: errors.empresa?.telefone ? "error.main" : "rgba(0, 0, 0, 0.23)",
+                borderColor: errorObj ? "error.main" : "rgba(0, 0, 0, 0.23)",
                 borderRadius: 1,
                 padding: "18.5px 14px",
                 fontSize: "16px",
@@ -37,7 +48,7 @@ export default function GlobalPhone({
                   borderWidth: 2,
                 },
               }}
-              aria-invalid={!!errors.empresa?.telefone}
+              aria-invalid={!!errorObj}
             >
               <PhoneInput
                 {...field}
@@ -54,7 +65,7 @@ export default function GlobalPhone({
                 }}
               />
             </Box>
-            {errors.empresa?.telefone && (
+            {errorObj && (
               <Typography
                 color="error"
                 variant="body2"
@@ -62,7 +73,9 @@ export default function GlobalPhone({
                   mt: 0.5,
                 }}
               >
-                {errors.empresa.telefone.message}
+                {typeof errorObj === "object" && "message" in errorObj
+                  ? (errorObj as any).message
+                  : String(errorObj)}
               </Typography>
             )}
           </Box>

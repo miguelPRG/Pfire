@@ -1,327 +1,390 @@
 import { useAuth } from "../hooks/AuthContext";
-import { Box, Button, Container, TextField, Typography, Paper, Grid, Alert, Fade, IconButton } from "@mui/material";
-import { useForm } from "react-hook-form";
+import {
+  Box,
+  Button,
+  Container,
+  TextField,
+  Typography,
+  Paper,
+  Grid,
+  Alert
+} from "@mui/material";
+import { useForm, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import GlobalPhone from "../components/GlobalPhone";
-import { useState } from "react";
-import CloseIcon from "@mui/icons-material/Close";
-import { useEffect } from "react";
+import { useEffect, useState, useRef } from "react";
 
-// Schemas separados
+// Schemas
 const userInfoSchema = z.object({
-  name: z.string(),
-  telefone: z.string().regex(/^\+?[0-9\s\-()]{7,15}$/, "Número de telefone inválido"),
-});
+  name: z.string().nonempty("Nome é obrigatório"),
+  telefone: z
+    .string({ required_error: "Por favor insira o telefone" }) // <- mensagem personalizada
+    .nonempty("Por favor insira o telefone")
+    .regex(/^[+]?\d{7,15}$/, "Número de telefone inválido"),
 
-const userEmailSchema = z.object({
-  email: z.string().email("Email inválido"),
 });
 
 const userPasswordSchema = z
   .object({
-    password: z.string().min(6, "Senha atual é obrigatória"),
-    newPassword: z
-      .string()
-      .min(9, "A senha deve ter pelo menos 9 caracteres")
-      .regex(/[A-Z]/, "A senha deve conter pelo menos uma letra maiúscula")
-      .regex(/\d/, "A senha deve conter pelo menos um número"),
+    password: z.string().nonempty("Senha atual é obrigatória"),
+    newPassword: z.string()
+        .nonempty("A nova senha é obrigatória")
+        .min(9, "A nova senha deve ter pelo menos 9 caracteres")
+        .regex(/[A-Z]/, "A nova senha deve conter pelo menos uma letra maiúscula")
+        .regex(/\d/, "A nova senha deve conter pelo menos um número"),
     confirmPassword: z.string(),
   })
   .refine((data) => data.newPassword === data.confirmPassword, {
-    message: "A confirmação da senha deve ser igual à nova senha",
+    message: "Não coincide com a nova senha",
     path: ["confirmPassword"],
   });
 
 const companySchema = z.object({
   companyName: z.string(),
-  nif: z.string().regex(/^[5789]\d{8}$/, "O NIF é inválido"),
+  nif: z.string().regex(/^[5789]\d{8}$/, "NIF inválido"),
   address: z.string(),
   locality: z.string(),
-  postalCode: z.string().regex(/^\d{4}-\d{3}$/, "O código postal deve estar no formato 1234-567"),
-  companyPhone: z.string().regex(/^\+?[0-9\s\-()]{7,15}$/, "Número de telefone inválido"),
+  postalCode: z.string().regex(/^\d{4}-\d{3}$/, "Formato inválido"),
+  companyPhone: z
+    .string({ required_error: "Por favor insira o telefone da empresa" }) // <- mensagem personalizada
+    .regex(/^[+]?\d{7,15}$/, "Número inválido"),
+  logo: z.string().optional(), // Campo opcional para o logo
 });
 
-type UserInfoInputs = z.infer<typeof userInfoSchema>;
-type UserEmailInputs = z.infer<typeof userEmailSchema>;
-type UserPasswordInputs = z.infer<typeof userPasswordSchema>;
-type CompanyInputs = z.infer<typeof companySchema>;
+// Types
+type UserInfoFormType = z.infer<typeof userInfoSchema>;
+type UserPasswordFormType = z.infer<typeof userPasswordSchema>;
+type CompanyFormType = z.infer<typeof companySchema>;
 
-// Componente da página
+type MessageType = { error: boolean; message: string } | null;
+
+interface SectionFormProps {
+  title: string;
+  onSubmit: React.FormEventHandler<HTMLFormElement>;
+  children: React.ReactNode;
+  message?: MessageType;
+  setMessage?: React.Dispatch<React.SetStateAction<MessageType>>;
+}
+
+// SectionForm tipado
+function SectionForm({ title, onSubmit, children }: Omit<SectionFormProps, "message" | "setMessage">) {
+  return (
+    <Paper elevation={3} sx={{ p: 3, borderRadius: 3, mt: 2, mx: "auto", width: "100%", maxWidth: "700px" }}>
+      <Box textAlign="center" mb={3}>
+        <Typography variant="h6" fontWeight="bold">{title}</Typography>
+      </Box>
+      <Box component="form" onSubmit={onSubmit}>{children}</Box>
+    </Paper>
+  );
+}
+
 function EditProfilePage() {
-  const { user, empresa, updateUser } = useAuth();
-  const [onSubmitMessage, setOnSubmitMessage] = useState<{ error: boolean; message: string }>({
-    error: false,
-    message: "",
-  });
-  const [showAlert, setShowAlert] = useState(false);
+  const { user, empresa, updateUser, updatePassword, updateCompany } = useAuth();
 
-  // Mostrar o alert sempre que a mensagem mudar
+  // Estado global para o alerta
+  const [globalMessage, setGlobalMessage] = useState<MessageType>(null);
+
+  // Estado para loading dos botões
+  const [submitting, setSubmitting] = useState<{
+    info: boolean;
+    password: boolean;
+    company: boolean;
+  }>({ info: false, password: false, company: false });
+
+  // Ref para o topo da página
+  const topRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const userInfoForm = useForm<UserInfoFormType>({ 
+    resolver: 
+    zodResolver(userInfoSchema), 
+    defaultValues: { name: "", telefone: "" },
+    shouldUnregister: true, // Permite limpar os campos ao resetar o formulário
+    mode: "onSubmit" 
+  });
+  const userPasswordForm = useForm<UserPasswordFormType>({ 
+    resolver: zodResolver(userPasswordSchema), 
+    defaultValues: { password: "", newPassword: "", confirmPassword: "" },
+    mode: "onSubmit"
+  });
+  const companyForm = useForm<CompanyFormType>({ 
+    resolver: zodResolver(companySchema), 
+    defaultValues: { companyName: "", nif: "", address: "", locality: "", postalCode: "", companyPhone: "" },
+    mode: "onSubmit"
+  });
+
   useEffect(() => {
-    if (onSubmitMessage.message) {
-      setShowAlert(true);
+    if (user) {
+      userInfoForm.reset({ name: user?.nome || "", telefone: user?.telefone || "" });
     }
-  }, [onSubmitMessage]);
+    if (empresa) {
+      companyForm.reset({
+        companyName: empresa?.nome || "",
+        nif: empresa?.nif || "",
+        address: empresa?.morada || "",
+        locality: empresa?.localidade || "",
+        postalCode: empresa?.codigoPostal || "",
+        companyPhone: empresa?.telefone || "",
+        logo: empresa?.logo || "", // <-- Adicione esta linha!
+      });
+    }
 
-  const userInfoForm = useForm<UserInfoInputs>({
-    resolver: zodResolver(userInfoSchema),
-    defaultValues: {
-      name: user?.nome || "",
-      telefone: user?.telefone || "",
-    },
-  });
+  }, [user, empresa]);
 
-  const userEmailForm = useForm<UserEmailInputs>({
-    resolver: zodResolver(userEmailSchema),
-    defaultValues: {
-      email: user?.email || "",
-    },
-  });
+  // Scroll suave para o topo quando globalMessage muda
+  useEffect(() => {
+    if (globalMessage) {
+      console.log("Global message changed:", globalMessage);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, [globalMessage]);
 
-  const userPasswordForm = useForm<UserPasswordInputs>({
-    resolver: zodResolver(userPasswordSchema),
-  });
-
-  const companyForm = useForm<CompanyInputs>({
-    resolver: zodResolver(companySchema),
-    defaultValues: {
-      companyName: empresa?.nome || "",
-      nif: empresa?.nif || "",
-      address: empresa?.morada || "",
-      locality: empresa?.localidade || "",
-      postalCode: empresa?.codigoPostal || "",
-      companyPhone: empresa?.telefone || "",
-    },
-  });
-
-  // 🟢 Funções de submissão
-  const handleSubmitUserInfo = async (data: UserInfoInputs) => {
+  const handleSubmitUserUpdate: SubmitHandler<UserInfoFormType> = async (data) => {
+    setSubmitting(s => ({ ...s, info: true }));
     try {
-      await updateUser({
-        nome: data.name,
-        telefone: data.telefone,
-      });
-
-      setOnSubmitMessage({
-        error: false,
-        message: "Informações do usuário atualizadas com sucesso.",
-      });
-    } catch (error) {
-      setOnSubmitMessage({
-        error: true,
-        message: "Erro ao atualizar informações do usuário.",
-      });
+      await updateUser({ nome: data.name, telefone: data.telefone });
+      setGlobalMessage({ error: false, message: "Utilizador atualizado com sucesso" });
+      // Forçar renderização para garantir que o Alert apareça imediatamente
+    } catch(error: any) {
+      setGlobalMessage({ error: true, message: error?.message || "Erro ao atualizar dados do usuário" });
+      await new Promise(resolve => setTimeout(resolve, 0));
+    } finally {
+      setSubmitting(s => ({ ...s, info: false }));
     }
   };
 
-  const handleSubmitUserEmail = (data: UserEmailInputs) => {};
-
-  const handleSubmitUserPassword = (data: UserPasswordInputs) => {};
-
-  const handleSubmitCompany = (data: CompanyInputs) => {
-    console.log("Empresa atualizada:", data);
+  const handleSubmitUserPassword: SubmitHandler<UserPasswordFormType> = async (data) => {
+    setSubmitting(s => ({ ...s, password: true }));
+    try {
+      await updatePassword(data);
+      setGlobalMessage({ error: false, message: "Senha atualizada com sucesso" });
+      userPasswordForm.reset();
+    } catch (error: any) {
+      setGlobalMessage({ error: true, message: error?.message || "Erro ao atualizar senha" });
+    } finally {
+      setSubmitting(s => ({ ...s, password: false }));
+    }
   };
 
-  // Componente reutilizável de formulário
-  function SectionForm({
-    title,
-    onSubmit,
-    children,
-  }: {
-    title: string;
-    onSubmit: () => void;
-    children: React.ReactNode;
-  }) {
-    return (
-      <Paper elevation={3} sx={{ p: 3, borderRadius: 3, mt: 2, mx: "auto", width: "100%", maxWidth: "700px" }}>
-        <Box textAlign="center" mb={3}>
-          <Typography variant="h6" fontWeight="bold">
-            {title}
-          </Typography>
-        </Box>
-        <Box component="form" onSubmit={onSubmit}>
-          {children}
-        </Box>
-      </Paper>
-    );
-  }
+  const handleSubmitCompany: SubmitHandler<CompanyFormType> = async (data) => {
+    
+    setSubmitting(s => ({ ...s, company: true }));
+    try {
+      await updateCompany({
+        nome: data.companyName,
+        nif: data.nif,
+        morada: data.address,
+        localidade: data.locality,
+        codigoPostal: data.postalCode,
+        telefone: data.companyPhone,
+        logo: data.logo
+      }, empresa?.id || "");
+      setGlobalMessage({ error: false, message: "Empresa atualizada" });
+    } finally {
+      setSubmitting(s => ({ ...s, company: false }));
+    }
+  };
 
   return (
     <Container maxWidth={false} sx={{ mt: 5 }}>
-      {/* ALERTA DE SUBMISSÃO */}
-      <Fade in={showAlert}>
-        <Box
-          sx={{
-            position: "fixed",
-            top: 24,
-            left: 0,
-            right: 0,
-            zIndex: 1300,
-            display: "flex",
-            justifyContent: "center",
-          }}
-        >
-          {onSubmitMessage.message && (
-            <Alert
-              severity={onSubmitMessage.error ? "error" : "success"}
-              action={
-                <IconButton aria-label="close" color="inherit" size="small" onClick={() => setShowAlert(false)}>
-                  <CloseIcon fontSize="inherit" />
-                </IconButton>
-              }
-              sx={{ minWidth: 320, boxShadow: 3 }}
-              onClose={() => setShowAlert(false)}
-            >
-              {onSubmitMessage.message}
-            </Alert>
-          )}
+      <div ref={topRef} />
+      {globalMessage && (
+        <Box mb={3} maxWidth="700px" mx="auto">
+          <Alert
+            severity={globalMessage.error ? "error" : "success"}
+            onClose={() => setGlobalMessage(null)}
+            variant="filled"
+          >
+            {globalMessage.message}
+          </Alert>
         </Box>
-      </Fade>
-
-      {/* Nome e telefone */}
-      <SectionForm title="Alterar Nome e Telefone" onSubmit={userInfoForm.handleSubmit(handleSubmitUserInfo)}>
+      )}
+      <SectionForm title="Alterar Nome e Telefone" onSubmit={userInfoForm.handleSubmit(handleSubmitUserUpdate)}>
         <Grid container spacing={2}>
-          <Grid size={{ xs: 12 }}>
-            <TextField
-              label="Nome"
-              fullWidth
-              {...userInfoForm.register("name")}
-              error={!!userInfoForm.formState.errors.name}
-              helperText={userInfoForm.formState.errors.name?.message}
-            />
+          <Grid size={{xs: 12}}>
+            <TextField label="Nome" fullWidth sx={{ width: "100%" }} {...userInfoForm.register("name")} error={!!userInfoForm.formState.errors.name} helperText={userInfoForm.formState.errors.name?.message} />
           </Grid>
-          <Grid size={{ xs: 12 }}>
+          <Grid size={{xs: 12}}>
             <GlobalPhone fieldName="telefone" control={userInfoForm.control} errors={userInfoForm.formState.errors} />
           </Grid>
-          <Grid size={{ xs: 12 }}>
+          <Grid size={{xs: 12}}>
             <Box display="flex" justifyContent="center" mt={2}>
-              <Button type="submit" variant="contained" color="secondary" sx={{ width: 200 }}>
+              <Button
+                type="submit"
+                variant="contained"
+                color="secondary"
+                sx={{ width: 200 }}
+                disabled={submitting.info}
+              >
                 Salvar
               </Button>
             </Box>
           </Grid>
         </Grid>
       </SectionForm>
-
-      {/* Email */}
-      <SectionForm title="Alterar Email" onSubmit={userEmailForm.handleSubmit(handleSubmitUserEmail)}>
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 12 }}>
+      <SectionForm title="O seu Email" onSubmit={() => {}}>
+        <Grid container spacing={2} size={{xs: 12}} sx= {{width: "100%" }}>
+          <Grid size={{xs: 12}}>
             <TextField
               label="Email"
               fullWidth
-              {...userEmailForm.register("email")}
-              error={!!userEmailForm.formState.errors.email}
-              helperText={userEmailForm.formState.errors.email?.message}
+              sx={{ width: "100%" }}
+              disabled
+              value={user?.email || ""}
             />
-          </Grid>
-          <Grid size={{ xs: 12 }}>
-            <Box display="flex" justifyContent="center" mt={2}>
-              <Button type="submit" variant="contained" color="secondary" sx={{ width: 200 }}>
-                Salvar
-              </Button>
-            </Box>
           </Grid>
         </Grid>
       </SectionForm>
-
-      {/* Senha */}
       <SectionForm title="Alterar Senha" onSubmit={userPasswordForm.handleSubmit(handleSubmitUserPassword)}>
         <Grid container spacing={2}>
-          <Grid size={{ xs: 12 }}>
-            <TextField
-              label="Senha Atual"
-              type="password"
-              fullWidth
-              {...userPasswordForm.register("password")}
-              error={!!userPasswordForm.formState.errors.password}
-              helperText={userPasswordForm.formState.errors.password?.message}
-            />
+          <Grid size={{xs: 12}}>
+              <TextField
+                  label="Password"
+                  type="password"
+                  fullWidth
+                  sx={{ width: "100%" }}
+                  {...userPasswordForm.register("password")}
+                  error={!!userPasswordForm.formState.errors.password}
+                  helperText={userPasswordForm.formState.errors.password?.message}
+                />
           </Grid>
-          <Grid size={{ xs: 12 }}>
+          <Grid size={{xs: 12}}>
             <TextField
               label="Nova Senha"
               type="password"
               fullWidth
+              sx={{ width: "100%" }}
               {...userPasswordForm.register("newPassword")}
               error={!!userPasswordForm.formState.errors.newPassword}
               helperText={userPasswordForm.formState.errors.newPassword?.message}
             />
           </Grid>
-          <Grid size={{ xs: 12 }}>
+          <Grid size={{xs: 12}}>
             <TextField
               label="Confirmar Nova Senha"
               type="password"
               fullWidth
+              sx={{ width: "100%" }}
               {...userPasswordForm.register("confirmPassword")}
               error={!!userPasswordForm.formState.errors.confirmPassword}
               helperText={userPasswordForm.formState.errors.confirmPassword?.message}
             />
           </Grid>
-          <Grid size={{ xs: 12 }}>
+          <Grid size={{xs: 12}}>
             <Box display="flex" justifyContent="center" mt={2}>
-              <Button type="submit" variant="contained" color="secondary" sx={{ width: 200 }}>
+              <Button
+                type="submit"
+                variant="contained"
+                color="secondary"
+                sx={{ width: 200 }}
+                disabled={submitting.password}
+              >
                 Salvar
               </Button>
             </Box>
           </Grid>
         </Grid>
       </SectionForm>
-
-      {/* Empresa */}
       <SectionForm title="Editar Dados da Empresa" onSubmit={companyForm.handleSubmit(handleSubmitCompany)}>
         <Grid container spacing={2}>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              label="Nome da Empresa"
-              fullWidth
-              {...companyForm.register("companyName")}
-              error={!!companyForm.formState.errors.companyName}
-              helperText={companyForm.formState.errors.companyName?.message}
-            />
+          <Grid size={{xs: 12, sm:6}}>
+            <TextField label="Nome da Empresa" fullWidth sx={{ width: "100%" }} {...companyForm.register("companyName")} error={!!companyForm.formState.errors.companyName} helperText={companyForm.formState.errors.companyName?.message} />
           </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              label="NIF"
-              fullWidth
-              {...companyForm.register("nif")}
-              error={!!companyForm.formState.errors.nif}
-              helperText={companyForm.formState.errors.nif?.message}
-            />
+          <Grid size={{xs: 12, sm: 6}}>
+            <TextField label="NIF" fullWidth sx={{ width: "100%" }} {...companyForm.register("nif")} error={!!companyForm.formState.errors.nif} helperText={companyForm.formState.errors.nif?.message} />
           </Grid>
-          <Grid size={{ xs: 12 }}>
-            <TextField
-              label="Morada"
-              fullWidth
-              {...companyForm.register("address")}
-              error={!!companyForm.formState.errors.address}
-              helperText={companyForm.formState.errors.address?.message}
-            />
+          <Grid size={{xs: 12}}>
+            <TextField label="Morada" fullWidth sx={{ width: "100%" }} {...companyForm.register("address")} error={!!companyForm.formState.errors.address} helperText={companyForm.formState.errors.address?.message} />
           </Grid>
-          <Grid size={{ xs: 12 }}>
-            <TextField
-              label="Localidade"
-              fullWidth
-              {...companyForm.register("locality")}
-              error={!!companyForm.formState.errors.locality}
-              helperText={companyForm.formState.errors.locality?.message}
-            />
+          <Grid size={{xs: 12}}>
+            <TextField label="Localidade" fullWidth sx={{ width: "100%" }} {...companyForm.register("locality")} error={!!companyForm.formState.errors.locality} helperText={companyForm.formState.errors.locality?.message} />
           </Grid>
-          <Grid size={{ xs: 12 }}>
-            <TextField
-              label="Código Postal"
-              fullWidth
-              {...companyForm.register("postalCode")}
-              error={!!companyForm.formState.errors.postalCode}
-              helperText={companyForm.formState.errors.postalCode?.message}
-            />
+          <Grid size={{xs: 12}}>
+            <TextField label="Código Postal" fullWidth sx={{ width: "100%" }} {...companyForm.register("postalCode")} error={!!companyForm.formState.errors.postalCode} helperText={companyForm.formState.errors.postalCode?.message} />
           </Grid>
-          <Grid size={{ xs: 12 }}>
+          <Grid size={{xs: 12}}>
             <GlobalPhone fieldName="companyPhone" control={companyForm.control} errors={companyForm.formState.errors} />
           </Grid>
-          <Grid size={{ xs: 12 }}>
+          <Grid size={{xs: 12}} sx={{ marginBottom: 20, marginTop: 2 }}>
+            <Typography variant="h6" sx={{ textAlign: "center", mb: 5, fontWeight: "bold" }}>
+                Logotipo da Empresa
+            </Typography>
+            <Box display="flex" justifyContent="center" alignItems="center" height={120}>
+              <Paper
+                elevation={1}
+                sx={{
+                  width: 250,
+                  height: 250,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "0%",
+                  bgcolor: "#f5f5f5",
+                  color: "#bdbdbd",
+                  fontSize: 32,
+                  fontWeight: "bold",
+                  border: "2px dashed #bdbdbd",
+                  overflow: "hidden",
+                  position: "relative",
+                  cursor: "pointer",
+                }}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {(companyForm.watch("logo") || empresa?.logo) ? (
+                  <img
+                    src={`data:image/png;base64,${companyForm.watch("logo") || empresa?.logo}`}
+                    alt="Logo da empresa"
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "contain",
+                      background: "#f5f5f5"
+                    }}
+                  />
+                ) : (
+                  <Box textAlign="center">
+                    Insira o logotipo da empresa aqui
+                  </Box>
+                )}
+                <input
+                  ref={fileInputRef}
+                  accept="image/*"
+                  id="logo-upload"
+                  type="file"
+                  style={{ display: "none" }}
+                  onClick={e => e.stopPropagation()}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const maxSize = 1024 * 1024; // Limite de 1MB
+                      if (file.size > maxSize) {
+                        alert("O ficheiro é demasiado grande. O limite é 1MB.");
+                        return;
+                      }
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        companyForm.setValue("logo", (reader.result as string).split(",")[1]);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+              </Paper>
+            </Box>
+          </Grid>
+          <Grid size={{xs: 12}}>
             <Box display="flex" justifyContent="center" mt={2}>
-              <Button type="submit" variant="contained" color="secondary" sx={{ width: 200 }}>
+              <Button
+                type="submit"
+                variant="contained"
+                color="secondary"
+                sx={{ width: 200 }}
+                disabled={submitting.company}
+              >
                 Salvar
               </Button>
             </Box>

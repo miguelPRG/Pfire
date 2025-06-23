@@ -82,12 +82,13 @@ async def fast_api_http_middleware(request: Request, call_next):
     if not token:
         return JSONResponse(status_code=401, content={"message": "Acesso Negado!"})
 
-    if await is_token_revoked(token):
-        return JSONResponse(status_code=401, content={"message": "Token revogado! Por favor, faça login novamente."})
-
     try:
         # Valida e decodifica o token JWT
         user_data = verify_jwt(token)
+
+        if await is_token_revoked(token):
+            return JSONResponse(status_code=401, content={"message": "Token revogado! Por favor, faça login novamente."})
+
         request.state.jwt = user_data  # Armazena os dados do usuário na request
 
     except Exception:

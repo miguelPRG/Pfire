@@ -46,7 +46,7 @@ export default function UserManagementTable() {
   const [search, setSearch] = useState("");
   const [orderBy, setOrderBy] = useState<keyof User | null>(null);
   const [order, setOrder] = useState<"asc" | "desc">("asc");
-  const { empresa } = useAuth();
+  const { empresa} = useAuth();
   const { data, loading, error, refetch } = useQuery(GET_USERS, {
     variables: { empresaId: empresa?.id },
     fetchPolicy: "cache-first",
@@ -150,6 +150,7 @@ export default function UserManagementTable() {
     isActive: "Status",
     email: "Email",
     isAdmin: "Papel",
+    isSuperAdmin: "Super Admin",
   };
 
   const columns: (keyof User)[] = ["nome", "telefone", "isActive", "email", "isAdmin"];

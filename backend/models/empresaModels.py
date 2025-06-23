@@ -1,15 +1,14 @@
 from pydantic import BaseModel, Field
-from typing import Optional
-
+from typing import Optional, Any
 
 class EmpresaCreate(BaseModel):
-    nome: str
+    nome: str  = Field(..., max_length=100, description="Nome da empresa. Deve ter no máximo 100 caracteres.")
     nif: str = Field(..., pattern=r"^[5789]\d{8}$")
-    localidade: str
-    morada: str
+    localidade: str  = Field(..., max_length=100, description="Localidade da empresa. Deve ter no máximo 100 caracteres.")
+    morada: str  = Field(..., max_length=255, description="Morada da empresa. Deve ter no máximo 255 caracteres.")
     codigo_postal: str = Field(..., pattern=r"^\d{4}-\d{3}$")
     telefone: str = Field(..., pattern=r"^\+?[0-9\s\-()]{7,15}$")  # Correção aqui
-    logo: Optional[bytes] = None
+    logo: Optional[Any] =Field(max_length=1024*1024*1.33, description="Logo da empresa, deve ser uma imagem válida com tamanho máximo de 1MB")
 
     def __init__(self, **data):
         super().__init__(**{k: v.strip() if isinstance(v, str) else v for k, v in data.items()})
@@ -22,13 +21,13 @@ class EmpresaCreateAsLoggedUser(EmpresaCreate):
 
 class EmpresaUpdate(BaseModel):
     recaptchaToken: str
-    nome: Optional[str] = None
-    nif: Optional[str] = None
-    localidade: Optional[str] = None
-    morada: Optional[str] = None
-    codigo_postal: Optional[str] = None
-    telefone: Optional[str] = None
-    logo: Optional[bytes] = None
+    nome: Optional[str] =  Field(None, max_length=100)
+    nif: Optional[str] =  Field(None, pattern=r"^[5789]\d{8}$")
+    localidade: Optional[str] = Field(None, max_length=100)
+    morada: Optional[str] = Field(None, max_length=255)
+    codigo_postal: Optional[str] = Field(None, pattern=r"^\d{4}-\d{3}$")
+    telefone: Optional[str] = Field(None, pattern=r"^\+?[0-9\s\-()]{7,15}$")
+    logo: Optional[Any] =  Field(None,max_length=1024*1024*1.33, description="Logo da empresa, deve ser uma imagem válida com tamanho máximo de 1MB")
 
     def __init__(self, **data):
         super().__init__(**{k: v.strip() if isinstance(v, str) else v for k, v in data.items()})
