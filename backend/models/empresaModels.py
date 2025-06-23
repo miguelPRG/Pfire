@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional, Any
+from typing import Optional
 
 class EmpresaCreate(BaseModel):
     nome: str  = Field(..., max_length=100, description="Nome da empresa. Deve ter no máximo 100 caracteres.")
@@ -8,7 +8,8 @@ class EmpresaCreate(BaseModel):
     morada: str  = Field(..., max_length=255, description="Morada da empresa. Deve ter no máximo 255 caracteres.")
     codigo_postal: str = Field(..., pattern=r"^\d{4}-\d{3}$")
     telefone: str = Field(..., pattern=r"^\+?[0-9\s\-()]{7,15}$")  # Correção aqui
-    logo: Optional[Any] =Field(max_length=1024*1024*1.33, description="Logo da empresa, deve ser uma imagem válida com tamanho máximo de 1MB")
+    # Talvez não seje necessário adicionar o logótipo logo na criação
+    #logo: Optional[str] = Field(None, max_length=1398101, description="Logo da empresa em base64, até 1MB.")
 
     def __init__(self, **data):
         super().__init__(**{k: v.strip() if isinstance(v, str) else v for k, v in data.items()})
@@ -27,7 +28,7 @@ class EmpresaUpdate(BaseModel):
     morada: Optional[str] = Field(None, max_length=255)
     codigo_postal: Optional[str] = Field(None, pattern=r"^\d{4}-\d{3}$")
     telefone: Optional[str] = Field(None, pattern=r"^\+?[0-9\s\-()]{7,15}$")
-    logo: Optional[Any] =  Field(None,max_length=1024*1024*1.33, description="Logo da empresa, deve ser uma imagem válida com tamanho máximo de 1MB")
+    logo: Optional[str] =  Field(None, max_length=1398101, description="Logo da empresa em base64, até 1MB.")
 
     def __init__(self, **data):
         super().__init__(**{k: v.strip() if isinstance(v, str) else v for k, v in data.items()})

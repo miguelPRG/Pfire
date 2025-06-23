@@ -6,8 +6,8 @@ from .empresaModels import EmpresaCreate
 
 
 class UserCreate(BaseModel):
-    nome: str = Field(..., min_length=2, max_length=100)
-    email: EmailStr
+    nome: str = Field(..., max_length=100)
+    email: EmailStr = Field(max_length=254, description="O email deve ser um endereço de email válido.")
     password: str = Field(
         ...,
         min_length=9,
@@ -36,7 +36,7 @@ class UserCreate(BaseModel):
 
 class UserUpdate(BaseModel):
     recaptchaToken: str
-    nome: Optional[str] = Field(None, min_length=2, max_length=100)
+    nome: Optional[str] = Field(None, max_length=100)
     telefone: Optional[str] = Field(None, pattern=r"^\+?[0-9\s\-()]{7,15}$")
 
     @field_validator("nome", "telefone", mode="before")
@@ -46,9 +46,9 @@ class UserUpdate(BaseModel):
 
 
 class UserUpdatePassword(BaseModel):
-    password: str
-    newPassword: str
-    confirmPassword: str
+    password: str = Field(max_length=100, min_length=9)
+    newPassword: str = Field(max_length=100, min_length=9)
+    confirmPassword: str = Field(max_length=100, min_length=9)
     recaptchaToken: str
 
     @model_validator(mode="after")
@@ -57,11 +57,9 @@ class UserUpdatePassword(BaseModel):
             raise ValueError("As novas senhas não coincidem.")
         return self
 
-    @field_validator("password", "newPassword", "confirmPassword", mode="after")
+    @field_validator("newPassword", "confirmPassword", mode="after")
     @classmethod
     def validate_password(cls, v):
-        if len(v) < 9:
-            raise ValueError("A senha deve ter pelo menos 9 caracteres.")
         if not any(c.islower() for c in v):
             raise ValueError("A senha deve conter pelo menos uma letra minúscula.")
         if not any(c.isupper() for c in v):
@@ -72,19 +70,13 @@ class UserUpdatePassword(BaseModel):
 
 
 class UserUpdateEmail(BaseModel):
-    email: EmailStr
-    recaptchaToken: str
-
-class UserToggleSuperAdmin(BaseModel):
-    id: str
-    value: bool
+    email: EmailStr = Field(max_length=254, description="O email deve ser um endereço de email válido.")
     recaptchaToken: str
 
 
 class UserActivation(BaseModel):
     recaptchaToken: str
-    id: Optional[str] = None
-    email: Optional[EmailStr] = None
+    id: str = Field(None, min_length=24, max_length=24, description="O ID do utilizador a ser ativado/desativado.")
 
 
 class RegisterUser(BaseModel):
@@ -97,8 +89,8 @@ class RegisterUser(BaseModel):
 
 
 class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
+    email: EmailStr = Field(max_length=254, description="O email deve ser um endereço de email válido.")
+    password: str = Field(..., min_length=9, max_length=100, description="A senha deve ter pelo menos 9 caracteres.")
     recaptchaToken: Optional[str] = None
 
     @field_validator('email', mode="before")
@@ -109,7 +101,7 @@ class UserLogin(BaseModel):
 
 
 class UserForgotPassword(BaseModel):
-    email: EmailStr
+    email: EmailStr = Field(max_length=254, description="O email deve ser um endereço de email válido.")
     recaptchaToken: str
 
     @field_validator('email', mode="before")
@@ -121,9 +113,9 @@ class UserForgotPassword(BaseModel):
 
 
 class UserChangePassword(BaseModel):
-    password: str
-    confirmPassword: str
-    global_id: str
+    password: str = Field(..., min_length=9, max_length=100, description="A senha deve ter pelo menos 9 caracteres.")
+    confirmPassword: str  = Field(..., min_length=9, max_length=100, description="A confirmação da senha deve ter pelo menos 9 caracteres.")
+    global_id: str  = Field(..., min_length=24, max_length=24, description="O ID global do utilizador.")
 
     @model_validator(mode="before")
     @classmethod

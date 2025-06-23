@@ -1,4 +1,4 @@
-from pydantic import BaseModel, model_validator, ConfigDict
+from pydantic import BaseModel, model_validator, ConfigDict, Field
 from typing import Optional
 from fastapi import HTTPException
 
@@ -92,8 +92,8 @@ def validate_fields(key, value):
 
 # Classe ModelosCamposCreate
 class ModelosCamposCreate(BaseModel):
-    model_name: str
-    empresa_id: str
+    model_name: str = Field(..., max_length=100, description="Nome do modelo. Deve ter no máximo 100 caracteres.")
+    empresa_id: str  = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
     recaptchaToken: str
     model_config = ConfigDict(extra="allow")  # Permite campos extras
 
@@ -120,8 +120,8 @@ class ModelosCamposCreate(BaseModel):
 
 # Classe ModelosCamposUpdate
 class ModelosCamposUpdate(BaseModel):
-    model_name: Optional[str] = None  # Ex: "extintores", "para-raios", "bocas de incêndio"
-    empresa_id: str
+    model_name: Optional[str] = Field(None, max_length=100, description="Nome do modelo. Deve ter no máximo 100 caracteres.") # Ex: "extintores", "para-raios", "bocas de incêndio"
+    empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
     recaptchaToken: str
     model_config = ConfigDict(extra="allow")  # Permite campos extras
 
@@ -162,7 +162,6 @@ class ModelosCamposUpdate(BaseModel):
 
 
 class ModelosCamposDelete(BaseModel):
-    empresa_id: str
-    id: Optional[str] = None  # ID do modelo a ser excluído
-    model_name: Optional[str] = None  # Nome do modelo a ser excluído
+    empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
+    id: str = Field(..., min_length=24, max_length=24, description="ID do modelo de campos a ser deletado.")
     recaptchaToken: str

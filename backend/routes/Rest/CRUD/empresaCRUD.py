@@ -5,6 +5,7 @@ from models.userEmpresaModels import UserEmpresaCreate
 from database import empresas_collection, users_empresas_collection
 from bson import ObjectId
 from datetime import datetime
+from base64 import b64decode
 
 routerEmpresa = APIRouter(prefix="/empresa")
 
@@ -56,11 +57,8 @@ async def create_empresa(empresa: EmpresaCreateAsLoggedUser, request: Request):
 
 
 # Atualizar Empresa
-@routerEmpresa.put("/")
-async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str = None, nif: str = None):
-
-    if not id and not nif:
-        raise HTTPException(status_code=400, detail="ID ou NIF da empresa deve ser fornecido.")
+@routerEmpresa.put("/{id}")
+async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str):
 
     # Sacar jwt
     jwt = getattr(request.state, "jwt", None)
@@ -69,17 +67,18 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str = Non
     await validar_recaptcha_token(empresa.recaptchaToken, "update")
 
     user_id = ObjectId(jwt["user_id"])
+    id = ObjectId(id)
+
+    if empresa.logo :
+        #Converter string base 64 para BinaryData do mongoDB
+        try:
+            empresa.logo = b64decode(empresa.logo)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail="Erro ao decodificar a imagem. Verifica se a imagem está em base64.")
 
     # Se o utilizador não for super admin, verificar se ele é admin da empresa que quer atualizar
     if not jwt["isSuperAdmin"]:
-
-        if id:
-            user_empresa = await users_empresas_collection.find_one(
-                {"empresa_id": id, "user_id": user_id, "isAdmin": True}
-            )
-
-        else:
-            user_empresa = await users_empresas_collection.find_one({"nif": nif, "user_id": user_id, "isAdmin": True})
+        user_empresa = await users_empresas_collection.find_one({"empresa_id": id, "user_id": user_id,"isAdmin": True})
 
         if not user_empresa:
             raise HTTPException(
@@ -92,11 +91,7 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str = Non
     empresa_data["updated_at"] = datetime.now()
     del empresa_data["recaptchaToken"]
 
-    if id:
-        result = await empresas_collection.update_one({"_id": ObjectId(id)}, {"$set": empresa_data})
-
-    else:
-        result = await empresas_collection.update_one({"nif": nif}, {"$set": empresa_data})
+    result = await empresas_collection.update_one({"_id": ObjectId(id)}, {"$set": empresa_data})
 
     if not result.modified_count:
         raise HTTPException(status_code=400, detail="Erro ao atualizar empresa. Verifica se a empresa existe.")

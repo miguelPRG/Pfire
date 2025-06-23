@@ -59,16 +59,13 @@ async def criar_cliente(cliente: ClienteCreate, request: Request):
 
 
 # Atualizar um cliente
-@routerCliente.put("/")
-async def atualizar_cliente(cliente: ClienteUpdate, request: Request, id: str = None, nif: str = None):
+@routerCliente.put("/{id}")
+async def atualizar_cliente(cliente: ClienteUpdate, request: Request, id: str):
     # Sacar jwt
     jwt = getattr(request.state, "jwt", None)
 
     # Validar reCAPTCHA token
     await validar_recaptcha_token(cliente.recaptchaToken, "register")
-
-    if not id and not nif:
-        raise HTTPException(status_code=400, detail="ID ou NIF do cliente são obrigatórios.")
 
     if not jwt["isSuperAdmin"]:
 
@@ -87,11 +84,7 @@ async def atualizar_cliente(cliente: ClienteUpdate, request: Request, id: str = 
     cliente_data["updated_at"] = datetime.now()
     del cliente_data["recaptchaToken"]
 
-    if id:
-        result = await clientes_collection.update_one({"_id": ObjectId(id), "isActive": True}, {"$set": cliente_data})
-
-    else:
-        result = await clientes_collection.update_one({"nif": nif, "isActive": True}, {"$set": cliente_data})
+    result = await clientes_collection.update_one({"_id": ObjectId(id), "isActive": True}, {"$set": cliente_data})
 
     if not result.modified_count:
         raise HTTPException(status_code=404, detail="Cliente não encontrado. Verifique so o cliente realmente existe.")
@@ -146,9 +139,6 @@ async def reativar_cliente(cliente: ClienteActivion, request: Request):
     # Validar reCAPTCHA token
     await validar_recaptcha_token(cliente.recaptchaToken, "register")
 
-    if not cliente.id and not cliente.nif:
-        raise HTTPException(status_code=400, detail="ID ou NIF do cliente são obrigatórios.")
-
     if not jwt["isSuperAdmin"]:
 
         user_empresa = await users_empresas_collection.find_one(
@@ -160,15 +150,7 @@ async def reativar_cliente(cliente: ClienteActivion, request: Request):
                 status_code=403, detail="Acesso negado! Não tens permissão para ativar clientes nesta empresa."
             )
 
-    if cliente.id:
-        result = await clientes_collection.update_one(
-            {"_id": ObjectId(cliente.id), "isActive": False}, {"$set": {"isActive": True}}
-        )
-
-    else:
-        result = await clientes_collection.update_one(
-            {"nif": cliente.nif, "isActive": False}, {"$set": {"isActive": True}}
-        )
+    result = await clientes_collection.update_one({"_id": ObjectId(cliente.id), "isActive": False}, {"$set": {"isActive": True}})
 
     if not result.modified_count:
         raise HTTPException(status_code=404, detail="Cliente não encontrado. É possivel que o cliente já esteja ativo.")

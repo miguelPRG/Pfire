@@ -1,6 +1,5 @@
-from pydantic import BaseModel, model_validator, ConfigDict
+from pydantic import BaseModel, model_validator, ConfigDict, Field
 from fastapi import HTTPException
-from typing import Optional
 
 MAIN_FIELDS = {
     "relatorio_name",
@@ -11,9 +10,9 @@ MAIN_FIELDS = {
 
 
 class RelatorioCreate(BaseModel):
-    relatorio_name: str
-    modelo_campos_id: str
-    cliente_id: str
+    relatorio_name: str = Field(...,max_length=100,description="Nome do relatório. Deve ter no máximo 100 caracteres.")
+    modelo_campos_id: str  = Field(...,min_length=24,max_length=24, description="ID do modelo de campos associado ao relatório.")
+    cliente_id: str  = Field(...,min_length=24,max_length=24, description="ID do cliente associado ao relatório.")
     recaptchaToken: str
     model_config = ConfigDict(extra="allow")  # Permite campos extras
 
@@ -45,7 +44,6 @@ class RelatorioCreate(BaseModel):
 
 
 class RelatorioActivation(BaseModel):
-    id: Optional[str] = None
-    relatorio_name: Optional[str] = None
-    empresa_id: str
+    id:str = Field(..., min_length=24, max_length=24, description="ID do relatório a ser ativado/desativado.")
+    empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao relatório.")
     recaptchaToken: str

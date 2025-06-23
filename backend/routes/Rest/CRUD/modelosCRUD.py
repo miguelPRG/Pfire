@@ -69,10 +69,8 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
     return {"message": "Modelo criado com sucesso!"}
 
 
-@routerModelo.put("/")
-async def update_modelo(request: Request, modelo: ModelosCamposUpdate, id: str = None, model_name: str = None):
-    if not id and not model_name:
-        raise HTTPException(status_code=400, detail="ID ou nome do modelo são obrigatórios.")
+@routerModelo.put("/{id}")
+async def update_modelo(request: Request, modelo: ModelosCamposUpdate, id: str):
 
     # 1) Validar token reCAPTCHA
     await validar_recaptcha_token(modelo.recaptchaToken, "register")
@@ -93,7 +91,7 @@ async def update_modelo(request: Request, modelo: ModelosCamposUpdate, id: str =
             raise HTTPException(status_code=403, detail="Acesso negado!")
 
     # 4) Localizar modelo existente
-    query = {"_id": ObjectId(id)} if id else {"model_name": model_name}
+    query = {"_id": ObjectId(id)}
     modelo_found = await modelos_collection.find_one({**query, "empresa_id": empresa_id})
     if not modelo_found:
         raise HTTPException(status_code=404, detail="Modelo não encontrado.")
@@ -250,12 +248,7 @@ async def apagar_modelo(request: Request, modelo: ModelosCamposDelete):
 
     await validar_recaptcha_token(modelo.recaptchaToken, "register")
 
-    if not modelo.id and not modelo.model_name:
-        raise HTTPException(status_code=400, detail="ID ou nome do modelo são obrigatórios.")
-
     jwt = getattr(request.state, "jwt", None)
-    if not jwt:
-        raise HTTPException(status_code=401, detail="Não autorizado")
 
     user_id = ObjectId(jwt["user_id"])
     empresa_id = ObjectId(modelo.empresa_id)
@@ -272,10 +265,7 @@ async def apagar_modelo(request: Request, modelo: ModelosCamposDelete):
             )
 
     # 4) Executar deleção
-    if modelo.id:
-        result = await modelos_collection.delete_one({"_id": ObjectId(modelo.id), "empresa_id": empresa_id})
-    else:
-        result = await modelos_collection.delete_one({"model_name": modelo.model_name})
+    result = await modelos_collection.delete_one({"_id": ObjectId(modelo.id), "empresa_id": empresa_id})
 
     if not result.deleted_count:
         raise HTTPException(status_code=500, detail="Erro ao apagar modelo")

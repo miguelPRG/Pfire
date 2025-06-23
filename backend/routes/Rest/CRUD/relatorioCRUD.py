@@ -170,9 +170,6 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
 @routerRelatorio.delete("/")
 async def delete_relatorio(relatorio: RelatorioActivation, request: Request):
 
-    if not relatorio.id and not relatorio.relatorio_name:
-        raise HTTPException(status_code=400, detail="Deve ser informado o id ou o nome do relatório para apagar.")
-
     # Validar o reCAPTCHA token
     await validar_recaptcha_token(relatorio.recaptchaToken, "delete")
 
@@ -191,20 +188,8 @@ async def delete_relatorio(relatorio: RelatorioActivation, request: Request):
                 status_code=403, detail="Usuário não tem permissão para apagar relatórios para esta empresa"
             )
 
-    if relatorio.id:
-        relatio_update = await relatorios_collection.update_one(
-            {"_id": ObjectId(relatorio.id), "isActive": True}, {"$set": {"isActive": False}}
-        )
-    else:
-        relatio_update = await relatorios_collection.update_one(
-            {
-                "relatorio_name": relatorio.relatorio_name,
-                "empresa_id": ObjectId(relatorio.empresa_id),
-                "isActive": True,
-            },
-            {"$set": {"isActive": False}},
-        )
-
+    relatio_update = await relatorios_collection.update_one({"_id": ObjectId(relatorio.id), "isActive": True}, {"$set": {"isActive": False}})
+    
     if relatio_update.modified_count == 0:
         raise HTTPException(status_code=404, detail="Relatório não encontrado ou já foi apagado!")
 
@@ -214,9 +199,6 @@ async def delete_relatorio(relatorio: RelatorioActivation, request: Request):
 # Reativar Relatório
 @routerRelatorio.put("/activate")
 async def activate_relatorio(relatorio: RelatorioActivation, request: Request):
-
-    if not relatorio.id and not relatorio.relatorio_name:
-        raise HTTPException(status_code=400, detail="Deve ser informado o id ou o nome do relatório para apagar.")
 
     # Validar o reCAPTCHA token
     await validar_recaptcha_token(relatorio.recaptchaToken, "activate")
@@ -236,18 +218,8 @@ async def activate_relatorio(relatorio: RelatorioActivation, request: Request):
                 status_code=403, detail="Usuário não tem permissão para apagar relatórios para esta empresa"
             )
 
-    if relatorio.id:
-        relatio_update = await relatorios_collection.update_one(
+    relatio_update = await relatorios_collection.update_one(
             {"_id": ObjectId(relatorio.id), "isActive": False}, {"$set": {"isActive": True}}
-        )
-    else:
-        relatio_update = await relatorios_collection.update_one(
-            {
-                "relatorio_name": relatorio.relatorio_name,
-                "empresa_id": ObjectId(relatorio.empresa_id),
-                "isActive": False,
-            },
-            {"$set": {"isActive": True}},
         )
 
     if relatio_update.modified_count == 0:

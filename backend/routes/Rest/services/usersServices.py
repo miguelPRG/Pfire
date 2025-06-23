@@ -15,6 +15,8 @@ from asyncio import gather
 from database import users_collection, empresas_collection, users_empresas_collection, global_ids_collection
 from datetime import datetime
 from uuid import uuid4
+from bson import ObjectId
+
 
 
 routerUser = APIRouter(prefix="/user")
@@ -306,7 +308,7 @@ async def forgot_password(request: Request, user: UserForgotPassword):
 
     return {"message": "E-mail de recuperação enviado!"}
 
-
+#Atualiza a password de utilizadores já logados
 @routerUser.put("/update-password")
 async def update_password(user: UserUpdatePassword, request: Request):
 
@@ -317,9 +319,10 @@ async def update_password(user: UserUpdatePassword, request: Request):
 
     # Verificar se o user tem aquela password
 
-    db_user = await users_collection.find_one({"_id": jwt["user_id"]})
+    db_user = await users_collection.find_one({"_id": ObjectId(jwt["user_id"]), "isActive": True})
 
     if not db_user:
+        print(f"Utilizador de id {jwt['user_id']} não encontrado.")
         raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
 
     if not pwd_context.verify(user.password, db_user["password"]):
