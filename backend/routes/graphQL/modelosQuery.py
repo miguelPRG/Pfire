@@ -22,7 +22,7 @@ class ModeloQuery:
         jwt = getattr(request.state, "jwt", None)
         empresa_id = ObjectId(empresa_id)
 
-        if not jwt["isSuperAdmin"]:
+        if not jwt.get("isSuperAdmin", False):
             user_empresa = await users_empresas_collection.find_one(
                 {"empresa_id": empresa_id, "user_id": jwt["user_id"]}
             )

@@ -30,7 +30,7 @@ class ClienteQuery:
         else:
             filtro = {"empresa_id": empresa_id, "isActive": True}
 
-        if not jwt["isSuperAdmin"]:
+        if not jwt.get("isSuperAdmin", False):
             user_empresa = await users_empresas_collection.find_one(
                 {"empresa_id": empresa_id, "user_id": jwt["user_id"]}
             )
@@ -60,7 +60,7 @@ class ClienteQuery:
                 "isActive": cliente.get("isActive"),
             }
 
-            if not jwt["isSuperAdmin"]:
+            if not jwt.get("isSuperAdmin", False):
 
                 cliente_data = {
                     k: v

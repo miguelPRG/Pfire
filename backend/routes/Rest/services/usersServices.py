@@ -57,9 +57,12 @@ async def login_oauth(request: Request):
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Token Firebase inválido: {e}")
 
+    uid = firebase_data.get("uid")
     email = firebase_data.get("email")
     nome = firebase_data.get("name", "")
     telefone = firebase_data.get("phone", "")
+
+    print(f"Dados do User: {email=}, {nome=}, {telefone=}")
 
     if not email:
         raise HTTPException(status_code=400, detail="Email não disponível no token OAuth.")
@@ -83,6 +86,7 @@ async def login_oauth(request: Request):
             "created_at": data,
             "updated_at": data,
             "last_login": data,
+            "firebaseUID": uid,
         }
         result = await users_collection.insert_one(insert_data)
         if not result.inserted_id:
@@ -93,7 +97,7 @@ async def login_oauth(request: Request):
         if not user_doc.get("isActive", True):
             raise HTTPException(status_code=403, detail="Usuário inativo.")
         # atualiza last_login
-        await users_collection.update_one({"_id": user_doc["_id"]}, {"$set": {"last_login": data}})
+        await users_collection.update_one({"_id": user_doc["_id"]}, {"$set": {"last_login": data, "firebaseUID":uid}})
         user_id = user_doc["_id"]
 
     # 3) Gera JWT (sem listar empresas aqui)
@@ -103,6 +107,7 @@ async def login_oauth(request: Request):
         user_doc.get("email", ""),
         user_doc.get("isSuperAdmin", False),
         user_doc.get("telefone", ""),
+        uid
     )
 
     # 4) Monta payload de resposta
@@ -113,6 +118,7 @@ async def login_oauth(request: Request):
         "telefone": user_doc.get("telefone", ""),
         "isSuperAdmin": user_doc.get("isSuperAdmin", False),
         "newUser": new_user_flag,
+        "firebaseUID": uid
     }
 
     response = JSONResponse(content=response_payload)
@@ -253,8 +259,8 @@ async def auth_user(request: Request):
         "id": jwt["user_id"],
         "nome": jwt["nome"],
         "email": jwt["email"],
-        "telefone": jwt["telefone"],
-        "isSuperAdmin": jwt["isSuperAdmin"],
+        "telefone": jwt.get("telefone", None),
+        "isSuperAdmin": jwt.get("isSuperAdmin", False),
     }
 
 

@@ -27,7 +27,7 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
 
     user_id = ObjectId(jwt["user_id"])
 
-    if not jwt["isSuperAdmin"]:
+    if not jwt.get("isSuperAdmin", False):
         # Verificar se o utilizador é admin da empresa
         user_empresa = await users_empresas_collection.find_one(
             {"empresa_id": modelo.empresa_id, "user_id": user_id, "isAdmin": True}
@@ -83,7 +83,7 @@ async def update_modelo(request: Request, modelo: ModelosCamposUpdate, id: str):
     user_id = ObjectId(jwt["user_id"])
     empresa_id = ObjectId(modelo.empresa_id)
 
-    if not jwt["isSuperAdmin"]:
+    if not jwt.get("isSuperAdmin"):
         user_empresa = await users_empresas_collection.find_one(
             {"empresa_id": modelo.empresa_id, "user_id": user_id, "isAdmin": True}
         )
@@ -253,7 +253,7 @@ async def apagar_modelo(request: Request, modelo: ModelosCamposDelete):
     user_id = ObjectId(jwt["user_id"])
     empresa_id = ObjectId(modelo.empresa_id)
 
-    if not jwt["isSuperAdmin"]:
+    if not jwt.get("isSuperAdmin", False):
         # Verificar se o utilizador é admin da empresa
         user_empresa = await users_empresas_collection.find_one(
             {"empresa_id": ObjectId(modelo.empresa_id), "user_id": user_id, "isAdmin": True}

@@ -1,9 +1,11 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
-from asyncio import gather
+from asyncio import gather, to_thread
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from datetime import datetime, timedelta
+from firebase_admin import auth
+import asyncio
 
 # Obter a URI do MongoDB do arquivo .env
 uri = os.getenv("MONGO_URL")  # A URI do MongoDB Atlas
@@ -35,30 +37,42 @@ global_ids_collection = db["global_ids"]
 
 
 async def delete_documentos_inativos():
-    # Etapa 1: Deletar clientes e relatórios em paralelo (independentes)
-    cliente_task = clientes_collection.delete_many({"isActive": False})
-    relatorio_task = relatorios_collection.delete_many({"isActive": False})
-    cliente_result, relatorio_result = await gather(cliente_task, relatorio_task)
+    # Buscar utilizadores inativos
+    inactive_users_cursor = users_collection.find({"isActive": False}, {"_id": 1, "firebaseUID": 1})
+    inactive_users = [doc async for doc in inactive_users_cursor]
+    inactive_user_ids = [doc["_id"] for doc in inactive_users]
+    firebase_uids = [doc["firebaseUID"] for doc in inactive_users if "firebaseUID" in doc]
 
-    # Etapa 2: Buscar user_ids dos utilizadores inativos
-    inactive_users_cursor = users_collection.find({"isActive": False}, {"_id": 1})
-    inactive_user_ids = [doc["_id"] async for doc in inactive_users_cursor]
+    # Função para apagar utilizador do Firebase
+    async def delete_firebase_user(uid):
+        try:
+            await asyncio.to_thread(auth.delete_user, uid)
+            print(f"[DatabaseCleaner] Utilizador Firebase {uid} removido.")
+        except Exception as e:
+            print(f"[DatabaseCleaner] Erro ao remover utilizador Firebase {uid}: {e}")
 
+    # Crie as tasks obrigatórias
+    tasks = [
+        clientes_collection.delete_many({"isActive": False}),
+        relatorios_collection.delete_many({"isActive": False}),
+    ]
+    # Adicione tasks de Firebase se houver uids
+    tasks += [delete_firebase_user(uid) for uid in firebase_uids]
+    # Adicione tasks de remoção de relações e utilizadores se houver ids
     if inactive_user_ids:
-        # Etapa 3: Remover relações user_empresa associadas aos utilizadores inativos
-        user_empresa_result = users_empresas_collection.delete_many({"user_id": {"$in": inactive_user_ids}})
+        tasks.append(users_empresas_collection.delete_many({"user_id": {"$in": inactive_user_ids}}))
+        tasks.append(users_collection.delete_many({"_id": {"$in": inactive_user_ids}}))
 
-        # Etapa 4: Remover os próprios utilizadores inativos
-        user_result = users_collection.delete_many({"_id": {"$in": inactive_user_ids}})
+    # Execute tudo em paralelo
+    results = await asyncio.gather(*tasks)
 
-        # Etapa 5: Executar estas consultas em paralelo
-        user_empresa_result, user_result = await gather(user_empresa_result, user_result)
+    # Log dos resultados principais
+    cliente_result = results[0]
+    relatorio_result = results[1]
+    # Firebase tasks não retornam nada, então os resultados de user_empresa e user estão no final
+    user_empresa_result = results[-2] if inactive_user_ids else None
+    user_result = results[-1] if inactive_user_ids else None
 
-    else:
-        user_empresa_result = None
-        user_result = None
-
-    # Log dos resultados
     if cliente_result.deleted_count > 0:
         print(f"[DatabaseCleaner] {cliente_result.deleted_count} cliente(s) inativo(s) removido(s).")
     if relatorio_result.deleted_count > 0:

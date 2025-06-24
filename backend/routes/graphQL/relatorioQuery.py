@@ -58,7 +58,7 @@ class RelatorioQuery:
             }
 
             # Remover campos restritos para usuários não administradores
-            if not jwt["isSuperAdmin"]:
+            if not jwt.get("isSuperAdmin", False):
                 relatorio_data = {k: v for k, v in relatorio_data.items() if k not in ["created_by"]}
 
             relatorios.append(Relatorio(**filter_null_fields(relatorio_data)))

@@ -67,7 +67,7 @@ async def atualizar_cliente(cliente: ClienteUpdate, request: Request, id: str):
     # Validar reCAPTCHA token
     await validar_recaptcha_token(cliente.recaptchaToken, "register")
 
-    if not jwt["isSuperAdmin"]:
+    if not jwt.get("isSuperAdmin",None):
 
         # Verificar se o utilizador é admin da empresa
         user_empresa = await users_empresas_collection.find_one(
@@ -104,7 +104,7 @@ async def apagar_cliente(cliente: ClienteActivion, request: Request):
     if not cliente.id and not cliente.nif:
         raise HTTPException(status_code=400, detail="ID ou NIF do cliente são obrigatórios.")
 
-    if not jwt["isSuperAdmin"]:
+    if not jwt.get("isSuperAdmin", None):
 
         user_empresa = await users_empresas_collection.find_one(
             {"empresa_id": ObjectId(cliente.empresa_id), "user_id": ObjectId(jwt["user_id"]), "isAdmin": True}
@@ -139,7 +139,7 @@ async def reativar_cliente(cliente: ClienteActivion, request: Request):
     # Validar reCAPTCHA token
     await validar_recaptcha_token(cliente.recaptchaToken, "register")
 
-    if not jwt["isSuperAdmin"]:
+    if not jwt.get("isSuperAdmin", None):
 
         user_empresa = await users_empresas_collection.find_one(
             {"empresa_id": ObjectId(cliente.empresa_id), "user_id": ObjectId(jwt["user_id"]), "isAdmin": True}

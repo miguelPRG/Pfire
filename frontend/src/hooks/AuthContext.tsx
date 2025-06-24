@@ -275,7 +275,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const data = await response.json();
       
-      if (!data.ok) {
+      console.log("Dados do login com OAuth:", data);
+
+      if (!response.ok) {
         const msg = data?.detail || (await response.text()) || "OAuth login falhou";
         throw new Error(msg);
       }
@@ -297,9 +299,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           firebaseUID: data.firebaseUID,
         });
       return data.newUser as boolean;
-    } catch (error) {
+    } catch (error: any) {
       console.error("Erro no login com OAuth:", error);
       setUser(null);
+      // Não lançar erro se for popup fechado pelo utilizador
+      if (
+        typeof error?.message === "string" &&
+        error.message.includes("auth/popup-closed-by-user")
+      ) {
+        // Apenas loga, não lança
+        return false;
+      }
       throw error;
     }
   }

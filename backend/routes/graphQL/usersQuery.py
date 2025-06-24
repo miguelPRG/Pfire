@@ -57,7 +57,7 @@ class UserQuery:
             }
 
             # Ocultar campos sensíveis se NÃO for superadmin
-            if not jwt["isSuperAdmin"]:
+            if not jwt.get("isSuperAdmin", False):
                 user_data = {k: v for k, v in user_data.items() if k not in ["created_at", "updated_at"]}
 
             users.append(User(**filter_null_fields(user_data)))

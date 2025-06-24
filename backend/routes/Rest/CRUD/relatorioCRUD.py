@@ -47,7 +47,7 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
     # Sacar jwt
     jwt = getattr(request.state, "jwt", None)
 
-    if not jwt["isSuperAdmin"]:
+    if not jwt.get("isSuperAdmin"):
 
         # Verificar se o usuário tem permissão para criar relatórios para a empresa
         user_empresa = await users_empresas_collection.find_one(
@@ -177,7 +177,7 @@ async def delete_relatorio(relatorio: RelatorioActivation, request: Request):
     jwt = getattr(request.state, "jwt", None)
 
     # Verificar se o usuário é super admin
-    if not jwt["isSuperAdmin"]:
+    if not jwt.get("isSuperAdmin"):
         # Verificar se o usuário tem permissão para apagar relatórios para a empresa
 
         user_empresa = await users_empresas_collection.find_one(
@@ -207,7 +207,7 @@ async def activate_relatorio(relatorio: RelatorioActivation, request: Request):
     jwt = getattr(request.state, "jwt", None)
 
     # Verificar se o usuário é super admin
-    if not jwt["isSuperAdmin"]:
+    if not jwt.get("isSuperAdmin", False):
         # Verificar se o usuário tem permissão para apagar relatórios para a empresa
 
         user_empresa = await users_empresas_collection.find_one(

@@ -82,7 +82,7 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str):
             raise ValueError("Tipo de imagem não permitido. Apenas JPEG e PNG são aceitos.")
 
     # Se o utilizador não for super admin, verificar se ele é admin da empresa que quer atualizar
-    if not jwt["isSuperAdmin"]:
+    if not jwt.get("isSuperAdmin", False):
         user_empresa = await users_empresas_collection.find_one({"empresa_id": id, "user_id": user_id,"isAdmin": True})
 
         if not user_empresa:

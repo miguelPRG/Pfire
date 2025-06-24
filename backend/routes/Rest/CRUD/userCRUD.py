@@ -67,7 +67,7 @@ async def soft_delete_user(request: Request, user: UserActivation):
 
     jwt = getattr(request.state, "jwt", None)
 
-    if jwt["user_id"] != user.id and not jwt["isSuperAdmin"]:
+    if jwt["user_id"] != user.id and not jwt.get("isSuperAdmin", False):
         raise HTTPException(status_code=403, detail="Acesso negado! Não tens autorização para apagar utilizadores!")
 
     if user.id:
@@ -93,7 +93,7 @@ async def activate_user(request: Request, user: UserActivation):
 
     jwt = getattr(request.state, "jwt", None)
 
-    if jwt["user_id"] != user.id and not jwt["isSuperAdmin"]:
+    if jwt["user_id"] != user.id and not jwt.get("isSuperAdmin", False):
         raise HTTPException(status_code=403, detail="Acesso negado! Não tens autorização para ativar utilizadores!")
 
     result = await users_collection.update_one({"_id": ObjectId(user.id)}, {"$set": {"isActive": True}})

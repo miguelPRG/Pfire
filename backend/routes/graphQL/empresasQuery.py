@@ -40,7 +40,7 @@ class EmpresaQuery:
             filtro = {"_id": ObjectId(id)}
 
         # Se for super administrador, quero todas as empresas
-        elif jwt["isSuperAdmin"]:
+        elif jwt.get("isSuperAdmin", False):
             filtro = {}
 
         # Caso contrário, quero as empresas associadas ao utilizador
