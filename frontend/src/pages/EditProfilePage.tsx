@@ -311,7 +311,7 @@ function EditProfilePage() {
                 Logotipo da Empresa
             </Typography>
             <Box display="flex" justifyContent="center" alignItems="center" height={120}>
-              <Paper
+                <Paper
                 elevation={1}
                 sx={{
                   width: 250,
@@ -330,50 +330,55 @@ function EditProfilePage() {
                   cursor: "pointer",
                 }}
                 onClick={() => fileInputRef.current?.click()}
-              >
+                >
                 {(companyForm.watch("logo") || empresa?.logo) ? (
                   <img
-                    src={`data:image/png;base64,${companyForm.watch("logo") || empresa?.logo}`}
-                    alt="Logo da empresa"
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "contain",
-                      background: "#f5f5f5"
-                    }}
+                  src={`data:image/png;base64,${companyForm.watch("logo") || empresa?.logo}`}
+                  alt="Logo da empresa"
+                  style={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    background: "#f5f5f5"
+                  }}
                   />
                 ) : (
                   <Box textAlign="center">
-                    Insira o logotipo da empresa aqui
+                  Insira o logotipo da empresa aqui
                   </Box>
                 )}
                 <input
                   ref={fileInputRef}
-                  accept="image/*"
+                  accept="image/png, image/jpeg, image/jpg"
                   id="logo-upload"
                   type="file"
                   style={{ display: "none" }}
                   onClick={e => e.stopPropagation()}
                   onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const maxSize = 1024 * 1024; // Limite de 1MB
-                      if (file.size > maxSize) {
-                        alert("O ficheiro é demasiado grande. O limite é 1MB.");
-                        return;
-                      }
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        companyForm.setValue("logo", (reader.result as string).split(",")[1]);
-                      };
-                      reader.readAsDataURL(file);
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const maxSize = 1024 * 1024; // Limite de 1MB
+                    const allowedTypes = ["image/png", "image/jpeg", "image/jpg"];
+                    if (!allowedTypes.includes(file.type)) {
+                    alert("Apenas imagens JPG, JPEG ou PNG são permitidas.");
+                    return;
                     }
+                    if (file.size > maxSize) {
+                    alert("O ficheiro é demasiado grande. O limite é 1MB.");
+                    return;
+                    }
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                    companyForm.setValue("logo", (reader.result as string).split(",")[1]);
+                    };
+                    reader.readAsDataURL(file);
+                  }
                   }}
                 />
-              </Paper>
+                </Paper>
             </Box>
           </Grid>
           <Grid size={{xs: 12}}>

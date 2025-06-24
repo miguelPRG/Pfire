@@ -6,6 +6,7 @@ from database import empresas_collection, users_empresas_collection
 from bson import ObjectId
 from datetime import datetime
 from base64 import b64decode
+from imghdr import what
 
 routerEmpresa = APIRouter(prefix="/empresa")
 
@@ -75,6 +76,10 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str):
             empresa.logo = b64decode(empresa.logo)
         except Exception as e:
             raise HTTPException(status_code=400, detail="Erro ao decodificar a imagem. Verifica se a imagem está em base64.")
+
+        tipo = what(None, empresa.logo)
+        if tipo not in ['jpeg','jpg', 'png']:
+            raise ValueError("Tipo de imagem não permitido. Apenas JPEG e PNG são aceitos.")
 
     # Se o utilizador não for super admin, verificar se ele é admin da empresa que quer atualizar
     if not jwt["isSuperAdmin"]:
