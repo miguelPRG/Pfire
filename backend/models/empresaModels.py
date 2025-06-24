@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 
 class EmpresaCreate(BaseModel):
@@ -30,5 +30,7 @@ class EmpresaUpdate(BaseModel):
     telefone: Optional[str] = Field(None, pattern=r"^\+?[0-9\s\-()]{7,15}$")
     logo: Optional[str] =  Field(None, max_length=1398101, description="Logo da empresa em base64, até 1MB.")
 
-    def __init__(self, **data):
-        super().__init__(**{k: v.strip() if isinstance(v, str) else v for k, v in data.items()})
+    @field_validator("nome", "nif", "localidade", "morada", "codigo_postal", "telefone" ,mode="before")
+    @classmethod
+    def strip_fields(cls, v):
+        return v.strip()

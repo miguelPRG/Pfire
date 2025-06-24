@@ -14,11 +14,10 @@ class UserCreate(BaseModel):
         description="A senha deve ter pelo menos 9 caracteres, incluindo uma letra minúscula, uma maiúscula e um dígito.",
     )
 
-    @field_validator("nome", mode="before")
+    @field_validator("nome", "email", mode="before")
     @classmethod
     def strip_fields(cls, v):
-        if isinstance(v, str):
-            return v.strip()
+        return v.strip()
 
     @field_validator("password", mode="after")
     @classmethod
@@ -73,11 +72,15 @@ class UserUpdateEmail(BaseModel):
     email: EmailStr = Field(max_length=254, description="O email deve ser um endereço de email válido.")
     recaptchaToken: str
 
+    @field_validator('email', mode="before")
+    def strip_email(cls, v):
+        return v.strip()
 
 class UserActivation(BaseModel):
     recaptchaToken: str
     id: str = Field(None, min_length=24, max_length=24, description="O ID do utilizador a ser ativado/desativado.")
 
+    
 
 class RegisterUser(BaseModel):
     user: UserCreate
@@ -95,10 +98,7 @@ class UserLogin(BaseModel):
 
     @field_validator('email', mode="before")
     def strip_email(cls, v):
-        if isinstance(v, str):
-            return v.strip()  # Aqui ainda é str
-        return v
-
+        return v.strip()
 
 class UserForgotPassword(BaseModel):
     email: EmailStr = Field(max_length=254, description="O email deve ser um endereço de email válido.")
@@ -106,10 +106,7 @@ class UserForgotPassword(BaseModel):
 
     @field_validator('email', mode="before")
     def strip_email(cls, v):
-        if isinstance(v, str):
-            return v.strip()  # Aqui ainda é str
-        return v
-
+        return v.strip()
 
 
 class UserChangePassword(BaseModel):

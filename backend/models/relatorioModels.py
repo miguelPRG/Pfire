@@ -1,4 +1,4 @@
-from pydantic import BaseModel, model_validator, ConfigDict, Field
+from pydantic import BaseModel, model_validator, ConfigDict, Field, field_validator
 from fastapi import HTTPException
 
 MAIN_FIELDS = {
@@ -16,12 +16,9 @@ class RelatorioCreate(BaseModel):
     recaptchaToken: str
     model_config = ConfigDict(extra="allow")  # Permite campos extras
 
-    def __init__(self, **data):
-        # Strip all string values
-        for key, value in data.items():
-            if isinstance(value, str):
-                data[key] = value.strip()
-        super().__init__(**data)
+    @field_validator('relatorio_name', mode="before")
+    def strip_relatorio_name(cls, v):
+        return v.strip()  # Aqui ainda é str
 
     @model_validator(mode="before")
     @classmethod

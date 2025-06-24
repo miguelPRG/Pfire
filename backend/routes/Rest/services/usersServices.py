@@ -265,12 +265,15 @@ async def logout_user(request: Request, response: Response):
     Endpoint de logout: extrae el token JWT (guardado en la cookie "_fp"),
     lo agrega a la blacklist en Redis y elimina la cookie.
     """
+
     token = request.cookies.get("_fp")
     if not token:
         raise HTTPException(status_code=401, detail="Token não encontrado.")
 
+    jwt = getattr(request.state, "jwt", None)
+
     # Agrega el token a Redis con el TTL correspondiente (basado en su expiración)
-    await add_token_to_blacklist(token)
+    await add_token_to_blacklist(token, jwt["exp"])
 
     # Elimina la cookie del JWT
     response.delete_cookie("_fp", httponly=True, samesite="Strict", secure=True)
