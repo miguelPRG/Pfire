@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
-
+from models.utils.validarNIF import validar_nif
 
 class ClienteCreate(BaseModel):
     nome: str  = Field(..., max_length=100, description="Nome do cliente. Deve ter no máximo 100 caracteres.")
@@ -13,11 +13,15 @@ class ClienteCreate(BaseModel):
     empresa_id: str  = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao cliente.")
     recaptchaToken: str
 
-    @field_validator("nome", "localidade", "morada", mode="before")
+    def __init__(self, **data):
+        super().__init__(**{k: v.strip() if isinstance(v, str) else v for k, v in data.items()})
+    
+    @field_validator("nif")
     @classmethod
-    def strip_strings(cls, v):
-        """Remove leading and trailing whitespace from strings."""
-        return v.strip()
+    def validar_nif_field(cls, v):
+        if not validar_nif(v):
+            raise ValueError("NIF inválido. Deve ter 9 dígitos e o último dígito deve ser o dígito de controle correto.")
+        return v
 
 
 class ClienteUpdate(BaseModel):
@@ -31,14 +35,17 @@ class ClienteUpdate(BaseModel):
     codigo_postal: Optional[str] = Field(None, pattern=r"^\d{4}-\d{3}$")
     recaptchaToken: str
 
-    @field_validator("nome", "cidade", "morada", mode="before")
-    @classmethod
-    def strip_strings(cls, v):
-        """Remove leading and trailing whitespace from strings."""
-        return v.strip() if v else v
+    def __init__(self, **data):
+        super().__init__(**{k: v.strip() if isinstance(v, str) else v for k, v in data.items()})
     
+    @field_validator("nif")
+    @classmethod
+    def validar_nif_field(cls, v):
+        if v is not None and not validar_nif(v):
+            raise ValueError("NIF inválido. Deve ter 9 dígitos e o último dígito deve ser o dígito de controle correto.")
+        return v
 
 class ClienteActivion(BaseModel):
-    id: Optional[str]  = Field(None, min_length=24, max_length=24, description="ID do cliente a ser ativado/desativado.")
+    id: str  = Field(None, min_length=24, max_length=24, description="ID do cliente a ser ativado/desativado.")
     empresa_id: str  = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao cliente.")
     recaptchaToken: str

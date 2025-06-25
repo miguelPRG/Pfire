@@ -14,15 +14,15 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import GlobalPhone from "../components/GlobalPhone";
 import { useEffect, useState, useRef } from "react";
+import isValidNIF from "./utils/isValidNIF";
 
 // Schemas
 const userInfoSchema = z.object({
   name: z.string().nonempty("Nome é obrigatório"),
   telefone: z
-    .string({ required_error: "Por favor insira o telefone" }) // <- mensagem personalizada
+    .string({ required_error: "Por favor insira o telefone" })
     .nonempty("Por favor insira o telefone")
     .regex(/^[+]?\d{7,15}$/, "Número de telefone inválido"),
-
 });
 
 const userPasswordSchema = z
@@ -42,14 +42,16 @@ const userPasswordSchema = z
 
 const companySchema = z.object({
   companyName: z.string(),
-  nif: z.string().regex(/^[5789]\d{8}$/, "NIF inválido"),
+  nif: z.string()
+    .regex(/^[5789]\d{8}$/, "NIF inválido")
+    .refine((nif) => isValidNIF(nif), { message: "NIF Inválido" }),
   address: z.string(),
   locality: z.string(),
   postalCode: z.string().regex(/^\d{4}-\d{3}$/, "Formato inválido"),
   companyPhone: z
-    .string({ required_error: "Por favor insira o telefone da empresa" }) // <- mensagem personalizada
+    .string({ required_error: "Por favor insira o telefone da empresa" })
     .regex(/^[+]?\d{7,15}$/, "Número inválido"),
-  logo: z.string().optional(), // Campo opcional para o logo
+  logo: z.string().optional(),
 });
 
 // Types

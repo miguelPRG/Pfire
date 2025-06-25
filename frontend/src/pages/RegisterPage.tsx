@@ -29,8 +29,9 @@ import { useAuth } from "../hooks/AuthContext";
 import logo from "../assets/images/logo.png";
 import microsoftIcon from "../assets/images/microsoft.png";
 import googleIcon from "../assets/images/google.png";
+import  isValidNIF  from "./utils/isValidNIF";
 
-// --- esquema de validación con Zod ---
+
 const registerSchema = z.object({
   user: z
     .object({
@@ -53,7 +54,8 @@ const registerSchema = z.object({
     nif: z
       .string()
       .nonempty("O NIF é obrigatório")
-      .regex(/^[5789]\d{8}$/, "O NIF é inválido"),
+      .regex(/^[5789]\d{8}$/, "O NIF é inválido")
+      .refine(isValidNIF, { message: "O NIF é inválido" }),
     localidade: z.string().nonempty("A localidade é obrigatória").trim(),
     morada: z.string().nonempty("A morada é obrigatória").trim(),
     codigo_postal: z
