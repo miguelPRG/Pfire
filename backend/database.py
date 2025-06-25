@@ -13,7 +13,6 @@ uri = os.getenv("MONGO_URL")  # A URI do MongoDB Atlas
 # Conectar ao MongoDB
 client = AsyncIOMotorClient(uri)
 
-
 async def testar_database():
     try:
         # Testar a conexão com um comando 'ping'
@@ -34,7 +33,7 @@ clientes_collection = db["clientes"]
 modelos_collection = db["modelos"]
 relatorios_collection = db["relatorios"]
 global_ids_collection = db["global_ids"]
-
+report_templates_collection = db["report_templates"]
 
 async def delete_documentos_inativos():
     # Buscar utilizadores inativos

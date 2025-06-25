@@ -165,3 +165,7 @@ class ModelosCamposDelete(BaseModel):
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
     id: str = Field(..., min_length=24, max_length=24, description="ID do modelo de campos a ser deletado.")
     recaptchaToken: str
+
+class ModelosCamposClone(BaseModel):
+    id: str = Field(..., min_length=24, max_length=24, description="ID do modelo de campos a ser clonado.")
+    recaptchaToken: str

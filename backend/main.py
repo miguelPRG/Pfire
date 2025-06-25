@@ -1,6 +1,6 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from routes.Rest.services import usersServices, userEmpresaServices
+from routes.Rest.services import usersServices, userEmpresaServices, modelosCamposServices
 from routes.Rest.CRUD import userCRUD, empresaCRUD, clienteCRUD, modelosCRUD, relatorioCRUD
 from routes.graphQL.schema import graphql_router
 from controller.jwtValidation import verify_jwt  # Função para verificar o JWT
@@ -12,7 +12,6 @@ from apis.redis_client import test_redis_connection
 from asyncio import gather
 from contextlib import asynccontextmanager
 from re import compile
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -67,7 +66,7 @@ async def fast_api_http_middleware(request: Request, call_next):
         "/user/register",
         "/user/login-oauth",
         "/user/forgot-password",
-        "/docs"
+        "/docs" #Esta rota deveverá ser excluída na produção
     }
 
     DYNAMIC_PATHS_REGEX = compile(r"^/user/email/+")
@@ -117,6 +116,8 @@ app.include_router(modelosCRUD.routerModelo)
 app.include_router(relatorioCRUD.routerRelatorio)
 # Rotas GraphQL
 app.include_router(graphql_router, prefix="/graphql")
+# Rotas de templates de relatórios (REST)
+app.include_router(modelosCamposServices.routerModelo)
 
 
 @app.get("/")
