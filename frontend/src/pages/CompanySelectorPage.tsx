@@ -33,8 +33,11 @@ export default function CompanySelectorPage() {
         </Box>
 
         <Grid container spacing={3} alignItems="stretch">
-          {data.empresas.map((emp: any) => {
+          {data.empresas.map((emp: any, i: number) => {
             const isSelected = emp.id === empresa?.id;
+            // Verifica se é índice par e se o próximo tem logo
+            const nextHasLogo = data.empresas[i + 1]?.logo;
+            const shouldSetMinHeight = i % 2 === 0 && !!nextHasLogo;
 
             return (
               <Grid size={{ xs: 12, sm: 6 }} key={emp.id}>
@@ -45,19 +48,41 @@ export default function CompanySelectorPage() {
                     height: "100%",
                     display: "flex",
                     flexDirection: "column",
-                    justifyContent: "space-between",
+                    justifyContent: "center", // centraliza verticalmente
+                    alignItems: "center", // centraliza horizontalmente
                     borderRadius: 3,
                     backgroundColor: isSelected ? "#f3fef8" : "white",
                     border: isSelected ? "2px solid #2e7d32" : "1px solid #e0e0e0",
-                    minHeight: 260,
                     transition: "transform 0.2s ease",
                     "&:hover": {
                       transform: "scale(1.01)",
                     },
                   }}
                 >
-                  <Box display="flex" flexDirection="column" gap={0.5}>
-                    <Typography variant="h6" gutterBottom>
+                  <Box
+                    display="flex"
+                    justifyContent="center"
+                    alignItems="center"
+                    mb={2}
+                  >
+                    {emp.logo ? (
+                      <img
+                        src={`data:image/png;base64,${emp.logo}`}
+                        alt={`Logo de ${emp.nome}`}
+                        style={{
+                          width: 250,
+                          height: 250,
+                          objectFit: "cover",
+                          borderRadius: 8,
+                          border: "1px solid #e0e0e0",
+                          background: "#f5f5f5"
+                        }}
+                      />
+                    ) : null}
+                  </Box>
+
+                  <Box display="flex" flexDirection="column" textAlign={"center"} gap={0.5}>
+                    <Typography variant="h6" gutterBottom >
                       {emp.nome}
                     </Typography>
                     <Typography variant="body2">Localidade: {emp.localidade}</Typography>
