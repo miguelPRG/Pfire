@@ -1,6 +1,7 @@
-from pydantic import BaseModel, model_validator, ConfigDict, Field
+from pydantic import BaseModel, model_validator, ConfigDict, Field, field_validator
 from typing import Optional
 from fastapi import HTTPException
+from bson import ObjectId
 
 MAIN_FIELDS = {
     "model_name",
@@ -97,6 +98,15 @@ class ModelosCamposCreate(BaseModel):
     recaptchaToken: str
     model_config = ConfigDict(extra="allow")  # Permite campos extras
 
+    @field_validator('empresa_id', mode="before")
+    def validate_object_id(cls, v):
+        if not ObjectId.is_valid(v):
+            raise HTTPException(
+                status_code=400,
+                detail=f"ID inválido: {v}. Deve ser um ObjectId válido com 24 caracteres hexadecimais.",
+            )
+        return v
+
     @model_validator(mode="before")
     @classmethod
     def validate_fields(cls, values):
@@ -124,6 +134,15 @@ class ModelosCamposUpdate(BaseModel):
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
     recaptchaToken: str
     model_config = ConfigDict(extra="allow")  # Permite campos extras
+
+    @field_validator('empresa_id', mode="before")
+    def validate_object_id(cls, v):
+        if not ObjectId.is_valid(v):
+            raise HTTPException(
+                status_code=400,
+                detail=f"ID inválido: {v}. Deve ser um ObjectId válido com 24 caracteres hexadecimais.",
+            )
+        return v
 
     @model_validator(mode="before")
     @classmethod

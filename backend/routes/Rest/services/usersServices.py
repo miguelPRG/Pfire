@@ -16,7 +16,7 @@ from database import users_collection, empresas_collection, users_empresas_colle
 from datetime import datetime
 from uuid import uuid4
 from bson import ObjectId
-
+from re import compile, IGNORECASE
 
 
 routerUser = APIRouter(prefix="/user")
@@ -349,9 +349,18 @@ async def update_password(user: UserUpdatePassword, request: Request):
 
     return {"message": "Senha atualizada com sucesso!"}
 
+UUID_V4_REGEX = compile(
+    r"^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$",
+    IGNORECASE
+)
 
 @routerUser.get("/get-global-id/{global_id}")
 async def get_global_id(global_id: str, request: Request):
+    
+    #Validar o global_id com padrão regex
+    if not UUID_V4_REGEX.match(global_id):
+        raise HTTPException(status_code=400, detail="Formato de global_id inválido.")
+
     """
     Endpoint para obter o global_id de um utilizador.
     - Recebe o global_id como parâmetro de rota.
@@ -379,6 +388,11 @@ async def logout_all_users(email: str):
 
 @routerUser.put("/email/activate/{global_id}")
 async def confirm_user(global_id: str, request: Request):
+
+    # Validar o global_id com padrão regex
+    if not UUID_V4_REGEX.match(global_id):
+        raise HTTPException(status_code=400, detail="Formato de global_id inválido.")
+
     # Encontrar o global_id na base de dados
     global_id_data = await global_ids_collection.find_one({"global_id": global_id})
     if not global_id_data:

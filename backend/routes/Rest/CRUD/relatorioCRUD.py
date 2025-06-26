@@ -188,7 +188,14 @@ async def delete_relatorio(relatorio: RelatorioActivation, request: Request):
                 status_code=403, detail="Usuário não tem permissão para apagar relatórios para esta empresa"
             )
 
-    relatio_update = await relatorios_collection.update_one({"_id": ObjectId(relatorio.id), "isActive": True}, {"$set": {"isActive": False}})
+    relatio_update = await relatorios_collection.update_one(
+        {"_id": ObjectId(relatorio.id), "isActive": True},
+        {"$set": {
+            "isActive": False,
+            "updated_at": datetime.now(),
+            "updated_by": ObjectId(jwt["user_id"])
+        }}
+    )
     
     if relatio_update.modified_count == 0:
         raise HTTPException(status_code=404, detail="Relatório não encontrado ou já foi apagado!")
@@ -219,8 +226,13 @@ async def activate_relatorio(relatorio: RelatorioActivation, request: Request):
             )
 
     relatio_update = await relatorios_collection.update_one(
-            {"_id": ObjectId(relatorio.id), "isActive": False}, {"$set": {"isActive": True}}
-        )
+        {"_id": ObjectId(relatorio.id), "isActive": False},
+        {"$set": {
+            "isActive": True,
+            "updated_at": datetime.now(),
+            "updated_by": ObjectId(jwt["user_id"])
+        }}
+    )
 
     if relatio_update.modified_count == 0:
         raise HTTPException(status_code=404, detail="Relatório não encontrado ou já foi apagado!")

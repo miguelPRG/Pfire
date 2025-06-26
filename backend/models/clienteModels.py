@@ -1,6 +1,8 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator
 from typing import Optional
 from models.utils.validarNIF import validar_nif
+from bson import ObjectId
+from fastapi import HTTPException
 
 class ClienteCreate(BaseModel):
     nome: str  = Field(..., max_length=100, description="Nome do cliente. Deve ter no máximo 100 caracteres.")
@@ -20,7 +22,7 @@ class ClienteCreate(BaseModel):
     @classmethod
     def validar_nif_field(cls, v):
         if not validar_nif(v):
-            raise ValueError("NIF inválido. Deve ter 9 dígitos e o último dígito deve ser o dígito de controle correto.")
+            raise HTTPException(status_code=422, detail="NIF inválido. Deve ter 9 dígitos e o último dígito deve ser o dígito de controle correto.")
         return v
 
 
@@ -37,12 +39,19 @@ class ClienteUpdate(BaseModel):
 
     def __init__(self, **data):
         super().__init__(**{k: v.strip() if isinstance(v, str) else v for k, v in data.items()})
+
+    @field_validator("empresa_id")
+    @classmethod
+    def validar_empresa_id(cls, v):
+        if not ObjectId.is_valid(v):
+            raise HTTPException(status_code=422, detail=f"ID inválido: {v}. Deve ser um ObjectId válido com 24 caracteres hexadecimais.")
+        return v
     
     @field_validator("nif")
     @classmethod
     def validar_nif_field(cls, v):
         if v is not None and not validar_nif(v):
-            raise ValueError("NIF inválido. Deve ter 9 dígitos e o último dígito deve ser o dígito de controle correto.")
+            raise HTTPException(status_code=422, detail="NIF inválido. Deve ter 9 dígitos e o último dígito deve ser o dígito de controle correto.")
         return v
 
 class ClienteActivion(BaseModel):

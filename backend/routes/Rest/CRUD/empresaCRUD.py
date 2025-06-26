@@ -61,6 +61,10 @@ async def create_empresa(empresa: EmpresaCreateAsLoggedUser, request: Request):
 @routerEmpresa.put("/{id}")
 async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str):
 
+    # Verificar se o ID é válido
+    if not ObjectId.is_valid(id):
+        raise HTTPException(status_code=400, detail="ID inválido.")
+
     # Sacar jwt
     jwt = getattr(request.state, "jwt", None)
 
@@ -102,6 +106,3 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str):
         raise HTTPException(status_code=400, detail="Erro ao atualizar empresa. Verifica se a empresa existe.")
 
     return {"message": "Empresa Criada com Sucesso!"}
-
-
-# Apagar Empresa

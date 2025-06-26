@@ -1,6 +1,8 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from typing import Optional
 from .empresaModels import EmpresaCreate
+from bson import ObjectId
+from fastapi import HTTPException
 
 """Classes de operações CRUD"""
 
@@ -23,13 +25,13 @@ class UserCreate(BaseModel):
     @classmethod
     def validate_password(cls, v):
         if len(v) < 9:
-            raise ValueError("A senha deve ter pelo menos 9 caracteres.")
+            raise HTTPException(status_code=400, detail="A senha deve ter pelo menos 9 caracteres.")
         if not any(c.islower() for c in v):
-            raise ValueError("A senha deve conter pelo menos uma letra minúscula.")
+            raise HTTPException(status_code=400, detail="A senha deve conter pelo menos uma letra minúscula.")
         if not any(c.isupper() for c in v):
-            raise ValueError("A senha deve conter pelo menos uma letra maiúscula.")
+            raise HTTPException(status_code=400, detail="A senha deve conter pelo menos uma letra maiúscula.")
         if not any(c.isdigit() for c in v):
-            raise ValueError("A senha deve conter pelo menos um dígito.")
+            raise HTTPException(status_code=400, detail="A senha deve conter pelo menos um dígito.")
         return v
 
 
@@ -53,18 +55,18 @@ class UserUpdatePassword(BaseModel):
     @model_validator(mode="after")
     def check_passwords_match(self):
         if self.newPassword != self.confirmPassword:
-            raise ValueError("As novas senhas não coincidem.")
+            raise HTTPException(status_code=400, detail="As novas senhas não coincidem.")
         return self
 
     @field_validator("newPassword", "confirmPassword", mode="after")
     @classmethod
     def validate_password(cls, v):
         if not any(c.islower() for c in v):
-            raise ValueError("A senha deve conter pelo menos uma letra minúscula.")
+            raise HTTPException(status_code=400, detail="A senha deve conter pelo menos uma letra minúscula.")
         if not any(c.isupper() for c in v):
-            raise ValueError("A senha deve conter pelo menos uma letra maiúscula.")
+            raise HTTPException(status_code=400, detail="A senha deve conter pelo menos uma letra maiúscula.")
         if not any(c.isdigit() for c in v):
-            raise ValueError("A senha deve conter pelo menos um dígito.")
+            raise HTTPException(status_code=400, detail="A senha deve conter pelo menos um dígito.")
         return v
 
 
@@ -77,9 +79,14 @@ class UserUpdateEmail(BaseModel):
         return v.strip()
 
 class UserActivation(BaseModel):
-    recaptchaToken: str
+    #recaptchaToken: str
     id: str = Field(None, min_length=24, max_length=24, description="O ID do utilizador a ser ativado/desativado.")
 
+    @field_validator('id', mode="before")
+    def validate_id(cls, v):
+        if not ObjectId.is_valid(v):
+            raise HTTPException(status_code=400, detail="ID inválido.")
+        return v.strip()
     
 
 class RegisterUser(BaseModel):
@@ -112,11 +119,17 @@ class UserForgotPassword(BaseModel):
 class UserChangePassword(BaseModel):
     password: str = Field(..., min_length=9, max_length=100, description="A senha deve ter pelo menos 9 caracteres.")
     confirmPassword: str  = Field(..., min_length=9, max_length=100, description="A confirmação da senha deve ter pelo menos 9 caracteres.")
-    global_id: str  = Field(..., min_length=24, max_length=24, description="O ID global do utilizador.")
+    global_id: str  = Field(
+        ...,
+        min_length=36,
+        max_length=36,
+        pattern=r"^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[89abAB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$",
+        description="O ID global do utilizador (UUID4)."
+    )
 
     @model_validator(mode="before")
     @classmethod
     def check_passwords_match(cls, values):
         if values.get("password") != values.get("confirmPassword"):
-            raise ValueError("As senhas não coincidem.")
+            raise HTTPException(status_code=400, detail="As senhas não coincidem.")
         return values

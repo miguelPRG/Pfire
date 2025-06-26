@@ -31,6 +31,7 @@ async def update_user(user: UserUpdate, request: Request):
 
     update_data = user.model_dump(exclude_unset=True)
     update_data["updated_at"] = datetime.now()
+    update_data["updated_by"] = user_id
     del update_data["recaptchaToken"]  # Remover o campo recaptchaToken do dicionário
 
     result = await users_collection.update_one(
@@ -66,17 +67,23 @@ async def soft_delete_user(request: Request, user: UserActivation):
     await validar_recaptcha_token(user.recaptchaToken, "delete")
 
     jwt = getattr(request.state, "jwt", None)
+    updated_fields = {
+        "isActive": False,
+        "updated_at": datetime.now(),
+        "updated_by": ObjectId(jwt["user_id"])
+    }
 
     if jwt["user_id"] != user.id and not jwt.get("isSuperAdmin", False):
         raise HTTPException(status_code=403, detail="Acesso negado! Não tens autorização para apagar utilizadores!")
 
     if user.id:
         result = await users_collection.update_one(
-            {"_id": ObjectId(user.id)}, {"$set": {"isActive": False, "updated_at": datetime.now()}}
+            {"_id": ObjectId(user.id)}, {"$set": updated_fields}
         )
-
     else:
-        result = await users_collection.update_one({"email": user.email}, {"$set": {"isActive": False}})
+        result = await users_collection.update_one(
+            {"email": user.email}, {"$set": updated_fields}
+        )
 
     if not result.modified_count:
         raise HTTPException(status_code=409, detail="Erro ao apagar utilizador. Verifica se o utilizador existe.")
@@ -89,16 +96,23 @@ async def soft_delete_user(request: Request, user: UserActivation):
 async def activate_user(request: Request, user: UserActivation):
 
     # Validar o reCAPTCHA token
-    await validar_recaptcha_token(user.recaptchaToken, "activate")
+    #await validar_recaptcha_token(user.recaptchaToken, "activate")
 
     jwt = getattr(request.state, "jwt", None)
+    updated_fields = {
+        "isActive": True,
+        "updated_at": datetime.now(),
+        "updated_by": ObjectId(jwt["user_id"])
+    }
 
     if jwt["user_id"] != user.id and not jwt.get("isSuperAdmin", False):
         raise HTTPException(status_code=403, detail="Acesso negado! Não tens autorização para ativar utilizadores!")
 
-    result = await users_collection.update_one({"_id": ObjectId(user.id)}, {"$set": {"isActive": True}})
+    result = await users_collection.update_one(
+        {"_id": ObjectId(user.id)}, {"$set": updated_fields}
+    )
 
     if not result.modified_count:
-        raise HTTPException(status_code=409, detail="Erro ao ativar utilizador. Verifica se o utilizador existe.")
+        raise HTTPException(status_code=409, detail="Erro ao ativar utilizador. Verifica se o utilizador existe ou se já foi ativado.")
 
     return {"message": "Utilizador ativado com sucesso!"}

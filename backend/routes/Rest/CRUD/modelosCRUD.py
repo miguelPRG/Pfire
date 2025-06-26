@@ -264,10 +264,17 @@ async def apagar_modelo(request: Request, modelo: ModelosCamposDelete):
                 status_code=403, detail="Acesso negado! Não tens permissão para apagar modelos nesta empresa."
             )
 
-    # 4) Executar deleção
-    result = await modelos_collection.delete_one({"_id": ObjectId(modelo.id), "empresa_id": empresa_id})
+    # Soft delete: marca como inativo e atualiza metadados
+    result = await modelos_collection.update_one(
+        {"_id": ObjectId(modelo.id), "empresa_id": empresa_id},
+        {"$set": {
+            "isActive": False,
+            "updated_at": datetime.now(),
+            "updated_by": user_id
+        }}
+    )
 
-    if not result.deleted_count:
+    if not result.modified_count:
         raise HTTPException(status_code=500, detail="Erro ao apagar modelo")
 
-    return {"message": "Modelo permanentemente apagado com sucesso!"}
+    return {"message": "Modelo apagado com sucesso!"}

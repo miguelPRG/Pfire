@@ -115,13 +115,19 @@ async def apagar_cliente(cliente: ClienteActivion, request: Request):
                 status_code=403, detail="Acesso negado! Não tens permissão para apagar clientes nesta empresa."
             )
 
+    update_fields = {
+        "isActive": False,
+        "updated_at": datetime.now(),
+        "updated_by": ObjectId(jwt["user_id"])
+    }
+
     if cliente.id:
         result = await clientes_collection.update_one(
-            {"_id": ObjectId(cliente.id), "isActive": True}, {"$set": {"isActive": False}}
+            {"_id": ObjectId(cliente.id), "isActive": True}, {"$set": update_fields}
         )
     else:
         result = await clientes_collection.update_one(
-            {"nif": cliente.nif, "isActive": True}, {"$set": {"isActive": False}}
+            {"nif": cliente.nif, "isActive": True}, {"$set": update_fields}
         )
 
     if not result.modified_count:
@@ -150,7 +156,15 @@ async def reativar_cliente(cliente: ClienteActivion, request: Request):
                 status_code=403, detail="Acesso negado! Não tens permissão para ativar clientes nesta empresa."
             )
 
-    result = await clientes_collection.update_one({"_id": ObjectId(cliente.id), "isActive": False}, {"$set": {"isActive": True}})
+    update_fields = {
+        "isActive": True,
+        "updated_at": datetime.now(),
+        "updated_by": ObjectId(jwt["user_id"])
+    }
+
+    result = await clientes_collection.update_one(
+        {"_id": ObjectId(cliente.id), "isActive": False}, {"$set": update_fields}
+    )
 
     if not result.modified_count:
         raise HTTPException(status_code=404, detail="Cliente não encontrado. É possivel que o cliente já esteja ativo.")

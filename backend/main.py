@@ -66,7 +66,10 @@ async def fast_api_http_middleware(request: Request, call_next):
         "/user/register",
         "/user/login-oauth",
         "/user/forgot-password",
-        "/docs" #Esta rota deveverá ser excluída na produção
+        #Estas rotas deveverão ser excluídas na versão de produção
+        "/docs",
+        "/openapi.json"
+        
     }
 
     DYNAMIC_PATHS_REGEX = compile(r"^/user/email/+")
