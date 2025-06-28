@@ -73,9 +73,7 @@ export default function GlobalPhone({
                   mt: 0.5,
                 }}
               >
-                {typeof errorObj === "object" && "message" in errorObj
-                  ? (errorObj as any).message
-                  : String(errorObj)}
+                {typeof errorObj === "object" && "message" in errorObj ? (errorObj as any).message : String(errorObj)}
               </Typography>
             )}
           </Box>

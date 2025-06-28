@@ -29,6 +29,8 @@ const AddNewClient = lazy(() => import("../pages/AddNewClientPage"));
 const EditProfilePage = lazy(() => import("../pages/EditProfilePage"));
 const ForgotPasswordPage = lazy(() => import("../pages/ForgotPasswordPage"));
 const ChooseCompany = lazy(() => import("../pages/CompanySelectorPage"));
+const ReportModelListPage = lazy(() => import("../pages/ReportModelListPage"));
+const ReportTemplatesPage = lazy(() => import("../pages/ReportTemplatesPage"));
 
 const ProtectedRoute = ({ element }: { element: ReactElement }) => {
   const { user, empresa } = useAuth();
@@ -130,6 +132,8 @@ function App() {
             <Route path="/add-client" element={<ProtectedRoute element={<AddNewClient />} />} />
             <Route path="/edit-profile" element={<ProtectedRoute element={<EditProfilePage />} />} />
             <Route path="/choose-company" element={<ChooseCompanyRoute />} />
+            <Route path="/report-models" element={<ProtectedRoute element={<ReportModelListPage />} />} />
+            <Route path="/report-templates" element={<ProtectedRoute element={<ReportTemplatesPage />} />} />
             <Route path="*" element={<Navigate to={user ? "/" : "/login"} />} />
           </Routes>
         </Layout>

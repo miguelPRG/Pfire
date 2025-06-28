@@ -1,0 +1,302 @@
+import { useQuery } from "@apollo/client";
+import {
+  Box,
+  Button,
+  CircularProgress,
+  MenuItem,
+  Pagination,
+  Paper,
+  Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Typography,
+  InputAdornment,
+  IconButton,
+  Grid,
+} from "@mui/material";
+import { ExpandLess, ExpandMore, Search, Delete } from "@mui/icons-material";
+import React, { useState} from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useTheme } from "@mui/material/styles";
+import { GET_MODELOS_RELATORIOS } from "../graphql/reportmodelsqueries";
+import { useAuth } from "../hooks/AuthContext";
+
+const formatType = (type: string) => {
+  const map: Record<string, string> = {
+    string: "Texto",
+    number: "Número",
+    bool: "Sim/Não",
+    date: "Data de criação",
+    object: "Grupo de Campos",
+  };
+  return map[type] || type;
+};
+
+export default function ReportModelListPage() {
+  const { empresa } = useAuth();
+  const navigate = useNavigate();
+  const theme = useTheme();
+
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [expandedFields, setExpandedFields] = useState<Record<string, boolean>>({});
+  const { data, loading, error, refetch } = useQuery(GET_MODELOS_RELATORIOS, {
+    variables: { empresaId: typeof empresa === "object" ? empresa?.id : empresa, start: 0, lmt: 50 },
+    skip: !empresa,
+    fetchPolicy: "network-only",
+  });
+  const location = useLocation();
+  React.useEffect(() => {
+    if (location.state?.reload) {
+      refetch();
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state, refetch]);
+
+  const toggleExpand = (key: string) => {
+    setExpandedFields((prev) => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm("Tens certeza que desejas apagar este modelo?")) return;
+
+    try {
+      const recaptchaToken = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
+        action: "register",
+      });
+
+      const res = await fetch(`/backend/modelo`, {
+        method: "DELETE",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id,
+          empresa_id: typeof empresa === "object" ? empresa?.id : empresa,
+          recaptchaToken,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Erro ao apagar modelo");
+
+      console.log("Modelo apagado com sucesso:", data);
+
+      // Idealmente: usar refetch do Apollo aqui
+      refetch();
+
+    } catch (err) {
+      console.error(err);
+      alert("Erro ao apagar o modelo.");
+    }
+  };
+
+  const modelos = data?.modelosRelatorios || [];
+
+  const filtered = modelos.filter((m: any) => m.modelName.toLowerCase().includes(search.toLowerCase()));
+
+  const paginated = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+
+  const zebraColor = (index: number) =>
+    theme.palette.mode === "dark" ? (index % 2 === 0 ? "#252525" : "#1d1d1d") : index % 2 === 0 ? "#f5f5f5" : "#e0e0e0";
+
+  const renderField = (val: any, namePrefix = "", level = 0): React.ReactNode => {
+    const isObject = val?.datatype === "object";
+    const currentKey = namePrefix;
+    const isExpanded = expandedFields[currentKey] ?? true;
+
+    return (
+      <Grid container spacing={1} sx={{ pl: level > 0 ? 2 : 0 }} key={currentKey}>
+        <Grid size={{ xs: 12, md: Math.max(12 - level * 2, 6) }}>
+          <Paper
+            elevation={1}
+            sx={{
+              p: 1,
+              backgroundColor: theme.palette.mode === "dark" ? "#1e1e1e" : "#fafafa",
+              borderLeft: "2px solid",
+              borderColor: theme.palette.divider,
+              backgroundcolor: "#green",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center" }}>
+              <Typography fontSize={12} fontWeight={500} color="primary">
+                {level === 0 ? "Campo" : "Subcampo"}:{" "}
+                {namePrefix
+                  .split(" / ")
+                  .at(-1)
+                  ?.replace(/^custom_/, "")}
+              </Typography>
+              {isObject && (
+                <IconButton onClick={() => toggleExpand(currentKey)} size="small" sx={{ ml: "auto" }}>
+                  {isExpanded ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
+                </IconButton>
+              )}
+            </Box>
+
+            <Typography fontSize={13}>
+              Tipo: <strong>{formatType(val?.datatype)}</strong>
+            </Typography>
+
+            <Typography fontSize={13}>
+              Obrigatório:{" "}
+              <strong style={{ color: val?.required ? "#388e3c" : "#d32f2f" }}>{val?.required ? "Sim" : "Não"}</strong>
+            </Typography>
+
+            {isObject && isExpanded && (
+              <Box sx={{ mt: 1 }}>
+                {Object.entries(val).map(([subKey, subVal]: any) => {
+                  if (["datatype", "required"].includes(subKey)) return null;
+                  return renderField(subVal, `${namePrefix} / ${subKey}`, level + 1);
+                })}
+              </Box>
+            )}
+          </Paper>
+        </Grid>
+      </Grid>
+    );
+  };
+
+  return (
+    <Paper sx={{ width: "100%", p: 2, boxShadow: "none", backgroundColor: theme.palette.background.default }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 8 }}>
+        <Typography variant="h5" sx={{ fontWeight: "bold", fontSize: 30, color: theme.palette.text.primary }}>
+          Modelos de Relatórios
+        </Typography>
+        <Button
+          variant="contained"
+          onClick={() => navigate("/report-templates")}
+          sx={{ textTransform: "none", height: "40px", width: "220px" }}
+        >
+          Adicionar novo Modelo
+        </Button>
+      </Box>
+
+      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 2 }}>
+        <Select
+          value={rowsPerPage}
+          onChange={(e) => {
+            setRowsPerPage(Number(e.target.value));
+            setPage(0);
+          }}
+          size="small"
+          sx={{
+            width: 180,
+            height: "32px",
+            mt: "10px",
+            backgroundColor: theme.palette.background.paper,
+            "& .MuiOutlinedInput-notchedOutline": { borderColor: "transparent" },
+            "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: theme.palette.divider },
+            "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: theme.palette.primary.main },
+          }}
+        >
+          <MenuItem value={5}>Mostrar 5</MenuItem>
+          <MenuItem value={10}>Mostrar 10</MenuItem>
+          <MenuItem value={25}>Mostrar 25</MenuItem>
+        </Select>
+
+        <TextField
+          variant="outlined"
+          size="small"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Pesquisar por nome"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search sx={{ color: theme.palette.primary.main }} />
+              </InputAdornment>
+            ),
+          }}
+          sx={{
+            width: "75%",
+            mt: 1,
+            "& .MuiOutlinedInput-root": {
+              backgroundColor: theme.palette.background.paper,
+              borderRadius: "25px",
+              color: theme.palette.text.primary,
+              "&.Mui-focused fieldset": {
+                borderColor: theme.palette.primary.main,
+              },
+            },
+          }}
+        />
+      </Box>
+
+      {loading ? (
+        <CircularProgress />
+      ) : error ? (
+        <Typography color="error">Erro ao carregar modelos.</Typography>
+      ) : (
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ backgroundColor: theme.palette.background.paper }}>
+                <TableCell>
+                  <strong>Nome</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Data</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Campos Personalizados</strong>
+                </TableCell>
+                <TableCell align="center">
+                  <strong>Ações</strong>
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {paginated.map((modelo: any, i: number) => (
+                <TableRow key={modelo.id} sx={{ backgroundColor: zebraColor(i) }}>
+                  <TableCell>{modelo.modelName}</TableCell>
+                  <TableCell>{new Date(modelo.createdAt).toLocaleDateString()}</TableCell>
+                  <TableCell>
+                    {Array.isArray(modelo.customFields)
+                      ? modelo.customFields.map((field: any, index: number) => {
+                          const keyName = field.key?.replace(/^custom_/, "") || "(sem nome)";
+                          const value = field.value;
+                          return renderField(value, keyName);
+                        })
+                      : "-"}
+                  </TableCell>
+                  <TableCell align="center">
+                    <IconButton
+                      onClick={() => handleDelete(modelo.id)}
+                      sx={{
+                        backgroundColor: "error.main",
+                        color: "#fff",
+                        "&:hover": {
+                          backgroundColor: "error.dark",
+                        },
+                      }}
+                    >
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
+      {filtered.length > 5 && (
+        <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2, alignItems: "center" }}>
+          <Pagination
+        count={Math.ceil(filtered.length / rowsPerPage)}
+        page={page + 1}
+        onChange={(e, val) => setPage(val - 1)}
+        color="primary"
+        shape="rounded"
+          />  
+        </Box>
+      )}
+    </Paper>
+  );
+}

@@ -246,17 +246,18 @@ async def update_modelo(request: Request, modelo: ModelosCamposUpdate, id: str):
 @routerModelo.delete("/")
 async def apagar_modelo(request: Request, modelo: ModelosCamposDelete):
 
-    await validar_recaptcha_token(modelo.recaptchaToken, "register")
+    await validar_recaptcha_token(modelo.recaptchaToken, "delete")
 
     jwt = getattr(request.state, "jwt", None)
 
     user_id = ObjectId(jwt["user_id"])
     empresa_id = ObjectId(modelo.empresa_id)
+    modelo.id = ObjectId(modelo.id)
 
     if not jwt.get("isSuperAdmin", False):
         # Verificar se o utilizador é admin da empresa
         user_empresa = await users_empresas_collection.find_one(
-            {"empresa_id": ObjectId(modelo.empresa_id), "user_id": user_id, "isAdmin": True}
+            {"empresa_id": empresa_id, "user_id": user_id, "isAdmin": True}
         )
 
         if not user_empresa:
@@ -264,17 +265,9 @@ async def apagar_modelo(request: Request, modelo: ModelosCamposDelete):
                 status_code=403, detail="Acesso negado! Não tens permissão para apagar modelos nesta empresa."
             )
 
-    # Soft delete: marca como inativo e atualiza metadados
-    result = await modelos_collection.update_one(
-        {"_id": ObjectId(modelo.id), "empresa_id": empresa_id},
-        {"$set": {
-            "isActive": False,
-            "updated_at": datetime.now(),
-            "updated_by": user_id
-        }}
-    )
+    result = await modelos_collection.delete_one({"_id": modelo.id})
+    if not hasattr(result, "deleted_count") or result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Modelo não encontrado ou já foi apagado.")
 
-    if not result.modified_count:
-        raise HTTPException(status_code=500, detail="Erro ao apagar modelo")
 
     return {"message": "Modelo apagado com sucesso!"}

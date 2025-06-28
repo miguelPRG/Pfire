@@ -113,9 +113,7 @@ export default function NewPasswordPage() {
   };
 
   if (loading) {
-    return (
-      <LoadingAnimation />
-    );
+    return <LoadingAnimation />;
   }
 
   return (

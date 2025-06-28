@@ -65,72 +65,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
               <DescriptionIcon />
             </ListItemIcon>
             <ListItemText primary="Relatórios" />
-            {openReports ? <ExpandLess /> : <ExpandMore />}
           </ListItemButton>
         </ListItem>
-        {/* Submenu de Relatórios */}
-        <Collapse in={openReports} timeout="auto" unmountOnExit>
-          <List component="div" disablePadding>
-            <ListItem disablePadding>
-              <ListItemButton
-                sx={{
-                  width: "90%",
-                  pl: 4,
-                }}
-              >
-                <ListItemIcon>
-                  <ArrowForwardIosIcon
-                    sx={{
-                      marginRight: 2,
-                      fontSize: "small",
-                    }}
-                  />
-                </ListItemIcon>
-                <ListItemText primary="Extintores" />
-              </ListItemButton>
-            </ListItem>
-          </List>
-        </Collapse>
+
         {/* Modelos - Com submenu */}
         <ListItem disablePadding>
-          <ListItemButton onClick={handleToggleModels}>
+          <ListItemButton onClick={() => handleNavigation("/report-models")}>
             <ListItemIcon>
               <LayersIcon />
             </ListItemIcon>
             <ListItemText primary="Modelos" />
-            {openModels ? <ExpandLess /> : <ExpandMore />}
-          </ListItemButton>
-        </ListItem>
-        {/* Submenu de Modelos */}
-        <Collapse in={openModels} timeout="auto" unmountOnExit>
-          <List component="div" disablePadding>
-            <ListItem disablePadding>
-              <ListItemButton
-                sx={{
-                  width: "90%",
-                  pl: 4,
-                }}
-              >
-                <ListItemIcon>
-                  <ArrowForwardIosIcon
-                    sx={{
-                      marginRight: 2,
-                      fontSize: "small",
-                    }}
-                  />
-                </ListItemIcon>
-                <ListItemText primary="Extintores" />
-              </ListItemButton>
-            </ListItem>
-          </List>
-        </Collapse>
-        {/* Atualizar Plano */}
-        <ListItem disablePadding>
-          <ListItemButton>
-            <ListItemIcon>
-              <StarIcon />
-            </ListItemIcon>
-            <ListItemText primary="Atualizar Plano" />
           </ListItemButton>
         </ListItem>
 
@@ -142,11 +86,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             <ListItemText primary="Clientes" />
           </ListItemButton>
         </ListItem>
-      </List>
-      <Divider />
-      {/* Parte inferior - Utilizadores e Suporte */}
-      <Box sx={{ display: "flex", flexDirection: "column" }}>
-        {/* Utilizadores */}
         <ListItem disablePadding>
           <ListItemButton onClick={() => handleNavigation("/users-list")}>
             <ListItemIcon>
@@ -155,16 +94,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             <ListItemText primary="Funcionários" />
           </ListItemButton>
         </ListItem>
-        {/* Suporte */}
-        <ListItem disablePadding>
-          <ListItemButton>
-            <ListItemIcon>
-              <InfoIcon />
-            </ListItemIcon>
-            <ListItemText primary="Suporte" />
-          </ListItemButton>
-        </ListItem>
-      </Box>
+      </List>
     </Box>
   );
 

@@ -25,7 +25,7 @@ interface UserLoggedIn {
   email: string;
   telefone?: string;
   isSuperAdmin?: boolean;
-  firebaseUID?: string; // Adicionei este campo para armazenar o Firebase UID  
+  firebaseUID?: string; // Adicionei este campo para armazenar o Firebase UID
 }
 
 interface UserRegistered {
@@ -120,17 +120,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const userData = await response.json();
         if (response.ok) {
-
           console.log("Dados do usuário autenticado:", userData);
 
           setUser({
-          id: userData.id,
-          nome: userData.nome,
-          email: userData.email,
-          telefone: userData.telefone,
-          isSuperAdmin: userData.isSuperAdmin,
-          firebaseUID: userData.firebaseUID,
-          })      
+            id: userData.id,
+            nome: userData.nome,
+            email: userData.email,
+            telefone: userData.telefone,
+            isSuperAdmin: userData.isSuperAdmin,
+            firebaseUID: userData.firebaseUID,
+          });
         } else {
           setLoading(false);
           throw new Error(userData.detail || "Erro ao autenticar utilizador");
@@ -147,16 +146,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (data && !empresa) {
       const empresaData = data.empresas[0];
       setEmpresa({
-          id: empresaData.id,
-          nome: empresaData.nome,
-          nif: empresaData.nif,
-          telefone: empresaData.telefone,
-          morada: empresaData.morada,
-          localidade: empresaData.localidade,
-          codigoPostal: empresaData.codigoPostal,
-          logo: empresaData.logo,
-          isAdmin: empresaData.isAdmin ?? null,
-        });
+        id: empresaData.id,
+        nome: empresaData.nome,
+        nif: empresaData.nif,
+        telefone: empresaData.telefone,
+        morada: empresaData.morada,
+        localidade: empresaData.localidade,
+        codigoPostal: empresaData.codigoPostal,
+        logo: empresaData.logo,
+        isAdmin: empresaData.isAdmin ?? null,
+      });
     }
   }, [data]);
 
@@ -214,13 +213,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(true);
 
       setUser({
-          id: data.id,
-          nome: data.nome,
-          email: data.email,
-          telefone: data.telefone,
-          isSuperAdmin: data.isSuperAdmin,
-          firebaseUID: data.firebaseUID,
-        });
+        id: data.id,
+        nome: data.nome,
+        email: data.email,
+        telefone: data.telefone,
+        isSuperAdmin: data.isSuperAdmin,
+        firebaseUID: data.firebaseUID,
+      });
 
       await refetch(); // <--- força o Apollo a buscar novamente os dados da empresa
     } catch (error) {
@@ -252,7 +251,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.detail || "Erro desconhecido do backend");
       }
       return data;
-
     } catch (error) {
       console.error("Erro ao registrar usuário:", error);
       throw error;
@@ -274,7 +272,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       const data = await response.json();
-      
+
       console.log("Dados do login com OAuth:", data);
 
       if (!response.ok) {
@@ -291,22 +289,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(true); // <--- adicione isto para indicar que o login está em progresso
 
       setUser({
-          id: data.id,
-          nome: data.nome,
-          email: data.email,
-          telefone: data.telefone,
-          isSuperAdmin: data.isSuperAdmin,
-          firebaseUID: data.firebaseUID,
-        });
+        id: data.id,
+        nome: data.nome,
+        email: data.email,
+        telefone: data.telefone,
+        isSuperAdmin: data.isSuperAdmin,
+        firebaseUID: data.firebaseUID,
+      });
       return data.newUser as boolean;
     } catch (error: any) {
       console.error("Erro no login com OAuth:", error);
       setUser(null);
       // Não lançar erro se for popup fechado pelo utilizador
-      if (
-        typeof error?.message === "string" &&
-        error.message.includes("auth/popup-closed-by-user")
-      ) {
+      if (typeof error?.message === "string" && error.message.includes("auth/popup-closed-by-user")) {
         // Apenas loga, não lança
         return false;
       }
@@ -333,16 +328,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function chooseCompany(empresa: Empresa) {
     setLoading(true);
     setEmpresa({
-        id: empresa.id,
-        nome: empresa.nome,
-        nif: empresa.nif,
-        telefone: empresa.telefone,
-        morada: empresa.morada,
-        localidade: empresa.localidade,
-        codigoPostal: empresa.codigoPostal,
-        logo: empresa.logo,
-        isAdmin: empresa.isAdmin,
-      });
+      id: empresa.id,
+      nome: empresa.nome,
+      nif: empresa.nif,
+      telefone: empresa.telefone,
+      morada: empresa.morada,
+      localidade: empresa.localidade,
+      codigoPostal: empresa.codigoPostal,
+      logo: empresa.logo,
+      isAdmin: empresa.isAdmin,
+    });
   }
 
   const updateUser = useCallback(async (user: UserUpdate) => {
@@ -419,14 +414,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const updateCompany = useCallback(async (emp: EmpresaUpdate, id:string) => {
+  const updateCompany = useCallback(async (emp: EmpresaUpdate, id: string) => {
     const recaptchaToken = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
       action: "updateCompany",
     });
 
     try {
       const response = await fetch(`/backend/empresa/${id}`, {
-        "method": "PUT",
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
@@ -444,7 +439,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }),
       });
 
-      if(!response.ok) {
+      if (!response.ok) {
         const data = await response.json();
         throw new Error(data.detail || "Erro ao atualizar empresa");
       }
@@ -462,7 +457,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           logo: emp.logo || null,
         } as Empresa;
       });
-
     } catch (error) {
       console.error("Erro ao atualizar empresa:", error);
       throw error;

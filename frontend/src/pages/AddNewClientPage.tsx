@@ -8,6 +8,7 @@ import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import "../assets/styles/phoneNumberField.css";
 import { Controller } from "react-hook-form";
+import { useAuth } from "../hooks/AuthContext";
 
 declare var grecaptcha: any;
 
@@ -38,6 +39,7 @@ type AddClientFormInputs = Omit<z.infer<typeof addClientSchema>, "recaptchaToken
 export default function AddNewClientPage() {
   const navigate = useNavigate();
   const theme = useTheme();
+  const { empresa } = useAuth();
 
   const {
     register,
@@ -77,9 +79,8 @@ export default function AddNewClientPage() {
   };
 
   const onSubmit = async (formData: AddClientFormInputs) => {
-    const empresa_id = prompt("Insere o ID da empresa:");
-    if (!empresa_id) {
-      alert("Erro: empresa_id não fornecido.");
+    if (!empresa?.id) {
+      alert("Erro: ID da empresa não encontrado.");
       return;
     }
 
@@ -91,7 +92,7 @@ export default function AddNewClientPage() {
       const dadosCompletos = {
         ...formData,
         recaptchaToken,
-        empresa_id,
+        empresa_id: empresa.id,
       };
 
       await enviarNovoCliente(dadosCompletos);

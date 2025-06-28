@@ -14,12 +14,11 @@ function EmailOperation() {
   }>();
 
   useEffect(() => {
-    
     console.log("GLOBAL_ID:", GLOBAL_ID);
     console.log("OPERATION:", OPERATION);
-    
+
     if (!OPERATION || !GLOBAL_ID) {
-     setUserConfirmation({
+      setUserConfirmation({
         isConfirmed: false,
         message: "Erro ao efetuar operação! Não foi possível encontrar o ID global ou a operação.",
       });
@@ -28,9 +27,9 @@ function EmailOperation() {
     const operationsMap: Record<string, () => Promise<void>> = {
       registo: async () => {
         try {
-            const response = await fetch(`/backend/user/email/activate/${GLOBAL_ID}`, {
+          const response = await fetch(`/backend/user/email/activate/${GLOBAL_ID}`, {
             method: "PUT",
-            });
+          });
           const data = await response.json();
           setUserConfirmation({
             isConfirmed: true,
@@ -43,7 +42,7 @@ function EmailOperation() {
             message: "Erro ao efetuar operação! O botão que foi enviado no email já não funciona.",
           });
         }
-      }
+      },
     };
 
     if (operationsMap.hasOwnProperty(OPERATION)) {
@@ -62,9 +61,7 @@ function EmailOperation() {
     }
   }, [userConfirmation]);
 
-  return (
-    <LoadingAnimation/>
-  )
+  return <LoadingAnimation />;
 }
 
 export default EmailOperation;

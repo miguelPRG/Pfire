@@ -1,13 +1,28 @@
+import { useLayoutEffect } from "react";
 import { Button, Paper, Typography, Box, Grid } from "@mui/material";
 import { useQuery } from "@apollo/client";
 import { GET_EMPRESAS } from "../graphql/empresasqueries";
 import { useAuth } from "../hooks/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useTheme } from "@mui/material/styles";
 
 export default function CompanySelectorPage() {
   const { data, loading, error } = useQuery(GET_EMPRESAS);
   const { chooseCompany, empresa } = useAuth();
   const navigate = useNavigate();
+  const theme = useTheme();
+
+  useLayoutEffect(() => {
+    let empresaId = localStorage.getItem("empresaId");
+
+    if (!empresa && empresaId) {
+      const selectedEmpresa = data?.empresas.find((emp: any) => emp.id === empresaId);
+      if (selectedEmpresa) {
+        chooseCompany(selectedEmpresa);
+        navigate("/");
+      }
+    }
+  }, []);
 
   const handleSelect = (emp: any) => {
     chooseCompany(emp);
@@ -51,7 +66,12 @@ export default function CompanySelectorPage() {
                     justifyContent: "center", // centraliza verticalmente
                     alignItems: "center", // centraliza horizontalmente
                     borderRadius: 3,
-                    backgroundColor: isSelected ? "#f3fef8" : "white",
+                    backgroundColor: isSelected
+                      ? theme.palette.mode === "dark"
+                        ? "#2e7d32" // verde escuro no dark
+                        : "#f3fef8" // verde clarinho no light
+                      : theme.palette.background.paper, // se não selecionado, cor do tema
+                    color: theme.palette.text.primary,
                     border: isSelected ? "2px solid #2e7d32" : "1px solid #e0e0e0",
                     transition: "transform 0.2s ease",
                     "&:hover": {
