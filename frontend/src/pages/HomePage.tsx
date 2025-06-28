@@ -7,7 +7,7 @@ function HomePage() {
   return (
     <Container maxWidth="lg">
       <Paper elevation={3}>
-        <Typography variant="h2">Bem-vindo, {user?.nome}!</Typography>
+        <Typography variant="h3">Bem-vindo, {user?.nome}!</Typography>
         <Button color="primary" onClick={logout}>
           Logout
         </Button>

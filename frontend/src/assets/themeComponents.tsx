@@ -14,6 +14,10 @@ const commonComponents: Components = {
           justifyContent: "center",
         },
       },
+
+      span: {
+        display: "inline", // 🔹 Garante que o span se comporte como um bloco inline
+      }
     },
   },
 
@@ -107,24 +111,22 @@ const commonComponents: Components = {
   MuiTypography: {
     styleOverrides: {
       h1: {
-        fontSize: "1.5rem",
-        fontWeight: "550",
+        fontSize: "1.7rem",
+        fontWeight: "bold",
       },
 
       h2: {
-        fontSize: "1.2rem",
-        fontWeight: "500",
+        fontSize: "1.5rem",
+        fontWeight: "bold",
       },
+
       h3: {
-        fontSize: "0.9rem",
-        fontWeight: "450",
+        fontSize: "1.2rem",
+        fontWeight: "bold",
       },
-      h4: {
-        fontSize: "0.7rem",
-        fontWeight: "400",
-      },
+
       body1: {
-        fontSize: "0.9rem",
+        fontSize: "1rem",
         "& a": {
           color: "#1976D2", // Define a cor dos links
           textDecoration: "none", // Remove o sublinhado
@@ -135,7 +137,11 @@ const commonComponents: Components = {
             color: "#1976D2", // Define a cor ao clicar
           },
         },
+        width: "100%",
       },
+      body2: {
+        width: "100%",
+      }
     },
   },
   MuiIconButton: {

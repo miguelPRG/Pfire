@@ -230,7 +230,7 @@ function EditProfilePage() {
           </Grid>
         </Grid>
       </SectionForm>
-      <SectionForm title="O seu Email" onSubmit={() => {}}>
+      <SectionForm title="O seu Email" onSubmit={() => { }}>
         <Grid container spacing={2} size={{ xs: 12 }} sx={{ width: "100%" }}>
           <Grid size={{ xs: 12 }}>
             <TextField label="Email" fullWidth sx={{ width: "100%" }} disabled value={user?.email || ""} />
@@ -360,7 +360,7 @@ function EditProfilePage() {
                       </Box>
                     </>
                   ) : (
-                    <Box textAlign="center">Insira o logotipo da empresa aqui</Box>
+                    <Box textAlign="center" fontSize={22}>Insira o logotipo da empresa aqui</Box>
                   )}
                   <input
                     ref={fileInputRef}
