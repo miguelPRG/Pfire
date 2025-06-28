@@ -101,11 +101,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   //const [firstRendering, setFirstRendering] = useState(true);
   const apolloClient = useApolloClient();
 
+
   // Pega o empresaId do localStorage
   const localEmpresaId = typeof window !== "undefined" ? localStorage.getItem("empresaId") : null;
   const localUserId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
 
   // Use o hook useQuery no topo do componente
+  const { data, error } = useQuery(GET_EMPRESAS, {
+    variables: { id: localEmpresaId || "" },
+    skip: !user || !localEmpresaId, // Só executa se houver user e empresaId
   const { data, error } = useQuery(GET_EMPRESAS, {
     variables: { id: localEmpresaId || "" },
     skip: !user || !localEmpresaId, // Só executa se houver user e empresaId
@@ -122,8 +126,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const userData = await response.json();
 
+
         if (response.ok) {
-          if (localUserId && localUserId !== userData.id) {
+
+          if(localUserId && localUserId !== userData.id) {
             localStorage.clear(); // Limpa o localStorage se o userId for diferente do guardado
           }
 
@@ -137,6 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isSuperAdmin: userData.isSuperAdmin,
             firebaseUID: userData.firebaseUID,
           });
+
         } else {
           setLoading(false);
           throw new Error(userData.detail || "Erro ao autenticar utilizador");
@@ -144,12 +151,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error("Erro ao verificar autenticação:", error);
       }
+
     }
     checkAuth();
   }, []);
 
   useEffect(() => {
-    if (user && !localEmpresaId) {
+    
+    if (user && !localEmpresaId){
       // Se o user já estiver definido, não precisa esperar pelo data
       setLoading(false);
     }
@@ -170,7 +179,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setLoading(false); // <--- indica que o carregamento foi concluído
     }
+
   }, [data, user, error]);
+
 
   async function login(email: string, password: string) {
     if (!email || !password) {
@@ -201,8 +212,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setLoading(true);
-
-      if (localUserId && localUserId !== data.id) {
+      
+      if(localUserId && localUserId !== data.id) {
         // Se o userId guardado no localStorage for diferente do userId retornado, limpar o localStorage
         localStorage.clear();
       }
@@ -217,10 +228,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isSuperAdmin: data.isSuperAdmin,
         firebaseUID: data.firebaseUID,
       });
+
     } catch (error) {
       console.error("Erro no login:", error);
       throw error;
     }
+
   }
 
   async function registerUser(payload: { user: UserRegistered; empresa: EmpresaRegistered } & Record<string, unknown>) {
@@ -268,6 +281,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setLoading(true); // <--- adicione isto para indicar que o login está em progresso
 
+      setLoading(true); // <--- adicione isto para indicar que o login está em progresso
+
       const data = await response.json();
 
       console.log("Dados do login com OAuth:", data);
@@ -278,11 +293,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       //Se for detetado um user novo ou um user cujo o seu id seja diferente do userId guardado no localStorage, limpar o localStorage
-      if (data.newUser || (localUserId && localUserId !== data.id)) {
+      if (data.newUser || localUserId && localUserId !== data.id) {
         //Apagar dados da empresa do localStorage
+        localStorage.clear();
         localStorage.clear();
       }
 
+      localStorage.setItem("userId", data.id); // <--- armazena o userId no localStorage
       localStorage.setItem("userId", data.id); // <--- armazena o userId no localStorage
 
       setUser({
@@ -315,6 +332,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setEmpresa(null);
       setUser(null);
+
     } catch (error) {
       console.error("Erro ao fazer logout");
     }
@@ -332,6 +350,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logo: empresa.logo,
       isAdmin: empresa.isAdmin,
     });
+
+    localStorage.setItem("empresaId", empresa.id); // <--- armazena o empresaId no localStorage
 
     localStorage.setItem("empresaId", empresa.id); // <--- armazena o empresaId no localStorage
   }
