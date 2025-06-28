@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useParams, useNavigate } from "react-router-dom";
 import { Box, Button, TextField, Typography, Paper } from "@mui/material";
 import { useState, useEffect } from "react";
-import LoadingAnimation from "../components/LoadingAnimation";
+import LoadingAnimation from "../../components/LoadingAnimation";
 
 const newPasswordSchema = z
   .object({

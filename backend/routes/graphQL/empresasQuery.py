@@ -27,7 +27,7 @@ class EmpresaQuery:
         # Se o id for fornecido, quero apenas essa empresa
         user_empresas = None
         if id:
-            if not jwt.get("isSuperAdmin",False ):
+            if not jwt.get("isSuperAdmin", False):
                 # Verifica se o utilizador tem acesso à empresa
                 user_empresas = await users_empresas_collection.find_one(
                     {"user_id": ObjectId(jwt["user_id"]), "empresa_id": ObjectId(id)}
@@ -68,7 +68,7 @@ class EmpresaQuery:
                 logo_base64 = b64encode(empresa["logo"]).decode("utf-8")
                 empresa_data["logo"] = logo_base64
 
-            if jwt.get("isSuperAdmin",False ):
+            if jwt.get("isSuperAdmin", False):
                 empresa_data["isAdmin"] = True
             else:
                 if isinstance(user_empresas, list):

@@ -6,7 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import GlobalPhone from "../components/GlobalPhone";
 import { useEffect, useState, useRef } from "react";
 import isValidNIF from "./utils/isValidNIF";
-import CameraAltIcon from '@mui/icons-material/CameraAlt';
+import CameraAltIcon from "@mui/icons-material/CameraAlt";
 
 // Schemas
 const userInfoSchema = z.object({
@@ -35,7 +35,8 @@ const userPasswordSchema = z
 
 const companySchema = z.object({
   companyName: z.string(),
-  nif: z.string()
+  nif: z
+    .string()
     .regex(/^[5789]\d{8}$/, "NIF inválido")
     .refine((nif) => isValidNIF(nif), { message: "NIF Inválido" }),
   address: z.string(),
@@ -229,7 +230,7 @@ function EditProfilePage() {
           </Grid>
         </Grid>
       </SectionForm>
-      <SectionForm title="O seu Email" onSubmit={() => { }}>
+      <SectionForm title="O seu Email" onSubmit={() => {}}>
         <Grid container spacing={2} size={{ xs: 12 }} sx={{ width: "100%" }}>
           <Grid size={{ xs: 12 }}>
             <TextField label="Email" fullWidth sx={{ width: "100%" }} disabled value={user?.email || ""} />
@@ -443,7 +444,11 @@ function EditProfilePage() {
               />
             </Grid>
             <Grid size={{ xs: 12 }}>
-              <GlobalPhone fieldName="companyPhone" control={companyForm.control} errors={companyForm.formState.errors} />
+              <GlobalPhone
+                fieldName="companyPhone"
+                control={companyForm.control}
+                errors={companyForm.formState.errors}
+              />
             </Grid>
             <Grid size={{ xs: 12 }}>
               <Box display="flex" justifyContent="center" mt={2}>
@@ -461,7 +466,6 @@ function EditProfilePage() {
           </Grid>
         </SectionForm>
       )}
-
     </Container>
   );
 }

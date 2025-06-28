@@ -1,4 +1,4 @@
-import { defineConfig } from "vite";
+import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react-swc";
 
 // https://vite.dev/config/
@@ -23,14 +23,6 @@ export default defineConfig({
     sourcemap: false, // Desativa sourcemaps em produção
     outDir: "dist",
     minify: "esbuild", // Minificação rápida
-    terserOptions: {
-      compress: {
-        drop_console: true, // Remove console.log em produção
-        pure_getters: true,
-        unsafe_comps: true,
-        passes: 2, // Aumenta as passes de compressão
-      },
-    },
   },
   server: {
     port: 3000,

@@ -74,20 +74,22 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str):
     user_id = ObjectId(jwt["user_id"])
     id = ObjectId(id)
 
-    if empresa.logo :
-        #Converter string base 64 para BinaryData do mongoDB
+    if empresa.logo:
+        # Converter string base 64 para BinaryData do mongoDB
         try:
             empresa.logo = b64decode(empresa.logo)
         except Exception as e:
-            raise HTTPException(status_code=400, detail="Erro ao decodificar a imagem. Verifica se a imagem está em base64.")
+            raise HTTPException(
+                status_code=400, detail="Erro ao decodificar a imagem. Verifica se a imagem está em base64."
+            )
 
         tipo = what(None, empresa.logo)
-        if tipo not in ['jpeg','jpg', 'png']:
+        if tipo not in ["jpeg", "jpg", "png"]:
             raise ValueError("Tipo de imagem não permitido. Apenas JPEG e PNG são aceitos.")
 
     # Se o utilizador não for super admin, verificar se ele é admin da empresa que quer atualizar
     if not jwt.get("isSuperAdmin", False):
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": id, "user_id": user_id,"isAdmin": True})
+        user_empresa = await users_empresas_collection.find_one({"empresa_id": id, "user_id": user_id, "isAdmin": True})
 
         if not user_empresa:
             raise HTTPException(

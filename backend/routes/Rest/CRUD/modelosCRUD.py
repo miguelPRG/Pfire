@@ -269,5 +269,4 @@ async def apagar_modelo(request: Request, modelo: ModelosCamposDelete):
     if not hasattr(result, "deleted_count") or result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Modelo não encontrado ou já foi apagado.")
 
-
     return {"message": "Modelo apagado com sucesso!"}

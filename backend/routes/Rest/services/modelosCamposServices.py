@@ -7,13 +7,14 @@ from apis.recaptchaValidation import validar_recaptcha_token
 
 routerModelo = APIRouter(prefix="/modelo")
 
+
 @routerModelo.post("/clone")
 async def clone_report_template(request: Request, data: ModelosCamposClone):
     # verificar o recaptcha
     await validar_recaptcha_token(data.recaptchaToken)
     # 1) autenticação básica
     jwt = getattr(request.state, "jwt", {})
-    
+
     modelo_found = await modelos_collection.find_one({"_id": ObjectId(data.id)})
 
     if not modelo_found:
@@ -24,7 +25,7 @@ async def clone_report_template(request: Request, data: ModelosCamposClone):
         user = await users_empresas_collection.find_one({"_id": user_id, "isAdmin": True})
         if not user:
             raise HTTPException(403, detail="Usuário não autorizado a clonar modelos")
-    date= datetime.now()
+    date = datetime.now()
     # Converter o modelo found para o dicionario
     modelo_dict = modelo_found.copy()
     modelo_dict["model_name"] += "_clone"
@@ -38,8 +39,5 @@ async def clone_report_template(request: Request, data: ModelosCamposClone):
 
     if not result.acknowledged:
         raise HTTPException(500, detail="Erro ao clonar o modelo")
-    
-    return {
-        "message": "Modelo clonado com sucesso"
-    }
-    
+
+    return {"message": "Modelo clonado com sucesso"}

@@ -77,12 +77,7 @@ export default function CompanySelectorPage() {
                     },
                   }}
                 >
-                  <Box
-                    display="flex"
-                    justifyContent="center"
-                    alignItems="center"
-                    mb={2}
-                  >
+                  <Box display="flex" justifyContent="center" alignItems="center" mb={2}>
                     {emp.logo ? (
                       <img
                         src={`data:image/png;base64,${emp.logo}`}
@@ -93,14 +88,14 @@ export default function CompanySelectorPage() {
                           objectFit: "cover",
                           borderRadius: "50%",
                           border: "1px solid #e0e0e0",
-                          background: "#f5f5f5"
+                          background: "#f5f5f5",
                         }}
                       />
                     ) : null}
                   </Box>
 
                   <Box display="flex" flexDirection="column" textAlign={"center"} gap={0.5}>
-                    <Typography variant="h6" gutterBottom >
+                    <Typography variant="h6" gutterBottom>
                       {emp.nome}
                     </Typography>
                     <Typography variant="body2">Localidade: {emp.localidade}</Typography>

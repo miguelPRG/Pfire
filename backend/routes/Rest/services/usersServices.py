@@ -8,7 +8,7 @@ from apis.firebase_admin_client import verify_firebase_token  # Si se usa para v
 from pathlib import Path
 from firebase_admin import initialize_app, credentials  # as chaves
 from passlib.context import CryptContext
-from models.userModels import UserLogin, RegisterUser, UserForgotPassword, UserChangePassword,UserUpdatePassword
+from models.userModels import UserLogin, RegisterUser, UserForgotPassword, UserChangePassword, UserUpdatePassword
 from models.userEmpresaModels import UserEmpresaCreate
 from datetime import datetime
 from asyncio import gather
@@ -34,6 +34,7 @@ SERVICE_ACCOUNT_PATH = BASE_DIR / "chaves" / "serviceAccountKey.json"  # Camino 
 # Inicializa el Firebase usando el archivo de chaves
 cred = credentials.Certificate(str(SERVICE_ACCOUNT_PATH))
 initialize_app(cred)
+
 
 # 🚀 Login via Firebase OAuth
 @routerUser.post("/login-oauth")
@@ -97,7 +98,7 @@ async def login_oauth(request: Request):
         if not user_doc.get("isActive", True):
             raise HTTPException(status_code=403, detail="Usuário inativo.")
         # atualiza last_login
-        await users_collection.update_one({"_id": user_doc["_id"]}, {"$set": {"last_login": data, "firebaseUID":uid}})
+        await users_collection.update_one({"_id": user_doc["_id"]}, {"$set": {"last_login": data, "firebaseUID": uid}})
         user_id = user_doc["_id"]
 
     # 3) Gera JWT (sem listar empresas aqui)
@@ -107,7 +108,7 @@ async def login_oauth(request: Request):
         user_doc.get("email", ""),
         user_doc.get("isSuperAdmin", False),
         user_doc.get("telefone", ""),
-        uid
+        uid,
     )
 
     # 4) Monta payload de resposta
@@ -118,7 +119,7 @@ async def login_oauth(request: Request):
         "telefone": user_doc.get("telefone", ""),
         "isSuperAdmin": user_doc.get("isSuperAdmin", False),
         "newUser": new_user_flag,
-        "firebaseUID": uid
+        "firebaseUID": uid,
     }
 
     response = JSONResponse(content=response_payload)
@@ -222,7 +223,7 @@ async def register_user(data: RegisterUser, request: Request):
         created_by=user.inserted_id,
         created_at=date,
         updated_by=user.inserted_id,
-        updated_at=date
+        updated_at=date,
     )
 
     user_empresa_data = new_user_empresa.model_dump(by_alias=True)
@@ -317,7 +318,8 @@ async def forgot_password(request: Request, user: UserForgotPassword):
 
     return {"message": "E-mail de recuperação enviado!"}
 
-#Atualiza a password de utilizadores já logados
+
+# Atualiza a password de utilizadores já logados
 @routerUser.put("/update-password")
 async def update_password(user: UserUpdatePassword, request: Request):
 
@@ -349,15 +351,14 @@ async def update_password(user: UserUpdatePassword, request: Request):
 
     return {"message": "Senha atualizada com sucesso!"}
 
-UUID_V4_REGEX = compile(
-    r"^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$",
-    IGNORECASE
-)
+
+UUID_V4_REGEX = compile(r"^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$", IGNORECASE)
+
 
 @routerUser.get("/get-global-id/{global_id}")
 async def get_global_id(global_id: str, request: Request):
-    
-    #Validar o global_id com padrão regex
+
+    # Validar o global_id com padrão regex
     if not UUID_V4_REGEX.match(global_id):
         raise HTTPException(status_code=400, detail="Formato de global_id inválido.")
 
@@ -371,6 +372,7 @@ async def get_global_id(global_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Global ID não encontrado.")
 
     return {"Utilizador Encontrado"}
+
 
 """
 @routerUser.post("/logout-all")

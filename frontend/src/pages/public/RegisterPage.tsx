@@ -29,8 +29,7 @@ import { useAuth } from "../hooks/AuthContext";
 import logo from "../assets/images/logo.png";
 import microsoftIcon from "../assets/images/microsoft.png";
 import googleIcon from "../assets/images/google.png";
-import  isValidNIF  from "./utils/isValidNIF";
-
+import isValidNIF from "./utils/isValidNIF";
 
 const registerSchema = z.object({
   user: z

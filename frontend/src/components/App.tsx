@@ -18,16 +18,16 @@ function delay<T>(promise: Promise<T>, ms: number = 0): Promise<T> {
 */
 
 // Lazy-loaded pages
-const Login = lazy(() => import("../pages/LoginPage"));
-const Register = lazy(() => import("../pages/RegisterPage"));
+const Login = lazy(() => import("../pages/public/LoginPage"));
+const Register = lazy(() => import("../pages/public/RegisterPage"));
 const Home = lazy(() => import("../pages/HomePage"));
 const UserManagementTable = lazy(() => import("../pages/UserManagementTable"));
 const ClientManagementTable = lazy(() => import("../pages/ClientManagementTable"));
-const EmailOperation = lazy(() => import("../components/EmailOperation"));
-const NewPassword = lazy(() => import("../pages/NewPasswordPage"));
+const EmailOperation = lazy(() => import("./EmailOperation"));
+const NewPassword = lazy(() => import("../pages/public/NewPasswordPage"));
 const AddNewClient = lazy(() => import("../pages/AddNewClientPage"));
 const EditProfilePage = lazy(() => import("../pages/EditProfilePage"));
-const ForgotPasswordPage = lazy(() => import("../pages/ForgotPasswordPage"));
+const ForgotPasswordPage = lazy(() => import("../pages/public/ForgotPasswordPage"));
 const ChooseCompany = lazy(() => import("../pages/CompanySelectorPage"));
 const ReportModelListPage = lazy(() => import("../pages/ReportModelListPage"));
 const ReportTemplatesPage = lazy(() => import("../pages/ReportTemplatesPage"));

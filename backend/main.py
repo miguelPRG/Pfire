@@ -13,6 +13,7 @@ from asyncio import gather
 from contextlib import asynccontextmanager
 from re import compile
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Código executado no startup
@@ -52,6 +53,7 @@ async def options_method_middleware(request: Request, call_next):
         return await call_next(request)
     return await call_next(request)
 
+
 @app.middleware("http")
 async def fast_api_http_middleware(request: Request, call_next):
     """Middleware para aplicar o limite de requisições a todas as rotas"""
@@ -66,10 +68,9 @@ async def fast_api_http_middleware(request: Request, call_next):
         "/user/register",
         "/user/login-oauth",
         "/user/forgot-password",
-        #Estas rotas deveverão ser excluídas na versão de produção
+        # Estas rotas deveverão ser excluídas na versão de produção
         "/docs",
-        "/openapi.json"
-        
+        "/openapi.json",
     }
 
     DYNAMIC_PATHS_REGEX = compile(r"^/user/email/+")
@@ -90,7 +91,9 @@ async def fast_api_http_middleware(request: Request, call_next):
         user_data = verify_jwt(token)
 
         if await is_token_revoked(token):
-            return JSONResponse(status_code=401, content={"message": "Token revogado! Por favor, faça login novamente."})
+            return JSONResponse(
+                status_code=401, content={"message": "Token revogado! Por favor, faça login novamente."}
+            )
 
         request.state.jwt = user_data  # Armazena os dados do usuário na request
 

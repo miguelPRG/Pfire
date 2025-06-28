@@ -5,13 +5,13 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from datetime import datetime, timedelta
 from firebase_admin import auth
-import asyncio
 
 # Obter a URI do MongoDB do arquivo .env
 uri = os.getenv("MONGO_URL")  # A URI do MongoDB Atlas
 
 # Conectar ao MongoDB
 client = AsyncIOMotorClient(uri)
+
 
 async def testar_database():
     try:
@@ -35,6 +35,7 @@ relatorios_collection = db["relatorios"]
 global_ids_collection = db["global_ids"]
 report_templates_collection = db["report_templates"]
 
+
 async def delete_documentos_inativos():
     # Buscar utilizadores inativos
     inactive_users_cursor = users_collection.find({"isActive": False}, {"_id": 1, "firebaseUID": 1})
@@ -45,7 +46,7 @@ async def delete_documentos_inativos():
     # Função para apagar utilizador do Firebase
     async def delete_firebase_user(uid):
         try:
-            await asyncio.to_thread(auth.delete_user, uid)
+            await to_thread(auth.delete_user, uid)
             print(f"[DatabaseCleaner] Utilizador Firebase {uid} removido.")
         except Exception as e:
             print(f"[DatabaseCleaner] Erro ao remover utilizador Firebase {uid}: {e}")
@@ -63,7 +64,7 @@ async def delete_documentos_inativos():
         tasks.append(users_collection.delete_many({"_id": {"$in": inactive_user_ids}}))
 
     # Execute tudo em paralelo
-    results = await asyncio.gather(*tasks)
+    results = await gather(*tasks)
 
     # Log dos resultados principais
     cliente_result = results[0]

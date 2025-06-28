@@ -33,7 +33,7 @@ const fieldSchema = z.object({
 // Esquema de validação para o formulário completo
 const formSchema = z.object({
   modelName: z.string().min(1, "Nome do modelo é obrigatório"),
-  fields: z.array(fieldSchema), 
+  fields: z.array(fieldSchema),
 });
 
 // Tipo TypeScript inferido a partir do esquema do formulário
@@ -191,10 +191,7 @@ export default function ReportTemplatePage() {
 
           {/* Renderização dos campos personalizados adicionados */}
           {fields.map((field, index) => (
-            <Box
-              key={field.id}
-              sx={{ border: "1px solid #ccc", p: 2, borderRadius: 2 }}
-            >
+            <Box key={field.id} sx={{ border: "1px solid #ccc", p: 2, borderRadius: 2 }}>
               {/* Nome do campo */}
               <TextField
                 label="Nome do Campo"
@@ -226,17 +223,10 @@ export default function ReportTemplatePage() {
               </FormControl>
 
               {/* Checkbox para campo obrigatório */}
-              <FormControlLabel
-                control={<Checkbox {...register(`fields.${index}.required`)} />}
-                label="Obrigatório"
-              />
+              <FormControlLabel control={<Checkbox {...register(`fields.${index}.required`)} />} label="Obrigatório" />
 
               {/* Botão para remover campo */}
-              <IconButton
-                onClick={() => remove(index)}
-                color="error"
-                sx={{ mt: 1 }}
-              >
+              <IconButton onClick={() => remove(index)} color="error" sx={{ mt: 1 }}>
                 <DeleteIcon />
               </IconButton>
             </Box>
@@ -244,8 +234,12 @@ export default function ReportTemplatePage() {
 
           {/* Botões de ação do formulário */}
           <Box sx={{ display: "flex", gap: 2 }}>
-            <Button variant="outlined" onClick={() => navigate("/report-models")}>Cancelar</Button>
-            <Button variant="contained" type="submit" color="success">Salvar Modelo</Button>
+            <Button variant="outlined" onClick={() => navigate("/report-models")}>
+              Cancelar
+            </Button>
+            <Button variant="contained" type="submit" color="success">
+              Salvar Modelo
+            </Button>
           </Box>
         </Box>
       </Paper>
@@ -253,11 +247,7 @@ export default function ReportTemplatePage() {
       {/* Botão flutuante para rolar para o topo */}
       {showScrollTop && (
         <Box sx={{ position: "fixed", bottom: 18, left: 10, zIndex: 1300 }}>
-          <IconButton
-            color="primary"
-            size="small"
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          >
+          <IconButton color="primary" size="small" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
             <ArrowCircleUpIcon fontSize="small" />
           </IconButton>
         </Box>

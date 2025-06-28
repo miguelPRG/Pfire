@@ -1,15 +1,15 @@
 import { Container, Typography, Paper, TextField, Button, Alert, Fade, Box, Divider } from "@mui/material";
 import { useState } from "react";
-import { useAuth } from "../hooks/AuthContext";
+import { useAuth } from "../../hooks/AuthContext";
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useLocation } from "react-router-dom";
 // Importar imagens
-import microsoft from "../assets/images/microsoft.png";
-import google from "../assets/images/google.png";
-import logo from "../assets/images/logo.png";
+import microsoft from "../../assets/images/microsoft.png";
+import google from "../../assets/images/google.png";
+import logo from "../../assets/images/logo.png";
 
 // Definir o esquema de validação com Zod
 const loginSchema = z.object({

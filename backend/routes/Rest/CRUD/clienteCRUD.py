@@ -67,7 +67,7 @@ async def atualizar_cliente(cliente: ClienteUpdate, request: Request, id: str):
     # Validar reCAPTCHA token
     await validar_recaptcha_token(cliente.recaptchaToken, "register")
 
-    if not jwt.get("isSuperAdmin",None):
+    if not jwt.get("isSuperAdmin", None):
 
         # Verificar se o utilizador é admin da empresa
         user_empresa = await users_empresas_collection.find_one(
@@ -115,20 +115,14 @@ async def apagar_cliente(cliente: ClienteActivion, request: Request):
                 status_code=403, detail="Acesso negado! Não tens permissão para apagar clientes nesta empresa."
             )
 
-    update_fields = {
-        "isActive": False,
-        "updated_at": datetime.now(),
-        "updated_by": ObjectId(jwt["user_id"])
-    }
+    update_fields = {"isActive": False, "updated_at": datetime.now(), "updated_by": ObjectId(jwt["user_id"])}
 
     if cliente.id:
         result = await clientes_collection.update_one(
             {"_id": ObjectId(cliente.id), "isActive": True}, {"$set": update_fields}
         )
     else:
-        result = await clientes_collection.update_one(
-            {"nif": cliente.nif, "isActive": True}, {"$set": update_fields}
-        )
+        result = await clientes_collection.update_one({"nif": cliente.nif, "isActive": True}, {"$set": update_fields})
 
     if not result.modified_count:
         raise HTTPException(status_code=404, detail="Cliente não encontrado. Verifique se o cliente realmente existe.")
@@ -156,11 +150,7 @@ async def reativar_cliente(cliente: ClienteActivion, request: Request):
                 status_code=403, detail="Acesso negado! Não tens permissão para ativar clientes nesta empresa."
             )
 
-    update_fields = {
-        "isActive": True,
-        "updated_at": datetime.now(),
-        "updated_by": ObjectId(jwt["user_id"])
-    }
+    update_fields = {"isActive": True, "updated_at": datetime.now(), "updated_by": ObjectId(jwt["user_id"])}
 
     result = await clientes_collection.update_one(
         {"_id": ObjectId(cliente.id), "isActive": False}, {"$set": update_fields}

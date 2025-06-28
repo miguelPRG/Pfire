@@ -34,9 +34,7 @@ async def update_user(user: UserUpdate, request: Request):
     update_data["updated_by"] = user_id
     del update_data["recaptchaToken"]  # Remover o campo recaptchaToken do dicionário
 
-    result = await users_collection.update_one(
-        {"_id": user_id, "isActive": True}, {"$set": update_data}
-    )
+    result = await users_collection.update_one({"_id": user_id, "isActive": True}, {"$set": update_data})
 
     if not result.modified_count:
         raise HTTPException(
@@ -49,9 +47,16 @@ async def update_user(user: UserUpdate, request: Request):
     if not token:
         raise HTTPException(status_code=401, detail="Token não encontrado.")
 
-    await add_token_to_blacklist(token,jwt["exp"])
+    await add_token_to_blacklist(token, jwt["exp"])
 
-    token= generate_jwt(str(user_id),result["nome"], result["email"], result["isSuperAdmin"], result.get("telefone"), jwt.get("firebase_UID"))
+    token = generate_jwt(
+        str(user_id),
+        result["nome"],
+        result["email"],
+        result["isSuperAdmin"],
+        result.get("telefone"),
+        jwt.get("firebase_UID"),
+    )
 
     response = JSONResponse({"message": "Utilizador atualizado com sucesso!"})
     response.set_cookie(key="_fp", value=token, httponly=True, samesite="Strict", secure=True)
@@ -67,23 +72,15 @@ async def soft_delete_user(request: Request, user: UserActivation):
     await validar_recaptcha_token(user.recaptchaToken, "delete")
 
     jwt = getattr(request.state, "jwt", None)
-    updated_fields = {
-        "isActive": False,
-        "updated_at": datetime.now(),
-        "updated_by": ObjectId(jwt["user_id"])
-    }
+    updated_fields = {"isActive": False, "updated_at": datetime.now(), "updated_by": ObjectId(jwt["user_id"])}
 
     if jwt["user_id"] != user.id and not jwt.get("isSuperAdmin", False):
         raise HTTPException(status_code=403, detail="Acesso negado! Não tens autorização para apagar utilizadores!")
 
     if user.id:
-        result = await users_collection.update_one(
-            {"_id": ObjectId(user.id)}, {"$set": updated_fields}
-        )
+        result = await users_collection.update_one({"_id": ObjectId(user.id)}, {"$set": updated_fields})
     else:
-        result = await users_collection.update_one(
-            {"email": user.email}, {"$set": updated_fields}
-        )
+        result = await users_collection.update_one({"email": user.email}, {"$set": updated_fields})
 
     if not result.modified_count:
         raise HTTPException(status_code=409, detail="Erro ao apagar utilizador. Verifica se o utilizador existe.")
@@ -96,23 +93,19 @@ async def soft_delete_user(request: Request, user: UserActivation):
 async def activate_user(request: Request, user: UserActivation):
 
     # Validar o reCAPTCHA token
-    #await validar_recaptcha_token(user.recaptchaToken, "activate")
+    # await validar_recaptcha_token(user.recaptchaToken, "activate")
 
     jwt = getattr(request.state, "jwt", None)
-    updated_fields = {
-        "isActive": True,
-        "updated_at": datetime.now(),
-        "updated_by": ObjectId(jwt["user_id"])
-    }
+    updated_fields = {"isActive": True, "updated_at": datetime.now(), "updated_by": ObjectId(jwt["user_id"])}
 
     if jwt["user_id"] != user.id and not jwt.get("isSuperAdmin", False):
         raise HTTPException(status_code=403, detail="Acesso negado! Não tens autorização para ativar utilizadores!")
 
-    result = await users_collection.update_one(
-        {"_id": ObjectId(user.id)}, {"$set": updated_fields}
-    )
+    result = await users_collection.update_one({"_id": ObjectId(user.id)}, {"$set": updated_fields})
 
     if not result.modified_count:
-        raise HTTPException(status_code=409, detail="Erro ao ativar utilizador. Verifica se o utilizador existe ou se já foi ativado.")
+        raise HTTPException(
+            status_code=409, detail="Erro ao ativar utilizador. Verifica se o utilizador existe ou se já foi ativado."
+        )
 
     return {"message": "Utilizador ativado com sucesso!"}

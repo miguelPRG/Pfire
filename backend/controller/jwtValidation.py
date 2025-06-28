@@ -54,7 +54,9 @@ private_key = load_private_key()
 
 
 # Geração do token JWT assinado com chave privada RSA
-def generate_jwt(id: str, user_name: str, user_email: str, is_super_admin: bool,telefone: str = None, firebase_uid: str = None):
+def generate_jwt(
+    id: str, user_name: str, user_email: str, is_super_admin: bool, telefone: str = None, firebase_uid: str = None
+):
     if is_super_admin:
         expire_delta = SUPER_ADMIN_DAYS * 12 * 60 * 60  # Validade mais curta para admins
     else:
@@ -75,7 +77,7 @@ def generate_jwt(id: str, user_name: str, user_email: str, is_super_admin: bool,
 
     if is_super_admin:
         to_encode["isSuperAdmin"] = True
-    
+
     if firebase_uid:
         to_encode["firebaseUID"] = firebase_uid
 

@@ -74,20 +74,21 @@ class UserUpdateEmail(BaseModel):
     email: EmailStr = Field(max_length=254, description="O email deve ser um endereço de email válido.")
     recaptchaToken: str
 
-    @field_validator('email', mode="before")
+    @field_validator("email", mode="before")
     def strip_email(cls, v):
         return v.strip()
 
+
 class UserActivation(BaseModel):
-    #recaptchaToken: str
+    # recaptchaToken: str
     id: str = Field(None, min_length=24, max_length=24, description="O ID do utilizador a ser ativado/desativado.")
 
-    @field_validator('id', mode="before")
+    @field_validator("id", mode="before")
     def validate_id(cls, v):
         if not ObjectId.is_valid(v):
             raise HTTPException(status_code=400, detail="ID inválido.")
         return v.strip()
-    
+
 
 class RegisterUser(BaseModel):
     user: UserCreate
@@ -103,28 +104,31 @@ class UserLogin(BaseModel):
     password: str = Field(..., min_length=9, max_length=100, description="A senha deve ter pelo menos 9 caracteres.")
     recaptchaToken: Optional[str] = None
 
-    @field_validator('email', mode="before")
+    @field_validator("email", mode="before")
     def strip_email(cls, v):
         return v.strip()
+
 
 class UserForgotPassword(BaseModel):
     email: EmailStr = Field(max_length=254, description="O email deve ser um endereço de email válido.")
     recaptchaToken: str
 
-    @field_validator('email', mode="before")
+    @field_validator("email", mode="before")
     def strip_email(cls, v):
         return v.strip()
 
 
 class UserChangePassword(BaseModel):
     password: str = Field(..., min_length=9, max_length=100, description="A senha deve ter pelo menos 9 caracteres.")
-    confirmPassword: str  = Field(..., min_length=9, max_length=100, description="A confirmação da senha deve ter pelo menos 9 caracteres.")
-    global_id: str  = Field(
+    confirmPassword: str = Field(
+        ..., min_length=9, max_length=100, description="A confirmação da senha deve ter pelo menos 9 caracteres."
+    )
+    global_id: str = Field(
         ...,
         min_length=36,
         max_length=36,
         pattern=r"^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[89abAB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$",
-        description="O ID global do utilizador (UUID4)."
+        description="O ID global do utilizador (UUID4).",
     )
 
     @model_validator(mode="before")

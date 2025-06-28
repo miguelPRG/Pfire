@@ -1,13 +1,12 @@
 import time
-import jwt
 from apis.redis_client import redis_client
-from controller.jwtValidation import load_public_key, ALGORITHM
+from controller.jwtValidation import load_public_key
 
 # Se carga la clave pública para decodificar el token sin verificar su expiración
 public_key = load_public_key()
 
 
-async def add_token_to_blacklist(token: str, exp:float):
+async def add_token_to_blacklist(token: str, exp: float):
     """
     Agrega el token revocado a Redis con un TTL igual a la diferencia
     entre la expiración del token (exp) y el momento actual.

@@ -6,6 +6,7 @@ from os import getenv
 configuration = brevo_python.Configuration()
 configuration.api_key["api-key"] = getenv("BREVO_API_KEY")
 
+
 # Função para testar a conexão com a API da Brevo
 def test_brevo_connection():
     try:
@@ -16,6 +17,7 @@ def test_brevo_connection():
             print("Conexão com a API Brevo bem-sucedida!")
     except ApiException as e:
         print("Erro ao conectar à API da Brevo: %s\n" % e)
+
 
 # Função de recuperação da password
 def enviar_email(email_destino: str, name: str, global_id: str, template_id: int):

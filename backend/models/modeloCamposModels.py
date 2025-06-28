@@ -94,11 +94,11 @@ def validate_fields(key, value):
 # Classe ModelosCamposCreate
 class ModelosCamposCreate(BaseModel):
     model_name: str = Field(..., max_length=100, description="Nome do modelo. Deve ter no máximo 100 caracteres.")
-    empresa_id: str  = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
+    empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
     recaptchaToken: str
     model_config = ConfigDict(extra="allow")  # Permite campos extras
 
-    @field_validator('empresa_id', mode="before")
+    @field_validator("empresa_id", mode="before")
     def validate_object_id(cls, v):
         if not ObjectId.is_valid(v):
             raise HTTPException(
@@ -130,12 +130,14 @@ class ModelosCamposCreate(BaseModel):
 
 # Classe ModelosCamposUpdate
 class ModelosCamposUpdate(BaseModel):
-    model_name: Optional[str] = Field(None, max_length=100, description="Nome do modelo. Deve ter no máximo 100 caracteres.") # Ex: "extintores", "para-raios", "bocas de incêndio"
+    model_name: Optional[str] = Field(
+        None, max_length=100, description="Nome do modelo. Deve ter no máximo 100 caracteres."
+    )  # Ex: "extintores", "para-raios", "bocas de incêndio"
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
     recaptchaToken: str
     model_config = ConfigDict(extra="allow")  # Permite campos extras
 
-    @field_validator('empresa_id', mode="before")
+    @field_validator("empresa_id", mode="before")
     def validate_object_id(cls, v):
         if not ObjectId.is_valid(v):
             raise HTTPException(
@@ -184,6 +186,7 @@ class ModelosCamposDelete(BaseModel):
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
     id: str = Field(..., min_length=24, max_length=24, description="ID do modelo de campos a ser deletado.")
     recaptchaToken: str
+
 
 class ModelosCamposClone(BaseModel):
     id: str = Field(..., min_length=24, max_length=24, description="ID do modelo de campos a ser clonado.")

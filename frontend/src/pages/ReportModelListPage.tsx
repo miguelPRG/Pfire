@@ -20,7 +20,7 @@ import {
   Grid,
 } from "@mui/material";
 import { ExpandLess, ExpandMore, Search, Delete } from "@mui/icons-material";
-import React, { useState} from "react";
+import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 import { GET_MODELOS_RELATORIOS } from "../graphql/reportmodelsqueries";
@@ -91,7 +91,6 @@ export default function ReportModelListPage() {
 
       // Idealmente: usar refetch do Apollo aqui
       refetch();
-
     } catch (err) {
       console.error(err);
       alert("Erro ao apagar o modelo.");
@@ -289,12 +288,12 @@ export default function ReportModelListPage() {
       {filtered.length > 5 && (
         <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2, alignItems: "center" }}>
           <Pagination
-        count={Math.ceil(filtered.length / rowsPerPage)}
-        page={page + 1}
-        onChange={(e, val) => setPage(val - 1)}
-        color="primary"
-        shape="rounded"
-          />  
+            count={Math.ceil(filtered.length / rowsPerPage)}
+            page={page + 1}
+            onChange={(e, val) => setPage(val - 1)}
+            color="primary"
+            shape="rounded"
+          />
         </Box>
       )}
     </Paper>
