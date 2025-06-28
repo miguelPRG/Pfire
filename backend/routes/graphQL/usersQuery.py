@@ -25,7 +25,7 @@ class UserQuery:
         if not empresa:
             raise HTTPException(status_code=404, detail="Empresa não encontrada.")
 
-        if not jwt["isSuperAdmin"]:
+        if not jwt.get("isSuperAdmin",False ):
             user_empresa = await users_empresas_collection.find_one(
                 {"user_id": ObjectId(jwt["user_id"]), "empresa_id": ObjectId(empresa_id), "isAdmin": True}
             )
@@ -42,7 +42,7 @@ class UserQuery:
             if not user:
                 continue
 
-            role = "SuperAdmin" if jwt["isSuperAdmin"] else "Admin" if user_empresa.get("isAdmin") else "User"
+            role = "SuperAdmin" if jwt.get("isSuperAdmin",False ) else "Admin" if user_empresa.get("isAdmin") else "User"
 
             user_data = {
                 "id": str(user.get("_id")),

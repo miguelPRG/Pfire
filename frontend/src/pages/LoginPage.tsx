@@ -43,7 +43,6 @@ function LoginPage() {
 
     try {
       await login(data.email, data.password);
-      navigate("/");
     } catch (error: any) {
       reset(); // Limpa todos os campos e estados do formulário
       setAuthError({

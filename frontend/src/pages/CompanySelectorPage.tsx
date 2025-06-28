@@ -51,9 +51,6 @@ export default function CompanySelectorPage() {
           {data.empresas.map((emp: any, i: number) => {
             const isSelected = emp.id === empresa?.id;
             // Verifica se é índice par e se o próximo tem logo
-            const nextHasLogo = data.empresas[i + 1]?.logo;
-            const shouldSetMinHeight = i % 2 === 0 && !!nextHasLogo;
-
             return (
               <Grid size={{ xs: 12, sm: 6 }} key={emp.id}>
                 <Paper
@@ -61,6 +58,7 @@ export default function CompanySelectorPage() {
                   sx={{
                     p: 3,
                     height: "100%",
+                    minWidth: 300,
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "center", // centraliza verticalmente
@@ -90,10 +88,10 @@ export default function CompanySelectorPage() {
                         src={`data:image/png;base64,${emp.logo}`}
                         alt={`Logo de ${emp.nome}`}
                         style={{
-                          width: 250,
-                          height: 250,
+                          width: 200,
+                          height: 200,
                           objectFit: "cover",
-                          borderRadius: 8,
+                          borderRadius: "50%",
                           border: "1px solid #e0e0e0",
                           background: "#f5f5f5"
                         }}

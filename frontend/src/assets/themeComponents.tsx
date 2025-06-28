@@ -107,20 +107,21 @@ const commonComponents: Components = {
   MuiTypography: {
     styleOverrides: {
       h1: {
-        fontSize: "1.3rem",
+        fontSize: "1.5rem",
         fontWeight: "550",
       },
 
       h2: {
         fontSize: "1.2rem",
-        fontWeight: "550",
-      },
-      h3: {
-        fontSize: "1.1rem",
         fontWeight: "500",
       },
+      h3: {
+        fontSize: "0.9rem",
+        fontWeight: "450",
+      },
       h4: {
-        fontSize: "1.0rem",
+        fontSize: "0.7rem",
+        fontWeight: "400",
       },
       body1: {
         fontSize: "0.9rem",

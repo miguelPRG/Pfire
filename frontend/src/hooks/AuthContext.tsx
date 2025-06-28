@@ -3,6 +3,7 @@ import { FirebaseLogin } from "../firebase";
 import { GET_EMPRESAS } from "../graphql/empresasqueries";
 import { useQuery } from "@apollo/client";
 import { useApolloClient } from "@apollo/client";
+import { set } from "zod/v4-mini";
 
 declare global {
   interface Window {
@@ -97,16 +98,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserLoggedIn | null>(null);
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [loading, setLoading] = useState(true);
-  const [firstRendering, setFirstRendering] = useState(true);
+  //const [firstRendering, setFirstRendering] = useState(true);
   const apolloClient = useApolloClient();
 
+
   // Pega o empresaId do localStorage
-  const empresaId = typeof window !== "undefined" ? localStorage.getItem("empresaId") : null;
+  const localEmpresaId = typeof window !== "undefined" ? localStorage.getItem("empresaId") : null;
+  const localUserId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;  
 
   // Use o hook useQuery no topo do componente
-  const { data, refetch } = useQuery(GET_EMPRESAS, {
-    variables: { id: empresaId || "" },
-    skip: !user || !empresaId, // Só executa se houver user e empresaId
+  const { data, error } = useQuery(GET_EMPRESAS, {
+    variables: { id: localEmpresaId || "" },
+    skip: !user || !localEmpresaId, // Só executa se houver user e empresaId
     fetchPolicy: "network-only",
   });
 
@@ -119,8 +122,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
         const userData = await response.json();
+
         if (response.ok) {
-          console.log("Dados do usuário autenticado:", userData);
+
+          if(localUserId && localUserId !== userData.id) {
+            localStorage.clear(); // Limpa o localStorage se o userId for diferente do guardado
+          }
+
+          localStorage.setItem("userId", userData.id); // <--- armazena o userId no localStorage
 
           setUser({
             id: userData.id,
@@ -130,20 +139,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isSuperAdmin: userData.isSuperAdmin,
             firebaseUID: userData.firebaseUID,
           });
+
         } else {
           setLoading(false);
           throw new Error(userData.detail || "Erro ao autenticar utilizador");
         }
       } catch (error) {
-        setLoading(false);
         console.error("Erro ao verificar autenticação:", error);
       }
+
     }
     checkAuth();
   }, []);
 
   useEffect(() => {
-    if (data && !empresa) {
+    
+    if (user && !localEmpresaId){
+      // Se o user já estiver definido, não precisa esperar pelo data
+      setLoading(false);
+    }
+
+    if (data && !empresa && !error) {
       const empresaData = data.empresas[0];
       setEmpresa({
         id: empresaData.id,
@@ -156,31 +172,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logo: empresaData.logo,
         isAdmin: empresaData.isAdmin ?? null,
       });
-    }
-  }, [data]);
 
-  useEffect(() => {
-    if (!user) {
-      if (firstRendering) {
-        setFirstRendering(false);
-        return;
-      } else {
-        setLoading(false);
-      }
-      console.log("Usuário não autenticado, redirecionando para a página de login");
+      setLoading(false); // <--- indica que o carregamento foi concluído
     }
-    if (!empresaId) {
-      setLoading(false);
-      return;
-    }
-  }, [user]);
 
-  useEffect(() => {
-    if (empresa) {
-      localStorage.setItem("empresaId", empresa.id);
-      setLoading(false);
-    }
-  }, [empresa]);
+  }, [data, user, error]);
+
 
   async function login(email: string, password: string) {
     if (!email || !password) {
@@ -211,6 +208,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setLoading(true);
+      
+      if(localUserId && localUserId !== data.id) {
+        // Se o userId guardado no localStorage for diferente do userId retornado, limpar o localStorage
+        localStorage.clear();
+      }
+
+      localStorage.setItem("userId", data.id); // <--- armazena o userId no localStorage
 
       setUser({
         id: data.id,
@@ -221,11 +225,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         firebaseUID: data.firebaseUID,
       });
 
-      await refetch(); // <--- força o Apollo a buscar novamente os dados da empresa
     } catch (error) {
       console.error("Erro no login:", error);
       throw error;
     }
+
   }
 
   async function registerUser(payload: { user: UserRegistered; empresa: EmpresaRegistered } & Record<string, unknown>) {
@@ -271,6 +275,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }),
       });
 
+      setLoading(true); // <--- adicione isto para indicar que o login está em progresso
+
       const data = await response.json();
 
       console.log("Dados do login com OAuth:", data);
@@ -280,13 +286,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(msg);
       }
 
-      //sacar o atributo dos dados do user, sacar dato newuser dos dados que el envia
-      if (data.newUser) {
+      //Se for detetado um user novo ou um user cujo o seu id seja diferente do userId guardado no localStorage, limpar o localStorage
+      if (data.newUser || localUserId && localUserId !== data.id) {
         //Apagar dados da empresa do localStorage
-        localStorage.removeItem("empresaId");
+        localStorage.clear();
       }
 
-      setLoading(true); // <--- adicione isto para indicar que o login está em progresso
+      localStorage.setItem("userId", data.id); // <--- armazena o userId no localStorage
 
       setUser({
         id: data.id,
@@ -310,7 +316,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
-    setLoading(true); // <--- adicione isto para indicar que o logout está em progresso
     try {
       await fetch("backend/user/logout", {
         method: "POST",
@@ -319,14 +324,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setEmpresa(null);
       setUser(null);
-      await apolloClient.clearStore(); // Limpa cache e queries
+
     } catch (error) {
       console.error("Erro ao fazer logout");
     }
   }
 
   function chooseCompany(empresa: Empresa) {
-    setLoading(true);
     setEmpresa({
       id: empresa.id,
       nome: empresa.nome,
@@ -338,6 +342,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logo: empresa.logo,
       isAdmin: empresa.isAdmin,
     });
+
+    localStorage.setItem("empresaId", empresa.id); // <--- armazena o empresaId no localStorage
   }
 
   const updateUser = useCallback(async (user: UserUpdate) => {

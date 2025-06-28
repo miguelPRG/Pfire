@@ -4,16 +4,16 @@ import { AuthProvider } from "./hooks/AuthContext";
 import { TemaProvider } from "./hooks/TemaContext";
 import App from "./components/App";
 import { ApolloProvider } from "@apollo/client";
-import client from "./graphql/apolloClient"; // certifica-te de que o caminho está correto
+import client from "./graphql/apolloClient";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <ApolloProvider client={client}>
-      <AuthProvider>
-        <TemaProvider>
+    <TemaProvider>
+      <ApolloProvider client={client}>
+        <AuthProvider>
           <App />
-        </TemaProvider>
-      </AuthProvider>
-    </ApolloProvider>
+        </AuthProvider>
+      </ApolloProvider>
+    </TemaProvider>
   </React.StrictMode>
 );

@@ -51,7 +51,7 @@ class ModeloQuery:
                 "custom_fields": custom_fields,  # Adiciona os campos personalizados como lista
             }
 
-            if not jwt["isSuperAdmin"]:
+            if not jwt.get("isSuperAdmin",False ):
                 modelo_data = {
                     k: v for k, v in modelo_data.items() if k not in ["created_by", "updated_by", "updated_at"]
                 }

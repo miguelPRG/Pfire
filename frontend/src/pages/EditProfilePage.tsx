@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import GlobalPhone from "../components/GlobalPhone";
 import { useEffect, useState, useRef } from "react";
 import isValidNIF from "./utils/isValidNIF";
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
 
 // Schemas
 const userInfoSchema = z.object({
@@ -66,7 +67,7 @@ function SectionForm({ title, onSubmit, children }: Omit<SectionFormProps, "mess
   return (
     <Paper elevation={3} sx={{ p: 3, borderRadius: 3, mt: 2, mx: "auto", width: "100%", maxWidth: "700px" }}>
       <Box textAlign="center" mb={3}>
-        <Typography variant="h6" fontWeight="bold">
+        <Typography variant="h1" fontWeight="bold">
           {title}
         </Typography>
       </Box>
@@ -228,7 +229,7 @@ function EditProfilePage() {
           </Grid>
         </Grid>
       </SectionForm>
-      <SectionForm title="O seu Email" onSubmit={() => {}}>
+      <SectionForm title="O seu Email" onSubmit={() => { }}>
         <Grid container spacing={2} size={{ xs: 12 }} sx={{ width: "100%" }}>
           <Grid size={{ xs: 12 }}>
             <TextField label="Email" fullWidth sx={{ width: "100%" }} disabled value={user?.email || ""} />
@@ -285,149 +286,182 @@ function EditProfilePage() {
           </Grid>
         </Grid>
       </SectionForm>
-      <SectionForm title="Editar Dados da Empresa" onSubmit={companyForm.handleSubmit(handleSubmitCompany)}>
-        <Grid container spacing={2}>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              label="Nome da Empresa"
-              fullWidth
-              sx={{ width: "100%" }}
-              {...companyForm.register("companyName")}
-              error={!!companyForm.formState.errors.companyName}
-              helperText={companyForm.formState.errors.companyName?.message}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, sm: 6 }}>
-            <TextField
-              label="NIF"
-              fullWidth
-              sx={{ width: "100%" }}
-              {...companyForm.register("nif")}
-              error={!!companyForm.formState.errors.nif}
-              helperText={companyForm.formState.errors.nif?.message}
-            />
-          </Grid>
-          <Grid size={{ xs: 12 }}>
-            <TextField
-              label="Morada"
-              fullWidth
-              sx={{ width: "100%" }}
-              {...companyForm.register("address")}
-              error={!!companyForm.formState.errors.address}
-              helperText={companyForm.formState.errors.address?.message}
-            />
-          </Grid>
-          <Grid size={{ xs: 12 }}>
-            <TextField
-              label="Localidade"
-              fullWidth
-              sx={{ width: "100%" }}
-              {...companyForm.register("locality")}
-              error={!!companyForm.formState.errors.locality}
-              helperText={companyForm.formState.errors.locality?.message}
-            />
-          </Grid>
-          <Grid size={{ xs: 12 }}>
-            <TextField
-              label="Código Postal"
-              fullWidth
-              sx={{ width: "100%" }}
-              {...companyForm.register("postalCode")}
-              error={!!companyForm.formState.errors.postalCode}
-              helperText={companyForm.formState.errors.postalCode?.message}
-            />
-          </Grid>
-          <Grid size={{ xs: 12 }}>
-            <GlobalPhone fieldName="companyPhone" control={companyForm.control} errors={companyForm.formState.errors} />
-          </Grid>
-          <Grid size={{ xs: 12 }} sx={{ marginBottom: 20, marginTop: 2 }}>
-            <Typography variant="h6" sx={{ textAlign: "center", mb: 5, fontWeight: "bold" }}>
-              Logotipo da Empresa
-            </Typography>
-            <Box display="flex" justifyContent="center" alignItems="center" height={120}>
-              <Paper
-                elevation={1}
-                sx={{
-                  width: 250,
-                  height: 250,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  borderRadius: "0%",
-                  bgcolor: "#f5f5f5",
-                  color: "#bdbdbd",
-                  fontSize: 32,
-                  fontWeight: "bold",
-                  border: "2px dashed #bdbdbd",
-                  overflow: "hidden",
-                  position: "relative",
-                  cursor: "pointer",
-                }}
-                onClick={() => fileInputRef.current?.click()}
-              >
-                {companyForm.watch("logo") || empresa?.logo ? (
-                  <img
-                    src={`data:image/png;base64,${companyForm.watch("logo") || empresa?.logo}`}
-                    alt="Logo da empresa"
-                    style={{
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      background: "#f5f5f5",
+      {empresa?.isAdmin && (
+        <SectionForm title="Editar Dados da Empresa" onSubmit={companyForm.handleSubmit(handleSubmitCompany)}>
+          <Grid container spacing={2}>
+            <Grid size={{ xs: 12 }} sx={{ marginBottom: 20, marginTop: 2 }}>
+              <Box display="flex" justifyContent="center" alignItems="center" height={120}>
+                <Paper
+                  elevation={1}
+                  sx={{
+                    width: 200,
+                    height: 200,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    borderRadius: "50%",
+                    bgcolor: "#f5f5f5",
+                    color: "#bdbdbd",
+                    fontSize: 32,
+                    fontWeight: "bold",
+                    border: "2px solid #bdbdbd",
+                    overflow: "hidden",
+                    position: "relative",
+                    cursor: "pointer",
+                    transition: "box-shadow 0.3s, border-color 0.3s",
+                    "&:hover": {
+                      boxShadow: 6,
+                      "& .edit-overlay": {
+                        opacity: 1,
+                        bgcolor: "rgba(100, 97, 97, 0.45)", // Mais escuro no hover
+                      },
+                    },
+                  }}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  {companyForm.watch("logo") || empresa?.logo ? (
+                    <>
+                      <img
+                        src={`data:image/png;base64,${companyForm.watch("logo") || empresa?.logo}`}
+                        alt="Logo da empresa"
+                        style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          background: "#f5f5f5",
+                          borderRadius: "50%",
+                        }}
+                      />
+                      <Box
+                        className="edit-overlay"
+                        sx={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: "100%",
+                          height: "100%",
+                          bgcolor: "rgba(25, 118, 210, 0.35)", // Normal
+                          color: "#fff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          opacity: 0,
+                          transition: "opacity 0.3s, background 0.3s",
+                          fontSize: 22,
+                          fontWeight: "bold",
+                          pointerEvents: "none",
+                        }}
+                      >
+                        <CameraAltIcon fontSize="large" />
+                      </Box>
+                    </>
+                  ) : (
+                    <Box textAlign="center">Insira o logotipo da empresa aqui</Box>
+                  )}
+                  <input
+                    ref={fileInputRef}
+                    accept="image/png, image/jpeg, image/jpg"
+                    id="logo-upload"
+                    type="file"
+                    style={{ display: "none" }}
+                    onClick={(e) => e.stopPropagation()}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const maxSize = 1024 * 1024; // Limite de 1MB
+                        const allowedTypes = ["image/png", "image/jpeg", "image/jpg"];
+                        if (!allowedTypes.includes(file.type)) {
+                          alert("Apenas imagens JPG, JPEG ou PNG são permitidas.");
+                          return;
+                        }
+                        if (file.size > maxSize) {
+                          alert("O ficheiro é demasiado grande. O limite é 1MB.");
+                          return;
+                        }
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          companyForm.setValue("logo", (reader.result as string).split(",")[1]);
+                        };
+                        reader.readAsDataURL(file);
+                      }
                     }}
                   />
-                ) : (
-                  <Box textAlign="center">Insira o logotipo da empresa aqui</Box>
-                )}
-                <input
-                  ref={fileInputRef}
-                  accept="image/png, image/jpeg, image/jpg"
-                  id="logo-upload"
-                  type="file"
-                  style={{ display: "none" }}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      const maxSize = 1024 * 1024; // Limite de 1MB
-                      const allowedTypes = ["image/png", "image/jpeg", "image/jpg"];
-                      if (!allowedTypes.includes(file.type)) {
-                        alert("Apenas imagens JPG, JPEG ou PNG são permitidas.");
-                        return;
-                      }
-                      if (file.size > maxSize) {
-                        alert("O ficheiro é demasiado grande. O limite é 1MB.");
-                        return;
-                      }
-                      const reader = new FileReader();
-                      reader.onloadend = () => {
-                        companyForm.setValue("logo", (reader.result as string).split(",")[1]);
-                      };
-                      reader.readAsDataURL(file);
-                    }
-                  }}
-                />
-              </Paper>
-            </Box>
+                </Paper>
+              </Box>
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="Nome da Empresa"
+                fullWidth
+                sx={{ width: "100%" }}
+                {...companyForm.register("companyName")}
+                error={!!companyForm.formState.errors.companyName}
+                helperText={companyForm.formState.errors.companyName?.message}
+              />
+            </Grid>
+            <Grid size={{ xs: 12, sm: 6 }}>
+              <TextField
+                label="NIF"
+                fullWidth
+                sx={{ width: "100%" }}
+                {...companyForm.register("nif")}
+                error={!!companyForm.formState.errors.nif}
+                helperText={companyForm.formState.errors.nif?.message}
+              />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                label="Morada"
+                fullWidth
+                sx={{ width: "100%" }}
+                {...companyForm.register("address")}
+                error={!!companyForm.formState.errors.address}
+                helperText={companyForm.formState.errors.address?.message}
+              />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                label="Localidade"
+                fullWidth
+                sx={{ width: "100%" }}
+                {...companyForm.register("locality")}
+                error={!!companyForm.formState.errors.locality}
+                helperText={companyForm.formState.errors.locality?.message}
+              />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <TextField
+                label="Código Postal"
+                fullWidth
+                sx={{ width: "100%" }}
+                {...companyForm.register("postalCode")}
+                error={!!companyForm.formState.errors.postalCode}
+                helperText={companyForm.formState.errors.postalCode?.message}
+              />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <GlobalPhone fieldName="companyPhone" control={companyForm.control} errors={companyForm.formState.errors} />
+            </Grid>
+            <Grid size={{ xs: 12 }}>
+              <Box display="flex" justifyContent="center" mt={2}>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="secondary"
+                  sx={{ width: 200 }}
+                  disabled={submitting.company}
+                >
+                  Salvar
+                </Button>
+              </Box>
+            </Grid>
           </Grid>
-          <Grid size={{ xs: 12 }}>
-            <Box display="flex" justifyContent="center" mt={2}>
-              <Button
-                type="submit"
-                variant="contained"
-                color="secondary"
-                sx={{ width: 200 }}
-                disabled={submitting.company}
-              >
-                Salvar
-              </Button>
-            </Box>
-          </Grid>
-        </Grid>
-      </SectionForm>
+        </SectionForm>
+      )}
+
     </Container>
   );
 }

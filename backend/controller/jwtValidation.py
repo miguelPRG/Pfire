@@ -77,7 +77,7 @@ def generate_jwt(id: str, user_name: str, user_email: str, is_super_admin: bool,
         to_encode["isSuperAdmin"] = True
     
     if firebase_uid:
-        to_encode["firebase_UID"] = firebase_uid
+        to_encode["firebaseUID"] = firebase_uid
 
     encoded_jwt = jwt.encode(to_encode, private_key, algorithm=ALGORITHM)
     return encoded_jwt

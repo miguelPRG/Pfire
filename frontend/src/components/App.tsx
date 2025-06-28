@@ -37,6 +37,7 @@ const ProtectedRoute = ({ element }: { element: ReactElement }) => {
 
   if (user) {
     if (!empresa) {
+      console.log("Empresa não selecionada, redirecionando para a seleção de empresa.");
       return <Navigate to="/choose-company" />;
     }
     return element;
