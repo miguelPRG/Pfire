@@ -1,5 +1,5 @@
 import { useLayoutEffect } from "react";
-import { Button, Paper, Typography, Box, Grid } from "@mui/material";
+import { Button, Paper, Typography, Box, Grid, Breadcrumbs, Link } from "@mui/material"; // Adicione Breadcrumbs e Link
 import { useQuery } from "@apollo/client";
 import { GET_EMPRESAS } from "../graphql/empresasqueries";
 import { useAuth } from "../hooks/AuthContext";
@@ -47,28 +47,29 @@ export default function CompanySelectorPage() {
           </Typography>
         </Box>
 
-        <Grid container spacing={3} alignItems="stretch">
+        <Grid container spacing={3} alignItems="stretch" justifyContent={"center"}>
           {data.empresas.map((emp: any, i: number) => {
             const isSelected = emp.id === empresa?.id;
-            // Verifica se é índice par e se o próximo tem logo
             return (
-              <Grid size={{ xs: 12, sm: 6 }} key={emp.id}>
+              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={emp.id}>
                 <Paper
                   elevation={4}
                   sx={{
-                    p: 3,
+                    p: { xs: 2, sm: 3 },
                     height: "100%",
-                    minWidth: 300,
+                    width: "100%",
+                    maxWidth: 400,
+                    mx: "auto",
                     display: "flex",
                     flexDirection: "column",
-                    justifyContent: "center", // centraliza verticalmente
-                    alignItems: "center", // centraliza horizontalmente
+                    justifyContent: "center",
+                    alignItems: "center",
                     borderRadius: 3,
                     backgroundColor: isSelected
                       ? theme.palette.mode === "dark"
-                        ? "#2e7d32" // verde escuro no dark
-                        : "#f3fef8" // verde clarinho no light
-                      : theme.palette.background.paper, // se não selecionado, cor do tema
+                        ? theme.palette.background.paper
+                        : "#f3fef8"
+                      : theme.palette.background.paper,
                     color: theme.palette.text.primary,
                     border: isSelected ? "2px solid #2e7d32" : "1px solid #e0e0e0",
                     transition: "transform 0.2s ease",
@@ -77,33 +78,43 @@ export default function CompanySelectorPage() {
                     },
                   }}
                 >
-                  <Box display="flex" justifyContent="center" alignItems="center" mb={2}>
-                    {emp.logo ? (
-                      <img
-                        src={`data:image/png;base64,${emp.logo}`}
-                        alt={`Logo de ${emp.nome}`}
-                        style={{
-                          width: 200,
-                          height: 200,
-                          objectFit: "cover",
-                          borderRadius: "50%",
-                          border: "1px solid #e0e0e0",
-                          background: "#f5f5f5",
-                        }}
-                      />
-                    ) : null}
-                  </Box>
+                  {emp.logo ? (
+                    <Box
+                      component="img"
+                      src={`data:image/png;base64,${emp.logo}`}
+                      alt={`Logo de ${emp.nome}`}
+                      sx={{
+                        width: { xs: 130, sm: 160, md: 180 },
+                        height: { xs: 130, sm: 160, md: 180 },
+                        objectFit: "cover",
+                        borderRadius: "50%",
+                        border: "1px solid #e0e0e0",
+                        background: "#f5f5f5",
+                      }}
+                    />
+                  ) : null}
 
-                  <Box display="flex" flexDirection="column" textAlign={"center"} gap={0.5}>
-                    <Typography variant="h6" gutterBottom>
+                  <Box display="flex" flexDirection="column" textAlign="center" gap={0.5} mt={3} width="100%">
+                    <Typography
+                      variant="h3"
+                      gutterBottom
+                      mb={5}
+                    >
                       {emp.nome}
                     </Typography>
-                    <Typography variant="body2">Localidade: {emp.localidade}</Typography>
-                    <Typography variant="body2">Morada: {emp.morada}</Typography>
-                    <Typography variant="body2">Código Postal: {emp.codigoPostal}</Typography>
-                    <Typography variant="body2">NIF: {emp.nif}</Typography>
+                    <Typography variant="body2" >
+                      <span style={{ fontWeight: "bold" }}>Localidade:</span> {emp.localidade}
+                    </Typography>
+                    <Typography variant="body2" >
+                      <span style={{ fontWeight: "bold" }}>Morada:</span> {emp.morada}
+                    </Typography>
+                    <Typography variant="body2" >
+                      <span style={{ fontWeight: "bold" }}>Código Postal:</span> {emp.codigoPostal}
+                    </Typography>
+                    <Typography variant="body2" >
+                      <span style={{ fontWeight: "bold" }}>NIF:</span> {emp.nif}
+                    </Typography>
                   </Box>
-
                   <Button
                     variant="contained"
                     color={isSelected ? "success" : "primary"}
@@ -114,6 +125,8 @@ export default function CompanySelectorPage() {
                       borderRadius: 2,
                       pointerEvents: isSelected ? "none" : "auto",
                       cursor: isSelected ? "default" : "pointer",
+                      width: "100%",
+                      fontSize: { xs: "0.95rem", sm: "1rem" },
                     }}
                   >
                     {isSelected ? "Empresa selecionada" : "Gerenciar esta empresa"}
