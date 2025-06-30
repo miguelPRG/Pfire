@@ -16,6 +16,7 @@ async def criar_cliente(cliente: ClienteCreate, request: Request):
     await validar_recaptcha_token(cliente.recaptchaToken, "register")
 
     jwt = getattr(request.state, "jwt", None)
+    user_id = ObjectId(jwt["user_id"])
 
     empresa_id = ObjectId(cliente.empresa_id)
 
@@ -31,7 +32,7 @@ async def criar_cliente(cliente: ClienteCreate, request: Request):
 
         # Verificar se o utilizador é admin da empresa
         user_empresa = await users_empresas_collection.find_one(
-            {"empresa_id": empresa_id, "user_id": ObjectId(jwt["user_id"]), "isAdmin": True}
+            {"empresa_id": empresa_id, "user_id": user_id, "isAdmin": True}
         )
 
         if not user_empresa:
@@ -63,15 +64,24 @@ async def criar_cliente(cliente: ClienteCreate, request: Request):
 async def atualizar_cliente(cliente: ClienteUpdate, request: Request, id: str):
     # Sacar jwt
     jwt = getattr(request.state, "jwt", None)
+    user_id = ObjectId(jwt["user_id"])
+    cliente.empresa_id = ObjectId(cliente.empresa_id)
+    
+    try:
+        id = ObjectId(id)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="ID inválido. Deve ser um ObjectId válido.")
 
     # Validar reCAPTCHA token
     await validar_recaptcha_token(cliente.recaptchaToken, "register")
 
-    if not jwt.get("isSuperAdmin", None):
+    cliente.empresa_id = ObjectId(cliente.empresa_id)
+
+    if not jwt.get("isSuperAdmin",None):
 
         # Verificar se o utilizador é admin da empresa
         user_empresa = await users_empresas_collection.find_one(
-            {"empresa_id": ObjectId(cliente.empresa_id), "user_id": ObjectId(jwt["user_id"]), "isAdmin": True}
+            {"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True}
         )
 
         if not user_empresa:
@@ -80,11 +90,11 @@ async def atualizar_cliente(cliente: ClienteUpdate, request: Request, id: str):
             )
 
     cliente_data = cliente.model_dump(exclude_unset=True)
-    cliente_data["updated_by"] = ObjectId(jwt["user_id"])
+    cliente_data["updated_by"] = user_id
     cliente_data["updated_at"] = datetime.now()
     del cliente_data["recaptchaToken"]
 
-    result = await clientes_collection.update_one({"_id": ObjectId(id), "isActive": True}, {"$set": cliente_data})
+    result = await clientes_collection.update_one({"_id": id, "isActive": True}, {"$set": cliente_data})
 
     if not result.modified_count:
         raise HTTPException(status_code=404, detail="Cliente não encontrado. Verifique so o cliente realmente existe.")
@@ -97,6 +107,9 @@ async def atualizar_cliente(cliente: ClienteUpdate, request: Request, id: str):
 async def apagar_cliente(cliente: ClienteActivion, request: Request):
     # Sacar jwt
     jwt = getattr(request.state, "jwt", None)
+    user_id = ObjectId(jwt["user_id"])
+    cliente.id = ObjectId(cliente.id) 
+    cliente.empresa_id = ObjectId(cliente.empresa_id)
 
     # Validar reCAPTCHA token
     await validar_recaptcha_token(cliente.recaptchaToken, "register")
@@ -107,7 +120,7 @@ async def apagar_cliente(cliente: ClienteActivion, request: Request):
     if not jwt.get("isSuperAdmin", None):
 
         user_empresa = await users_empresas_collection.find_one(
-            {"empresa_id": ObjectId(cliente.empresa_id), "user_id": ObjectId(jwt["user_id"]), "isAdmin": True}
+            {"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True}
         )
 
         if not user_empresa:
@@ -115,11 +128,11 @@ async def apagar_cliente(cliente: ClienteActivion, request: Request):
                 status_code=403, detail="Acesso negado! Não tens permissão para apagar clientes nesta empresa."
             )
 
-    update_fields = {"isActive": False, "updated_at": datetime.now(), "updated_by": ObjectId(jwt["user_id"])}
+    update_fields = {"isActive": False, "updated_at": datetime.now(), "updated_by": user_id}
 
     if cliente.id:
         result = await clientes_collection.update_one(
-            {"_id": ObjectId(cliente.id), "isActive": True}, {"$set": update_fields}
+            {"_id": cliente.id, "isActive": True}, {"$set": update_fields}
         )
     else:
         result = await clientes_collection.update_one({"nif": cliente.nif, "isActive": True}, {"$set": update_fields})
@@ -135,6 +148,9 @@ async def apagar_cliente(cliente: ClienteActivion, request: Request):
 async def reativar_cliente(cliente: ClienteActivion, request: Request):
     # Sacar jwt
     jwt = getattr(request.state, "jwt", None)
+    user_id = ObjectId(jwt["user_id"])
+    cliente.id = ObjectId(cliente.id)
+    cliente.empresa_id = ObjectId(cliente.empresa_id)
 
     # Validar reCAPTCHA token
     await validar_recaptcha_token(cliente.recaptchaToken, "register")
@@ -142,7 +158,7 @@ async def reativar_cliente(cliente: ClienteActivion, request: Request):
     if not jwt.get("isSuperAdmin", None):
 
         user_empresa = await users_empresas_collection.find_one(
-            {"empresa_id": ObjectId(cliente.empresa_id), "user_id": ObjectId(jwt["user_id"]), "isAdmin": True}
+            {"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True}
         )
 
         if not user_empresa:
@@ -150,10 +166,10 @@ async def reativar_cliente(cliente: ClienteActivion, request: Request):
                 status_code=403, detail="Acesso negado! Não tens permissão para ativar clientes nesta empresa."
             )
 
-    update_fields = {"isActive": True, "updated_at": datetime.now(), "updated_by": ObjectId(jwt["user_id"])}
+    update_fields = {"isActive": True, "updated_at": datetime.now(), "updated_by": user_id}
 
     result = await clientes_collection.update_one(
-        {"_id": ObjectId(cliente.id), "isActive": False}, {"$set": update_fields}
+        {"_id": cliente.id, "isActive": False}, {"$set": update_fields}
     )
 
     if not result.modified_count:

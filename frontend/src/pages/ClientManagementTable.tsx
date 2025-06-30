@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@apollo/client";
 import {
   Table,
@@ -17,9 +17,11 @@ import {
   Select,
   MenuItem,
   InputAdornment,
+  Link,
+  Alert,
 } from "@mui/material";
 import { Search } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { GET_CLIENTES_BY_EMPRESA } from "../graphql/clientesqueries";
 import { useTheme } from "@mui/material/styles";
 import { useAuth } from "../hooks/AuthContext"; // já no topo
@@ -41,17 +43,21 @@ export default function ClientManagementTable() {
   const [search, setSearch] = useState("");
   const [orderBy, setOrderBy] = useState<keyof Cliente | null>(null);
   const [order, setOrder] = useState<"asc" | "desc">("asc");
+  const [alert, setAlert] = useState({ message: null, isError: true });
   const theme = useTheme();
   const navigate = useNavigate();
+  const location = useLocation();
   const { empresa } = useAuth();
 
-  const { data } = useQuery(GET_CLIENTES_BY_EMPRESA, {
+  const { data, refetch } = useQuery(GET_CLIENTES_BY_EMPRESA, {
     variables: {
       empresaId: empresa?.id,
       start: page * rowsPerPage,
       lmt: rowsPerPage,
     },
   });
+
+  console.log("Data fetched from GraphQL:", data);
 
   const rows: Cliente[] = data?.clientes || [];
 
@@ -66,7 +72,8 @@ export default function ClientManagementTable() {
     setOrderBy(property);
   };
 
-  const backgroundColor = theme.palette.mode === "dark" ? "rgb(12,12,12)" : "#f0f0f0";
+  const backgroundColor =
+    theme.palette.mode === "dark" ? "rgb(12,12,12)" : "#f0f0f0";
 
   const filteredRows = rows
     .filter((row) => row.nome?.toLowerCase().includes(search.toLowerCase()))
@@ -74,11 +81,37 @@ export default function ClientManagementTable() {
       if (!orderBy) return 0;
       const aValue = a[orderBy]?.toString() || "";
       const bValue = b[orderBy]?.toString() || "";
-      return order === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      return order === "asc"
+        ? aValue.localeCompare(bValue)
+        : bValue.localeCompare(aValue);
     });
+
+  // Exibir mensagem de sucesso ao adicionar/editar cliente
+  useEffect(() => {
+    if (location.state?.message) {
+      setAlert({
+        message: location.state.message.text,
+        isError: location.state.message.error,
+      });
+      window.history.replaceState({}, document.title);
+
+      refetch(); // Recarregar os dados após adicionar/editar cliente
+    }
+  }, [location.state]);
 
   return (
     <Paper sx={{ width: "100%", p: 2, boxShadow: "none" }}>
+      {alert.message && (
+        <Box mb={2}>
+          <Alert
+            severity={alert.isError ? "error" : "success"}
+            onClose={() => setAlert({ ...alert, message: null })}
+            variant="filled"
+          >
+            {alert.message}
+          </Alert>
+        </Box>
+      )}
       <Box
         sx={{
           display: "flex",
@@ -104,6 +137,7 @@ export default function ClientManagementTable() {
             textTransform: "none",
             height: "40px",
             width: "180px",
+            padding: "5px",
           }}
         >
           Adicionar novo Cliente
@@ -162,10 +196,12 @@ export default function ClientManagementTable() {
           }}
           sx={{
             "& .MuiOutlinedInput-root": {
-              backgroundColor: theme.palette.mode === "dark" ? "rgb(12, 12, 12)" : "#f0f0f0",
+              backgroundColor:
+                theme.palette.mode === "dark" ? "rgb(12, 12, 12)" : "#f0f0f0",
               borderRadius: "25px",
               "&.Mui-focused fieldset": {
-                borderColor: theme.palette.mode === "dark" ? "rgb(12, 12, 12)" : "#f0f0f0",
+                borderColor:
+                  theme.palette.mode === "dark" ? "rgb(12, 12, 12)" : "#f0f0f0",
               },
             },
             width: "75%",
@@ -198,7 +234,15 @@ export default function ClientManagementTable() {
                   backgroundColor,
                 }}
               >
-                {["nome", "email", "telefone", "nif", "localidade", "morada", "codigoPostal"].map((key) => (
+                {[
+                  "nome",
+                  "email",
+                  "telefone",
+                  "nif",
+                  "localidade",
+                  "morada",
+                  "codigoPostal",
+                ].map((key) => (
                   <TableCell
                     key={key}
                     onClick={() => handleSort(key as keyof Cliente)}
@@ -207,41 +251,61 @@ export default function ClientManagementTable() {
                       cursor: "pointer",
                     }}
                   >
-                    <TableSortLabel active={orderBy === key} direction={orderBy === key ? order : "asc"}>
-                      {key === "codigoPostal" ? "Código Postal" : key.toUpperCase()}
+                    <TableSortLabel
+                      active={orderBy === key}
+                      direction={orderBy === key ? order : "asc"}
+                    >
+                      {key === "codigoPostal"
+                        ? "Código Postal"
+                        : key.toUpperCase()}
                     </TableSortLabel>
                   </TableCell>
                 ))}
               </TableRow>
             </TableHead>
             <TableBody>
-              {filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((cliente, i) => {
-                const isEvenRow = i % 2 === 0;
-                const rowBg =
-                  theme.palette.mode === "dark"
-                    ? isEvenRow
-                      ? "#252525"
-                      : "#1d1d1d"
-                    : isEvenRow
-                      ? "#f5f5f5"
-                      : "#e0e0e0";
-                return (
-                  <TableRow
-                    key={cliente.id}
-                    sx={{
-                      backgroundColor: rowBg,
-                    }}
-                  >
-                    <TableCell>{cliente.nome}</TableCell>
-                    <TableCell>{cliente.email}</TableCell>
-                    <TableCell>{cliente.telefone}</TableCell>
-                    <TableCell>{cliente.nif}</TableCell>
-                    <TableCell>{cliente.localidade}</TableCell>
-                    <TableCell>{cliente.morada}</TableCell>
-                    <TableCell>{cliente.codigoPostal}</TableCell>
-                  </TableRow>
-                );
-              })}
+              {filteredRows
+                .slice(
+                  page * rowsPerPage,
+                  page * rowsPerPage + rowsPerPage
+                )
+                .map((cliente, i) => {
+                  const isEvenRow = i % 2 === 0;
+                  const rowBg =
+                    theme.palette.mode === "dark"
+                      ? isEvenRow
+                        ? "#252525"
+                        : "#1d1d1d"
+                      : isEvenRow
+                        ? "#f5f5f5"
+                        : "#e0e0e0";
+                  return (
+                    <TableRow
+                      key={cliente.id}
+                      sx={{
+                        backgroundColor: rowBg,
+                      }}
+                    >
+                      <TableCell>
+                        <Link
+                          component="button"
+                          onClick={() =>
+                            navigate("/add-client", { state: { cliente } })
+                          }
+                          sx={{ cursor: "pointer" }}
+                        >
+                          {cliente.nome}
+                        </Link>
+                      </TableCell>
+                      <TableCell>{cliente.email}</TableCell>
+                      <TableCell>{cliente.telefone}</TableCell>
+                      <TableCell>{cliente.nif}</TableCell>
+                      <TableCell>{cliente.localidade}</TableCell>
+                      <TableCell>{cliente.morada}</TableCell>
+                      <TableCell>{cliente.codigoPostal}</TableCell>
+                    </TableRow>
+                  );
+                })}
             </TableBody>
           </Table>
         </TableContainer>
@@ -254,13 +318,15 @@ export default function ClientManagementTable() {
           mt: 2,
         }}
       >
-        <Pagination
-          count={Math.ceil(filteredRows.length / rowsPerPage)}
-          page={page + 1}
-          onChange={(e, val) => handleChangePage(e, val - 1)}
-          color="primary"
-          shape="rounded"
-        />
+        {filteredRows.length === 0 && (
+          <Pagination
+            count={Math.ceil(filteredRows.length / rowsPerPage)}
+            page={page + 1}
+            onChange={(e, val) => handleChangePage(e, val - 1)}
+            color="primary"
+            shape="rounded"
+          />
+        )}
       </Box>
     </Paper>
   );

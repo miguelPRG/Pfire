@@ -62,8 +62,10 @@ async def create_empresa(empresa: EmpresaCreateAsLoggedUser, request: Request):
 async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str):
 
     # Verificar se o ID é válido
-    if not ObjectId.is_valid(id):
-        raise HTTPException(status_code=400, detail="ID inválido.")
+    try:
+        id = ObjectId(id)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail="ID inválido. Deve ser um ObjectId válido.")
 
     # Sacar jwt
     jwt = getattr(request.state, "jwt", None)

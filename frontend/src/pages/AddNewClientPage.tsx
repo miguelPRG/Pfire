@@ -1,17 +1,15 @@
-import { Box, Button, TextField, Typography, Paper } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { Box, Button, TextField, Typography, Paper, Alert } from "@mui/material";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
-import { useForm } from "react-hook-form";
+import { useForm} from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import PhoneInput from "react-phone-number-input";
-import "react-phone-number-input/style.css";
-import "../assets/styles/phoneNumberField.css";
-import { Controller } from "react-hook-form";
 import { useAuth } from "../hooks/AuthContext";
+import { useState } from "react";
+import GlobalPhone from "../components/GlobalPhone";
+import validarNIF from "./utils/isValidNIF";
 
 declare var grecaptcha: any;
-
 // Esquema de validação com Zod
 const addClientSchema = z.object({
   nome: z.string().nonempty("O nome é obrigatório"),
@@ -25,8 +23,11 @@ const addClientSchema = z.object({
   nif: z
     .string()
     .nonempty("O NIF é obrigatório")
-    .regex(/^[5789]\d{8}$/, "O NIF é inválido"),
-  localidade: z.string().nonempty("A localidade é obrigatória"),
+    .regex(/^[5789]\d{8}$/, "O NIF é inválido")
+    .refine(validarNIF, "O NIF é inválido"),
+  localidade: z
+    .string()
+    .nonempty("A localidade é obrigatória"),
   morada: z.string().nonempty("A morada é obrigatória"),
   codigo_postal: z
     .string()
@@ -37,9 +38,12 @@ const addClientSchema = z.object({
 type AddClientFormInputs = Omit<z.infer<typeof addClientSchema>, "recaptchaToken">;
 
 export default function AddNewClientPage() {
+  const location = useLocation();
+  const cliente = location.state?.cliente;
+  const { empresa } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
-  const { empresa } = useAuth();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const {
     register,
@@ -48,58 +52,126 @@ export default function AddNewClientPage() {
     formState: { errors, isSubmitting },
   } = useForm<AddClientFormInputs>({
     resolver: zodResolver(addClientSchema),
+    defaultValues: cliente
+      ? {
+        nome: cliente.nome || "",
+        email: cliente.email || "",
+        telefone: cliente.telefone || "",
+        nif: cliente.nif || "",
+        localidade: cliente.localidade || "",
+        morada: cliente.morada || "",
+        codigo_postal: cliente.codigoPostal || "",
+      }
+      : {},
   });
 
-  const enviarNovoCliente = async (dados: AddClientFormInputs & { empresa_id: string }) => {
+  const enviarNovoCliente = async (dados: AddClientFormInputs, recaptchaToken: string) => {
     try {
-      if (!dados.empresa_id || !/^[a-f\d]{24}$/i.test(dados.empresa_id)) {
+      if (!empresa?.id || !/^[a-f\d]{24}$/i.test(empresa.id)) {
         throw new Error("ID da empresa inválido ou não fornecido.");
       }
 
+      // O backend espera recaptchaToken e empresa_id no corpo
       const response = await fetch(`/backend/cliente`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify(dados),
+        body: JSON.stringify({
+          ...dados,
+          empresa_id: empresa.id,
+          recaptchaToken,
+        }),
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || "Erro ao criar cliente");
+        alert(data.detail || "Erro ao criar cliente");
+      }
+    } catch (error) {
+      throw error;
+    }
+  };
+
+  const atualizarCliente = async (
+    dados: AddClientFormInputs & { id: string },
+    recaptchaToken: string
+  ) => {
+    try {
+      if (!empresa?.id || !/^[a-f\d]{24}$/i.test(empresa.id)) {
+        throw new Error("ID da empresa inválido ou não fornecido.");
+      }
+      if (!dados.id || !/^[a-f\d]{24}$/i.test(dados.id)) {
+        throw new Error("ID do cliente inválido ou não fornecido.");
       }
 
-      console.log("Cliente criado com sucesso:", data);
+      var body = JSON.stringify({
+        ...dados,
+        empresa_id: empresa.id,
+        recaptchaToken,
+      });
+      console.log("Dados enviados para o backend:", body);
+
+      // O backend espera recaptchaToken e empresa_id no corpo
+      const response = await fetch(`/backend/cliente/${dados.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+
+        credentials: "include",
+        body: JSON.stringify({
+          ...dados,
+          empresa_id: empresa.id,
+          recaptchaToken,
+        }),
+      });
+
+      const data = await response.json();
+
+      console.log("Resposta do backend:", data);
+
+      if (!response.ok) {
+        alert(data.detail || "Erro ao atualizar cliente");
+      }
     } catch (error) {
-      console.error("Erro ao criar cliente:", error);
       throw error;
     }
   };
 
   const onSubmit = async (formData: AddClientFormInputs) => {
-    if (!empresa?.id) {
-      alert("Erro: ID da empresa não encontrado.");
-      return;
-    }
-
+    setErrorMessage(null);
     try {
-      const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-        action: "register",
-      });
+      const recaptchaToken = await grecaptcha.enterprise.execute(
+        "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",
+        { action: "register" }
+      );
 
-      const dadosCompletos = {
-        ...formData,
-        recaptchaToken,
-        empresa_id: empresa.id,
-      };
+      if (!empresa?.id) {
+        setErrorMessage("Empresa não encontrada.");
+        return;
+      }
 
-      await enviarNovoCliente(dadosCompletos);
-      alert("Novo cliente adicionado com sucesso!");
-      navigate("/ClientManagementTable");
-    } catch (error) {
-      alert("Erro ao adicionar cliente.");
+      if (cliente) {
+        await atualizarCliente({ ...formData, id: cliente.id }, recaptchaToken);
+        navigate("/clients-list", {
+          state: { message: { error: false, text: "Cliente atualizado com sucesso!" } },
+        });
+      } else {
+        await enviarNovoCliente(formData, recaptchaToken);
+        navigate("/clients-list", {
+          state: { message: { error: false, text: "Novo cliente adicionado com sucesso!" } },
+        });
+      }
+    } catch (error: any) {
+      setErrorMessage(
+        cliente
+          ? error?.message || "Erro ao atualizar cliente."
+          : error?.message || "Erro ao adicionar cliente."
+      );
     }
   };
 
@@ -109,6 +181,13 @@ export default function AddNewClientPage() {
 
   return (
     <Paper sx={{ maxWidth: 600, mx: "auto", mt: 5, p: 4 }}>
+      {errorMessage && (
+        <Box mb={2}>
+          <Alert severity="error" variant="filled" onClose={() => setErrorMessage(null)}>
+            {errorMessage}
+          </Alert>
+        </Box>
+      )}
       <Typography
         variant="h5"
         sx={{
@@ -144,60 +223,7 @@ export default function AddNewClientPage() {
           helperText={errors.email?.message}
           fullWidth
         />
-        <div id="telefone-field">
-          <Controller
-            name="telefone"
-            control={control}
-            render={({ field }) => (
-              <Box>
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    border: "1px solid",
-                    borderColor: errors.telefone ? "error.main" : "rgba(0, 0, 0, 0.23)",
-                    borderRadius: 1,
-                    padding: "18.5px 14px",
-                    fontSize: "16px",
-                    "&:hover": {
-                      borderColor: "black",
-                    },
-                    "&:focus-within": {
-                      borderColor: "primary.main",
-                      borderWidth: 2,
-                    },
-                  }}
-                >
-                  <PhoneInput
-                    {...field}
-                    defaultCountry="PT"
-                    international
-                    countryCallingCodeEditable={false}
-                    placeholder="Insira o número de telefone"
-                    style={{
-                      fontSize: "16px",
-                      border: "none",
-                      outline: "none",
-                      width: "100%",
-                      background: "transparent",
-                    }}
-                  />
-                </Box>
-                {errors.telefone && (
-                  <Typography
-                    color="error"
-                    variant="body2"
-                    sx={{
-                      mt: 0.5,
-                    }}
-                  >
-                    {errors.telefone.message}
-                  </Typography>
-                )}
-              </Box>
-            )}
-          />
-        </div>
+        <GlobalPhone fieldName="telefone" control={control} errors={errors}/>
         <TextField
           {...register("nif")}
           label="NIF"
@@ -259,7 +285,7 @@ export default function AddNewClientPage() {
             }}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "A adicionar..." : "Adicionar"}
+            {isSubmitting ? "A adicionar..." : "Salvar"}
           </Button>
         </Box>
       </Box>

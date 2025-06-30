@@ -50,7 +50,7 @@ const commonComponents: Components = {
       root: {
         textTransform: "none",
         borderRadius: "10px",
-        padding: "10px 20px",
+        padding: "10px",
         fontWeight: "bold",
         transition: "0.3s",
         marginBottom: "10px",

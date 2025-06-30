@@ -19,17 +19,15 @@ import {
   Alert,
 } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { useForm, Controller } from "react-hook-form";
-import PhoneInput from "react-phone-number-input";
-import "react-phone-number-input/style.css";
-import "../assets/styles/phoneNumberField.css";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAuth } from "../hooks/AuthContext";
-import logo from "../assets/images/logo.png";
-import microsoftIcon from "../assets/images/microsoft.png";
-import googleIcon from "../assets/images/google.png";
-import isValidNIF from "./utils/isValidNIF";
+import { useAuth } from "../../hooks/AuthContext";
+import logo from "../../assets/images/logo.png";
+import microsoftIcon from "../../assets/images/microsoft.png";
+import googleIcon from "../../assets/images/google.png";
+import isValidNIF from "../utils/isValidNIF";
+import GlobalPhone from "../../components/GlobalPhone";
 
 const registerSchema = z.object({
   user: z
@@ -281,54 +279,7 @@ export default function RegisterPage() {
             fullWidth
             margin="normal"
           />
-          <Box id="telefone-field" sx={{ mt: 2, mb: 1 }}>
-            <Controller
-              name="empresa.telefone"
-              control={control}
-              render={({ field }) => (
-                <Box>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      border: "1px solid",
-                      borderColor: errors.empresa?.telefone ? "error.main" : "rgba(0, 0, 0, 0.23)",
-                      borderRadius: 1,
-                      padding: "18.5px 14px",
-                      fontSize: "16px",
-                      "&:hover": { borderColor: "black" },
-                      "&:focus-within": {
-                        borderColor: "primary.main",
-                        borderWidth: 2,
-                      },
-                    }}
-                    aria-invalid={!!errors.empresa?.telefone}
-                  >
-                    <PhoneInput
-                      {...field}
-                      defaultCountry="PT"
-                      international
-                      countryCallingCodeEditable={false}
-                      placeholder="Insira o número de telefone"
-                      style={{
-                        fontSize: "16px",
-                        border: "none",
-                        outline: "none",
-                        width: "100%",
-                        background: "transparent",
-                      }}
-                    />
-                  </Box>
-                  {errors.empresa?.telefone && (
-                    <Typography color="error" variant="body2" sx={{ mt: 0.5 }}>
-                      {errors.empresa.telefone.message}
-                    </Typography>
-                  )}
-                </Box>
-              )}
-            />
-          </Box>
-
+          <GlobalPhone fieldName="empresa.telefone" control={control} errors={errors}/>
           <Button
             type="submit"
             disabled={isSubmitting}
