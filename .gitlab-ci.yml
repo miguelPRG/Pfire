@@ -7,7 +7,7 @@ variables:
   PYTHONPATH: "$CI_PROJECT_DIR/backend"
 
 # Rebase com develop se não for a própria develop
-rebase_develop:
+merge_develop:
   stage: prepare
   image: alpine:latest
   script:
