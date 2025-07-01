@@ -81,7 +81,7 @@ interface AuthContextType {
   user: UserLoggedIn | null;
   empresa: Empresa | null;
   loading: boolean; // <--- adicione isto
-  registerUser: (payload: { user: UserRegistered; empresa: EmpresaRegistered }) => Promise<void>;
+  registerUser: (payload: { user: UserRegistered; empresa: EmpresaRegistered | null }) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   loginWithOAuth: (provider: "google" | "microsoft") => Promise<boolean>;
   logout: () => Promise<void>;
@@ -237,13 +237,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function registerUser(payload: { user: UserRegistered; empresa: EmpresaRegistered } & Record<string, unknown>) {
+  async function registerUser(payload: { user: UserRegistered; empresa: EmpresaRegistered | null } & Record<string, unknown>) {
     try {
       const token = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
         action: "register",
       });
 
+      // Adiciona o recaptchaToken ao payload.user
       payload.recaptchaToken = token;
+
+      // Verifica se a empresa é null e remove do payload se for
+      if (payload.empresa == null) {
+        delete payload.empresa;
+      }
 
       const response = await fetch(`backend/user/register`, {
         method: "POST",

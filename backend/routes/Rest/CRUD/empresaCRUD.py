@@ -9,6 +9,7 @@ from datetime import datetime
 from base64 import b64decode
 from imghdr import what
 from pymongo.errors import DuplicateKeyError
+from pymongo.errors import DuplicateKeyError
 
 routerEmpresa = APIRouter(prefix="/empresa")
 
@@ -17,10 +18,43 @@ routerEmpresa = APIRouter(prefix="/empresa")
 @routerEmpresa.post("/")
 async def create_empresa(payload: EmpresaCreateAsLoggedUser, request: Request):
     await validar_recaptcha_token(payload.recaptchaToken, "create")
+async def create_empresa(payload: EmpresaCreateAsLoggedUser, request: Request):
+    await validar_recaptcha_token(payload.recaptchaToken, "create")
     jwt = getattr(request.state, "jwt", None)
     user_id = ObjectId(jwt["user_id"])
     date = datetime.now()
+    user_id = ObjectId(jwt["user_id"])
+    date = datetime.now()
 
+    empresa_doc = payload.model_dump(exclude_unset=True)
+    empresa_doc.update({
+        "created_at": date,
+        "updated_at": date,
+        "created_by": user_id,
+        "updated_by": user_id,
+    })
+
+    try:
+        res = await empresas_collection.insert_one(empresa_doc)
+    except DuplicateKeyError as e:
+        text = str(e).lower()
+        if "nif" in text:
+            raise HTTPException(status_code=409, detail="Empresa com este NIF já existe.")
+        raise HTTPException(status_code=409, detail="Campo duplicado na empresa.")
+
+    # associar criador como admin
+    assoc = UserEmpresaCreate(
+        user_id=user_id,
+        empresa_id=res.inserted_id,
+        isAdmin=True,
+        created_by=user_id,
+        created_at=date,
+        updated_by=user_id,
+        updated_at=date
+    ).model_dump(by_alias=True)
+    await users_empresas_collection.insert_one(assoc)
+
+    return JSONResponse(status_code=201, content={"message": "Empresa criada com sucesso!"})
     empresa_doc = payload.model_dump(exclude_unset=True)
     empresa_doc.update({
         "created_at": date,

@@ -24,7 +24,9 @@ function EmailOperation() {
       });
     }
 
-    const operationsMap: Record<string, () => Promise<void>> = {
+    // Este mapa irá mapear qual operação de email deverá ser executada
+    const operationsMap: Record<string, () => void | Promise<void>> = {
+      
       registo: async () => {
         try {
           const response = await fetch(`/backend/user/email/activate/${GLOBAL_ID}`, {
@@ -43,6 +45,36 @@ function EmailOperation() {
           });
         }
       },
+      recuperarPassword: () => {
+        navigate(`/new-password/${GLOBAL_ID}`);
+      },
+      
+      convite: async () => {
+        // Temos verificar se o user que recebeu o convite já existe
+        // Para isso verificamos se o GLOBAL_ID tem o parâmetro user_exists
+        const response = await fetch(`backend/user/get-global-id/${GLOBAL_ID}`, {
+          method: "GET",
+        });
+        
+        if (!response.ok) {
+          setUserConfirmation({
+            isConfirmed: false,
+            message: "Erro ao efetuar operação! O botão que foi enviado no email já não funciona.",
+          });
+          return;
+        }
+
+        const data = await response.json();
+        if (data.user_exists) {
+          //Se o utilizador já existe, então convidamo-lo para a empresa
+
+          const acceptInviteResponse = await fetch(`/backend/user/email/invite-accept/${GLOBAL_ID}`, {
+            method: "POST",
+          });
+
+        }
+
+      }
     };
 
     if (operationsMap.hasOwnProperty(OPERATION)) {

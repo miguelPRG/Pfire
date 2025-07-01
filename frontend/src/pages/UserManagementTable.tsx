@@ -16,12 +16,20 @@ import {
   InputAdornment,
   Typography,
   Button,
+  Container,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions
 } from "@mui/material";
 import { Search } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { useQuery } from "@apollo/client";
 import { GET_USERS } from "../graphql/usersqueries";
 import { useAuth } from "../hooks/AuthContext";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import Notification from "../components/Notification";
 
 declare var grecaptcha: any;
 
@@ -39,6 +47,10 @@ interface User {
   isSuperAdmin?: boolean;
 }
 
+const inviteSchema = z.object({
+  email: z.string().email("Email inválido"),
+});
+
 export default function UserManagementTable() {
   const theme = useTheme();
   const [page, setPage] = useState(0);
@@ -51,6 +63,15 @@ export default function UserManagementTable() {
     variables: { empresaId: empresa?.id },
     fetchPolicy: "cache-first",
   });
+  const [alert, setAlert] = useState<null | { message: string; isError: boolean }>(null);
+  // useForm para o popup
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors, isSubmitting }
+  } = useForm<{ email: string }>({ defaultValues: { email: "" } });
 
   const users: User[] = (data && data.users) || [];
 
@@ -81,9 +102,10 @@ export default function UserManagementTable() {
       if (!res.ok) throw new Error(json.detail || "Erro ao atualizar status.");
       console.log(user);
 
-      await refetch();
+      if(method === "DELETE") {
+        await refetch();
+      }
     } catch (error) {
-      alert("Erro ao validar reCAPTCHA ou atualizar status.");
       console.error("Erro no handleToggleStatus:", error);
     }
   };
@@ -113,11 +135,16 @@ export default function UserManagementTable() {
       if (json.message?.includes("admin")) {
         await refetch();
       } else {
-        alert("Nenhuma alteração foi feita.");
+        setAlert({
+          message: "Papel alterado com sucesso!",
+          isError: false,
+        });
       }
     } catch (err) {
-      alert("Erro ao validar reCAPTCHA ou alterar papel.");
-      console.error("Erro no handleToggleAdmin:", err);
+      setAlert({
+        message: err instanceof Error ? err.message : "Erro ao alterar papel.",
+        isError: true,
+      });
     }
   };
 
@@ -151,16 +178,61 @@ export default function UserManagementTable() {
 
   const columns: (keyof User)[] = ["nome", "telefone", "isActive", "email", "isAdmin"];
 
+  // Função para enviar convite (ajuste para sua API)
+  const handleInvite = async (values: { email: string }) => {
+    const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
+      action: "invite_user",
+    });
+
+    // Validação Zod
+    const validation = inviteSchema.safeParse({ email: values.email });
+    if (!validation.success) {
+      setError("email", { message: validation.error.errors[0].message });
+      return;
+    }
+
+    console.log("Nome da empresa: ", empresa?.nome);
+
+    try {
+      const res = await fetch("/backend/user/invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          email: values.email,
+          empresa_nome: empresa?.nome,
+          empresa_id: empresa?.id,
+          recaptchaToken
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.detail || "Erro ao enviar convite.");
+      setAlert({
+        message: "Convite enviado com sucesso!",
+        isError: false,
+      });
+      reset(); // Limpa o formulário
+    } catch (err: any) {
+      setAlert({
+        message: err.message || "Erro ao enviar convite.",
+        isError: true,
+      });
+    } finally {
+      setInviteOpen(false); // Fecha o diálogo após enviar o convite
+    }
+  };
+
   if (loading) return <Typography>A carregar utilizadores...</Typography>;
   if (error) return <Typography>Erro ao carregar utilizadores</Typography>;
 
   return (
     <Paper sx={{ width: "100%", p: 2, boxShadow: "none" }}>
-      <Box
+      <Container
         sx={{
           display: "flex",
-          justifyContent: "flex-start",
+          justifyContent: "space-around",
           mb: 2,
+          width: "100%",
         }}
       >
         <Typography
@@ -172,7 +244,23 @@ export default function UserManagementTable() {
         >
           Utilizadores
         </Typography>
-      </Box>
+
+        <Button
+          variant="contained"
+          color="primary"
+          size="small"
+          sx={{
+            ml: 2,
+            borderRadius: "20px",
+            textTransform: "none",
+            maxWidth: "200px",
+            fontSize: "1rem",
+          }}
+          onClick={() => setInviteOpen(true)}
+        >
+          Convidar Utilizador
+        </Button>
+      </Container>
 
       <Box
         sx={{
@@ -333,6 +421,46 @@ export default function UserManagementTable() {
           shape="rounded"
         />) }
       </Box>
+
+      {/* Dialog de convite */}
+      <Dialog
+        open={inviteOpen}
+        onClose={() => {
+          setInviteOpen(false);
+          reset();
+        }}
+      >
+        <DialogTitle>Convidar Utilizador</DialogTitle>
+        <DialogContent>
+          <form onSubmit={handleSubmit(handleInvite)}>
+            <TextField
+              label="Email do utilizador"
+              fullWidth
+              margin="normal"
+              autoFocus
+              error={!!errors.email}
+              helperText={errors.email?.message}
+              {...register("email")}
+            />
+            <DialogActions>
+              <Button
+                variant="outlined"
+                onClick={() => { setInviteOpen(false); reset(); }}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="submit"
+                color="success"
+                variant="contained"
+              >
+                {isSubmitting ? "A enviar..." : "Enviar convite"}
+              </Button>
+            </DialogActions>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <Notification alert={alert} setAlert={setAlert} />
     </Paper>
   );
 }

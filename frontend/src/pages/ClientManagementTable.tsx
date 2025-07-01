@@ -18,14 +18,13 @@ import {
   MenuItem,
   InputAdornment,
   Link,
-  Snackbar,
-  Alert,
 } from "@mui/material";
 import { Search } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { GET_CLIENTES_BY_EMPRESA } from "../graphql/clientesqueries";
 import { useTheme } from "@mui/material/styles";
 import { useAuth } from "../hooks/AuthContext";
+import Notification from "../components/Notification";
 
 interface Cliente {
   id: string;
@@ -44,6 +43,8 @@ export default function ClientManagementTable() {
   const [search, setSearch] = useState("");
   const [orderBy, setOrderBy] = useState<keyof Cliente | null>(null);
   const [order, setOrder] = useState<"asc" | "desc">("asc");
+  const [alert, setAlert] = useState<null | { message: string; isError: boolean }>(null);
+
   const [alert, setAlert] = useState<null | { message: string; isError: boolean }>(null);
 
   const theme = useTheme();
@@ -75,6 +76,7 @@ export default function ClientManagementTable() {
   };
 
   const backgroundColor = theme.palette.mode === "dark" ? "rgb(12,12,12)" : "#f0f0f0";
+  const backgroundColor = theme.palette.mode === "dark" ? "rgb(12,12,12)" : "#f0f0f0";
 
   const filteredRows = rows
     .filter((row) => row.nome?.toLowerCase().includes(search.toLowerCase()))
@@ -82,6 +84,7 @@ export default function ClientManagementTable() {
       if (!orderBy) return 0;
       const aValue = a[orderBy]?.toString() || "";
       const bValue = b[orderBy]?.toString() || "";
+      return order === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
       return order === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
     });
 
@@ -93,10 +96,45 @@ export default function ClientManagementTable() {
       });
       window.history.replaceState({}, document.title);
       refetch();
+      refetch();
     }
+  }, [location.state, refetch]);
   }, [location.state, refetch]);
 
   return (
+    <>
+      <Paper sx={{ width: "100%", p: 2, boxShadow: "none" }}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            mb: 2,
+            gap: 10,
+          }}
+        >
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: "bold",
+              fontSize: 30,
+            }}
+          >
+            Clientes
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => navigate("/add-client")}
+            sx={{
+              textTransform: "none",
+              height: "40px",
+              width: "180px",
+              padding: "5px",
+            }}
+          >
+            Adicionar novo Cliente
+          </Button>
+        </Box>
     <>
       <Paper sx={{ width: "100%", p: 2, boxShadow: "none" }}>
         <Box
@@ -163,7 +201,69 @@ export default function ClientManagementTable() {
             <MenuItem value={10}>Mostrar 10</MenuItem>
             <MenuItem value={25}>Mostrar 25</MenuItem>
           </Select>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            mb: 2,
+            gap: 2,
+          }}
+        >
+          <Select
+            value={rowsPerPage}
+            onChange={handleChangeRowsPerPage}
+            size="small"
+            sx={{
+              width: 180,
+              backgroundColor: backgroundColor,
+              height: "32px",
+              mt: "10px",
+              "& .MuiOutlinedInput-notchedOutline": {
+                borderColor: "transparent",
+              },
+              "&:hover .MuiOutlinedInput-notchedOutline": {
+                borderColor: "#ccc",
+              },
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                borderColor: "#1976d2",
+              },
+            }}
+          >
+            <MenuItem value={5}>Mostrar 5</MenuItem>
+            <MenuItem value={10}>Mostrar 10</MenuItem>
+            <MenuItem value={25}>Mostrar 25</MenuItem>
+          </Select>
 
+          <TextField
+            variant="outlined"
+            size="small"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Pesquisar"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search
+                    sx={{
+                      color: theme.palette.mode === "dark" ? "#0DC7E8" : "#003366",
+                    }}
+                  />
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              "& .MuiOutlinedInput-root": {
+                backgroundColor: theme.palette.mode === "dark" ? "rgb(12, 12, 12)" : "#f0f0f0",
+                borderRadius: "25px",
+                "&.Mui-focused fieldset": {
+                  borderColor: theme.palette.mode === "dark" ? "rgb(12, 12, 12)" : "#f0f0f0",
+                },
+              },
+              width: "75%",
+              mt: 1,
+            }}
+          />
+        </Box>
           <TextField
             variant="outlined"
             size="small"
@@ -230,6 +330,41 @@ export default function ClientManagementTable() {
               </TableHead>
               <TableBody>
                 {filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((cliente, i) => {
+        <div style={{ overflowX: "auto" }}>
+          <TableContainer
+            sx={{
+              width: "100%",
+              boxShadow: "none",
+              "&::-webkit-scrollbar": {
+                height: "8px",
+              },
+              "&::-webkit-scrollbar-thumb": {
+                backgroundColor: theme.palette.mode === "dark" ? "#555" : "#ddd",
+                borderRadius: "10px",
+              },
+              "&::-webkit-scrollbar-track": {
+                backgroundColor: theme.palette.mode === "dark" ? "#333" : "#f1f1f1",
+              },
+            }}
+          >
+            <Table>
+              <TableHead>
+                <TableRow style={{ backgroundColor }}>
+                  {["nome", "email", "telefone", "nif", "localidade", "morada", "codigoPostal"].map((key) => (
+                    <TableCell
+                      key={key}
+                      onClick={() => handleSort(key as keyof Cliente)}
+                      sx={{ fontWeight: "bold", cursor: "pointer" }}
+                    >
+                      <TableSortLabel active={orderBy === key} direction={orderBy === key ? order : "asc"}>
+                        {key === "codigoPostal" ? "Código Postal" : key.toUpperCase()}
+                      </TableSortLabel>
+                    </TableCell>
+                  ))}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((cliente, i) => {
                   const isEvenRow = i % 2 === 0;
                   const rowBg =
                     theme.palette.mode === "dark"
@@ -241,9 +376,11 @@ export default function ClientManagementTable() {
                         : "#e0e0e0";
                   return (
                     <TableRow key={cliente.id} sx={{ backgroundColor: rowBg }}>
+                    <TableRow key={cliente.id} sx={{ backgroundColor: rowBg }}>
                       <TableCell>
                         <Link
                           component="button"
+                          onClick={() => navigate("/add-client", { state: { cliente } })}
                           onClick={() => navigate("/add-client", { state: { cliente } })}
                           sx={{ cursor: "pointer" }}
                         >
@@ -263,6 +400,10 @@ export default function ClientManagementTable() {
             </Table>
           </TableContainer>
         </div>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </div>
 
         <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
           {filteredRows.length >10 && (
@@ -276,22 +417,7 @@ export default function ClientManagementTable() {
           )}
         </Box>
       </Paper>
-
-     
-      <Snackbar
-        open={!!alert}
-        autoHideDuration={4000}
-        onClose={() => setAlert(null)}
-        anchorOrigin={{ vertical: "top", horizontal: "center" }}
-      >
-        <Alert
-          onClose={() => setAlert(null)}
-          severity={alert?.isError ? "error" : "success"}
-          sx={{ width: "100%" }}
-        >
-          {alert?.message}
-        </Alert>
-      </Snackbar>
+      <Notification alert={alert} setAlert={setAlert} />
     </>
   );
 }

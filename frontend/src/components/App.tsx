@@ -47,6 +47,7 @@ const ProtectedRoute = ({ element }: { element: ReactElement }) => {
 };
 
 const PublicRoute = ({ element }: { element: ReactElement }) => {
+
   const { user } = useAuth();
 
   console.log("Rota Publica")
@@ -124,10 +125,12 @@ function App() {
       <Suspense fallback={<LoadingAnimation />}>
         <Layout userId={userId}>
           <Routes>
-            <Route path="confirmation/:GLOBAL_ID/:OPERATION" element={<PublicRoute element={<EmailOperation />} />} />
-            <Route path="/new-password/:GLOBAL_ID/" element={<PublicRoute element={<NewPassword />} />} />
+            {/*Todas as confirmações de email que não exigem nenhum formulário como (Registo de conta, etc)*/}
+            <Route path="/confirmation/:GLOBAL_ID/:OPERATION" element={<PublicRoute element={<EmailOperation/>} />}/>
++           <Route path="/new-password/:GLOBAL_ID/" element={<PublicRoute element={<NewPassword />} />} />
+            {/* Registo de conta com o GLOBAL_ID enviado por email caso se trate de um user novo*/}
+            <Route path="/register/:GLOBAL_ID" element={<Register />} />
             <Route path="/login" element={<PublicRoute element={<Login />} />} />
-            <Route path="/register" element={<PublicRoute element={<Register />} />} />
             <Route path="/forgot-password" element={<PublicRoute element={<ForgotPasswordPage />} />} />
             <Route path="/" element={<ProtectedRoute element={<Home />} />} />
             <Route path="/users-list" element={<ProtectedRoute element={<UserManagementTable />} />} />
@@ -137,7 +140,7 @@ function App() {
             <Route path="/choose-company" element={<ChooseCompanyRoute />} />
             <Route path="/report-models" element={<ProtectedRoute element={<ReportModelListPage />} />} />
             <Route path="/report-templates" element={<ProtectedRoute element={<ReportTemplatesPage />} />} />
-            <Route path="*" element={<Navigate to={user ? "/" : "/login"} />} />
+            <Route path="*" element={<Navigate to="/"/>} />
           </Routes>
         </Layout>
       </Suspense>

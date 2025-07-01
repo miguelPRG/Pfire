@@ -1,6 +1,5 @@
-import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-
+import { useState, useLayoutEffect } from "react";
+import { useNavigate, Link, useParams } from "react-router-dom";
 import {
   Container,
   Typography,
@@ -69,18 +68,7 @@ const registerSchema = z.object({
   }),
 });
 
-type RegisterFormInputs = z.infer<typeof registerSchema>;
-
-export default function RegisterPage() {
-  const navigate = useNavigate();
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const { registerUser, loginWithOAuth } = useAuth();
-  const [isRegistError, setIsRegistError] = useState({
-    error: false,
-    message: "",
-  });
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  type RegisterFormInputs = z.infer<typeof registerSchema>;
 
   const {
     register,
@@ -90,6 +78,41 @@ export default function RegisterPage() {
   } = useForm<RegisterFormInputs>({
     resolver: zodResolver(registerSchema),
   });
+
+  useLayoutEffect(() => {
+
+    async function checkGlobalId() {
+      if (!GLOBAL_ID) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/backend/user/get-global-id/${GLOBAL_ID}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          setIsRegistError({
+            error: true,
+            message: "O botão que foi enviado no email já não funciona.",
+          });
+        }
+
+        setNoCompany(false);
+
+      } catch (error) {
+        setIsRegistError({
+          error: true,
+          message: "O botão que foi enviado no email já não funciona.",
+        });
+      }
+    }
+
+    checkGlobalId();
+  }, []);
 
   // 1) SUBMIT tradicional: Firebase + sendEmailVerification + backend /empresa/
   const onSubmit = async (data: RegisterFormInputs) => {
@@ -235,7 +258,9 @@ export default function RegisterPage() {
           />
 
           {/* Dados da empresa */}
-          <Typography variant="h6" sx={{ mt: 3, mb: 1 }}>
+          { noCompany && (
+            <>
+              <Typography variant="h6" sx={{ mt: 3, mb: 1 }}>
             Dados da Empresa
           </Typography>
           <TextField
@@ -279,6 +304,8 @@ export default function RegisterPage() {
             margin="normal"
           />
           <GlobalPhone fieldName="empresa.telefone" control={control} errors={errors} />
+            </>
+          )}
           <Button
             type="submit"
             disabled={isSubmitting}

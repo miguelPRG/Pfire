@@ -82,24 +82,6 @@ async def delete_documentos_inativos():
     if user_empresa_result and user_empresa_result.deleted_count > 0:
         print(f"[DatabaseCleaner] {user_empresa_result.deleted_count} relação(ões) user_empresa removida(s).")
 
-
-async def apagar_global_ids_antigos():
-
-    # Obter a data atual
-    data_atual = datetime.now()
-
-    # Calcular a data limite (30 dias atrás)
-    data_limite = data_atual - timedelta(days=1)
-
-    # Deletar os global_ids que são mais antigos que 30 dias
-    result = await global_ids_collection.delete_many({"created_at": {"$lt": data_limite}})
-
-    if result.deleted_count > 0:
-        print(f"[DatabaseCleaner] {result.deleted_count} global_id(s) removido(s) por serem antigos.")
-    else:
-        print("[DatabaseCleaner] Nenhum global_id antigo encontrado para remoção.")
-
-
 async def apagar_empresas_vazias():
 
     # Listar todas as empresas com pelo menos 24 horas
@@ -122,13 +104,6 @@ def database_cleaner_scheduler():
         delete_documentos_inativos,
         IntervalTrigger(days=30),  # Intervalo de 30 dias
         id="delete_inactive_documents_job",  # Um ID único para o job
-        replace_existing=True,  # Caso o job já exista, ele será substituído
-    )
-
-    scheduler.add_job(
-        apagar_global_ids_antigos,
-        IntervalTrigger(days=1),  # Intervalo de 1 dia
-        id="apagar_users_inativos_job",  # Um ID único para o job
         replace_existing=True,  # Caso o job já exista, ele será substituído
     )
 

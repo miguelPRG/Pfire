@@ -20,17 +20,23 @@ def test_brevo_connection():
 
 
 # Função de recuperação da password
-def enviar_email(email_destino: str, name: str, global_id: str, template_id: int):
+def enviar_email(email_destino: str, name: str, global_id: str, template_id: int, operation: str, empresa_nome: str = None):
     api_instance = brevo_python.TransactionalEmailsApi(brevo_python.ApiClient(configuration))
 
     # Prepara os dados do e-mail
+    params = {
+        "NOME": name if name else "tudo bem?",
+        "GLOBAL_ID": global_id,
+        "OPERATION": operation,
+        "EMPRESA": empresa_nome if empresa_nome else None
+    }
+    # Remove chaves com valor None
+    params = {k: v for k, v in params.items() if v is not None}
+
     send_smtp_email = brevo_python.SendSmtpEmail(
         to=[{"email": email_destino}],
         template_id=template_id,
-        params={
-            "NOME": name,
-            "GLOBAL_ID": global_id,
-        },
+        params=params,
         headers={"X-Mailin-custom": "custom_header_1:custom_value_1"},
     )
 
