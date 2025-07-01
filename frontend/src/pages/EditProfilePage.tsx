@@ -360,7 +360,9 @@ function EditProfilePage() {
                       </Box>
                     </>
                   ) : (
-                    <Box textAlign="center" fontSize={22}>Insira o logotipo da empresa aqui</Box>
+                    <Box textAlign="center" fontSize={22}>
+                      Insira o logotipo da empresa aqui
+                    </Box>
                   )}
                   <input
                     ref={fileInputRef}

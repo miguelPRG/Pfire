@@ -18,8 +18,11 @@ import {
   InputAdornment,
   IconButton,
   Grid,
+  Alert,
+  Snackbar,
+  Link,
 } from "@mui/material";
-import { ExpandLess, ExpandMore, Search, Delete } from "@mui/icons-material";
+import { ExpandLess, ExpandMore, Search, Delete, Edit } from "@mui/icons-material";
 import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
@@ -41,19 +44,32 @@ export default function ReportModelListPage() {
   const { empresa } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
+  const location = useLocation();
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [expandedFields, setExpandedFields] = useState<Record<string, boolean>>({});
+  
+  // Estado para alertas
+  const [alert, setAlert] = useState<{ message: string; isError: boolean } | null>(null);
+
   const { data, loading, error, refetch } = useQuery(GET_MODELOS_RELATORIOS, {
     variables: { empresaId: typeof empresa === "object" ? empresa?.id : empresa, start: 0, lmt: 50 },
     skip: !empresa,
     fetchPolicy: "network-only",
   });
-  const location = useLocation();
+
+  // useEffect para lidar com mensagens de estado
   React.useEffect(() => {
-    if (location.state?.reload) {
+    if (location.state?.message) {
+      setAlert({
+        message: location.state.message.text,
+        isError: location.state.message.error,
+      });
+      window.history.replaceState({}, document.title);
+      refetch(); // Recarregar os dados após adicionar/editar modelo
+    } else if (location.state?.reload) {
       refetch();
       window.history.replaceState({}, document.title);
     }
@@ -87,20 +103,25 @@ export default function ReportModelListPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Erro ao apagar modelo");
 
-      console.log("Modelo apagado com sucesso:", data);
+      // Exibir alerta de sucesso
+      setAlert({
+        message: "Modelo apagado com sucesso!",
+        isError: false,
+      });
 
-      // Idealmente: usar refetch do Apollo aqui
       refetch();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Erro ao apagar o modelo.");
+      // Exibir alerta de erro
+      setAlert({
+        message: err.message || "Erro ao apagar o modelo.",
+        isError: true,
+      });
     }
   };
 
   const modelos = data?.modelosRelatorios || [];
-
   const filtered = modelos.filter((m: any) => m.modelName.toLowerCase().includes(search.toLowerCase()));
-
   const paginated = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   const zebraColor = (index: number) =>
@@ -121,7 +142,6 @@ export default function ReportModelListPage() {
               backgroundColor: theme.palette.mode === "dark" ? "#1e1e1e" : "#fafafa",
               borderLeft: "2px solid",
               borderColor: theme.palette.divider,
-              backgroundcolor: "#green",
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -163,139 +183,178 @@ export default function ReportModelListPage() {
   };
 
   return (
-    <Paper sx={{ width: "100%", p: 2, boxShadow: "none", backgroundColor: theme.palette.background.default }}>
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 8 }}>
-        <Typography variant="h5" sx={{ fontWeight: "bold", fontSize: 30, color: theme.palette.text.primary }}>
-          Modelos de Relatórios
-        </Typography>
-        <Button
-          variant="contained"
-          onClick={() => navigate("/report-templates")}
-          sx={{ textTransform: "none", height: "40px", width: "220px" }}
-        >
-          Adicionar novo Modelo
-        </Button>
-      </Box>
+    <>
+      <Paper sx={{ width: "100%", p: 2, boxShadow: "none", backgroundColor: theme.palette.background.default }}>
+        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 8 }}>
+          <Typography variant="h5" sx={{ fontWeight: "bold", fontSize: 30, color: theme.palette.text.primary }}>
+            Modelos de Relatórios
+          </Typography>
+          <Button
+            variant="contained"
+            onClick={() => navigate("/report-templates")}
+            sx={{ textTransform: "none", height: "40px", width: "220px" }}
+          >
+            Adicionar novo Modelo
+          </Button>
+        </Box>
 
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 2 }}>
-        <Select
-          value={rowsPerPage}
-          onChange={(e) => {
-            setRowsPerPage(Number(e.target.value));
-            setPage(0);
-          }}
-          size="small"
-          sx={{
-            width: 180,
-            height: "32px",
-            mt: "10px",
-            backgroundColor: theme.palette.background.paper,
-            "& .MuiOutlinedInput-notchedOutline": { borderColor: "transparent" },
-            "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: theme.palette.divider },
-            "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: theme.palette.primary.main },
-          }}
-        >
-          <MenuItem value={5}>Mostrar 5</MenuItem>
-          <MenuItem value={10}>Mostrar 10</MenuItem>
-          <MenuItem value={25}>Mostrar 25</MenuItem>
-        </Select>
-
-        <TextField
-          variant="outlined"
-          size="small"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Pesquisar por nome"
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search sx={{ color: theme.palette.primary.main }} />
-              </InputAdornment>
-            ),
-          }}
-          sx={{
-            width: "75%",
-            mt: 1,
-            "& .MuiOutlinedInput-root": {
+        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 2 }}>
+          <Select
+            value={rowsPerPage}
+            onChange={(e) => {
+              setRowsPerPage(Number(e.target.value));
+              setPage(0);
+            }}
+            size="small"
+            sx={{
+              width: 180,
+              height: "32px",
+              mt: "10px",
               backgroundColor: theme.palette.background.paper,
-              borderRadius: "25px",
-              color: theme.palette.text.primary,
-              "&.Mui-focused fieldset": {
-                borderColor: theme.palette.primary.main,
-              },
-            },
-          }}
-        />
-      </Box>
+              "& .MuiOutlinedInput-notchedOutline": { borderColor: "transparent" },
+              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: theme.palette.divider },
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: theme.palette.primary.main },
+            }}
+          >
+            <MenuItem value={5}>Mostrar 5</MenuItem>
+            <MenuItem value={10}>Mostrar 10</MenuItem>
+            <MenuItem value={25}>Mostrar 25</MenuItem>
+          </Select>
 
-      {loading ? (
-        <CircularProgress />
-      ) : error ? (
-        <Typography color="error">Erro ao carregar modelos.</Typography>
-      ) : (
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: theme.palette.background.paper }}>
-                <TableCell>
-                  <strong>Nome</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Data</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Campos Personalizados</strong>
-                </TableCell>
-                <TableCell align="center">
-                  <strong>Ações</strong>
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {paginated.map((modelo: any, i: number) => (
-                <TableRow key={modelo.id} sx={{ backgroundColor: zebraColor(i) }}>
-                  <TableCell>{modelo.modelName}</TableCell>
-                  <TableCell>{new Date(modelo.createdAt).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    {Array.isArray(modelo.customFields)
-                      ? modelo.customFields.map((field: any, index: number) => {
-                          const keyName = field.key?.replace(/^custom_/, "") || "(sem nome)";
-                          const value = field.value;
-                          return renderField(value, keyName);
-                        })
-                      : "-"}
-                  </TableCell>
-                  <TableCell align="center">
-                    <IconButton
-                      onClick={() => handleDelete(modelo.id)}
-                      sx={{
-                        backgroundColor: "error.main",
-                        color: "#fff",
-                        "&:hover": {
-                          backgroundColor: "error.dark",
-                        },
-                      }}
-                    >
-                      <Delete fontSize="small" />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      )}
-      {filtered.length > 5 && (
-        <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2, alignItems: "center" }}>
-          <Pagination
-            count={Math.ceil(filtered.length / rowsPerPage)}
-            page={page + 1}
-            onChange={(e, val) => setPage(val - 1)}
-            color="primary"
-            shape="rounded"
+          <TextField
+            variant="outlined"
+            size="small"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Pesquisar por nome"
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search sx={{ color: theme.palette.primary.main }} />
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              width: "75%",
+              mt: 1,
+              "& .MuiOutlinedInput-root": {
+                backgroundColor: theme.palette.background.paper,
+                borderRadius: "25px",
+                color: theme.palette.text.primary,
+                "&.Mui-focused fieldset": {
+                  borderColor: theme.palette.primary.main,
+                },
+              },
+            }}
           />
         </Box>
-      )}
-    </Paper>
+
+        {loading ? (
+          <CircularProgress />
+        ) : error ? (
+          <Typography color="error">Erro ao carregar modelos.</Typography>
+        ) : (
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow sx={{ backgroundColor: theme.palette.background.paper }}>
+                  <TableCell>
+                    <strong>Nome</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Data</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Campos Personalizados</strong>
+                  </TableCell>
+                  <TableCell align="center">
+                    <strong>Ações</strong>
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {paginated.map((modelo: any, i: number) => (
+                  <TableRow key={modelo.id} sx={{ backgroundColor: zebraColor(i) }}>
+                    <TableCell>
+                      <Link
+                        component="button"
+                        onClick={() => navigate("/report-templates", { 
+                          state: { 
+                            modelo: {
+                              id: modelo.id,
+                              modelName: modelo.modelName,
+                              customFields: modelo.customFields,
+                              createdAt: modelo.createdAt
+                            }
+                          } 
+                        })}
+                        sx={{ cursor: "pointer", textDecoration: "none" }}
+                      >
+                        {modelo.modelName}
+                      </Link>
+                    </TableCell>
+                    <TableCell>{new Date(modelo.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      {Array.isArray(modelo.customFields)
+                        ? modelo.customFields.map((field: any, index: number) => {
+                            const keyName = field.key?.replace(/^custom_/, "") || "(sem nome)";
+                            const value = field.value;
+                            return renderField(value, keyName);
+                          })
+                        : "-"}
+                    </TableCell>
+                    <TableCell align="center">
+                      <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
+                       
+                        <IconButton
+                          onClick={() => handleDelete(modelo.id)}
+                          sx={{
+                            backgroundColor: "error.main",
+                            color: "#fff",
+                            "&:hover": {
+                              backgroundColor: "error.dark",
+                            },
+                          }}
+                        >
+                          <Delete fontSize="small" />
+                        </IconButton>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
+        
+        {filtered.length > 5 && (
+          <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2, alignItems: "center" }}>
+            <Pagination
+              count={Math.ceil(filtered.length / rowsPerPage)}
+              page={page + 1}
+              onChange={(e, val) => setPage(val - 1)}
+              color="primary"
+              shape="rounded"
+            />
+          </Box>
+        )}
+      </Paper>
+
+      {/* Snackbar para exibir alertas */}
+      <Snackbar
+        open={!!alert}
+        autoHideDuration={4000}
+        onClose={() => setAlert(null)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setAlert(null)}
+          severity={alert?.isError ? "error" : "success"}
+          sx={{ width: "100%" }}
+        >
+          {alert?.message}
+        </Alert>
+      </Snackbar>
+    </>
   );
 }

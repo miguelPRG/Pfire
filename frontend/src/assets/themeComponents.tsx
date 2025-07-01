@@ -17,7 +17,7 @@ const commonComponents: Components = {
 
       span: {
         display: "inline", // 🔹 Garante que o span se comporte como um bloco inline
-      }
+      },
     },
   },
 
@@ -141,7 +141,7 @@ const commonComponents: Components = {
       },
       body2: {
         width: "100%",
-      }
+      },
     },
   },
   MuiIconButton: {

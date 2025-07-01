@@ -95,23 +95,19 @@ export default function CompanySelectorPage() {
                   ) : null}
 
                   <Box display="flex" flexDirection="column" textAlign="center" gap={0.5} mt={3} width="100%">
-                    <Typography
-                      variant="h3"
-                      gutterBottom
-                      mb={5}
-                    >
+                    <Typography variant="h3" gutterBottom mb={5}>
                       {emp.nome}
                     </Typography>
-                    <Typography variant="body2" >
+                    <Typography variant="body2">
                       <span style={{ fontWeight: "bold" }}>Localidade:</span> {emp.localidade}
                     </Typography>
-                    <Typography variant="body2" >
+                    <Typography variant="body2">
                       <span style={{ fontWeight: "bold" }}>Morada:</span> {emp.morada}
                     </Typography>
-                    <Typography variant="body2" >
+                    <Typography variant="body2">
                       <span style={{ fontWeight: "bold" }}>Código Postal:</span> {emp.codigoPostal}
                     </Typography>
-                    <Typography variant="body2" >
+                    <Typography variant="body2">
                       <span style={{ fontWeight: "bold" }}>NIF:</span> {emp.nif}
                     </Typography>
                   </Box>

@@ -120,7 +120,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const userData = await response.json();
 
-
         if (response.ok) {
           if (localUserId && localUserId !== userData.id) {
             localStorage.clear(); // Limpa o localStorage se o userId for diferente do guardado

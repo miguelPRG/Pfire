@@ -279,7 +279,7 @@ export default function RegisterPage() {
             fullWidth
             margin="normal"
           />
-          <GlobalPhone fieldName="empresa.telefone" control={control} errors={errors}/>
+          <GlobalPhone fieldName="empresa.telefone" control={control} errors={errors} />
           <Button
             type="submit"
             disabled={isSubmitting}

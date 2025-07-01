@@ -1,7 +1,7 @@
 import { Box, Button, TextField, Typography, Paper, Alert } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
-import { useForm} from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../hooks/AuthContext";
@@ -25,9 +25,7 @@ const addClientSchema = z.object({
     .nonempty("O NIF é obrigatório")
     .regex(/^[5789]\d{8}$/, "O NIF é inválido")
     .refine(validarNIF, "O NIF é inválido"),
-  localidade: z
-    .string()
-    .nonempty("A localidade é obrigatória"),
+  localidade: z.string().nonempty("A localidade é obrigatória"),
   morada: z.string().nonempty("A morada é obrigatória"),
   codigo_postal: z
     .string()
@@ -54,14 +52,14 @@ export default function AddNewClientPage() {
     resolver: zodResolver(addClientSchema),
     defaultValues: cliente
       ? {
-        nome: cliente.nome || "",
-        email: cliente.email || "",
-        telefone: cliente.telefone || "",
-        nif: cliente.nif || "",
-        localidade: cliente.localidade || "",
-        morada: cliente.morada || "",
-        codigo_postal: cliente.codigoPostal || "",
-      }
+          nome: cliente.nome || "",
+          email: cliente.email || "",
+          telefone: cliente.telefone || "",
+          nif: cliente.nif || "",
+          localidade: cliente.localidade || "",
+          morada: cliente.morada || "",
+          codigo_postal: cliente.codigoPostal || "",
+        }
       : {},
   });
 
@@ -95,10 +93,7 @@ export default function AddNewClientPage() {
     }
   };
 
-  const atualizarCliente = async (
-    dados: AddClientFormInputs & { id: string },
-    recaptchaToken: string
-  ) => {
+  const atualizarCliente = async (dados: AddClientFormInputs & { id: string }, recaptchaToken: string) => {
     try {
       if (!empresa?.id || !/^[a-f\d]{24}$/i.test(empresa.id)) {
         throw new Error("ID da empresa inválido ou não fornecido.");
@@ -120,7 +115,6 @@ export default function AddNewClientPage() {
         headers: {
           "Content-Type": "application/json",
         },
-
 
         credentials: "include",
         body: JSON.stringify({
@@ -145,10 +139,9 @@ export default function AddNewClientPage() {
   const onSubmit = async (formData: AddClientFormInputs) => {
     setErrorMessage(null);
     try {
-      const recaptchaToken = await grecaptcha.enterprise.execute(
-        "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",
-        { action: "register" }
-      );
+      const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
+        action: "register",
+      });
 
       if (!empresa?.id) {
         setErrorMessage("Empresa não encontrada.");
@@ -168,9 +161,7 @@ export default function AddNewClientPage() {
       }
     } catch (error: any) {
       setErrorMessage(
-        cliente
-          ? error?.message || "Erro ao atualizar cliente."
-          : error?.message || "Erro ao adicionar cliente."
+        cliente ? error?.message || "Erro ao atualizar cliente." : error?.message || "Erro ao adicionar cliente."
       );
     }
   };
@@ -196,7 +187,7 @@ export default function AddNewClientPage() {
           textAlign: "center",
         }}
       >
-        Adicionar novo Cliente
+        {cliente ? "Editar Cliente" : "Adicionar novo Cliente"}
       </Typography>
 
       <Box
@@ -223,7 +214,7 @@ export default function AddNewClientPage() {
           helperText={errors.email?.message}
           fullWidth
         />
-        <GlobalPhone fieldName="telefone" control={control} errors={errors}/>
+        <GlobalPhone fieldName="telefone" control={control} errors={errors} />
         <TextField
           {...register("nif")}
           label="NIF"
@@ -260,15 +251,21 @@ export default function AddNewClientPage() {
             justifyContent: "flex-end",
             gap: 2,
             mt: 2,
+            width: "100%",
           }}
         >
           <Button
+            variant="outlined"
             onClick={handleCancel}
             sx={{
-              backgroundColor: theme.palette.primary.main,
-              color: "white",
-              minWidth: 140,
-            }}
+              flex: 1,
+              
+              
+              "&:hover": {
+          bgcolor: "grey.300",
+         
+             
+            }}}
           >
             Cancelar
           </Button>
@@ -276,16 +273,19 @@ export default function AddNewClientPage() {
             type="submit"
             variant="contained"
             sx={{
+              flex: 1,
               backgroundColor: theme.palette.success.main,
               color: "white",
               "&:hover": {
-                backgroundColor: theme.palette.success.dark,
+          backgroundColor: theme.palette.success.dark,
               },
-              minWidth: 140,
+              minWidth: 0,
             }}
             disabled={isSubmitting}
           >
-            {isSubmitting ? "A adicionar..." : "Salvar"}
+            {isSubmitting
+              ? (cliente ? "Atualizando..." : "A adicionar...")
+              : (cliente ? "Atualizar dados do cliente" : "Salvar")}
           </Button>
         </Box>
       </Box>
