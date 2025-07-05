@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, JSONResponse
 from apis.recaptchaValidation import validar_recaptcha_token
 from models.empresaModels import EmpresaUpdate, EmpresaCreateAsLoggedUser
 from models.userEmpresaModels import UserEmpresaCreate
@@ -7,55 +7,48 @@ from bson import ObjectId
 from datetime import datetime
 from base64 import b64decode
 from imghdr import what
+from pymongo.errors import DuplicateKeyError
 
 routerEmpresa = APIRouter(prefix="/empresa")
 
 
 # Criar Empresa
 @routerEmpresa.post("/")
-async def create_empresa(empresa: EmpresaCreateAsLoggedUser, request: Request):
-
-    # Validar o token reCAPTCHA
-    await validar_recaptcha_token(empresa.recaptchaToken, "create")
-
-    # Sacar jwt
+async def create_empresa(payload: EmpresaCreateAsLoggedUser, request: Request):
+    await validar_recaptcha_token(payload.recaptchaToken, "create")
     jwt = getattr(request.state, "jwt", None)
-    logged_user_id = ObjectId(jwt["user_id"])
+    user_id = ObjectId(jwt["user_id"])
+    date = datetime.now()
 
-    empresa_found = await empresas_collection.find_one({"nif": empresa.nif})
+    empresa_doc = payload.model_dump(exclude_unset=True)
+    empresa_doc.update({
+        "created_at": date,
+        "updated_at": date,
+        "created_by": user_id,
+        "updated_by": user_id,
+    })
 
-    if empresa_found:
-        raise HTTPException(status_code=400, detail="Empresa com este NIF já existe.")
+    try:
+        res = await empresas_collection.insert_one(empresa_doc)
+    except DuplicateKeyError as e:
+        text = str(e).lower()
+        if "nif" in text:
+            raise HTTPException(status_code=409, detail="Empresa com este NIF já existe.")
+        raise HTTPException(status_code=409, detail="Campo duplicado na empresa.")
 
-    data_atual = datetime.now()
+    # associar criador como admin
+    assoc = UserEmpresaCreate(
+        user_id=user_id,
+        empresa_id=res.inserted_id,
+        isAdmin=True,
+        created_by=user_id,
+        created_at=date,
+        updated_by=user_id,
+        updated_at=date
+    ).model_dump(by_alias=True)
+    await users_empresas_collection.insert_one(assoc)
 
-    empresa_data = empresa.model_dump(exclude_unset=True)
-    empresa_data["created_by"] = empresa_data["updated_by"] = logged_user_id
-    empresa_data["created_at"] = empresa_data["updated_at"] = data_atual
-    del empresa_data["recaptchaToken"]
-
-    # Inserir a empresa na coleção de empresas
-    empresa_result = await empresas_collection.insert_one(empresa_data)
-    if not empresa_result.acknowledged:
-        raise HTTPException(status_code=500, detail="Erro ao criar empresa.")
-
-    user_empresa_result = await users_empresas_collection.insert_one(
-        UserEmpresaCreate(
-            user_id=logged_user_id,
-            empresa_id=empresa_result.inserted_id,
-            isAdmin=True,
-            created_by=logged_user_id,
-            created_at=data_atual,
-            updated_by=logged_user_id,
-            updated_at=data_atual,
-        ).model_dump(exclude_unset=True)
-    )
-
-    if not user_empresa_result.acknowledged:
-        raise HTTPException(status_code=500, detail="Erro ao associar utilizador à empresa.")
-
-    return {"message": "Empresa Criada com Sucesso!"}
-
+    return JSONResponse(status_code=201, content={"message": "Empresa criada com sucesso!"})
 
 # Atualizar Empresa
 @routerEmpresa.put("/{id}")

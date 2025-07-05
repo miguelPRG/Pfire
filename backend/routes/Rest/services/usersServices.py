@@ -17,6 +17,7 @@ from datetime import datetime
 from uuid import uuid4
 from bson import ObjectId
 from re import compile, IGNORECASE
+from pymongo.errors import DuplicateKeyError
 
 
 routerUser = APIRouter(prefix="/user")
@@ -173,82 +174,75 @@ async def login(user: UserLogin, request: Request):
 # 🚀 Registar um novo User
 @routerUser.post("/register")
 async def register_user(data: RegisterUser, request: Request):
-    # Validar el token reCAPTCHA
+    # 1) validar reCAPTCHA
     await validar_recaptcha_token(data.recaptchaToken, "register")
 
-    # Verificar si el usuario con ese email ya existe
-    existing_user = users_collection.find_one({"email": data.user.email})
-    # Verificar si la empresa con ese NIF ya existe
-    existing_empresa = empresas_collection.find_one({"nif": data.empresa.nif})
+    date = datetime.utcnow()
 
-    # Espera a que ambas operaciones finalicen
-    existing_user, existing_empresa = await gather(existing_user, existing_empresa)
-
-    if existing_user:
-        raise HTTPException(status_code=401, detail="O utilizador que tem este email já existe.")
-
-    if existing_empresa:
-        raise HTTPException(status_code=401, detail="A empresa que tem este NIF já existe.")
-
-    date = datetime.now()
-
-    # Crear el nuevo usuario
+    # 2) criar USER, capturando emails duplicados
     new_user = data.user
     new_user.password = pwd_context.hash(new_user.password)
-    new_user_data = new_user.model_dump(by_alias=True)
-    new_user_data["created_at"] = new_user_data["updated_at"] = date
-    new_user_data["last_login"] = None
-    new_user_data["isSuperAdmin"] = False
-    new_user_data["isActive"] = False
-    user = await users_collection.insert_one(new_user_data)
+    user_doc = new_user.model_dump(by_alias=True)
+    user_doc.update({
+        "created_at": date,
+        "updated_at": date,
+        "last_login": None,
+        "isSuperAdmin": False,
+        "isActive": False,
+    })
 
-    if not user.inserted_id:
-        raise HTTPException(status_code=500, detail="Erro ao criar o utilizador.")
+    try:
+        res_user = await users_collection.insert_one(user_doc)
+    except DuplicateKeyError as e:
+        text = str(e).lower()
+        if "email" in text:
+            raise HTTPException(status_code=409, detail="O email já está registrado.")
+        raise HTTPException(status_code=409, detail="Campo duplicado no usuário.")
+    user_id = res_user.inserted_id
 
-    # Crear la empresa
+    # 3) criar EMPRESA, capturando nif duplicado
     new_empresa = data.empresa
-    empresa_data = new_empresa.model_dump(by_alias=True)
-    empresa_data["created_at"] = empresa_data["updated_at"] = date
-    empresa_data["created_by"] = empresa_data["updated_by"] = user.inserted_id
-    empresa = await empresas_collection.insert_one(empresa_data)
+    empresa_doc = new_empresa.model_dump(by_alias=True)
+    empresa_doc.update({
+        "created_at": date,
+        "updated_at": date,
+        "created_by": user_id,
+        "updated_by": user_id,
+    })
 
-    if not empresa.inserted_id:
-        raise HTTPException(status_code=500, detail="Erro ao criar a empresa.")
+    try:
+        res_emp = await empresas_collection.insert_one(empresa_doc)
+    except DuplicateKeyError as e:
+        # roolback parcial: apagar usuário criado
+        await users_collection.delete_one({"_id": user_id})
+        text = str(e).lower()
+        if "nif" in text:
+            raise HTTPException(status_code=409, detail="O NIF já está registrado.")
+        raise HTTPException(status_code=409, detail="Campo duplicado na empresa.")
+    empresa_id = res_emp.inserted_id
 
-    # Crear UserEmpresa
-    new_user_empresa = UserEmpresaCreate(
-        user_id=user.inserted_id,
-        empresa_id=empresa.inserted_id,
+    # 4) associar user↔empresa
+    ue = UserEmpresaCreate(
+        user_id=user_id,
+        empresa_id=empresa_id,
         isAdmin=True,
-        created_by=user.inserted_id,
+        created_by=user_id,
         created_at=date,
-        updated_by=user.inserted_id,
+        updated_by=user_id,
         updated_at=date,
-    )
+    ).model_dump(by_alias=True)
+    await users_empresas_collection.insert_one(ue)
 
-    user_empresa_data = new_user_empresa.model_dump(by_alias=True)
-    user_empresa = await users_empresas_collection.insert_one(user_empresa_data)
-
-    if not user_empresa.inserted_id:
-        raise HTTPException(status_code=409, detail="Erro na criação do utilizador.")
-
-    # Gerar global ID
+    # 5) gerar global_id e enviar email
     global_id = str(uuid4())
+    await global_ids_collection.insert_one({
+        "global_id": global_id,
+        "user_id": user_id,
+        "created_at": date
+    })
+    enviar_email(user_doc["email"], user_doc["nome"], global_id, 4)
 
-    global_id_insertion = await global_ids_collection.insert_one(
-        {"global_id": global_id, "user_id": user.inserted_id, "created_at": date}
-    )
-
-    if not global_id_insertion.inserted_id:
-        raise HTTPException(status_code=409, detail="Erro na criação do ID global.")
-
-    print("Global ID: ", global_id)
-    print("email: ", new_user_data["email"])
-
-    enviar_email(new_user_data["email"], new_user_data["nome"], global_id, 4)
-
-    return {"message": "Conta criada! Verifique seu email para ativação."}
-
+    return JSONResponse(status_code=201, content={"message": "Conta criada! Verifique seu email para ativação."})
 
 # 🚀 Autenticação do Usuário (Verificar JWT)
 @routerUser.get("/auth")

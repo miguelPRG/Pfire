@@ -32,8 +32,8 @@ const subfieldSchema = z.object({
 });
 
 // Esquema de validação para um campo personalizado
-const fieldSchema = z.object({
-  name: z.string().min(1, "Nome do campo é obrigatório"),
+const subfieldSchema = z.object({
+  name: z.string().min(1, "Nome do subcampo é obrigatório"),
   datatype: z.string().min(1, "Tipo de dados é obrigatório"),
   required: z.boolean(),
   subfields: z.array(subfieldSchema).optional(),
@@ -41,9 +41,12 @@ const fieldSchema = z.object({
 
 // Esquema de validação do formulário principal
 const formSchema = z.object({
-  modelName: z.string().min(1, "Nome do modelo é obrigatório"),
-  fields: z.array(fieldSchema),
+  modelName: z.string().min(1, "Nome do modelo é obrigatório"), // Nome do modelo obrigatório
+  fields: z.array(fieldSchema), // Array de campos personalizados
 });
+
+// Novo schema para validação do nome do campo
+const newFieldNameSchema = z.string().min(1, "Nome do campo é obrigatório");
 
 // Esquema para validar o nome do novo campo
 const newFieldNameSchema = z.string().min(1, "Nome do campo é obrigatório");
