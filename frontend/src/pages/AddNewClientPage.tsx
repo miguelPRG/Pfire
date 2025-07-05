@@ -68,7 +68,7 @@ export default function AddNewClientPage() {
       if (!empresa?.id || !/^[a-f\d]{24}$/i.test(empresa.id)) {
         throw new Error("ID da empresa inválido ou não fornecido.");
       }
-
+      
       // O backend espera recaptchaToken e empresa_id no corpo
       const response = await fetch(`/backend/cliente`, {
         method: "POST",

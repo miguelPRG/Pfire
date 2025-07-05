@@ -94,6 +94,8 @@ async def atualizar_cliente(cliente: ClienteUpdate, request: Request, id: str):
     cliente_data["updated_at"] = datetime.now()
     del cliente_data["recaptchaToken"]
 
+    print(cliente_data)
+
     result = await clientes_collection.update_one({"_id": id, "isActive": True}, {"$set": cliente_data})
 
     if not result.modified_count:
