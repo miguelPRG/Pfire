@@ -2,7 +2,6 @@ import { createContext, useState, useContext, ReactNode, useEffect, useCallback 
 import { FirebaseLogin } from "../firebase";
 import { GET_EMPRESAS } from "../graphql/empresasqueries";
 import { useQuery } from "@apollo/client";
-import { useApolloClient } from "@apollo/client";
 import { set } from "zod/v4-mini";
 
 declare global {
@@ -105,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Use o hook useQuery no topo do componente
   const { data, error } = useQuery(GET_EMPRESAS, {
-    variables: { id: localEmpresaId || "" },
+    variables: { id: localEmpresaId },
     skip: !user || !localEmpresaId, // Só executa se houver user e empresaId
     fetchPolicy: "network-only",
   });
@@ -136,7 +135,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             firebaseUID: userData.firebaseUID,
           });
         } else {
-          setLoading(false);
+          setLoading(false); // <--- indica que o carregamento falhou
           throw new Error(userData.detail || "Erro ao autenticar utilizador");
         }
       } catch (error) {
@@ -147,12 +146,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (user && !localEmpresaId) {
-      // Se o user já estiver definido, não precisa esperar pelo data
-      setLoading(false);
+   
+    if(!user) {
+      console.log("Utilizador não autenticado");
+      return;
     }
 
-    if (data && !empresa && !error) {
+    if (!localEmpresaId) {
+      console.log("Nenhuma empresa selecionada, aguardando dados...");
+      setLoading(false); // <--- indica que o carregamento foi concluído
+      return;
+    }
+
+    if (error) {
+      console.error("Erro ao carregar empresas:", error);
+      localStorage.removeItem("empresaId"); // Limpa o empresaId se houver erro
+      setLoading(false); // <--- indica que o carregamento falhou
+      return;
+    }
+
+    if (data && !empresa) {
+
+      console.log("Dados recebidos:", data);
+
       const empresaData = data.empresas[0];
       setEmpresa({
         id: empresaData.id,
@@ -168,7 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setLoading(false); // <--- indica que o carregamento foi concluído
     }
-  }, [data, user, error]);
+  }, [data, error, user]);
 
   async function login(email: string, password: string) {
     if (!email || !password) {
@@ -266,8 +282,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       setLoading(true); // <--- adicione isto para indicar que o login está em progresso
 
-      setLoading(true); // <--- adicione isto para indicar que o login está em progresso
-
       const data = await response.json();
 
       console.log("Dados do login com OAuth:", data);
@@ -281,10 +295,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (data.newUser || (localUserId && localUserId !== data.id)) {
         //Apagar dados da empresa do localStorage
         localStorage.clear();
-        localStorage.clear();
       }
 
-      localStorage.setItem("userId", data.id); // <--- armazena o userId no localStorage
       localStorage.setItem("userId", data.id); // <--- armazena o userId no localStorage
 
       setUser({
@@ -337,7 +349,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     localStorage.setItem("empresaId", empresa.id); // <--- armazena o empresaId no localStorage
 
-    localStorage.setItem("empresaId", empresa.id); // <--- armazena o empresaId no localStorage
   }
 
   const updateUser = useCallback(async (user: UserUpdate) => {

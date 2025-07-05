@@ -1,5 +1,5 @@
 import { useLayoutEffect } from "react";
-import { Button, Paper, Typography, Box, Grid, Breadcrumbs, Link } from "@mui/material"; // Adicione Breadcrumbs e Link
+import { Button, Paper, Typography, Box, Grid } from "@mui/material"; // Adicione Breadcrumbs e Link
 import { useQuery } from "@apollo/client";
 import { GET_EMPRESAS } from "../graphql/empresasqueries";
 import { useAuth } from "../hooks/AuthContext";
@@ -7,7 +7,9 @@ import { useNavigate } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 
 export default function CompanySelectorPage() {
-  const { data, loading, error } = useQuery(GET_EMPRESAS);
+  const { data, loading, error } = useQuery(GET_EMPRESAS, {
+    fetchPolicy: "network-only",
+  });
   const { chooseCompany, empresa } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
@@ -47,18 +49,25 @@ export default function CompanySelectorPage() {
           </Typography>
         </Box>
 
-        <Grid container spacing={3} alignItems="stretch" justifyContent={"center"}>
+        <Grid container spacing={3} alignItems="stretch" width={"100%"} justifyContent={"center"}>
           {data.empresas.map((emp: any, i: number) => {
             const isSelected = emp.id === empresa?.id;
+            // Define os tamanhos condicionalmente
+            const gridSizes =
+              data.empresas.length > 1
+                ? { xs: 12, sm: 6, md: 4 }
+                : { xs: 12 };
+
             return (
-              <Grid size={{ xs: 12, sm: 6, md: 4 }} key={emp.id}>
+              <Grid {...gridSizes} key={emp.id}>
                 <Paper
                   elevation={4}
                   sx={{
                     p: { xs: 2, sm: 3 },
                     height: "100%",
                     width: "100%",
-                    maxWidth: 400,
+                    minHeight: 500,
+                    minWidth: 300,
                     mx: "auto",
                     display: "flex",
                     flexDirection: "column",
