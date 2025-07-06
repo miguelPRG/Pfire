@@ -2,9 +2,10 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useParams, useNavigate } from "react-router-dom";
-import { Box, Button, TextField, Typography, Paper } from "@mui/material";
+import { Box, Button, Typography, Paper } from "@mui/material";
 import { useState, useEffect } from "react";
 import LoadingAnimation from "../../components/LoadingAnimation";
+import PasswordField from "../../components/PasswordField";
 
 const newPasswordSchema = z
   .object({
@@ -123,19 +124,17 @@ export default function NewPasswordPage() {
           Definir Nova Palavra-Passe
         </Typography>
         <form onSubmit={handleSubmit(onSubmit)}>
-          <TextField
+          <PasswordField
             {...register("password")}
             label="Nova Palavra-Passe"
-            type="password"
             fullWidth
             margin="normal"
             error={!!errors.password}
             helperText={errors.password?.message}
           />
-          <TextField
+          <PasswordField
             {...register("confirmPassword")}
             label="Confirmar Palavra-Passe"
-            type="password"
             fullWidth
             margin="normal"
             error={!!errors.confirmPassword}

@@ -10,6 +10,7 @@ import { useLocation } from "react-router-dom";
 import microsoft from "../../assets/images/microsoft.png";
 import google from "../../assets/images/google.png";
 import logo from "../../assets/images/logo.png";
+import PasswordField from "../../components/PasswordField";
 
 // Definir o esquema de validação com Zod
 const loginSchema = z.object({
@@ -176,11 +177,10 @@ function LoginPage() {
             fullWidth
             margin="normal"
           />
-          <TextField
+          <PasswordField
             {...register("password")}
             id="password"
             label="Password *"
-            type="password"
             error={!!errors.password}
             helperText={errors.password?.message}
             fullWidth

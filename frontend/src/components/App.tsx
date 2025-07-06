@@ -49,6 +49,8 @@ const ProtectedRoute = ({ element }: { element: ReactElement }) => {
 const PublicRoute = ({ element }: { element: ReactElement }) => {
   const { user } = useAuth();
 
+  console.log("Rota Publica")
+
   return user ? <ProtectedRoute element={<Home />} /> : element;
 };
 

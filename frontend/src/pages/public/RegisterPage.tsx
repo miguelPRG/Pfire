@@ -28,6 +28,7 @@ import microsoftIcon from "../../assets/images/microsoft.png";
 import googleIcon from "../../assets/images/google.png";
 import isValidNIF from "../utils/isValidNIF";
 import GlobalPhone from "../../components/GlobalPhone";
+import PasswordField from "../../components/PasswordField";
 
 const registerSchema = z.object({
   user: z
@@ -51,7 +52,6 @@ const registerSchema = z.object({
     nif: z
       .string()
       .nonempty("O NIF é obrigatório")
-      .regex(/^[5789]\d{8}$/, "O NIF é inválido")
       .refine(isValidNIF, { message: "O NIF é inválido" }),
     localidade: z.string().nonempty("A localidade é obrigatória").trim(),
     morada: z.string().nonempty("A morada é obrigatória").trim(),
@@ -216,16 +216,15 @@ export default function RegisterPage() {
             fullWidth
             margin="normal"
           />
-          <TextField
+          <PasswordField
             {...register("user.password")}
             label="Senha*"
-            type="password"
             error={!!errors.user?.password}
             helperText={errors.user?.password?.message}
             fullWidth
             margin="normal"
           />
-          <TextField
+          <PasswordField
             {...register("user.confirmPassword")}
             label="Confirmar senha*"
             type="password"
@@ -302,7 +301,7 @@ export default function RegisterPage() {
           </DialogTitle>
           <DialogContent>
             <Typography sx={{ mt: 1 }}>
-              O teu registo foi concluído. Por favor, verifica o teu email para ativar a conta.
+              O seu registo foi concluído. Por favor, verifique o seu email para ativar a conta.
             </Typography>
           </DialogContent>
           <DialogActions sx={{ justifyContent: "center", pb: 2 }}>
@@ -331,7 +330,7 @@ export default function RegisterPage() {
         </Dialog>
 
         <Typography variant="body2" sx={{ mt: 2 }}>
-          Já tens uma conta? <Link to="/login">Inicia sessão</Link>
+          Já tem uma conta registada? <Link to="/login">Inicie sessão</Link>
         </Typography>
       </Paper>
     </Container>

@@ -7,13 +7,13 @@ import GlobalPhone from "../components/GlobalPhone";
 import { useEffect, useState, useRef } from "react";
 import isValidNIF from "./utils/isValidNIF";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
+import PasswordField from "../components/PasswordField";
 
 // Schemas
 const userInfoSchema = z.object({
   name: z.string().nonempty("Nome é obrigatório"),
   telefone: z
     .string({ required_error: "Por favor insira o telefone" })
-    .nonempty("Por favor insira o telefone")
     .regex(/^[+]?\d{7,15}$/, "Número de telefone inválido"),
 });
 
@@ -37,7 +37,6 @@ const companySchema = z.object({
   companyName: z.string(),
   nif: z
     .string()
-    .regex(/^[5789]\d{8}$/, "NIF inválido")
     .refine((nif) => isValidNIF(nif), { message: "NIF Inválido" }),
   address: z.string(),
   locality: z.string(),
@@ -216,6 +215,9 @@ function EditProfilePage() {
             <GlobalPhone fieldName="telefone" control={userInfoForm.control} errors={userInfoForm.formState.errors} />
           </Grid>
           <Grid size={{ xs: 12 }}>
+            <TextField label="Email" fullWidth sx={{ width: "100%" }} disabled value={user?.email || ""} />
+          </Grid>
+          <Grid size={{ xs: 12 }}>
             <Box display="flex" justifyContent="center" mt={2}>
               <Button
                 type="submit"
@@ -230,19 +232,11 @@ function EditProfilePage() {
           </Grid>
         </Grid>
       </SectionForm>
-      <SectionForm title="O seu Email" onSubmit={() => {}}>
-        <Grid container spacing={2} size={{ xs: 12 }} sx={{ width: "100%" }}>
-          <Grid size={{ xs: 12 }}>
-            <TextField label="Email" fullWidth sx={{ width: "100%" }} disabled value={user?.email || ""} />
-          </Grid>
-        </Grid>
-      </SectionForm>
       <SectionForm title="Alterar Senha" onSubmit={userPasswordForm.handleSubmit(handleSubmitUserPassword)}>
         <Grid container spacing={2}>
           <Grid size={{ xs: 12 }}>
-            <TextField
+            <PasswordField
               label="Password"
-              type="password"
               fullWidth
               sx={{ width: "100%" }}
               {...userPasswordForm.register("password")}
@@ -251,9 +245,8 @@ function EditProfilePage() {
             />
           </Grid>
           <Grid size={{ xs: 12 }}>
-            <TextField
+            <PasswordField
               label="Nova Senha"
-              type="password"
               fullWidth
               sx={{ width: "100%" }}
               {...userPasswordForm.register("newPassword")}
@@ -262,9 +255,8 @@ function EditProfilePage() {
             />
           </Grid>
           <Grid size={{ xs: 12 }}>
-            <TextField
+            <PasswordField
               label="Confirmar Nova Senha"
-              type="password"
               fullWidth
               sx={{ width: "100%" }}
               {...userPasswordForm.register("confirmPassword")}

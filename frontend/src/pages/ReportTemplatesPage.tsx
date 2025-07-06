@@ -32,7 +32,7 @@ const subfieldSchema = z.object({
 });
 
 // Esquema de validação para um campo personalizado
-const subfieldSchema = z.object({
+const fieldSchema = z.object({
   name: z.string().min(1, "Nome do subcampo é obrigatório"),
   datatype: z.string().min(1, "Tipo de dados é obrigatório"),
   required: z.boolean(),
@@ -46,9 +46,6 @@ const formSchema = z.object({
 });
 
 // Novo schema para validação do nome do campo
-const newFieldNameSchema = z.string().min(1, "Nome do campo é obrigatório");
-
-// Esquema para validar o nome do novo campo
 const newFieldNameSchema = z.string().min(1, "Nome do campo é obrigatório");
 
 // Tipos TypeScript inferidos dos esquemas
