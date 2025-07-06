@@ -23,7 +23,6 @@ const addClientSchema = z.object({
   nif: z
     .string()
     .nonempty("O NIF é obrigatório")
-    .regex(/^[5789]\d{8}$/, "O NIF é inválido")
     .refine(validarNIF, "O NIF é inválido"),
   localidade: z.string().nonempty("A localidade é obrigatória"),
   morada: z.string().nonempty("A morada é obrigatória"),

@@ -1,4 +1,5 @@
-from fastapi import APIRouter, HTTPException, Request, JSONResponse
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import JSONResponse
 from apis.recaptchaValidation import validar_recaptcha_token
 from models.empresaModels import EmpresaUpdate, EmpresaCreateAsLoggedUser
 from models.userEmpresaModels import UserEmpresaCreate

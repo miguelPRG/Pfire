@@ -43,7 +43,7 @@ class UserQuery:
                 continue
 
             role = (
-                "SuperAdmin" if jwt.get("isSuperAdmin", False) else "Admin" if user_empresa.get("isAdmin") else "User"
+                "Admin" if user_empresa.get("isAdmin") else "User"
             )
 
             user_data = {

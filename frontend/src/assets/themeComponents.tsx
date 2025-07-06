@@ -54,9 +54,6 @@ const commonComponents: Components = {
         fontWeight: "bold",
         transition: "0.3s",
         marginBottom: "10px",
-        "&:hover": {
-          backgroundColor: "#1565C0",
-        },
       },
     },
   },
@@ -71,15 +68,22 @@ const commonComponents: Components = {
         marginBottom: "10px",
         boxShadow: "none", // 🔹 Remove qualquer sombra desnecessária
       },
-    },
-  },
-  MuiTextField: {
-    defaultProps: {
+        },
+      },
+      MuiTextField: {
+        defaultProps: {
       margin: "normal",
       fullWidth: true,
       variant: "filled",
-    },
-    styleOverrides: {
+      slotProps: {
+        inputLabel: {
+          style: {
+        fontSize: "0.95rem", // Aumenta o tamanho da fonte do label
+          },
+        },
+      },
+        },
+        styleOverrides: {
       root: {
         marginBottom: "10px",
         "&:hover .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline": {
@@ -89,14 +93,14 @@ const commonComponents: Components = {
         "& .MuiInputBase-root": { height: 50 }, // Ajusta altura do campo
         "& .MuiInputLabel-root": {
           lineHeight: "1.2", // Aumenta a altura do label
-          fontSize: "1.1rem", //
+          fontSize: "1.1rem",
         },
-        "& .MuiInputLabel-shrink": { top: 0 },
+        "& .MuiInputLabel-shrink": { top: -20 , left: -8},
       },
-    },
-  },
-  MuiInputLabel: {
-    styleOverrides: {
+        },
+      },
+      MuiInputLabel: {
+        styleOverrides: {
       root: ({ theme }: any) => ({
         color: theme.palette.text.primary,
         "&.Mui-focused": {
@@ -106,25 +110,22 @@ const commonComponents: Components = {
           color: theme.palette.text.primary,
         },
       }),
-    },
-  },
-  MuiTypography: {
-    styleOverrides: {
+        },
+      },
+      MuiTypography: {
+        styleOverrides: {
       h1: {
         fontSize: "1.7rem",
         fontWeight: "bold",
       },
-
       h2: {
         fontSize: "1.5rem",
         fontWeight: "bold",
       },
-
       h3: {
         fontSize: "1.2rem",
         fontWeight: "bold",
       },
-
       body1: {
         fontSize: "1rem",
         "& a": {

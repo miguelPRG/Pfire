@@ -327,7 +327,7 @@ export default function ReportModelListPage() {
           </TableContainer>
         )}
         
-        {filtered.length > 5 && (
+        {filtered.length > 10 && (
           <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2, alignItems: "center" }}>
             <Pagination
               count={Math.ceil(filtered.length / rowsPerPage)}

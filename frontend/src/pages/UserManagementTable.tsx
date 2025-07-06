@@ -46,7 +46,7 @@ export default function UserManagementTable() {
   const [search, setSearch] = useState("");
   const [orderBy, setOrderBy] = useState<keyof User | null>(null);
   const [order, setOrder] = useState<"asc" | "desc">("asc");
-  const { empresa } = useAuth();
+  const { empresa, user } = useAuth();
   const { data, loading, error, refetch } = useQuery(GET_USERS, {
     variables: { empresaId: empresa?.id },
     fetchPolicy: "cache-first",
@@ -241,76 +241,79 @@ export default function UserManagementTable() {
           </TableHead>
 
           <TableBody>
-            {sortedRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((user, index) => (
+            {sortedRows
+              .filter((u) => u.id !== user?.id)
+              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+              .map((user, index) => (
               <TableRow
                 key={user.id}
                 sx={{
-                  backgroundColor: zebraColor(index),
+                backgroundColor: zebraColor(index),
                 }}
               >
                 <TableCell
-                  sx={{
-                    py: 1,
-                  }}
+                sx={{
+                  py: 1,
+                }}
                 >
-                  {user.nome}
+                {user.nome}
                 </TableCell>
                 <TableCell
-                  sx={{
-                    py: 1,
-                  }}
+                sx={{
+                  py: 1,
+                }}
                 >
-                  {user.telefone}
+                {user.telefone}
                 </TableCell>
                 <TableCell
+                sx={{
+                  py: 1,
+                }}
+                >
+                <Button
+                  variant="contained"
+                  size="small"
                   sx={{
-                    py: 1,
+                  borderRadius: "20px",
+                  width: "40px",
+                  minWidth: "auto",
+                  px: 0,
                   }}
+                  color={user.isActive ? "success" : "error"}
+                  onClick={() => handleToggleStatus(user)}
+                >
+                  {user.isActive ? "Ativo" : "Inativo"}
+                </Button>
+                </TableCell>
+                <TableCell
+                sx={{
+                  py: 1,
+                }}
+                >
+                {user.email}
+                </TableCell>
+                <TableCell
+                sx={{
+                  py: 1,
+                }}
                 >
                   <Button
-                    variant="contained"
-                    size="small"
-                    sx={{
-                      borderRadius: "20px",
-                      width: "40px",
-                      minWidth: "auto",
-                      px: 0,
-                    }}
-                    color={user.isActive ? "success" : "error"}
-                    onClick={() => handleToggleStatus(user)}
-                  >
-                    {user.isActive ? "Ativo" : "Inativo"}
-                  </Button>
-                </TableCell>
-                <TableCell
+                  variant="outlined"
+                  size="small"
                   sx={{
-                    py: 1,
+                  borderRadius: "20px",
+                  minWidth: 0,
+                  px: 1.5,
+                  width: "auto",
+                  textTransform: "none",
                   }}
-                >
-                  {user.email}
-                </TableCell>
-                <TableCell
-                  sx={{
-                    py: 1,
-                  }}
-                >
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    sx={{
-                      borderRadius: "20px",
-                      width: "60px",
-                      minWidth: "auto",
-                      px: 0.5,
-                    }}
-                    color={user.isAdmin ? "primary" : "success"}
-                    onClick={() => handleToggleAdmin(user)}
+                  onClick={() => handleToggleAdmin(user)}
                   >
-                    {user.isAdmin ? "Admin" : "Técnico"}
+                  {user.role}
                   </Button>
                 </TableCell>
               </TableRow>
-            ))}
+              ))}
           </TableBody>
         </Table>
       </TableContainer>
@@ -322,13 +325,13 @@ export default function UserManagementTable() {
           mt: 2,
         }}
       >
-        <Pagination
+        {sortedRows.length > 10 && (<Pagination
           count={Math.ceil(sortedRows.length / rowsPerPage)}
           page={page + 1}
           onChange={(_, value) => setPage(value - 1)}
           color="primary"
           shape="rounded"
-        />
+        />) }
       </Box>
     </Paper>
   );

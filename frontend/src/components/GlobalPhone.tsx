@@ -1,5 +1,5 @@
 import { Control, Controller, FieldErrors } from "react-hook-form";
-import { Box, Typography } from "@mui/material";
+import { Box, Typography, InputLabel } from "@mui/material";
 import PhoneInput from "react-phone-number-input";
 import "react-phone-number-input/style.css";
 import "../assets/styles/phoneNumberField.css";
@@ -24,8 +24,13 @@ export default function GlobalPhone({
   }
   const errorObj = getError();
 
+  const inputId = `phone-input-${fieldName.replace(/\./g, "-")}`;
+
   return (
-    <Box id="telefone-field">
+    <Box id="telefone-field" display={"flex"} sx={{mt: 1}} flexDirection="column" width="100%">
+      <InputLabel htmlFor={inputId} sx={{ mb: 1, width: "100%", textAlign: "left" }}>
+        Telefone:
+      </InputLabel>
       <Controller
         name={fieldName}
         control={control}
@@ -52,6 +57,7 @@ export default function GlobalPhone({
             >
               <PhoneInput
                 {...field}
+                id={inputId}
                 defaultCountry="PT"
                 international
                 countryCallingCodeEditable={false}

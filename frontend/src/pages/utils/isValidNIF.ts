@@ -1,7 +1,8 @@
 export default function isValidNIF(nif: string): boolean {
   // Remove espaços e outros caracteres não numéricos
   nif = nif.replace(/\D/g, "");
-  if (!/^[5789]\d{8}$/.test(nif)) return false;
+  // Prefixos válidos: 1, 2, 3, 5, 6, 8, 9
+  if (!/^[1235689]\d{8}$/.test(nif)) return false;
   let total = 0;
   for (let i = 0; i < 8; i++) {
     total += parseInt(nif[i], 10) * (9 - i);

@@ -400,6 +400,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       action: "updatePassword",
     });
 
+    console.log(passwordUpdate);
+
     try {
       const response = await fetch("/backend/user/update-password", {
         method: "PUT",

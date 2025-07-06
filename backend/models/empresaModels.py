@@ -6,7 +6,7 @@ from models.utils.validarNIF import validar_nif
 
 class EmpresaCreate(BaseModel):
     nome: str = Field(..., max_length=100, description="Nome da empresa. Deve ter no máximo 100 caracteres.")
-    nif: str = Field(..., pattern=r"^[5789]\d{8}$")
+    nif: str = Field(..., pattern=r"^[1235689]\d{8}$")
     localidade: str = Field(
         ..., max_length=100, description="Localidade da empresa. Deve ter no máximo 100 caracteres."
     )
@@ -38,7 +38,7 @@ class EmpresaCreateAsLoggedUser(EmpresaCreate):
 class EmpresaUpdate(BaseModel):
     recaptchaToken: str
     nome: Optional[str] = Field(None, max_length=100)
-    nif: Optional[str] = Field(None, pattern=r"^[5789]\d{8}$")
+    nif: Optional[str] = Field(None, pattern=r"^[1235689]\d{8}$")
     localidade: Optional[str] = Field(None, max_length=100)
     morada: Optional[str] = Field(None, max_length=255)
     codigo_postal: Optional[str] = Field(None, pattern=r"^\d{4}-\d{3}$")

@@ -9,7 +9,7 @@ class ClienteCreate(BaseModel):
     nome: str = Field(..., max_length=100, description="Nome do cliente. Deve ter no máximo 100 caracteres.")
     email: EmailStr = Field(..., max_length=254, description="O email deve ser um endereço de email válido.")
     telefone: str = Field(..., pattern=r"^\+?[0-9\s\-()]{7,15}$")
-    nif: str = Field(..., pattern=r"^[5789]\d{8}$")
+    nif: str = Field(..., pattern=r"^[1235689]\d{8}$")
     localidade: str = Field(
         ..., max_length=100, description="Localidade do cliente. Deve ter no máximo 100 caracteres."
     )
@@ -37,7 +37,7 @@ class ClienteUpdate(BaseModel):
     nome: Optional[str] = Field(None, max_length=100, description="Nome do cliente. Deve ter no máximo 100 caracteres.")
     email: Optional[EmailStr] = Field(None, max_length=254, description="O email deve ser um endereço de email válido.")
     telefone: Optional[str] = Field(None, pattern=r"^\+?[0-9\s\-()]{7,15}$")
-    nif: Optional[str] = Field(None, pattern=r"^[5789]\d{8}$")
+    nif: Optional[str] = Field(None, pattern=r"^[1235689]\d{8}$")
     localidade: Optional[str] = Field(
         None, max_length=100, description="Cidade do cliente. Deve ter no máximo 100 caracteres."
     )
