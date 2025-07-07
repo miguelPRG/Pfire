@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate} from "react-router-dom";
 import { Box, Button, Typography, Paper } from "@mui/material";
 import { useState, useEffect } from "react";
 import LoadingAnimation from "../../components/LoadingAnimation";
@@ -26,7 +26,7 @@ export default function NewPasswordPage() {
   const [userConfirmation, setUserConfirmation] = useState<{
     isConfirmed: boolean;
     message: string;
-  }>({ isConfirmed: false, message: "" });
+  }>( { isConfirmed: false, message: "" });
   const {
     register,
     handleSubmit,
@@ -36,40 +36,46 @@ export default function NewPasswordPage() {
   });
 
   useEffect(() => {
-    console.log("GLOBAL_ID:", GLOBAL_ID);
-    if (!GLOBAL_ID) {
-      setUserConfirmation({
-        isConfirmed: false,
-        message: "Erro ao efetuar operação! Não foi possível encontrar o ID global.",
-      });
-    }
-
-    const checkToken = async () => {
-      try {
-        const response = await fetch(`/backend/user/get-global-id/${GLOBAL_ID}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
+    const checkGlobalId = async () => {
+      if (!GLOBAL_ID) {
+        setUserConfirmation({
+          isConfirmed: false,
+          message: "ID global inválido ou não fornecido.",
         });
+        setLoading(false);
+        return;
+      }
 
+      try {
+        const response = await fetch(`/backend/user/get-global-id/${GLOBAL_ID}`);
         if (!response.ok) {
           setUserConfirmation({
             isConfirmed: false,
-            message: "O botão que foi enviado no email já não funciona",
+            message: "ID global inválido ou expirado.",
           });
+          setLoading(false);
+          return;
+        }
+        const data = await response.json();
+        if (data.isValid) {
+          setLoading(false);
+        } else {
+          setUserConfirmation({
+            isConfirmed: false,
+            message: "ID global inválido ou expirado.",
+          });
+          setLoading(false);
         }
       } catch (error) {
         setUserConfirmation({
           isConfirmed: false,
-          message: "O botão que foi enviado no email já não funciona",
+          message: "Erro ao verificar o ID global.",
         });
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
-    checkToken();
+    checkGlobalId();
   }, []);
 
   useEffect(() => {

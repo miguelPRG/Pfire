@@ -58,6 +58,7 @@ export default function UserManagementTable() {
   const [search, setSearch] = useState("");
   const [orderBy, setOrderBy] = useState<keyof User | null>(null);
   const [order, setOrder] = useState<"asc" | "desc">("asc");
+  const [inviteOpen, setInviteOpen] = useState(false);
   const { empresa, user } = useAuth();
   const { data, loading, error, refetch } = useQuery(GET_USERS, {
     variables: { empresaId: empresa?.id },

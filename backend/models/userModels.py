@@ -15,6 +15,7 @@ class UserCreate(BaseModel):
         min_length=9,
         description="A senha deve ter pelo menos 9 caracteres, incluindo uma letra minúscula, uma maiúscula e um dígito.",
     )
+    confirmPassword: str
 
     @field_validator("nome", "email", mode="before")
     @classmethod
@@ -33,6 +34,12 @@ class UserCreate(BaseModel):
         if not any(c.isdigit() for c in v):
             raise HTTPException(status_code=400, detail="A senha deve conter pelo menos um dígito.")
         return v
+    
+    @model_validator(mode="after")
+    def check_passwords_match(self):
+        if self.password != self.confirmPassword:
+            raise HTTPException(status_code=400, detail="As novas senhas não coincidem.")
+        return self
 
 
 class UserUpdate(BaseModel):

@@ -28,10 +28,17 @@ export default defineConfig({
     port: 3000,
     open: true,
     proxy: {
-      "/backend": {
+      // Mapeia tanto "/backend" quanto "backend" (sem barra)
+      "^/backend": {
         target: "http://localhost:8000",
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/backend/, ""),
+        rewrite: (path) => path.replace(/^\/?backend/, ""),
+      },
+      // Opcional: se quiser garantir que "backend" sem barra inicial também seja mapeado
+      "^backend": {
+        target: "http://localhost:8000",
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^backend/, ""),
       },
     },
     watch: {

@@ -1,5 +1,5 @@
-import { useState, useLayoutEffect } from "react";
-import { useNavigate, Link, useParams } from "react-router-dom";
+import { useState, useLayoutEffect, useEffect } from "react";
+import { useNavigate, Link, useParams, useLocation } from "react-router-dom";
 import {
   Container,
   Typography,
@@ -29,24 +29,38 @@ import isValidNIF from "../utils/isValidNIF";
 import GlobalPhone from "../../components/GlobalPhone";
 import PasswordField from "../../components/PasswordField";
 
-const registerSchema = z.object({
-  user: z
-    .object({
-      nome: z.string().nonempty("O nome é obrigatório"),
-      email: z.string().nonempty("O email é obrigatório").email("Email inválido"),
-      password: z
-        .string()
-        .nonempty("A senha é obrigatória")
-        .min(9, "A senha deve ter pelo menos 9 caracteres")
-        .regex(/[A-Z]/, "A senha deve conter pelo menos uma letra maiúscula")
-        .regex(/\d/, "A senha deve conter pelo menos um número"),
-      confirmPassword: z.string().optional(),
-    })
-    .refine((d) => d.password === d.confirmPassword, {
-      message: "As senhas não coincidem",
-      path: ["confirmPassword"],
-    }),
-  empresa: z.object({
+export default function RegisterPage() {
+  const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+  const { registerUser, loginWithOAuth } = useAuth();
+  const [isRegistError, setIsRegistError] = useState({
+    error: false,
+    message: "",
+  });
+  const [noCompany, setNoCompany] = useState(true);
+  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  const { GLOBAL_ID } = useParams<{ GLOBAL_ID: string }>();
+  const location = useLocation();
+
+  // Schema do usuário
+  const userSchema = z.object({
+    nome: z.string().nonempty("O nome é obrigatório"),
+    email: z.string().nonempty("O email é obrigatório").email("Email inválido"),
+    password: z
+      .string()
+      .nonempty("A senha é obrigatória")
+      .min(9, "A senha deve ter pelo menos 9 caracteres")
+      .regex(/[A-Z]/, "A senha deve conter pelo menos uma letra maiúscula")
+      .regex(/\d/, "A senha deve conter pelo menos um número"),
+    confirmPassword: z.string(),
+  }).refine((d) => d.password === d.confirmPassword, {
+    message: "As senhas não coincidem",
+    path: ["confirmPassword"],
+  });
+
+  // Schema da empresa
+  const empresaSchema = z.object({
     nome: z.string().nonempty("O nome da empresa é obrigatório"),
     nif: z
       .string()
@@ -59,67 +73,69 @@ const registerSchema = z.object({
       .nonempty("O código postal é obrigatório")
       .regex(/^\d{4}-\d{3}$/, "O código postal deve estar no formato 1234-567"),
     telefone: z
-      .string({
-        required_error: "Campo obrigatório",
-        invalid_type_error: "Campo obrigatório",
-      })
+      .string()
       .min(1, "Campo obrigatório")
       .regex(/^\+?[0-9\s\-()]{7,15}$/, "Número de telefone inválido"),
-  }),
-});
+  });
 
-  type RegisterFormInputs = z.infer<typeof registerSchema>;
+  // Schema principal dinâmico
+  const getRegisterSchema = (noCompany: boolean) =>
+    z.object({
+      user: userSchema,
+      ...(noCompany && { empresa: empresaSchema }),
+    });
+
+  type RegisterFormInputs = z.infer<ReturnType<typeof getRegisterSchema>>;
 
   const {
     register,
     handleSubmit,
     control,
     formState: { errors, isSubmitting },
+    reset,
   } = useForm<RegisterFormInputs>({
-    resolver: zodResolver(registerSchema),
+    resolver: zodResolver(getRegisterSchema(noCompany)),
   });
+
+  // Atualiza o schema do formulário quando noCompany mudar
+  useEffect(() => {
+
+    if(noCompany) {
+      return;
+    }
+
+    reset(
+        (prev) => ({
+          ...prev,
+          user: {
+            ...prev.user,
+            email: location.state?.email || "",
+          },
+        }),
+        { keepValues: true }
+      );
+
+  }, [noCompany]);
 
   useLayoutEffect(() => {
 
-    async function checkGlobalId() {
-      if (!GLOBAL_ID) {
-        return;
-      }
-
-      try {
-        const response = await fetch(`/backend/user/get-global-id/${GLOBAL_ID}`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
-
-        if (!response.ok) {
-          setIsRegistError({
-            error: true,
-            message: "O botão que foi enviado no email já não funciona.",
-          });
-        }
-
+    if(GLOBAL_ID) {
+      // Se GLOBAL_ID estiver presente, temos que verificar se o email do utilizador foi fornecido pelo componente EmailOperation
+      if(location.state?.email || sessionStorage.getItem("email")) {
+        sessionStorage.setItem("email", location.state.email);
+        location.state.email = sessionStorage.getItem("email");
         setNoCompany(false);
-
-      } catch (error) {
-        setIsRegistError({
-          error: true,
-          message: "O botão que foi enviado no email já não funciona.",
-        });
       }
+
     }
 
-    checkGlobalId();
   }, []);
 
   // 1) SUBMIT tradicional: Firebase + sendEmailVerification + backend /empresa/
   const onSubmit = async (data: RegisterFormInputs) => {
     setIsRegistError({ error: false, message: "" });
     try {
-      delete data.user.confirmPassword;
-      await registerUser({ user: data.user, empresa: data.empresa });
+      await registerUser({ user: data.user, empresa: data.empresa, global_id: GLOBAL_ID });
       // Abre diálogo de sucesso (o usuário deve confirmar e-mail)
       setShowSuccessDialog(true);
     } catch (err: any) {
@@ -238,6 +254,8 @@ const registerSchema = z.object({
             helperText={errors.user?.email?.message}
             fullWidth
             margin="normal"
+            disabled={!!location.state?.email}
+            defaultValue={location.state?.email || ""}
           />
           <PasswordField
             {...register("user.password")}
@@ -258,52 +276,52 @@ const registerSchema = z.object({
           />
 
           {/* Dados da empresa */}
-          { noCompany && (
+          {noCompany && (
             <>
               <Typography variant="h6" sx={{ mt: 3, mb: 1 }}>
-            Dados da Empresa
-          </Typography>
-          <TextField
-            {...register("empresa.nome")}
-            label="Nome da empresa*"
-            error={!!errors.empresa?.nome}
-            helperText={errors.empresa?.nome?.message}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            {...register("empresa.nif")}
-            label="NIF da empresa*"
-            error={!!errors.empresa?.nif}
-            helperText={errors.empresa?.nif?.message}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            {...register("empresa.localidade")}
-            label="Localidade*"
-            error={!!errors.empresa?.localidade}
-            helperText={errors.empresa?.localidade?.message}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            {...register("empresa.morada")}
-            label="Morada*"
-            error={!!errors.empresa?.morada}
-            helperText={errors.empresa?.morada?.message}
-            fullWidth
-            margin="normal"
-          />
-          <TextField
-            {...register("empresa.codigo_postal")}
-            label="Código postal*"
-            error={!!errors.empresa?.codigo_postal}
-            helperText={errors.empresa?.codigo_postal?.message}
-            fullWidth
-            margin="normal"
-          />
-          <GlobalPhone fieldName="empresa.telefone" control={control} errors={errors} />
+                Dados da Empresa
+              </Typography>
+              <TextField
+                {...register("empresa.nome")}
+                label="Nome da empresa*"
+                error={typeof errors.empresa === "object" && !!(errors.empresa as any)?.nome}
+                helperText={typeof errors.empresa === "object" ? (errors.empresa as any)?.nome?.message : ""}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                {...register("empresa.nif")}
+                label="NIF da empresa*"
+                error={typeof errors.empresa === "object" && !!(errors.empresa as any)?.nif}
+                helperText={typeof errors.empresa === "object" ? (errors.empresa as any)?.nif?.message : ""}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                {...register("empresa.localidade")}
+                label="Localidade*"
+                error={typeof errors.empresa === "object" && !!(errors.empresa as any)?.localidade}
+                helperText={typeof errors.empresa === "object" ? (errors.empresa as any)?.localidade?.message : ""}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                {...register("empresa.morada")}
+                label="Morada*"
+                error={typeof errors.empresa === "object" && !!(errors.empresa as any)?.morada}
+                helperText={typeof errors.empresa === "object" ? (errors.empresa as any)?.morada?.message : ""}
+                fullWidth
+                margin="normal"
+              />
+              <TextField
+                {...register("empresa.codigo_postal")}
+                label="Código postal*"
+                error={typeof errors.empresa === "object" && !!(errors.empresa as any)?.codigo_postal}
+                helperText={typeof errors.empresa === "object" ? (errors.empresa as any)?.codigo_postal?.message : ""}
+                fullWidth
+                margin="normal"
+              />
+              <GlobalPhone fieldName="empresa.telefone" control={control} errors={errors} />
             </>
           )}
           <Button

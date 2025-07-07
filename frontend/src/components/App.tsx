@@ -32,10 +32,14 @@ const ChooseCompany = lazy(() => import("../pages/CompanySelectorPage"));
 const ReportModelListPage = lazy(() => import("../pages/ReportModelListPage"));
 const ReportTemplatesPage = lazy(() => import("../pages/ReportTemplatesPage"));
 
+// Rotas que podem ser utilizados apenas depois de autenticação
 const ProtectedRoute = ({ element }: { element: ReactElement }) => {
   const { user, empresa } = useAuth();
 
   if (user) {
+    if (element.type.name === "ChooseCompanyRoute") {
+      return <ChooseCompanyRoute />;
+    }
     if (!empresa) {
       console.log("Empresa não selecionada, redirecionando para a seleção de empresa.");
       return <Navigate to="/choose-company" />;
@@ -43,16 +47,20 @@ const ProtectedRoute = ({ element }: { element: ReactElement }) => {
     return element;
   }
 
+  console.log("Usuário não autenticado, redirecionando para a página de login.");
+
   return <Navigate to="/login" />;
 };
 
+// Rotas públicas, acessível sem autenticação
 const PublicRoute = ({ element }: { element: ReactElement }) => {
 
   const { user } = useAuth();
 
+
   console.log("Rota Publica")
 
-  return user ? <ProtectedRoute element={<Home />} /> : element;
+  return user ? <Navigate to="/" /> : element;
 };
 
 const ChooseCompanyRoute = () => {
@@ -125,19 +133,26 @@ function App() {
       <Suspense fallback={<LoadingAnimation />}>
         <Layout userId={userId}>
           <Routes>
-            {/*Todas as confirmações de email que não exigem nenhum formulário como (Registo de conta, etc)*/}
-            <Route path="/confirmation/:GLOBAL_ID/:OPERATION" element={<PublicRoute element={<EmailOperation/>} />}/>
-+           <Route path="/new-password/:GLOBAL_ID/" element={<PublicRoute element={<NewPassword />} />} />
-            {/* Registo de conta com o GLOBAL_ID enviado por email caso se trate de um user novo*/}
-            <Route path="/register/:GLOBAL_ID" element={<Register />} />
+            {/*Todas as confirmações de email*/}
+            <Route 
+              path="/confirmation/:GLOBAL_ID/:OPERATION" 
+              element={<EmailOperation/>}
+            />
+            {/* Restauração de palavra-passe após o pedido. Esta página é inacessivel de forma direta pelo user.*/}
+            <Route path="/new-password/:GLOBAL_ID/" element={<PublicRoute element={<NewPassword />} />} />
+            {/*Aqui estã as rotas da página de registo*/}
+            <Route path="/register" element={<PublicRoute element={<Register />} />} />
+            <Route path="/register/:GLOBAL_ID" element={<PublicRoute element={<Register />} />} />
+            {/* Rota de login */}
             <Route path="/login" element={<PublicRoute element={<Login />} />} />
             <Route path="/forgot-password" element={<PublicRoute element={<ForgotPasswordPage />} />} />
             <Route path="/" element={<ProtectedRoute element={<Home />} />} />
             <Route path="/users-list" element={<ProtectedRoute element={<UserManagementTable />} />} />
             <Route path="/clients-list" element={<ProtectedRoute element={<ClientManagementTable />} />} />
-            <Route path="/add-client" element={<ProtectedRoute element={<AddNewClient />} />} />
+            <Route 
+            path="/add-client" element={<ProtectedRoute element={<AddNewClient />} />} />
             <Route path="/edit-profile" element={<ProtectedRoute element={<EditProfilePage />} />} />
-            <Route path="/choose-company" element={<ChooseCompanyRoute />} />
+            <Route path="/choose-company" element={<ProtectedRoute element={<ChooseCompanyRoute />} />} />
             <Route path="/report-models" element={<ProtectedRoute element={<ReportModelListPage />} />} />
             <Route path="/report-templates" element={<ProtectedRoute element={<ReportTemplatesPage />} />} />
             <Route path="*" element={<Navigate to="/"/>} />

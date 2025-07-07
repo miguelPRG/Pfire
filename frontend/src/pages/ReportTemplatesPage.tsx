@@ -17,7 +17,6 @@ import {
   InputLabel,
   FormControl,
   FormHelperText,
-  FormHelperText,
 } from "@mui/material"; // Componentes de UI do Material UI
 import DeleteIcon from "@mui/icons-material/Delete"; // Ícone de deletar
 import { useState, useEffect } from "react"; // Hooks do React
@@ -40,13 +39,7 @@ const fieldSchema = z.object({
   subfields: z.array(subfieldSchema).optional(),
 });
 
-const fieldSchema = z.object({
-  name: z.string().min(1, "Nome do campo é obrigatório"), // Nome do campo obrigatório
-  datatype: z.string().min(1, "Tipo de dados é obrigatório"), // Tipo de dado obrigatório
-  required: z.boolean(), // Se o campo é obrigatório ou não
-  subfields: z.array(subfieldSchema).optional(), // Subcampos opcionais
-});
-
+// Esquema de validação do formulário principal
 const formSchema = z.object({
   modelName: z.string().min(1, "Nome do modelo é obrigatório"), // Nome do modelo obrigatório
   fields: z.array(fieldSchema), // Array de campos personalizados
@@ -74,7 +67,6 @@ export default function ReportTemplatePage() {
   const { empresa } = useAuth();
 
   // Hook para acessar o tema do Material UI
-  // Hook para acessar o tema do Material UI
   const theme = useTheme();
 
   // Verifica se está editando um modelo existente
@@ -84,27 +76,62 @@ export default function ReportTemplatePage() {
   // Estado para controlar o nome do novo campo a ser adicionado
   const [newFieldName, setNewFieldName] = useState(""); // Nome do novo campo
   const [newFieldError, setNewFieldError] = useState<string | null>(null); // Erro do novo campo
-  const [newFieldName, setNewFieldName] = useState(""); // Nome do novo campo
-  const [newFieldError, setNewFieldError] = useState<string | null>(null); // Erro do novo campo
 
-  // Estado para controlar a visibilidade do botão de scroll
   // Estado para controlar a visibilidade do botão de scroll
   const [showScrollTop, setShowScrollTop] = useState(false);
 
-  // Hook do formulário
+  // Função para converter customFields do backend para o formato do formulário
+  const convertCustomFieldsToFormFields = (customFields: any[]) => {
+    return customFields?.map((field: any) => {
+      const fieldName = field.key?.replace(/^custom_/, "") || "";
+      const fieldValue = field.value;
+      
+      if (fieldValue?.datatype === "object") {
+        // Para campos objeto, extrair subcampos
+        const subfields = Object.entries(fieldValue)
+          .filter(([key]) => !["datatype", "required"].includes(key))
+          .map(([key, val]: any) => ({
+            name: key,
+            datatype: val.datatype,
+            required: val.required
+          }));
+        
+        return {
+          name: fieldName,
+          datatype: fieldValue.datatype,
+          required: fieldValue.required,
+          subfields: subfields.length > 0 ? subfields : undefined
+        };
+      } else {
+        return {
+          name: fieldName,
+          datatype: fieldValue?.datatype || "",
+          required: fieldValue?.required || false
+        };
+      }
+    }) || [];
+  };
+
+  // Hook do formulário com valores padrão se estiver editando
   const {
     register, // Registra campos do formulário
     handleSubmit, // Handler para submissão
     control, // Controle para campos dinâmicos
     formState: { errors }, // Erros de validação
+    reset, // Função para resetar o formulário
   } = useForm<FormSchema>({
     resolver: zodResolver(formSchema), // Usa o Zod para validação
+    defaultValues: isEditing ? {
+      modelName: editingModel.modelName,
+      fields: convertCustomFieldsToFormFields(editingModel.customFields)
+    } : {
+      modelName: "",
+      fields: []
+    }
   });
 
   // Hook para manipular array de campos dinâmicos (adicionar, remover, atualizar)
   const { fields, append, remove, update } = useFieldArray({
-    control, // Controle do formulário
-    name: "fields", // Nome do campo array
     control, // Controle do formulário
     name: "fields", // Nome do campo array
   });
@@ -125,9 +152,6 @@ export default function ReportTemplatePage() {
     const handleScroll = () => setShowScrollTop(window.scrollY > 100); // Mostra botão se scroll > 100px
     window.addEventListener("scroll", handleScroll); // Adiciona listener
     return () => window.removeEventListener("scroll", handleScroll); // Remove listener ao desmontar
-    const handleScroll = () => setShowScrollTop(window.scrollY > 100); // Mostra botão se scroll > 100px
-    window.addEventListener("scroll", handleScroll); // Adiciona listener
-    return () => window.removeEventListener("scroll", handleScroll); // Remove listener ao desmontar
   }, []);
 
   /**
@@ -135,23 +159,6 @@ export default function ReportTemplatePage() {
    * Valida se o nome não está vazio e não é duplicado.
    */
   const addField = () => {
-    try {
-      // Validação Zod
-      newFieldNameSchema.parse(newFieldName);
-      if (fields.some((f) => f.name === newFieldName)) {
-        setNewFieldError("Nome do campo já existe!");
-        return;
-      }
-      append({ name: newFieldName, datatype: "", required: false });
-      setNewFieldName("");
-      setNewFieldError(null);
-    } catch (e) {
-      if (e instanceof z.ZodError) {
-        setNewFieldError(e.errors[0].message);
-      } else {
-        setNewFieldError("Erro ao validar campo.");
-      }
-    }
     try {
       // Validação Zod
       newFieldNameSchema.parse(newFieldName);
@@ -187,28 +194,7 @@ export default function ReportTemplatePage() {
 
       // Monta o objeto de campos personalizados para o backend
       const customFields: Record<string, any> = {};
-      const customFields: Record<string, any> = {};
       data.fields.forEach((f) => {
-        if (f.datatype === "object" && Array.isArray(f.subfields)) {
-          // Para campos do tipo objeto, inclui os subcampos
-          const subfieldData: Record<string, any> = {};
-          f.subfields.forEach((sub) => {
-            subfieldData[sub.name] = {
-              datatype: sub.datatype,
-              required: sub.required,
-            };
-          });
-          customFields[`custom_${f.name}`] = {
-            datatype: f.datatype,
-            required: f.required,
-            ...subfieldData,
-          };
-        } else {
-          customFields[`custom_${f.name}`] = {
-            datatype: f.datatype,
-            required: f.required,
-          };
-        }
         if (f.datatype === "object" && Array.isArray(f.subfields)) {
           // Para campos do tipo objeto, inclui os subcampos
           const subfieldData: Record<string, any> = {};
@@ -237,7 +223,6 @@ export default function ReportTemplatePage() {
         empresa_id: typeof empresa === "object" ? empresa?.id : empresa,
         recaptchaToken,
         ...customFields,
-        ...customFields,
       };
 
       // Usa PUT para edição ou POST para criação
@@ -254,10 +239,17 @@ export default function ReportTemplatePage() {
       const result = await res.json();
       if (!res.ok) throw new Error(result.detail || `Erro ao ${isEditing ? 'atualizar' : 'criar'} modelo`);
 
-      alert("Modelo criado com sucesso!"); // Sucesso
-      navigate("/report-models"); // Redireciona
+      // Navega de volta com mensagem de sucesso
+      navigate("/report-models", {
+        state: {
+          message: {
+            text: `Modelo ${isEditing ? 'atualizado' : 'criado'} com sucesso!`,
+            error: false
+          }
+        }
+      });
     } catch (err: any) {
-      alert(err.message || "Erro ao submeter modelo."); // Erro
+      alert(err.message || `Erro ao ${isEditing ? 'atualizar' : 'criar'} modelo.`);
     }
   };
 
@@ -272,7 +264,9 @@ export default function ReportTemplatePage() {
           sx={{ display: "flex", flexDirection: "column", gap: 2 }}
         >
           {/* Título do formulário */}
-          <Typography variant="h6">Criar Modelo</Typography>
+          <Typography variant="h6">
+            {isEditing ? 'Editar Modelo' : 'Criar Modelo'}
+          </Typography>
 
           {/* Campo para nome do modelo */}
           <TextField
@@ -283,11 +277,9 @@ export default function ReportTemplatePage() {
           />
 
           {/* Título dos campos personalizados */}
-          {/* Título dos campos personalizados */}
           <Typography variant="h6">Campos Personalizados</Typography>
 
           {/* Adição de novo campo personalizado */}
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, width: "100%" }}>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1, width: "100%" }}>
             <TextField
               label="Nome do novo campo"
@@ -296,43 +288,22 @@ export default function ReportTemplatePage() {
                 setNewFieldName(e.target.value);
                 if (newFieldError) setNewFieldError(null); // Limpa erro ao digitar
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault(); // Previne o submit do formulário
+                  addField(); // Chama a função de adicionar campo
+                }
+              }}
               error={!!newFieldError}
               helperText={newFieldError}
               fullWidth
             />
-            <Button variant="contained" onClick={addField} fullWidth>
+            <Button variant="contained" onClick={addField} type="button" fullWidth>
               Adicionar
             </Button>
           </Box>
 
           {/* Renderização dos campos personalizados adicionados */}
-          <Box sx={{ width: "100%" }}>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
-              {fields.map((field, index) => (
-                <Box
-                  key={field.id}
-                  sx={{
-                    border: "1px solid #ccc",
-                    p: 2,
-                    borderRadius: 2,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 1,
-                    width: "100%",
-                    mb: 2,
-                    minWidth: 250,
-                    boxSizing: "border-box",
-                  }}
-                >
-                  {/* Campo para nome do campo personalizado */}
-                  <TextField
-                    label="Nome do Campo"
-                    {...register(`fields.${index}.name`)}
-                    defaultValue={field.name}
-                    error={!!errors.fields?.[index]?.name}
-                    helperText={errors.fields?.[index]?.name?.message}
-                    fullWidth
-                  />
           <Box sx={{ width: "100%" }}>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
               {fields.map((field, index) => (
@@ -434,30 +405,35 @@ export default function ReportTemplatePage() {
                         width: "100%",
                       }}
                     >
-                      <Typography variant="h3" sx={{ mb: 1 }}>
+                      <Typography variant="subtitle2" sx={{ mb: 1 }}>
                         Subcampo
                       </Typography>
-                      <Controller
-                        control={control}
-                        name={`fields.${index}.subfields.0.name`}
-                        render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label="Nome do Subcampo"
-                            size="small"
-                            fullWidth
-                            sx={{ mb: 1 }}
-                            error={!!errors.fields?.[index]?.subfields?.[0]?.name}
-                            helperText={errors.fields?.[index]?.subfields?.[0]?.name?.message}
-                          />
-                        )}
-                      />
-
-                      <FormControl
+                      <TextField
+                        label="Nome do Subcampo"
+                        value={(fields[index] as Field).subfields?.[0]?.name || ""}
+                        onChange={(e) => {
+                          const currentSubfields = (fields[index] as Field).subfields || [];
+                          const updatedSubfield = {
+                            ...(currentSubfields[0] || { name: "", datatype: "", required: false }),
+                            name: e.target.value,
+                          };
+                          update(index, {
+                            ...(fields[index] as Field),
+                            subfields: [updatedSubfield],
+                          });
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault(); // Previne o submit do formulário
+                            e.currentTarget.focus(); // Mantém o foco no campo atual
+                          }
+                        }}
                         size="small"
                         fullWidth
-                        error={!!errors.fields?.[index]?.subfields?.[0]?.datatype}
-                      >
+                        sx={{ mb: 1 }}
+                      />
+
+                      <FormControl size="small" fullWidth>
                         <InputLabel>Tipo do Subcampo</InputLabel>
                         <Select
                           label="Tipo do Subcampo"
@@ -489,12 +465,8 @@ export default function ReportTemplatePage() {
                           <MenuItem value="number">Número</MenuItem>
                           <MenuItem value="bool">Sim/Não</MenuItem>
                           <MenuItem value="date">Data</MenuItem>
+                          {/* Removido "object" para evitar ciclo */}
                         </Select>
-                        {errors.fields?.[index]?.subfields?.[0]?.datatype && (
-                          <FormHelperText>
-                            {errors.fields?.[index]?.subfields?.[0]?.datatype?.message}
-                          </FormHelperText>
-                        )}
                       </FormControl>
                       <FormControlLabel
                         control={
@@ -521,11 +493,12 @@ export default function ReportTemplatePage() {
                   {/* Botão para remover campo */}
                   <IconButton
                     onClick={() => remove(index)}
+                    type="button"
                     sx={{
                       backgroundColor: "error.main",
                       color: "white",
                       "&:hover": { bgcolor: "error.dark" },
-                      alignSelf: "center ",
+                      alignSelf: "center",
                     }}
                   >
                     <DeleteIcon />
@@ -542,12 +515,6 @@ export default function ReportTemplatePage() {
               onClick={() => navigate("/report-models")}
               sx={{ flex: 1, height: 48, "&:hover": { bgcolor: "grey.300" } }}
             >
-          <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
-            <Button
-              variant="outlined"
-              onClick={() => navigate("/report-models")}
-              sx={{ flex: 1, height: 48, "&:hover": { bgcolor: "grey.300" } }}
-            >
               Cancelar
             </Button>
             <Button
@@ -555,9 +522,8 @@ export default function ReportTemplatePage() {
               type="submit"
               color="success"
               sx={{ flex: 1, height: 48}}
-              sx={{ flex: 1, height: 48}}
             >
-              Salvar Modelo
+              {isEditing ? 'Atualizar Modelo' : 'Salvar Modelo'}
             </Button>
           </Box>
         </Box>
@@ -566,16 +532,6 @@ export default function ReportTemplatePage() {
       {/* Botão flutuante para rolar para o topo */}
       {showScrollTop && (
         <Box sx={{ position: "fixed", bottom: 18, left: 10, zIndex: 1300 }}>
-          <IconButton
-            color="primary"
-            size="small"
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            sx={{
-              bgcolor: "primary.main",
-              color: "white",
-              "&:hover": { bgcolor: "primary.dark" },
-            }}
-          >
           <IconButton
             color="primary"
             size="small"

@@ -18,13 +18,14 @@ import {
   MenuItem,
   InputAdornment,
   Link,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import { Search } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { GET_CLIENTES_BY_EMPRESA } from "../graphql/clientesqueries";
 import { useTheme } from "@mui/material/styles";
 import { useAuth } from "../hooks/AuthContext";
-import Notification from "../components/Notification";
 
 interface Cliente {
   id: string;
@@ -406,7 +407,7 @@ export default function ClientManagementTable() {
         </div>
 
         <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-          {filteredRows.length >10 && (
+          {filteredRows.length === 0 && (
             <Pagination
               count={Math.ceil(filteredRows.length / rowsPerPage)}
               page={page + 1}
@@ -417,7 +418,22 @@ export default function ClientManagementTable() {
           )}
         </Box>
       </Paper>
-      <Notification alert={alert} setAlert={setAlert} />
+
+     
+      <Snackbar
+        open={!!alert}
+        autoHideDuration={4000}
+        onClose={() => setAlert(null)}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={() => setAlert(null)}
+          severity={alert?.isError ? "error" : "success"}
+          sx={{ width: "100%" }}
+        >
+          {alert?.message}
+        </Alert>
+      </Snackbar>
     </>
   );
 }

@@ -2,7 +2,7 @@ import { createContext, useState, useContext, ReactNode, useEffect, useCallback 
 import { FirebaseLogin } from "../firebase";
 import { GET_EMPRESAS } from "../graphql/empresasqueries";
 import { useQuery } from "@apollo/client";
-import { set } from "zod/v4-mini";
+
 
 declare global {
   interface Window {
@@ -29,10 +29,10 @@ interface UserLoggedIn {
 }
 
 interface UserRegistered {
-  nome: string;
-  email: string;
-  password: string;
-  confirmPassword?: string;
+  nome: string | null;
+  email: string | null;
+  password: string | null;
+  confirmPassword: string | null;
 }
 
 interface UserUpdate {
@@ -81,7 +81,7 @@ interface AuthContextType {
   user: UserLoggedIn | null;
   empresa: Empresa | null;
   loading: boolean; // <--- adicione isto
-  registerUser: (payload: { user: UserRegistered; empresa: EmpresaRegistered | null }) => Promise<void>;
+  registerUser: (payload: { user: UserRegistered; empresa: EmpresaRegistered | null | unknown; global_id: string | undefined }) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   loginWithOAuth: (provider: "google" | "microsoft") => Promise<boolean>;
   logout: () => Promise<void>;
@@ -136,11 +136,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           });
         } else {
           setLoading(false); // <--- indica que o carregamento falhou
+          console.log("Loading terminado");
           throw new Error(userData.detail || "Erro ao autenticar utilizador");
         }
       } catch (error) {
         console.error("Erro ao verificar autenticação:", error);
+      } finally {
+        console.log("Verificação de autenticação concluída");
       }
+      
     }
     checkAuth();
   }, []);
@@ -196,7 +200,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
         action: "login",
       });
-      const response = await fetch(`backend/user/login`, {
+      const response = await fetch(`/backend/user/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -237,7 +241,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function registerUser(payload: { user: UserRegistered; empresa: EmpresaRegistered | null } & Record<string, unknown>) {
+  async function registerUser(payload: { user: UserRegistered; empresa?: EmpresaRegistered | null | unknown , global_id: string | undefined } & Record<string, unknown>) {
     try {
       const token = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
         action: "register",
@@ -247,11 +251,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       payload.recaptchaToken = token;
 
       // Verifica se a empresa é null e remove do payload se for
-      if (payload.empresa == null) {
+      if (!payload.empresa) {
         delete payload.empresa;
       }
 
-      const response = await fetch(`backend/user/register`, {
+      if (!payload.global_id) {
+        delete payload.global_id;
+      }
+
+      console.log("Payload do registo:", payload);
+      
+      const response = await fetch(`/backend/user/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -265,10 +275,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!response.ok) {
         throw new Error(data.detail || "Erro desconhecido do backend");
       }
-      return data;
+
     } catch (error) {
       console.error("Erro ao registrar usuário:", error);
       throw error;
+    } finally {
+      sessionStorage.removeItem("email"); // Limpa o email do sessionStorage após o registo
     }
   }
 
@@ -328,6 +340,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     try {
+      setLoading(true); // <--- adicione isto para indicar que o logout está em progresso
+
       await fetch("backend/user/logout", {
         method: "POST",
         credentials: "include",
@@ -337,6 +351,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
     } catch (error) {
       console.error("Erro ao fazer logout");
+    }
+    finally {
+      setLoading(false); // <--- indica que o logout foi concluído
     }
   }
 

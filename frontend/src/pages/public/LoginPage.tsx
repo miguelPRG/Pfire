@@ -39,6 +39,8 @@ function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
+
+
   const onSubmit = async (data: LoginFormInputs) => {
     setAuthError({ error: false, message: "" });
 
@@ -291,7 +293,7 @@ function LoginPage() {
             </Button>
           </Box>
           <Typography variant="body1">
-            Não tens uma conta? <Link to="/register">Regista-te</Link>
+            Não tens uma conta? <Link to='/register'>Regista-te</Link>
           </Typography>
         </form>
       </Paper>
