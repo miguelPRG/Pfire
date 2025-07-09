@@ -12,23 +12,26 @@ import validarNIF from "./utils/isValidNIF";
 declare var grecaptcha: any;
 // Esquema de validação com Zod
 const addClientSchema = z.object({
-  nome: z.string().nonempty("O nome é obrigatório"),
-  email: z.string().nonempty("O email é obrigatório").email("Email inválido"),
+  nome: z.string().nonempty("O nome é obrigatório").trim(),
+  email: z.string().nonempty("O email é obrigatório").email("Email inválido").trim(),
   telefone: z
     .string()
     .nonempty("O telefone é obrigatório")
+    .trim()
     .refine((val) => val?.startsWith("+") && val.length >= 10, {
       message: "Número de telefone internacional inválido",
     }),
   nif: z
     .string()
     .nonempty("O NIF é obrigatório")
+    .trim()
     .refine(validarNIF, "O NIF é inválido"),
-  localidade: z.string().nonempty("A localidade é obrigatória"),
-  morada: z.string().nonempty("A morada é obrigatória"),
+  localidade: z.string().nonempty("A localidade é obrigatória").trim(),
+  morada: z.string().nonempty("A morada é obrigatória").trim(),
   codigo_postal: z
     .string()
     .nonempty("O código postal é obrigatório")
+    .trim()
     .regex(/^\d{4}-\d{3}$/, "Número de telefone inválido"),
 });
 

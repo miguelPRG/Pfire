@@ -11,9 +11,10 @@ import PasswordField from "../components/PasswordField";
 
 // Schemas
 const userInfoSchema = z.object({
-  name: z.string().nonempty("Nome é obrigatório"),
+  name: z.string().nonempty("Nome é obrigatório").trim(),
   telefone: z
     .string({ required_error: "Por favor insira o telefone" })
+    .trim()
     .regex(/^[+]?\d{7,15}$/, "Número de telefone inválido"),
 });
 
@@ -34,15 +35,17 @@ const userPasswordSchema = z
   });
 
 const companySchema = z.object({
-  companyName: z.string(),
+  companyName: z.string().trim(),
   nif: z
     .string()
+    .trim()
     .refine((nif) => isValidNIF(nif), { message: "NIF Inválido" }),
-  address: z.string(),
-  locality: z.string(),
-  postalCode: z.string().regex(/^\d{4}-\d{3}$/, "Formato inválido"),
+  address: z.string().trim(),
+  locality: z.string().trim(),
+  postalCode: z.string().trim().regex(/^\d{4}-\d{3}$/, "Formato inválido"),
   companyPhone: z
     .string({ required_error: "Por favor insira o telefone da empresa" })
+    .trim()
     .regex(/^[+]?\d{7,15}$/, "Número inválido"),
   logo: z.string().optional(),
 });

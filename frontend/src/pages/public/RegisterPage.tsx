@@ -45,8 +45,8 @@ export default function RegisterPage() {
 
   // Schema do usuário
   const userSchema = z.object({
-    nome: z.string().nonempty("O nome é obrigatório"),
-    email: z.string().nonempty("O email é obrigatório").email("Email inválido"),
+    nome: z.string().nonempty("O nome é obrigatório").trim(),
+    email: z.string().nonempty("O email é obrigatório").email("Email inválido").trim(),
     password: z
       .string()
       .nonempty("A senha é obrigatória")
@@ -61,20 +61,23 @@ export default function RegisterPage() {
 
   // Schema da empresa
   const empresaSchema = z.object({
-    nome: z.string().nonempty("O nome da empresa é obrigatório"),
+    nome: z.string().nonempty("O nome da empresa é obrigatório").trim(),
     nif: z
       .string()
       .nonempty("O NIF é obrigatório")
+      .trim()
       .refine(isValidNIF, { message: "O NIF é inválido" }),
     localidade: z.string().nonempty("A localidade é obrigatória").trim(),
     morada: z.string().nonempty("A morada é obrigatória").trim(),
     codigo_postal: z
       .string()
       .nonempty("O código postal é obrigatório")
+      .trim()
       .regex(/^\d{4}-\d{3}$/, "O código postal deve estar no formato 1234-567"),
     telefone: z
       .string()
       .min(1, "Campo obrigatório")
+      .trim()
       .regex(/^\+?[0-9\s\-()]{7,15}$/, "Número de telefone inválido"),
   });
 
@@ -373,10 +376,11 @@ export default function RegisterPage() {
             </Button>
           </DialogActions>
         </Dialog>
-
-        <Typography variant="body2" sx={{ mt: 2 }}>
+        {noCompany && (
+           <Typography variant="body2" sx={{ mt: 2 }}>
           Já tem uma conta registada? <Link to="/login">Inicie sessão</Link>
         </Typography>
+        )}
       </Paper>
     </Container>
   );

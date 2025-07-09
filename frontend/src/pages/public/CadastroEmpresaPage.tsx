@@ -16,7 +16,7 @@ const empresaSchema = z.object({
   codigo_postal: z
     .string()
     .nonempty("O código postal é obrigatório")
-    .regex(/^\d{4}-\d{3}$/, "O código postal deve estar no formato 1234-567"),
+    .regex(/^\d{4}-\d{3}$/, "O código postal deve estar no formato 1234-567").trim(),
 });
 
 type EmpresaFormInputs = z.infer<typeof empresaSchema>;

@@ -44,16 +44,11 @@ export default function ReportModelListPage() {
   const navigate = useNavigate();
   const theme = useTheme();
   const location = useLocation();
-  const location = useLocation();
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [expandedFields, setExpandedFields] = useState<Record<string, boolean>>({});
-  
-  // Estado para alertas
-  const [alert, setAlert] = useState<{ message: string; isError: boolean } | null>(null);
-
   
   // Estado para alertas
   const [alert, setAlert] = useState<{ message: string; isError: boolean } | null>(null);
@@ -65,17 +60,7 @@ export default function ReportModelListPage() {
   });
 
   // useEffect para lidar com mensagens de estado
-
-  // useEffect para lidar com mensagens de estado
   React.useEffect(() => {
-    if (location.state?.message) {
-      setAlert({
-        message: location.state.message.text,
-        isError: location.state.message.error,
-      });
-      window.history.replaceState({}, document.title);
-      refetch(); // Recarregar os dados após adicionar/editar modelo
-    } else if (location.state?.reload) {
     if (location.state?.message) {
       setAlert({
         message: location.state.message.text,
@@ -123,21 +108,9 @@ export default function ReportModelListPage() {
         isError: false,
       });
 
-      // Exibir alerta de sucesso
-      setAlert({
-        message: "Modelo apagado com sucesso!",
-        isError: false,
-      });
-
       refetch();
     } catch (err: any) {
-    } catch (err: any) {
       console.error(err);
-      // Exibir alerta de erro
-      setAlert({
-        message: err.message || "Erro ao apagar o modelo.",
-        isError: true,
-      });
       // Exibir alerta de erro
       setAlert({
         message: err.message || "Erro ao apagar o modelo.",
@@ -223,20 +196,6 @@ export default function ReportModelListPage() {
             Adicionar novo Modelo
           </Button>
         </Box>
-    <>
-      <Paper sx={{ width: "100%", p: 2, boxShadow: "none", backgroundColor: theme.palette.background.default }}>
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 8 }}>
-          <Typography variant="h5" sx={{ fontWeight: "bold", fontSize: 30, color: theme.palette.text.primary }}>
-            Modelos de Relatórios
-          </Typography>
-          <Button
-            variant="contained"
-            onClick={() => navigate("/report-templates")}
-            sx={{ textTransform: "none", height: "40px", width: "220px" }}
-          >
-            Adicionar novo Modelo
-          </Button>
-        </Box>
 
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 2 }}>
           <Select
@@ -260,56 +219,7 @@ export default function ReportModelListPage() {
             <MenuItem value={10}>Mostrar 10</MenuItem>
             <MenuItem value={25}>Mostrar 25</MenuItem>
           </Select>
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 2 }}>
-          <Select
-            value={rowsPerPage}
-            onChange={(e) => {
-              setRowsPerPage(Number(e.target.value));
-              setPage(0);
-            }}
-            size="small"
-            sx={{
-              width: 180,
-              height: "32px",
-              mt: "10px",
-              backgroundColor: theme.palette.background.paper,
-              "& .MuiOutlinedInput-notchedOutline": { borderColor: "transparent" },
-              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: theme.palette.divider },
-              "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: theme.palette.primary.main },
-            }}
-          >
-            <MenuItem value={5}>Mostrar 5</MenuItem>
-            <MenuItem value={10}>Mostrar 10</MenuItem>
-            <MenuItem value={25}>Mostrar 25</MenuItem>
-          </Select>
 
-          <TextField
-            variant="outlined"
-            size="small"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Pesquisar por nome"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search sx={{ color: theme.palette.primary.main }} />
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              width: "75%",
-              mt: 1,
-              "& .MuiOutlinedInput-root": {
-                backgroundColor: theme.palette.background.paper,
-                borderRadius: "25px",
-                color: theme.palette.text.primary,
-                "&.Mui-focused fieldset": {
-                  borderColor: theme.palette.primary.main,
-                },
-              },
-            }}
-          />
-        </Box>
           <TextField
             variant="outlined"
             size="small"

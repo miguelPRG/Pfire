@@ -26,22 +26,22 @@ import ArrowCircleUpIcon from "@mui/icons-material/ArrowCircleUp"; // Ícone de 
 
 // Esquema de validação para um subcampo personalizado
 const subfieldSchema = z.object({
-  name: z.string().min(1, "Nome do subcampo é obrigatório"),
-  datatype: z.string().min(1, "Tipo de dados é obrigatório"),
+  name: z.string().min(1, "Nome do subcampo é obrigatório").trim(),
+  datatype: z.string().min(1, "Tipo de dados é obrigatório").trim(),
   required: z.boolean(),
 });
 
 // Esquema de validação para um campo personalizado
 const fieldSchema = z.object({
-  name: z.string().min(1, "Nome do subcampo é obrigatório"),
-  datatype: z.string().min(1, "Tipo de dados é obrigatório"),
+  name: z.string().min(1, "Nome do subcampo é obrigatório").trim(),
+  datatype: z.string().min(1, "Tipo de dados é obrigatório").trim(),
   required: z.boolean(),
   subfields: z.array(subfieldSchema).optional(),
 });
 
 // Esquema de validação do formulário principal
 const formSchema = z.object({
-  modelName: z.string().min(1, "Nome do modelo é obrigatório"), // Nome do modelo obrigatório
+  modelName: z.string().min(1, "Nome do modelo é obrigatório").trim(), // Nome do modelo obrigatório
   fields: z.array(fieldSchema), // Array de campos personalizados
 });
 

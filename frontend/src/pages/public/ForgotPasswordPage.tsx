@@ -8,7 +8,7 @@ import logo from "../assets/images/logo.png";
 
 // Esquema de validação com Zod
 const forgotPasswordSchema = z.object({
-  email: z.string().nonempty("O email é obrigatório").email("Insira um email válido"),
+  email: z.string().nonempty("O email é obrigatório").email("Insira um email válido").trim(),
 });
 
 type ForgotPasswordFormInputs = z.infer<typeof forgotPasswordSchema>;

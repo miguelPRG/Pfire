@@ -186,7 +186,7 @@ export default function UserManagementTable() {
     });
 
     // Validação Zod
-    const validation = inviteSchema.safeParse({ email: values.email });
+    const validation = inviteSchema.safeParse({ email: values.email.trim() });
     if (!validation.success) {
       setError("email", { message: validation.error.errors[0].message });
       return;
@@ -222,9 +222,6 @@ export default function UserManagementTable() {
       setInviteOpen(false); // Fecha o diálogo após enviar o convite
     }
   };
-
-  if (loading) return <Typography>A carregar utilizadores...</Typography>;
-  if (error) return <Typography>Erro ao carregar utilizadores</Typography>;
 
   return (
     <Paper sx={{ width: "100%", p: 2, boxShadow: "none" }}>
