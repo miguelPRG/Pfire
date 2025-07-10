@@ -4,7 +4,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Box, Button, Container, TextField, Typography, Paper, Fade, Alert } from "@mui/material";
 import { useNavigate } from "react-router-dom";
-import logo from "../assets/images/logo.png";
+import logo from "../../assets/images/logo.png";
 
 // Esquema de validação com Zod
 const forgotPasswordSchema = z.object({

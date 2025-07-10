@@ -83,7 +83,7 @@ interface AuthContextType {
   loading: boolean; // <--- adicione isto
   registerUser: (payload: { user: UserRegistered; empresa: EmpresaRegistered | null | unknown; global_id: string | undefined }) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
-  loginWithOAuth: (provider: "google" | "microsoft") => Promise<boolean>;
+  loginWithOAuth: (provider: "google" | "microsoft", global_id?: string) => Promise<boolean>;
   logout: () => Promise<void>;
   chooseCompany: (empresa: Empresa) => void;
   updateUser: (user: UserUpdate) => Promise<void>;
@@ -284,7 +284,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function loginWithOAuth(provider: "google" | "microsoft"): Promise<boolean> {
+  async function loginWithOAuth(provider: "google" | "microsoft", global_id?: string): Promise<boolean> {
     try {
       const { idToken } = await FirebaseLogin(provider);
       const response = await fetch("/backend/user/login-oauth", {
@@ -295,6 +295,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
         body: JSON.stringify({
           firebase_token: idToken,
+          global_id: global_id, // Passa o global_id se estiver definido
         }),
       });
 

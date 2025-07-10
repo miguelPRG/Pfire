@@ -148,9 +148,9 @@ export default function RegisterPage() {
   };
 
   // Handler genérico para qualquer provedor
-  const handleOAuth = (provider: "google" | "microsoft") => async () => {
+  const handleOAuth = (provider: "google" | "microsoft", global_id?:string) => async () => {
     try {
-      await loginWithOAuth(provider);
+      await loginWithOAuth(provider,global_id);
       // após login, deixamos o useEffect cuidar do redirecionamento
     } catch (e: any) {
       setIsRegistError({
@@ -202,7 +202,7 @@ export default function RegisterPage() {
         <Box sx={{ display: "flex", justifyContent: "center", gap: 1, mb: 2 }}>
           {/* Botão Google */}
           <Button
-            onClick={handleOAuth("google")}
+            onClick={handleOAuth("google", GLOBAL_ID)}
             sx={{
               display: "flex",
               alignItems: "center",
@@ -218,7 +218,7 @@ export default function RegisterPage() {
           </Button>
           {/* Botão Microsoft */}
           <Button
-            onClick={handleOAuth("microsoft")}
+            onClick={handleOAuth("microsoft", GLOBAL_ID)}
             sx={{
               display: "flex",
               alignItems: "center",

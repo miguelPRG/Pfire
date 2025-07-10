@@ -8,7 +8,7 @@ from apis.firebase_admin_client import verify_firebase_token  # Si se usa para v
 from pathlib import Path
 from firebase_admin import initialize_app, credentials  # as chaves
 from passlib.context import CryptContext
-from models.userModels import UserLogin, UserRegister, UserForgotPassword, UserUpdatePassword, UserInvitation
+from models.userModels import UserLogin, UserLoginWithOAuth ,UserRegister, UserForgotPassword, UserUpdatePassword, UserInvitation
 from models.userEmpresaModels import UserEmpresaCreate
 from datetime import datetime
 from database import users_collection, empresas_collection, users_empresas_collection, global_ids_collection
@@ -16,7 +16,7 @@ from datetime import datetime
 from uuid import uuid4
 from bson import ObjectId
 from pymongo.errors import DuplicateKeyError
-
+from asyncio import gather
 
 routerUser = APIRouter(prefix="/user")
 
@@ -37,22 +37,11 @@ initialize_app(cred)
 
 # 🚀 Login via Firebase OAuth
 @routerUser.post("/login-oauth")
-async def login_oauth(request: Request):
-    """
-    Autenticação via Firebase OAuth (Google/Microsoft):
-    - Recebe { "firebase_token": "<ID Token do Firebase>" }
-    - Se usuário não existe, cria novo (isSuperAdmin=False, firebaseUid=uid) → newUser = True
-    - Se já existe, apenas atualiza last_login → newUser = False
-    - Gera JWT e retorna JSON com newUser
-    """
-    body = await request.json()
-    firebase_token = body.get("firebase_token")
-    if not firebase_token:
-        raise HTTPException(status_code=400, detail="firebase_token é obrigatório.")
+async def login_oauth(request: Request,user: UserLoginWithOAuth):
 
     # 1) Verifica ID Token no Firebase
     try:
-        firebase_data = await verify_firebase_token(firebase_token)
+        firebase_data = await verify_firebase_token(user.firebase_token)
         # firebase_data: { "uid", "email", "name", "phone" }
     except Exception as e:
         raise HTTPException(status_code=401, detail=f"Token Firebase inválido: {e}")
@@ -67,12 +56,17 @@ async def login_oauth(request: Request):
     if not nome:
         raise HTTPException(status_code=400, detail="Nome não disponível no token OAuth.")
 
-    # 2) Busca ou cria usuário no MongoDB
+    # Verificamos se este user já existe no MongoDB
     user_doc = await users_collection.find_one({"email": email})
+
+    print("Esta gajo foi convidado: ", user.global_id) if user.global_id else print("Este gajo não foi convidado")
+
+    # Variavel booleana que indicará para o front se o user é novo ou não
     new_user_flag = False
 
     data = datetime.now()
 
+    # Temos aqui um user novo. Vamos cria-lo.
     if not user_doc:
         new_user_flag = True
         insert_data = {
@@ -89,18 +83,55 @@ async def login_oauth(request: Request):
         result = await users_collection.insert_one(insert_data)
         if not result.inserted_id:
             raise HTTPException(status_code=500, detail="Erro ao criar usuário no MongoDB.")
-        user_id = result.inserted_id
-        user_doc = {**insert_data, "_id": user_id}
+        id_user = result.inserted_id
+        user_doc = {**insert_data, "_id": id_user}
+    
+    # Este user já existe
     else:
+        
         if not user_doc.get("isActive", True):
             raise HTTPException(status_code=403, detail="Usuário inativo.")
         # atualiza last_login
         await users_collection.update_one({"_id": user_doc["_id"]}, {"$set": {"last_login": data, "firebaseUID": uid}})
-        user_id = user_doc["_id"]
+        id_user = user_doc["_id"]
+    
+     # Caso o global_id seja fornecido, vamos verificar se este é valido e se o user já está associado a uma empresa
+    if user.global_id:
+        # Verifica se o global_id é válido
+        global_id_data = await global_ids_collection.find_one({"global_id": user.global_id, "operation": "convite"})
+        if not global_id_data:
+            raise HTTPException(status_code=404, detail="Global ID inválido ou expirado.")
+
+        if not user_doc.get("isSuperAdmin", False):
+            user_empresa = await users_empresas_collection.find_one(
+                {"user_id": user_doc["_id"], "empresa_id": ObjectId(global_id_data["empresa_id"])}
+            )
+
+            if user_empresa:
+              raise HTTPException(status_code=409, detail="O utilizador com esta conta já está associado a esta empresa.")
+    
+        # Criamos um novo user_empresa
+        user_empresa = UserEmpresaCreate(
+            user_id=user_doc["_id"],
+            empresa_id=ObjectId(global_id_data["empresa_id"]),
+            isAdmin=False,  # Por padrão, o novo usuário não é administrador
+            created_by=ObjectId(global_id_data["host_user_id"]),
+            created_at=data,
+            updated_by=ObjectId(global_id_data["host_user_id"]),
+            updated_at=data,
+        ).model_dump(by_alias=True)
+
+        user_empresa_insertion = users_empresas_collection.insert_one(user_empresa)
+        global_id_deletion = global_ids_collection.delete_one({"global_id": user.global_id})
+
+        user_empresa_rlt, global_id_rlt = await gather(user_empresa_insertion, global_id_deletion)
+
+        if not user_empresa_rlt.inserted_id or not global_id_rlt.deleted_count:
+            raise HTTPException(status_code=500, detail="Erro ao associar usuário à empresa ou apagar o Global ID.")
 
     # 3) Gera JWT (sem listar empresas aqui)
     jwt_token = generate_jwt(
-        str(user_id),
+        str(id_user),
         user_doc.get("nome", ""),
         user_doc.get("email", ""),
         user_doc.get("isSuperAdmin", False),
@@ -110,7 +141,7 @@ async def login_oauth(request: Request):
 
     # 4) Monta payload de resposta
     response_payload = {
-        "id": str(user_id),
+        "id": str(id_user),
         "nome": user_doc.get("nome", ""),
         "email": user_doc.get("email", ""),
         "telefone": user_doc.get("telefone", ""),

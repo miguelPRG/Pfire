@@ -123,6 +123,15 @@ class UserLogin(BaseModel):
     def strip_email(cls, v):
         return v.strip()
 
+class UserLoginWithOAuth(BaseModel):
+    firebase_token: str = Field(..., description="O token de autenticação do Firebase.")
+    global_id: Optional[str] = Field(
+        None,
+        min_length=36,
+        max_length=36,
+        pattern=r"^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[89abAB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$",
+        description="O ID global do utilizador (UUID4).",
+    )
 
 class UserForgotPassword(BaseModel):
     email: EmailStr = Field(max_length=254, description="O email deve ser um endereço de email válido.")
