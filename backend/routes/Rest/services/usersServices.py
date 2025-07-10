@@ -209,6 +209,20 @@ async def register_user(data: UserRegister, request: Request):
     # Validar el token reCAPTCHA
     await validar_recaptcha_token(data.recaptchaToken, "register")
 
+    # Dados do global_id caso este seja fornecido
+    global_id_doc = None
+
+    if data.global_id:
+        
+        global_id_doc = await global_ids_collection.find_one({"global_id": data.global_id, "operation": "convite"})
+        
+        if not global_id_doc:
+            raise HTTPException(status_code=404, detail="Global ID inválido ou expirado.")
+        
+        if not global_id_doc.get("email") == data.user.email:
+            raise HTTPException(status_code=400, detail="O email do convite não corresponde ao email fornecido.")
+    
+
     date = datetime.now()
 
     # Criar novo user
@@ -241,24 +255,10 @@ async def register_user(data: UserRegister, request: Request):
     id_empresa = None
     # Um variavel booleana que indicará se o user é administrador ou não da empresa
     is_admin = False
-    # Variável para armazenar o documento do global_id, caso exista
-    global_id_doc = None
 
     #Verifica se foi inserido um global_id. Provavelmente o user foi convidado para uma empresa
-    if data.global_id:
-
-        # Vamos verificar se este user foi convidado para uma empresa
-        global_id_doc = await global_ids_collection.find_one({"global_id": data.global_id, "operation": "convite", "email": data.user.email})
-        
-        if not global_id_doc:
-            raise HTTPException(status_code=404, detail="Global ID inválido.")
-        
+    if global_id_doc:
         id_empresa = global_id_doc.get("empresa_id")
-
-        apagar = await global_ids_collection.delete_one({"_id": ObjectId(global_id_doc["_id"])})  # Apagar o global_id após uso
-
-        if not apagar.deleted_count:
-            raise HTTPException(status_code=500, detail="Erro ao apagar o Global ID.")
     
     # Isto significa que o user registou-se a ele próprio, sem convite
     else:
@@ -275,13 +275,15 @@ async def register_user(data: UserRegister, request: Request):
         try:
             res_emp = await empresas_collection.insert_one(empresa_doc)
         except DuplicateKeyError as e:
-            # roolback parcial: apagar usuário criado
-            await users_collection.delete_one({"_id": user_id})
             text = str(e).lower()
+
+            #Apagar o user que foi criado, pois não será necessário
+            await users_collection.delete_one({"_id": user_id})
+
             if "nif" in text:
                 raise HTTPException(status_code=409, detail="O NIF já está registrado.")
             raise HTTPException(status_code=409, detail="Campo duplicado na empresa.")
-    
+
         id_empresa = res_emp.inserted_id
         is_admin = True  # O usuário que cria a empresa é automaticamente administrador
     

@@ -4,7 +4,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useParams, useNavigate} from "react-router-dom";
 import { Box, Button, Typography, Paper } from "@mui/material";
 import { useState, useEffect } from "react";
-import LoadingAnimation from "../../components/LoadingAnimation";
 import PasswordField from "../../components/PasswordField";
 
 const newPasswordSchema = z
@@ -22,7 +21,6 @@ type NewPasswordFormInputs = z.infer<typeof newPasswordSchema>;
 export default function NewPasswordPage() {
   const { GLOBAL_ID } = useParams<{ GLOBAL_ID: string }>();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true); // loading começa como true
   const [userConfirmation, setUserConfirmation] = useState<{
     isConfirmed: boolean;
     message: string;
@@ -36,53 +34,43 @@ export default function NewPasswordPage() {
   });
 
   useEffect(() => {
-    const checkGlobalId = async () => {
-      if (!GLOBAL_ID) {
-        setUserConfirmation({
-          isConfirmed: false,
-          message: "ID global inválido ou não fornecido.",
-        });
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const response = await fetch(`/backend/user/get-global-id/${GLOBAL_ID}`);
-        if (!response.ok) {
-          setUserConfirmation({
-            isConfirmed: false,
-            message: "ID global inválido ou expirado.",
-          });
-          setLoading(false);
-          return;
-        }
-        const data = await response.json();
-        if (data.isValid) {
-          setLoading(false);
-        } else {
-          setUserConfirmation({
-            isConfirmed: false,
-            message: "ID global inválido ou expirado.",
-          });
-          setLoading(false);
-        }
-      } catch (error) {
-        setUserConfirmation({
-          isConfirmed: false,
-          message: "Erro ao verificar o ID global.",
-        });
-        setLoading(false);
-      }
-    };
-
-    checkGlobalId();
-  }, []);
-
-  useEffect(() => {
     if (userConfirmation.message) {
       navigate("/login", { state: userConfirmation });
     }
   }, [userConfirmation]);
+
+  useEffect(() => {
+
+    async function checkGlobalId() {
+      
+      try {
+        const response = await fetch(`/backend/user/get-global-id/${GLOBAL_ID}`);
+        if (!response.ok) {
+          throw new Error("Global ID inválido ou expirado");
+        }
+        
+        const globalIdData = await response.json();
+        
+        if (!globalIdData) {
+          throw new Error("Dados do Global ID inválidos");
+        }
+
+        else if(globalIdData.operation !== "recuperarPassword") {
+          setUserConfirmation({
+            isConfirmed: false,
+            message: "Operação inválida! O botão que foi enviado no email já não funciona.",
+          });
+        }
+
+      } catch (error) {
+          setUserConfirmation({
+            isConfirmed: false,
+            message: "Operação Expirada! O botão que foi enviado no email já não funciona.",
+          });
+        }
+    }
+    checkGlobalId();
+  }, [])
 
   const onSubmit = async (data: NewPasswordFormInputs) => {
     try {
@@ -118,10 +106,6 @@ export default function NewPasswordPage() {
       });
     }
   };
-
-  if (loading) {
-    return <LoadingAnimation />;
-  }
 
   return (
     <Box display="flex" justifyContent="center" alignItems="center" minHeight="40vh">

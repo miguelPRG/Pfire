@@ -139,7 +139,7 @@ function App() {
               element={<EmailOperation/>}
             />
             {/* Restauração de palavra-passe após o pedido. Esta página é inacessivel de forma direta pelo user.*/}
-            <Route path="/new-password/:GLOBAL_ID/" element={<PublicRoute element={<NewPassword />} />} />
+            <Route path="/new-password/:GLOBAL_ID" element={<PublicRoute element={<NewPassword />} />} />
             {/*Aqui estã as rotas da página de registo*/}
             <Route path="/register" element={<PublicRoute element={<Register />} />} />
             <Route path="/register/:GLOBAL_ID" element={<PublicRoute element={<Register />} />} />

@@ -7,7 +7,12 @@ from database import global_ids_collection, users_collection, users_empresas_col
 from passlib.context import CryptContext
 
 routerUser = APIRouter(prefix="/user")
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(
+    schemes=["argon2"],
+    deprecated="auto",
+    argon2__memory_cost=65536,
+    argon2__time_cost=3,
+)
 
 # 🚀 Obter Global ID de um Utilizador
 @routerUser.get("/get-global-id/{global_id}")
@@ -30,9 +35,12 @@ async def get_global_id(global_id: str, request: Request):
     global_id_data["user_id"] = str(global_id_data["user_id"]) if "user_id" in global_id_data else None
     global_id_data["created_by"] = str(global_id_data["created_by"]) if "created_by" in global_id_data else None
 
+    # Remover campos com valor nulo
+    global_id_data = {k: v for k, v in global_id_data.items() if v is not None}
+
     return global_id_data
 
-
+# Ativqar utilizador pós registo
 @routerUser.put("/email/activate/{global_id}")
 async def confirm_user(global_id: str, request: Request):
 
@@ -62,12 +70,12 @@ async def confirm_user(global_id: str, request: Request):
 
 
 # Redefinir a password do utilizador depois do email de recuperação ser enviado
-routerUser.put("/email/change-password/")
+@routerUser.put("/email/change-password")
 async def reset_password(request: Request, user: UserChangePassword):
 
     # Encontrar o global_id na base de dados
     global_id_data = await global_ids_collection.find_one({"global_id": user.global_id, "operation": "recuperarPassword"})
-    if not global_id_data or global_id_data["operação"] != "recuperarPassword":
+    if not global_id_data or global_id_data["operation"] != "recuperarPassword":
         raise HTTPException(status_code=404, detail="Global ID não encontrado.")
 
     user_id = global_id_data["user_id"]
@@ -88,7 +96,7 @@ async def reset_password(request: Request, user: UserChangePassword):
     await global_ids_collection.delete_one({"global_id": user.global_id})
     return {"message": "Password atualizada com sucesso!"}
 
-
+# Aceitar convite para uma empresa
 @routerUser.put("/email/invite-accept/{global_id}")
 async def accept_invite(global_id: str, request: Request):
 

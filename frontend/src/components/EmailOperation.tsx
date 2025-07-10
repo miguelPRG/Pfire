@@ -15,51 +15,10 @@ function EmailOperation() {
   }>();
 
   useEffect(() => {
-
-    console.log("GLOBAL_ID", GLOBAL_ID);
-
     const processOperation = async () => {
-      if (!OPERATION) {
-        setUserConfirmation({
-          isConfirmed: false,
-          message: "Erro ao efetuar operação! Não foi possível encontrar a operação.",
-        });
-        return;
-      }
-
-      if (!GLOBAL_ID) {
-        setUserConfirmation({
-          isConfirmed: false,
-          message: "Erro ao efetuar operação! Não foi possível encontrar o ID global.",
-        });
-        return;
-      }
-
-      let globalIdData: { email: string | null; operation: string | null } | null = null;
-
-      try {
-        // Buscar e guardar os dados do global_id
-        const globalIdResponse = await fetch(`/backend/user/get-global-id/${GLOBAL_ID}`);
-        if (globalIdResponse.ok) {
-          globalIdData = await globalIdResponse.json();
-        } else {
-          throw new Error("Erro ao buscar dados do ID global.");
-        }
-
-        console.log("GLOBAL_ID DATA", globalIdData);
-
-      } catch {
-        setUserConfirmation({
-          isConfirmed: false,
-          message: "Operação Expirada! O botão que foi enviado no email já não funciona.",
-        });
-        return;
-      }
-
       const operationsMap: Record<string, () => void | Promise<void>> = {
         registo: async () => {
           try {
-
             const response = await fetch(`/backend/user/email/activate/${GLOBAL_ID}`, {
               method: "PUT",
             });
@@ -77,9 +36,26 @@ function EmailOperation() {
         },
         recuperarPassword: () => {
           // Redireciona para a página de recuperação de palavra-passe
-          navigate(`/new-password/${GLOBAL_ID}`, { state: { fromEmailOperation: true } });
+          navigate(`/new-password/${GLOBAL_ID}`);
         },
         convite: async () => {
+          let globalIdData: { email: string | null; operation: string | null } | null = null;
+
+          try {
+            // Buscar e guardar os dados do global_id
+            const globalIdResponse = await fetch(`/backend/user/get-global-id/${GLOBAL_ID}`);
+            if (globalIdResponse.ok) {
+              globalIdData = await globalIdResponse.json();
+            } else {
+              throw new Error("Erro ao buscar dados do ID global.");
+            }
+          } catch {
+            setUserConfirmation({
+              isConfirmed: false,
+              message: "Operação Expirada! O botão que foi enviado no email já não funciona.",
+            });
+            return;
+          }
 
           if (globalIdData?.email) {
             // Se o email foi fornecido, redireciona para a página de registo com o email já preenchido
@@ -104,8 +80,8 @@ function EmailOperation() {
           }
         },
       };
-      console.log("OPERATION", OPERATION);
-      if (operationsMap.hasOwnProperty(OPERATION)) {
+
+      if (OPERATION && operationsMap.hasOwnProperty(OPERATION)) {
         operationsMap[OPERATION]();
       } else {
         setUserConfirmation({
@@ -114,6 +90,7 @@ function EmailOperation() {
         });
       }
     };
+
     processOperation();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
