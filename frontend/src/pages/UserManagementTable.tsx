@@ -20,9 +20,9 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
 } from "@mui/material";
-import { Search } from "@mui/icons-material";
+import { Search, Delete } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { useQuery } from "@apollo/client";
 import { GET_USERS } from "../graphql/usersqueries";
@@ -59,8 +59,10 @@ export default function UserManagementTable() {
   const [orderBy, setOrderBy] = useState<keyof User | null>(null);
   const [order, setOrder] = useState<"asc" | "desc">("asc");
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const { empresa, user } = useAuth();
-  const { data, loading, error, refetch } = useQuery(GET_USERS, {
+  const { data, refetch } = useQuery(GET_USERS, {
     variables: { empresaId: empresa?.id },
     fetchPolicy: "cache-first",
   });
@@ -223,6 +225,56 @@ export default function UserManagementTable() {
     }
   };
 
+  const handleDelete = async (id: string) => {
+    try {
+      const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
+        action: "expulsar_utilizador",
+      });
+
+      const res = await fetch("/backend/user/expel", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ 
+          user_id: id,
+          empresa_id: empresa?.id,
+          recaptchaToken,
+        }),
+      });
+
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.detail || "Erro ao eliminar utilizador.");
+      setAlert({
+        message: json.detail || "Utilizador eliminado com sucesso.",
+        isError: false,
+      });
+      await refetch(); // Atualiza a lista de utilizadores
+    } catch (err: any) {
+      setAlert({
+        message: err.message || "Erro ao eliminar utilizador.",
+        isError: true,
+      });
+    }
+  }
+
+  const handleOpenDeleteDialog = (id: string) => {
+    setSelectedUserId(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (selectedUserId) {
+      await handleDelete(selectedUserId);
+      setDeleteDialogOpen(false);
+      setSelectedUserId(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setSelectedUserId(null);
+  };
+
   return (
     <Paper sx={{ width: "100%", p: 2, boxShadow: "none" }}>
       <Container
@@ -352,24 +404,26 @@ export default function UserManagementTable() {
                 {user.telefone}
                 </TableCell>
                 <TableCell
-                sx={{
-                  py: 1,
-                }}
-                >
-                <Button
-                  variant="contained"
-                  size="small"
                   sx={{
-                  borderRadius: "20px",
-                  width: "40px",
-                  minWidth: "auto",
-                  px: 0,
+                    py: 1,
                   }}
-                  color={user.isActive ? "success" : "error"}
-                  onClick={() => handleToggleStatus(user)}
                 >
-                  {user.isActive ? "Ativo" : "Inativo"}
-                </Button>
+                  <Box
+                    sx={{
+                      borderRadius: "50%",
+                      width: 50,
+                      height: 50,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      bgcolor: user.isActive ? "success.main" : "error.main",
+                      color: "#fff",
+                      fontWeight: "bold",
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    {user.isActive ? "Ativo" : "Inativo"}
+                  </Box>
                 </TableCell>
                 <TableCell
                 sx={{
@@ -398,6 +452,35 @@ export default function UserManagementTable() {
                   {user.role}
                   </Button>
                 </TableCell>
+                 <TableCell align="center">
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 1,
+                    justifyContent: "center",
+                  }}
+                >
+                  <Box
+                    sx={{
+                      backgroundColor: "error.main",
+                      color: "#fff",
+                      borderRadius: "50%",
+                      width: 36,
+                      height: 36,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      "&:hover": {
+                        backgroundColor: "error.dark",
+                      },
+                    }}
+                    onClick={() => handleOpenDeleteDialog(user.id)}
+                  >
+                    <Delete fontSize="small" />
+                  </Box>
+                </Box>
+              </TableCell>
               </TableRow>
               ))}
           </TableBody>
@@ -458,6 +541,23 @@ export default function UserManagementTable() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de confirmação de exclusão */}
+      <Dialog open={deleteDialogOpen} onClose={handleCancelDelete}>
+        <DialogTitle>Eliminar utilizador</DialogTitle>
+        <DialogContent>
+          Tem certeza que deseja eliminar este utilizador?
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDelete} variant="outlined">
+            Cancelar
+          </Button>
+          <Button onClick={handleConfirmDelete} color="error" variant="contained">
+            Eliminar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       <Notification alert={alert} setAlert={setAlert} />
     </Paper>
   );
