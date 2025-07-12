@@ -27,7 +27,7 @@ export default function GlobalPhone({
   const inputId = `phone-input-${fieldName.replace(/\./g, "-")}`;
 
   return (
-    <Box id="telefone-field" display={"flex"} sx={{mt: 1}} flexDirection="column" width="100%">
+    <Box id="telefone-field" display="flex" flexDirection="column" width="100%" sx={{ mt: 1 }}>
       <InputLabel htmlFor={inputId} sx={{ mb: 1, width: "100%", textAlign: "left" }}>
         Telefone:
       </InputLabel>
@@ -35,16 +35,16 @@ export default function GlobalPhone({
         name={fieldName}
         control={control}
         render={({ field }) => (
-          <Box sx={{ width: "100%" }}>
+          <Box sx={{ width: "100%", display: "flex", flexDirection: "column" }}>
             <Box
               sx={{
-                display: "flex",
                 alignItems: "center",
                 border: "1px solid",
                 borderColor: errorObj ? "error.main" : "rgba(0, 0, 0, 0.23)",
                 borderRadius: 1,
                 padding: "18.5px 14px",
                 fontSize: "16px",
+                width: "100%", // garante 100% da largura
                 "&:hover": {
                   borderColor: "black",
                 },
@@ -66,7 +66,7 @@ export default function GlobalPhone({
                   fontSize: "16px",
                   border: "none",
                   outline: "none",
-                  width: "100%",
+                  width: "100%", // garante 100% da largura
                   background: "transparent",
                 }}
               />
@@ -77,9 +77,11 @@ export default function GlobalPhone({
                 variant="body2"
                 sx={{
                   mt: 0.5,
+                  ml: 5, // opcional: pequeno recuo à esquerda
+                  textAlign: "left",
                 }}
               >
-                {typeof errorObj === "object" && "message" in errorObj ? (errorObj as any).message : String(errorObj)}
+                Número de telefone inválido
               </Typography>
             )}
           </Box>

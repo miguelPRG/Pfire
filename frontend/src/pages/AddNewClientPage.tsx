@@ -13,7 +13,7 @@ declare var grecaptcha: any;
 // Esquema de validação com Zod
 const addClientSchema = z.object({
   nome: z.string().nonempty("O nome é obrigatório").trim(),
-  email: z.string().nonempty("O email é obrigatório").email("Email inválido").trim(),
+  email: z.email("Email inválido").nonempty("O email é obrigatório").trim(),
   telefone: z
     .string()
     .nonempty("O telefone é obrigatório")
@@ -21,11 +21,7 @@ const addClientSchema = z.object({
     .refine((val) => val?.startsWith("+") && val.length >= 10, {
       message: "Número de telefone internacional inválido",
     }),
-  nif: z
-    .string()
-    .nonempty("O NIF é obrigatório")
-    .trim()
-    .refine(validarNIF, "O NIF é inválido"),
+  nif: z.string().nonempty("O NIF é obrigatório").trim().refine(validarNIF, "O NIF é inválido"),
   localidade: z.string().nonempty("A localidade é obrigatória").trim(),
   morada: z.string().nonempty("A morada é obrigatória").trim(),
   codigo_postal: z
@@ -70,7 +66,7 @@ export default function AddNewClientPage() {
       if (!empresa?.id || !/^[a-f\d]{24}$/i.test(empresa.id)) {
         throw new Error("ID da empresa inválido ou não fornecido.");
       }
-      
+
       // O backend espera recaptchaToken e empresa_id no corpo
       const response = await fetch(`/backend/cliente`, {
         method: "POST",
@@ -261,13 +257,11 @@ export default function AddNewClientPage() {
             onClick={handleCancel}
             sx={{
               flex: 1,
-              
-              
+
               "&:hover": {
-          bgcolor: "grey.300",
-         
-             
-            }}}
+                bgcolor: "grey.300",
+              },
+            }}
           >
             Cancelar
           </Button>
@@ -279,15 +273,19 @@ export default function AddNewClientPage() {
               backgroundColor: theme.palette.success.main,
               color: "white",
               "&:hover": {
-          backgroundColor: theme.palette.success.dark,
+                backgroundColor: theme.palette.success.dark,
               },
               minWidth: 0,
             }}
             disabled={isSubmitting}
           >
             {isSubmitting
-              ? (cliente ? "Atualizando..." : "A adicionar...")
-              : (cliente ? "Atualizar dados do cliente" : "Salvar")}
+              ? cliente
+                ? "Atualizando..."
+                : "A adicionar..."
+              : cliente
+                ? "Atualizar dados do cliente"
+                : "Salvar"}
           </Button>
         </Box>
       </Box>

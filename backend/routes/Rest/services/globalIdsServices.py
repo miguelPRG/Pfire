@@ -1,10 +1,15 @@
 from fastapi import APIRouter, HTTPException, Request
 from re import compile, IGNORECASE
 from datetime import datetime
-from models.userModels import UserChangePassword # Ajuste o caminho conforme sua estrutura
+from models.userModels import UserChangePassword  # Ajuste o caminho conforme sua estrutura
 from models.userEmpresaModels import UserEmpresaCreate  # Ajuste o caminho conforme sua estrutura
-from database import global_ids_collection, users_collection, users_empresas_collection  # Ajuste o caminho conforme sua estrutura
+from database import (
+    global_ids_collection,
+    users_collection,
+    users_empresas_collection,
+)  # Ajuste o caminho conforme sua estrutura
 from passlib.context import CryptContext
+from asyncio import gather
 
 routerUser = APIRouter(prefix="/user")
 pwd_context = CryptContext(
@@ -13,6 +18,7 @@ pwd_context = CryptContext(
     argon2__memory_cost=65536,
     argon2__time_cost=3,
 )
+
 
 # 🚀 Obter Global ID de um Utilizador
 @routerUser.get("/get-global-id/{global_id}")
@@ -40,6 +46,7 @@ async def get_global_id(global_id: str, request: Request):
 
     return global_id_data
 
+
 # Ativqar utilizador pós registo
 @routerUser.put("/email/activate/{global_id}")
 async def confirm_user(global_id: str, request: Request):
@@ -60,12 +67,18 @@ async def confirm_user(global_id: str, request: Request):
     if not user_id:
         raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
 
-    user_update = await users_collection.update_one({"_id": user_id}, {"$set": {"isActive": True}})
+    user_update = users_collection.update_one({"_id": user_id}, {"$set": {"isActive": True}})
+    global_id_data =  global_ids_collection.delete_one({"global_id": global_id})
 
-    if user_update.modified_count == 0:
-        raise HTTPException(status_code=500, detail="Erro ao ativar o utilizador.")
+    user_update, global_id_data = await gather(user_update, global_id_data)
 
-    await global_ids_collection.delete_one({"global_id": global_id})
+    if not user_update.modified_count:
+        raise HTTPException(status_code=409, detail="Erro ao ativar o utilizador.")
+    
+    if global_id_data.deleted_count == 0:
+        raise HTTPException(status_code=500, detail="Erro ao remover o global ID após ativação.")    
+
+
     return {"message": "Utilizador ativado com sucesso!"}
 
 
@@ -74,7 +87,9 @@ async def confirm_user(global_id: str, request: Request):
 async def reset_password(request: Request, user: UserChangePassword):
 
     # Encontrar o global_id na base de dados
-    global_id_data = await global_ids_collection.find_one({"global_id": user.global_id, "operation": "recuperarPassword"})
+    global_id_data = await global_ids_collection.find_one(
+        {"global_id": user.global_id, "operation": "recuperarPassword"}
+    )
     if not global_id_data or global_id_data["operation"] != "recuperarPassword":
         raise HTTPException(status_code=404, detail="Global ID não encontrado.")
 
@@ -86,28 +101,35 @@ async def reset_password(request: Request, user: UserChangePassword):
 
     # Atualizar a password do utilizador
     new_password_hashed = pwd_context.hash(user.password)
-    user_update = await users_collection.update_one(
+    user_update = users_collection.update_one(
         {"_id": user_id}, {"$set": {"password": new_password_hashed, "updated_at": datetime.now()}}
     )
 
-    if user_update.modified_count == 0:
-        raise HTTPException(status_code=409, detail="Erro ao atualizar a password.")
+    global_id_deelete = global_ids_collection.delete_one({"global_id": user.global_id})
 
-    await global_ids_collection.delete_one({"global_id": user.global_id})
+    user_update, global_id_deelete = await gather(user_update, global_id_deelete)
+
+    if not user_update.modified_count:
+        raise HTTPException(status_code=409, detail="Erro ao atualizar a password do utilizador.")
+    
+    if global_id_deelete.deleted_count == 0:
+        raise HTTPException(status_code=500, detail="Erro ao remover o global ID após atualização da password.")
+
     return {"message": "Password atualizada com sucesso!"}
+
 
 # Aceitar convite para uma empresa
 @routerUser.put("/email/invite-accept/{global_id}")
 async def accept_invite(global_id: str, request: Request):
 
-    #Verificar se o global ID Eexiste
+    # Verificar se o global ID Eexiste
 
     global_id_data = await global_ids_collection.find_one({"global_id": global_id, "operation": "convite"})
 
     if not global_id_data or not global_id_data.get("user_exists", False):
         raise HTTPException(status_code=404, detail="Global ID não encontrado ou inválido.")
 
-    #Criar novo user_empresa
+    # Criar novo user_empresa
     user_id = global_id_data["user_id"]
     empresa_id = global_id_data["empresa_id"]
     data = datetime.now()
@@ -124,9 +146,15 @@ async def accept_invite(global_id: str, request: Request):
 
     user_empresa_data = user_empresa.model_dump(by_alias=True)
 
-    user_empresa_insertion = await users_empresas_collection.insert_one(user_empresa_data)
+    user_empresa_insertion = users_empresas_collection.insert_one(user_empresa_data)
+    global_delete = global_ids_collection.delete_one({"global_id": global_id})
 
-    if not user_empresa_insertion.inserted_id:
+    user_empresa, global_delete = await gather(user_empresa_insertion,global_delete)
+
+    if not user_empresa.inserted_id:
         raise HTTPException(status_code=500, detail="Erro ao aceitar o convite.")
-    
+
+    if global_delete.deleted_count == 0:
+        raise HTTPException(status_code=500, detail="Erro ao remover o global ID após aceitar o convite.")
+
     return {"message": f"Convite aceite com sucesso!"}

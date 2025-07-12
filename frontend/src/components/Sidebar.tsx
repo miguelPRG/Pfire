@@ -1,24 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  Box,
-  Drawer,
-  List,
-  Divider,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Collapse,
-} from "@mui/material";
+import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
 import {
   Description as DescriptionIcon,
-  Star as StarIcon,
   Layers as LayersIcon,
-  Info as InfoIcon,
-  ExpandLess,
-  ExpandMore,
-  ArrowForwardIos as ArrowForwardIosIcon,
   Engineering as EngineeringIcon,
 } from "@mui/icons-material";
 import GroupIcon from "@mui/icons-material/Group";
@@ -31,14 +16,9 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const navigate = useNavigate();
   const [openReports, setOpenReports] = useState(false);
-  const [openModels, setOpenModels] = useState(false);
 
   const handleToggleReports = () => {
     setOpenReports(!openReports);
-  };
-
-  const handleToggleModels = () => {
-    setOpenModels(!openModels);
   };
 
   const handleNavigation = (path: string) => {

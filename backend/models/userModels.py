@@ -34,7 +34,7 @@ class UserCreate(BaseModel):
         if not any(c.isdigit() for c in v):
             raise HTTPException(status_code=400, detail="A senha deve conter pelo menos um dígito.")
         return v
-    
+
     @model_validator(mode="after")
     def check_passwords_match(self):
         if self.password != self.confirmPassword:
@@ -108,7 +108,6 @@ class UserRegister(BaseModel):
         description="O ID global do utilizador (UUID4).",
     )
     recaptchaToken: str
-    
 
 
 """Fim das classes de operações CRUD"""
@@ -123,6 +122,7 @@ class UserLogin(BaseModel):
     def strip_email(cls, v):
         return v.strip()
 
+
 class UserLoginWithOAuth(BaseModel):
     firebase_token: str = Field(..., description="O token de autenticação do Firebase.")
     global_id: Optional[str] = Field(
@@ -133,6 +133,7 @@ class UserLoginWithOAuth(BaseModel):
         description="O ID global do utilizador (UUID4).",
     )
 
+
 class UserForgotPassword(BaseModel):
     email: EmailStr = Field(max_length=254, description="O email deve ser um endereço de email válido.")
     recaptchaToken: str
@@ -140,6 +141,7 @@ class UserForgotPassword(BaseModel):
     @field_validator("email", mode="before")
     def strip_email(cls, v):
         return v.strip()
+
 
 # classe para trocar password depois do email de recuperação ser enviado
 class UserChangePassword(BaseModel):
@@ -162,7 +164,8 @@ class UserChangePassword(BaseModel):
             raise HTTPException(status_code=400, detail="As senhas não coincidem.")
         return values
 
-#classe  para enviar convite de empresa
+
+# classe  para enviar convite de empresa
 class UserInvitation(BaseModel):
     email: EmailStr = Field(max_length=254, description="O email deve ser um endereço de email válido.")
     empresa_nome: str = Field(
@@ -181,4 +184,3 @@ class UserInvitation(BaseModel):
     @field_validator("email", mode="before")
     def strip_email(cls, v):
         return v.strip()
-    

@@ -20,7 +20,9 @@ def test_brevo_connection():
 
 
 # Função de recuperação da password
-def enviar_email(email_destino: str, name: str, global_id: str, template_id: int, operation: str, empresa_nome: str = None):
+def enviar_email(
+    email_destino: str, name: str, global_id: str, template_id: int, operation: str, empresa_nome: str = None
+):
     api_instance = brevo_python.TransactionalEmailsApi(brevo_python.ApiClient(configuration))
 
     # Prepara os dados do e-mail
@@ -28,7 +30,7 @@ def enviar_email(email_destino: str, name: str, global_id: str, template_id: int
         "NOME": name if name else "tudo bem?",
         "GLOBAL_ID": global_id,
         "OPERATION": operation,
-        "EMPRESA": empresa_nome if empresa_nome else None
+        "EMPRESA": empresa_nome if empresa_nome else None,
     }
     # Remove chaves com valor None
     params = {k: v for k, v in params.items() if v is not None}

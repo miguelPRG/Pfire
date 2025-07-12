@@ -53,10 +53,7 @@ export default function CompanySelectorPage() {
           {data.empresas.map((emp: any, i: number) => {
             const isSelected = emp.id === empresa?.id;
             // Define os tamanhos condicionalmente
-            const gridSizes =
-              data.empresas.length > 1
-                ? { xs: 12, sm: 6, md: 4 }
-                : { xs: 12 };
+            const gridSizes = data.empresas.length > 1 ? { xs: 12, sm: 6, md: 4 } : { xs: 12 };
 
             return (
               <Grid {...gridSizes} key={emp.id}>

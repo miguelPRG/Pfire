@@ -48,7 +48,7 @@ interface User {
 }
 
 const inviteSchema = z.object({
-  email: z.string().email("Email inválido"),
+  email: z.email("Email inválido"),
 });
 
 export default function UserManagementTable() {
@@ -73,7 +73,7 @@ export default function UserManagementTable() {
     handleSubmit,
     reset,
     setError,
-    formState: { errors, isSubmitting }
+    formState: { errors, isSubmitting },
   } = useForm<{ email: string }>({ defaultValues: { email: "" } });
 
   const users: User[] = (data && data.users) || [];
@@ -105,7 +105,7 @@ export default function UserManagementTable() {
       if (!res.ok) throw new Error(json.detail || "Erro ao atualizar status.");
       console.log(user);
 
-      if(method === "DELETE") {
+      if (method === "DELETE") {
         await refetch();
       }
     } catch (error) {
@@ -190,7 +190,7 @@ export default function UserManagementTable() {
     // Validação Zod
     const validation = inviteSchema.safeParse({ email: values.email.trim() });
     if (!validation.success) {
-      setError("email", { message: validation.error.errors[0].message });
+      setError("email", { message: validation.error.issues[0].message });
       return;
     }
 
@@ -205,7 +205,7 @@ export default function UserManagementTable() {
           email: values.email,
           empresa_nome: empresa?.nome,
           empresa_id: empresa?.id,
-          recaptchaToken
+          recaptchaToken,
         }),
       });
       const json = await res.json();
@@ -235,7 +235,7 @@ export default function UserManagementTable() {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           user_id: id,
           empresa_id: empresa?.id,
           recaptchaToken,
@@ -255,7 +255,7 @@ export default function UserManagementTable() {
         isError: true,
       });
     }
-  }
+  };
 
   const handleOpenDeleteDialog = (id: string) => {
     setSelectedUserId(id);
@@ -383,105 +383,105 @@ export default function UserManagementTable() {
               .filter((u) => u.id !== user?.id)
               .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
               .map((user, index) => (
-              <TableRow
-                key={user.id}
-                sx={{
-                backgroundColor: zebraColor(index),
-                }}
-              >
-                <TableCell
-                sx={{
-                  py: 1,
-                }}
-                >
-                {user.nome}
-                </TableCell>
-                <TableCell
-                sx={{
-                  py: 1,
-                }}
-                >
-                {user.telefone}
-                </TableCell>
-                <TableCell
+                <TableRow
+                  key={user.id}
                   sx={{
-                    py: 1,
+                    backgroundColor: zebraColor(index),
                   }}
                 >
-                  <Box
+                  <TableCell
                     sx={{
-                      borderRadius: "50%",
-                      width: 50,
-                      height: 50,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      bgcolor: user.isActive ? "success.main" : "error.main",
-                      color: "#fff",
-                      fontWeight: "bold",
-                      fontSize: "0.9rem",
+                      py: 1,
                     }}
                   >
-                    {user.isActive ? "Ativo" : "Inativo"}
-                  </Box>
-                </TableCell>
-                <TableCell
-                sx={{
-                  py: 1,
-                }}
-                >
-                {user.email}
-                </TableCell>
-                <TableCell
-                sx={{
-                  py: 1,
-                }}
-                >
-                  <Button
-                  variant="outlined"
-                  size="small"
-                  sx={{
-                  borderRadius: "20px",
-                  minWidth: 0,
-                  px: 1.5,
-                  width: "auto",
-                  textTransform: "none",
-                  }}
-                  onClick={() => handleToggleAdmin(user)}
-                  >
-                  {user.role}
-                  </Button>
-                </TableCell>
-                 <TableCell align="center">
-                <Box
-                  sx={{
-                    display: "flex",
-                    gap: 1,
-                    justifyContent: "center",
-                  }}
-                >
-                  <Box
+                    {user.nome}
+                  </TableCell>
+                  <TableCell
                     sx={{
-                      backgroundColor: "error.main",
-                      color: "#fff",
-                      borderRadius: "50%",
-                      width: 36,
-                      height: 36,
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                      "&:hover": {
-                        backgroundColor: "error.dark",
-                      },
+                      py: 1,
                     }}
-                    onClick={() => handleOpenDeleteDialog(user.id)}
                   >
-                    <Delete fontSize="small" />
-                  </Box>
-                </Box>
-              </TableCell>
-              </TableRow>
+                    {user.telefone}
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      py: 1,
+                    }}
+                  >
+                    <Box
+                      sx={{
+                        borderRadius: "50%",
+                        width: 50,
+                        height: 50,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        bgcolor: user.isActive ? "success.main" : "error.main",
+                        color: "#fff",
+                        fontWeight: "bold",
+                        fontSize: "0.9rem",
+                      }}
+                    >
+                      {user.isActive ? "Ativo" : "Inativo"}
+                    </Box>
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      py: 1,
+                    }}
+                  >
+                    {user.email}
+                  </TableCell>
+                  <TableCell
+                    sx={{
+                      py: 1,
+                    }}
+                  >
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      sx={{
+                        borderRadius: "20px",
+                        minWidth: 0,
+                        px: 1.5,
+                        width: "auto",
+                        textTransform: "none",
+                      }}
+                      onClick={() => handleToggleAdmin(user)}
+                    >
+                      {user.role}
+                    </Button>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Box
+                      sx={{
+                        display: "flex",
+                        gap: 1,
+                        justifyContent: "center",
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          backgroundColor: "error.main",
+                          color: "#fff",
+                          borderRadius: "50%",
+                          width: 36,
+                          height: 36,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          cursor: "pointer",
+                          "&:hover": {
+                            backgroundColor: "error.dark",
+                          },
+                        }}
+                        onClick={() => handleOpenDeleteDialog(user.id)}
+                      >
+                        <Delete fontSize="small" />
+                      </Box>
+                    </Box>
+                  </TableCell>
+                </TableRow>
               ))}
           </TableBody>
         </Table>
@@ -494,13 +494,15 @@ export default function UserManagementTable() {
           mt: 2,
         }}
       >
-        {sortedRows.length > 10 && (<Pagination
-          count={Math.ceil(sortedRows.length / rowsPerPage)}
-          page={page + 1}
-          onChange={(_, value) => setPage(value - 1)}
-          color="primary"
-          shape="rounded"
-        />) }
+        {sortedRows.length > 10 && (
+          <Pagination
+            count={Math.ceil(sortedRows.length / rowsPerPage)}
+            page={page + 1}
+            onChange={(_, value) => setPage(value - 1)}
+            color="primary"
+            shape="rounded"
+          />
+        )}
       </Box>
 
       {/* Dialog de convite */}
@@ -526,15 +528,14 @@ export default function UserManagementTable() {
             <DialogActions>
               <Button
                 variant="outlined"
-                onClick={() => { setInviteOpen(false); reset(); }}
+                onClick={() => {
+                  setInviteOpen(false);
+                  reset();
+                }}
               >
                 Cancelar
               </Button>
-              <Button
-                type="submit"
-                color="success"
-                variant="contained"
-              >
+              <Button type="submit" color="success" variant="contained">
                 {isSubmitting ? "A enviar..." : "Enviar convite"}
               </Button>
             </DialogActions>
@@ -545,9 +546,7 @@ export default function UserManagementTable() {
       {/* Dialog de confirmação de exclusão */}
       <Dialog open={deleteDialogOpen} onClose={handleCancelDelete}>
         <DialogTitle>Eliminar utilizador</DialogTitle>
-        <DialogContent>
-          Tem certeza que deseja eliminar este utilizador?
-        </DialogContent>
+        <DialogContent>Tem certeza que deseja eliminar este utilizador?</DialogContent>
         <DialogActions>
           <Button onClick={handleCancelDelete} variant="outlined">
             Cancelar

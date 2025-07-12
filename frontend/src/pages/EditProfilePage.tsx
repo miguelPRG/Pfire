@@ -13,9 +13,9 @@ import PasswordField from "../components/PasswordField";
 const userInfoSchema = z.object({
   name: z.string().nonempty("Nome é obrigatório").trim(),
   telefone: z
-    .string({ required_error: "Por favor insira o telefone" })
+    .string()
     .trim()
-    .regex(/^[+]?\d{7,15}$/, "Número de telefone inválido"),
+    .regex(/^[+]?\d{9,15}$/, "Número de telefone inválido"),
 });
 
 const userPasswordSchema = z
@@ -42,12 +42,15 @@ const companySchema = z.object({
     .refine((nif) => isValidNIF(nif), { message: "NIF Inválido" }),
   address: z.string().trim(),
   locality: z.string().trim(),
-  postalCode: z.string().trim().regex(/^\d{4}-\d{3}$/, "Formato inválido"),
-  companyPhone: z
-    .string({ required_error: "Por favor insira o telefone da empresa" })
+  postalCode: z
+    .string()
     .trim()
-    .regex(/^[+]?\d{7,15}$/, "Número inválido"),
-  logo: z.string().optional(),
+    .regex(/^\d{4}-\d{3}$/, "Formato inválido"),
+  companyPhone: z
+    .string()
+    .trim()
+    .regex(/^[+]?\d{9,15}$/, "Número inválido"),
+  logo: z.base64().optional(),
 });
 
 // Types

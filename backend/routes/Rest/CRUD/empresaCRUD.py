@@ -22,12 +22,14 @@ async def create_empresa(payload: EmpresaCreateAsLoggedUser, request: Request):
     date = datetime.now()
 
     empresa_doc = payload.model_dump(exclude_unset=True)
-    empresa_doc.update({
-        "created_at": date,
-        "updated_at": date,
-        "created_by": user_id,
-        "updated_by": user_id,
-    })
+    empresa_doc.update(
+        {
+            "created_at": date,
+            "updated_at": date,
+            "created_by": user_id,
+            "updated_by": user_id,
+        }
+    )
 
     try:
         res = await empresas_collection.insert_one(empresa_doc)
@@ -45,11 +47,12 @@ async def create_empresa(payload: EmpresaCreateAsLoggedUser, request: Request):
         created_by=user_id,
         created_at=date,
         updated_by=user_id,
-        updated_at=date
+        updated_at=date,
     ).model_dump(by_alias=True)
     await users_empresas_collection.insert_one(assoc)
 
     return JSONResponse(status_code=201, content={"message": "Empresa criada com sucesso!"})
+
 
 # Atualizar Empresa
 @routerEmpresa.put("/{id}")

@@ -49,7 +49,7 @@ export default function ReportModelListPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [expandedFields, setExpandedFields] = useState<Record<string, boolean>>({});
-  
+
   // Estado para alertas
   const [alert, setAlert] = useState<{ message: string; isError: boolean } | null>(null);
 
@@ -277,16 +277,18 @@ export default function ReportModelListPage() {
                     <TableCell>
                       <Link
                         component="button"
-                        onClick={() => navigate("/report-templates", { 
-                          state: { 
-                            modelo: {
-                              id: modelo.id,
-                              modelName: modelo.modelName,
-                              customFields: modelo.customFields,
-                              createdAt: modelo.createdAt
-                            }
-                          } 
-                        })}
+                        onClick={() =>
+                          navigate("/report-templates", {
+                            state: {
+                              modelo: {
+                                id: modelo.id,
+                                modelName: modelo.modelName,
+                                customFields: modelo.customFields,
+                                createdAt: modelo.createdAt,
+                              },
+                            },
+                          })
+                        }
                         sx={{ cursor: "pointer", textDecoration: "none" }}
                       >
                         {modelo.modelName}
@@ -304,7 +306,6 @@ export default function ReportModelListPage() {
                     </TableCell>
                     <TableCell align="center">
                       <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
-                       
                         <IconButton
                           onClick={() => handleDelete(modelo.id)}
                           sx={{
@@ -325,7 +326,7 @@ export default function ReportModelListPage() {
             </Table>
           </TableContainer>
         )}
-        
+
         {filtered.length > 10 && (
           <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2, alignItems: "center" }}>
             <Pagination
@@ -340,7 +341,7 @@ export default function ReportModelListPage() {
       </Paper>
 
       {/*Notification*/}
-      <Notification alert={alert} setAlert={setAlert}/>
+      <Notification alert={alert} setAlert={setAlert} />
     </>
   );
 }

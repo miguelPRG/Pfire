@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useParams, useNavigate} from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { Box, Button, Typography, Paper } from "@mui/material";
 import { useState, useEffect } from "react";
 import PasswordField from "../../components/PasswordField";
@@ -24,7 +24,7 @@ export default function NewPasswordPage() {
   const [userConfirmation, setUserConfirmation] = useState<{
     isConfirmed: boolean;
     message: string;
-  }>( { isConfirmed: false, message: "" });
+  }>({ isConfirmed: false, message: "" });
   const {
     register,
     handleSubmit,
@@ -40,37 +40,32 @@ export default function NewPasswordPage() {
   }, [userConfirmation]);
 
   useEffect(() => {
-
     async function checkGlobalId() {
-      
       try {
         const response = await fetch(`/backend/user/get-global-id/${GLOBAL_ID}`);
         if (!response.ok) {
           throw new Error("Global ID inválido ou expirado");
         }
-        
+
         const globalIdData = await response.json();
-        
+
         if (!globalIdData) {
           throw new Error("Dados do Global ID inválidos");
-        }
-
-        else if(globalIdData.operation !== "recuperarPassword") {
+        } else if (globalIdData.operation !== "recuperarPassword") {
           setUserConfirmation({
             isConfirmed: false,
             message: "Operação inválida! O botão que foi enviado no email já não funciona.",
           });
         }
-
       } catch (error) {
-          setUserConfirmation({
-            isConfirmed: false,
-            message: "Operação Expirada! O botão que foi enviado no email já não funciona.",
-          });
-        }
+        setUserConfirmation({
+          isConfirmed: false,
+          message: "Operação Expirada! O botão que foi enviado no email já não funciona.",
+        });
+      }
     }
     checkGlobalId();
-  }, [])
+  }, []);
 
   const onSubmit = async (data: NewPasswordFormInputs) => {
     try {

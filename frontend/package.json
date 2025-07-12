@@ -22,7 +22,7 @@
     "react-hook-form": "^7.60.0",
     "react-phone-number-input": "^3.4.12",
     "react-router-dom": "^7.6.3",
-    "zod": "^3.25.74"
+    "zod": "^4.0.5"
   },
   "devDependencies": {
     "@emotion/react": "^11.14.0",
@@ -33,10 +33,10 @@
     "@types/react-dom": "^19.1.6",
     "jsdom": "^26.1.0",
     "prettier": "^3.6.2",
-    "vite": "^7.0.2",
+    "vite": "^7.0.4",
     "vitest": "^3.2.4"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "4.44.2"
+    "@rollup/rollup-linux-x64-gnu": "4.45.0"
   }
 }

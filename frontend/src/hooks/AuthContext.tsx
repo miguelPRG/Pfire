@@ -3,7 +3,6 @@ import { FirebaseLogin } from "../firebase";
 import { GET_EMPRESAS } from "../graphql/empresasqueries";
 import { useQuery } from "@apollo/client";
 
-
 declare global {
   interface Window {
     grecaptcha: {
@@ -81,7 +80,11 @@ interface AuthContextType {
   user: UserLoggedIn | null;
   empresa: Empresa | null;
   loading: boolean; // <--- adicione isto
-  registerUser: (payload: { user: UserRegistered; empresa: EmpresaRegistered | null | unknown; global_id: string | undefined }) => Promise<void>;
+  registerUser: (payload: {
+    user: UserRegistered;
+    empresa: EmpresaRegistered | null | unknown;
+    global_id: string | undefined;
+  }) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   loginWithOAuth: (provider: "google" | "microsoft", global_id?: string) => Promise<boolean>;
   logout: () => Promise<void>;
@@ -144,14 +147,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } finally {
         console.log("Verificação de autenticação concluída");
       }
-      
     }
     checkAuth();
   }, []);
 
   useEffect(() => {
-   
-    if(!user) {
+    if (!user) {
       console.log("Utilizador não autenticado");
       return;
     }
@@ -170,7 +171,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (data && !empresa) {
-
       console.log("Dados recebidos:", data);
 
       const empresaData = data.empresas[0];
@@ -241,7 +241,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function registerUser(payload: { user: UserRegistered; empresa?: EmpresaRegistered | null | unknown , global_id: string | undefined } & Record<string, unknown>) {
+  async function registerUser(
+    payload: {
+      user: UserRegistered;
+      empresa?: EmpresaRegistered | null | unknown;
+      global_id: string | undefined;
+    } & Record<string, unknown>
+  ) {
     try {
       const token = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
         action: "register",
@@ -260,7 +266,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       console.log("Payload do registo:", payload);
-      
+
       const response = await fetch(`/backend/user/register`, {
         method: "POST",
         headers: {
@@ -275,7 +281,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!response.ok) {
         throw new Error(data.detail || "Erro desconhecido do backend");
       }
-
     } catch (error) {
       console.error("Erro ao registrar usuário:", error);
       throw error;
@@ -352,8 +357,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(null);
     } catch (error) {
       console.error("Erro ao fazer logout");
-    }
-    finally {
+    } finally {
       setLoading(false); // <--- indica que o logout foi concluído
     }
   }
@@ -372,7 +376,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     localStorage.setItem("empresaId", empresa.id); // <--- armazena o empresaId no localStorage
-
   }
 
   const updateUser = useCallback(async (user: UserUpdate) => {

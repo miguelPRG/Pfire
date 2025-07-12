@@ -42,9 +42,7 @@ class UserQuery:
             if not user:
                 continue
 
-            role = (
-                "Admin" if user_empresa.get("isAdmin") else "User"
-            )
+            role = "Admin" if user_empresa.get("isAdmin") else "User"
 
             user_data = {
                 "id": str(user.get("_id")),

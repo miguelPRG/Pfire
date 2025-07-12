@@ -8,7 +8,14 @@ from apis.firebase_admin_client import verify_firebase_token  # Si se usa para v
 from pathlib import Path
 from firebase_admin import initialize_app, credentials  # as chaves
 from passlib.context import CryptContext
-from models.userModels import UserLogin, UserLoginWithOAuth ,UserRegister, UserForgotPassword, UserUpdatePassword, UserInvitation
+from models.userModels import (
+    UserLogin,
+    UserLoginWithOAuth,
+    UserRegister,
+    UserForgotPassword,
+    UserUpdatePassword,
+    UserInvitation,
+)
 from models.userEmpresaModels import UserEmpresaCreate
 from datetime import datetime
 from database import users_collection, empresas_collection, users_empresas_collection, global_ids_collection
@@ -37,7 +44,7 @@ initialize_app(cred)
 
 # 🚀 Login via Firebase OAuth
 @routerUser.post("/login-oauth")
-async def login_oauth(request: Request,user: UserLoginWithOAuth):
+async def login_oauth(request: Request, user: UserLoginWithOAuth):
 
     # 1) Verifica ID Token no Firebase
     try:
@@ -85,17 +92,17 @@ async def login_oauth(request: Request,user: UserLoginWithOAuth):
             raise HTTPException(status_code=500, detail="Erro ao criar usuário no MongoDB.")
         id_user = result.inserted_id
         user_doc = {**insert_data, "_id": id_user}
-    
+
     # Este user já existe
     else:
-        
+
         if not user_doc.get("isActive", True):
             raise HTTPException(status_code=403, detail="Usuário inativo.")
         # atualiza last_login
         await users_collection.update_one({"_id": user_doc["_id"]}, {"$set": {"last_login": data, "firebaseUID": uid}})
         id_user = user_doc["_id"]
-    
-     # Caso o global_id seja fornecido, vamos verificar se este é valido e se o user já está associado a uma empresa
+
+    # Caso o global_id seja fornecido, vamos verificar se este é valido e se o user já está associado a uma empresa
     if user.global_id:
         # Verifica se o global_id é válido
         global_id_data = await global_ids_collection.find_one({"global_id": user.global_id, "operation": "convite"})
@@ -108,8 +115,10 @@ async def login_oauth(request: Request,user: UserLoginWithOAuth):
             )
 
             if user_empresa:
-              raise HTTPException(status_code=409, detail="O utilizador com esta conta já está associado a esta empresa.")
-    
+                raise HTTPException(
+                    status_code=409, detail="O utilizador com esta conta já está associado a esta empresa."
+                )
+
         # Criamos um novo user_empresa
         user_empresa = UserEmpresaCreate(
             user_id=user_doc["_id"],
@@ -201,7 +210,7 @@ async def login(user: UserLogin, request: Request):
 # 🚀 Registar um novo User
 @routerUser.post("/register")
 async def register_user(data: UserRegister, request: Request):
-    
+
     # Este if garante que o user será registo por uma das duas maneiras: "Registo Tradicional ou por Convite"
     if not data.global_id and not data.empresa:
         raise HTTPException(status_code=400, detail="Empresa ou global Id é obrigatória para registo.")
@@ -213,15 +222,14 @@ async def register_user(data: UserRegister, request: Request):
     global_id_doc = None
 
     if data.global_id:
-        
+
         global_id_doc = await global_ids_collection.find_one({"global_id": data.global_id, "operation": "convite"})
-        
+
         if not global_id_doc:
             raise HTTPException(status_code=404, detail="Global ID inválido ou expirado.")
-        
+
         if not global_id_doc.get("email") == data.user.email:
             raise HTTPException(status_code=400, detail="O email do convite não corresponde ao email fornecido.")
-    
 
     date = datetime.now()
 
@@ -230,13 +238,15 @@ async def register_user(data: UserRegister, request: Request):
     new_user = data.user
     new_user.password = pwd_context.hash(new_user.password)
     user_doc = new_user.model_dump(by_alias=True)
-    user_doc.update({
-        "created_at": date,
-        "updated_at": date,
-        "last_login": None,
-        "isSuperAdmin": False,
-        "isActive": data.global_id is not None,  # Se for convidado, não está ativo até ativar o convite
-    })
+    user_doc.update(
+        {
+            "created_at": date,
+            "updated_at": date,
+            "last_login": None,
+            "isSuperAdmin": False,
+            "isActive": data.global_id is not None,  # Se for convidado, não está ativo até ativar o convite
+        }
+    )
 
     # Resultado da inserção do novo user
     res_user = None
@@ -248,59 +258,64 @@ async def register_user(data: UserRegister, request: Request):
         if "email" in text:
             raise HTTPException(status_code=409, detail="O email já está registrado.")
         raise HTTPException(status_code=409, detail="Campo duplicado no usuário.")
-    
+
     # Capturar o ID do usuário recém-criado
     user_id = res_user.inserted_id
-    #Capturamos o id da empresa que está associada ao user
+    # Capturamos o id da empresa que está associada ao user
     id_empresa = None
     # Um variavel booleana que indicará se o user é administrador ou não da empresa
     is_admin = False
 
-    #Verifica se foi inserido um global_id. Provavelmente o user foi convidado para uma empresa
+    # Verifica se foi inserido um global_id. Provavelmente o user foi convidado para uma empresa
     if global_id_doc:
         id_empresa = global_id_doc.get("empresa_id")
-    
+
     # Isto significa que o user registou-se a ele próprio, sem convite
     else:
         # Criar EMPRESA, capturando nif duplicado
         new_empresa = data.empresa
         empresa_doc = new_empresa.model_dump(by_alias=True)
-        empresa_doc.update({
-            "created_at": date,
-            "updated_at": date,
-            "created_by": user_id,
-            "updated_by": user_id,
-        })
+        empresa_doc.update(
+            {
+                "created_at": date,
+                "updated_at": date,
+                "created_by": user_id,
+                "updated_by": user_id,
+            }
+        )
 
         try:
             res_emp = await empresas_collection.insert_one(empresa_doc)
         except DuplicateKeyError as e:
             text = str(e).lower()
 
-            #Apagar o user que foi criado, pois não será necessário
+            # Apagar o user que foi criado, pois não será necessário
             await users_collection.delete_one({"_id": user_id})
 
             if "nif" in text:
                 raise HTTPException(status_code=409, detail="O NIF já está registrado.")
+            
+            if "nome" in text:
+                raise HTTPException(status_code=409, detail="O nome da empresa já está registrado.")
+
             raise HTTPException(status_code=409, detail="Campo duplicado na empresa.")
 
         id_empresa = res_emp.inserted_id
         is_admin = True  # O usuário que cria a empresa é automaticamente administrador
-    
 
-    #Criamos a tabela intermediária entre User e Empresa
+    # Criamos a tabela intermediária entre User e Empresa
     ue = UserEmpresaCreate(
         user_id=user_id,
         empresa_id=id_empresa,
         isAdmin=is_admin,
         # Se for convidado, o criador é o que enviou o convite
-        created_by= global_id_doc["host_user_id"] if global_id_doc else user_id,  
+        created_by=global_id_doc["host_user_id"] if global_id_doc else user_id,
         created_at=date,
         # Se for convidado, o criador é o que enviou o convite
-        updated_by= global_id_doc["host_user_id"] if global_id_doc else user_id,
+        updated_by=global_id_doc["host_user_id"] if global_id_doc else user_id,
         updated_at=date,
     ).model_dump(by_alias=True)
-    
+
     ue = await users_empresas_collection.insert_one(ue)
 
     if not ue.inserted_id:
@@ -310,13 +325,13 @@ async def register_user(data: UserRegister, request: Request):
     # Assim sendo não à necessidade de enviar um email de confirmação de registo
     if not is_admin:
         return {"message": "Conta criada! Bem vindo à empresa."}
-    # 
+    #
     global_id = str(uuid4())
 
     global_id_insertion = await global_ids_collection.insert_one(
         {
-            "global_id": global_id, 
-            "user_id": res_user.inserted_id, 
+            "global_id": global_id,
+            "user_id": res_user.inserted_id,
             "created_at": date,
             "operation": "registo",
         }
@@ -324,7 +339,6 @@ async def register_user(data: UserRegister, request: Request):
 
     if not global_id_insertion.inserted_id:
         raise HTTPException(status_code=409, detail="Erro na criação do ID global.")
-
 
     enviar_email(user_doc["email"], user_doc["nome"], global_id, 4, "registo")
 
@@ -386,8 +400,8 @@ async def forgot_password(request: Request, user: UserForgotPassword):
     # Insere o global_id na coleção
     global_id_insertion = await global_ids_collection.insert_one(
         {
-            "global_id": global_id, 
-            "user_id": user_found["_id"], 
+            "global_id": global_id,
+            "user_id": user_found["_id"],
             "created_at": datetime.now(),
             "operation": "recuperarPassword",
         }
@@ -434,13 +448,15 @@ async def update_password(user: UserUpdatePassword, request: Request):
 
     return {"message": "Senha atualizada com sucesso!"}
 
+
 """OPERAÇÕES COM GLOBAL ID"""
+
 
 # Enviar convite para se juntar à empresa
 @routerUser.post("/invite")
 async def invite_user_to_empresa(request: Request, user: UserInvitation):
 
-    #Validar reCAPTCHA token
+    # Validar reCAPTCHA token
     await validar_recaptcha_token(user.recaptchaToken, "invite_user")
 
     jwt = getattr(request.state, "jwt", None)
@@ -452,25 +468,33 @@ async def invite_user_to_empresa(request: Request, user: UserInvitation):
     if not empresa_found:
         raise HTTPException(status_code=404, detail="Empresa não encontrada.")
 
-    #Se não for super administrador, verificar se o utilizador tem permissão para convidar
+    # Se não for super administrador, verificar se o utilizador tem permissão para convidar
     if not jwt["isSuperAdmin"]:
-        user_empresa = await users_empresas_collection.find_one({"user_id": user_id, "empresa_id": empresa_id, "isAdmin": True})
+        user_empresa = await users_empresas_collection.find_one(
+            {"user_id": user_id, "empresa_id": empresa_id, "isAdmin": True}
+        )
 
         if not user_empresa:
-            raise HTTPException(status_code=403, detail="Você não tem permissão para convidar utilizadores para esta empresa.")
-    
+            raise HTTPException(
+                status_code=403, detail="Você não tem permissão para convidar utilizadores para esta empresa."
+            )
+
     # Verificar se o utilizador já existe
     existing_user = await users_collection.find_one({"email": user.email})
 
     if existing_user:
 
-        user_in_empresa = await users_empresas_collection.find_one({"user_id": existing_user["_id"], "empresa_id": empresa_id})
+        user_in_empresa = await users_empresas_collection.find_one(
+            {"user_id": existing_user["_id"], "empresa_id": empresa_id}
+        )
 
         if user_in_empresa:
             raise HTTPException(status_code=409, detail="O utilizador já está associado a esta empresa.")
 
-        elif existing_user.get("isSuperAdmin",False):
-            raise HTTPException(status_code=403, detail="O utilizador é um super administrador. Logo não precisa de convite.")
+        elif existing_user.get("isSuperAdmin", False):
+            raise HTTPException(
+                status_code=403, detail="O utilizador é um super administrador. Logo não precisa de convite."
+            )
 
     # Criar o convite
     global_id = str(uuid4())
@@ -484,7 +508,7 @@ async def invite_user_to_empresa(request: Request, user: UserInvitation):
             "email": user.email if existing_user is None else None,
             "operation": "convite",
             "created_at": datetime.now(),
-            "created_by": user_id
+            "created_by": user_id,
         }
     )
 
@@ -493,12 +517,7 @@ async def invite_user_to_empresa(request: Request, user: UserInvitation):
 
     # Enviar o convite por email
     enviar_email(
-        user.email,
-        existing_user.get("nome") if existing_user else "", 
-        global_id, 
-        6, 
-        "convite", 
-        user.empresa_nome
+        user.email, existing_user.get("nome") if existing_user else "", global_id, 6, "convite", user.empresa_nome
     )
 
     return {"message": "Convite enviado com sucesso!"}

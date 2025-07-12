@@ -54,11 +54,9 @@ const ProtectedRoute = ({ element }: { element: ReactElement }) => {
 
 // Rotas públicas, acessível sem autenticação
 const PublicRoute = ({ element }: { element: ReactElement }) => {
-
   const { user } = useAuth();
 
-
-  console.log("Rota Publica")
+  console.log("Rota Publica");
 
   return user ? <Navigate to="/" /> : element;
 };
@@ -134,10 +132,7 @@ function App() {
         <Layout userId={userId}>
           <Routes>
             {/*Todas as confirmações de email*/}
-            <Route 
-              path="/confirmation/:GLOBAL_ID/:OPERATION" 
-              element={<EmailOperation/>}
-            />
+            <Route path="/confirmation/:GLOBAL_ID/:OPERATION" element={<EmailOperation />} />
             {/* Restauração de palavra-passe após o pedido. Esta página é inacessivel de forma direta pelo user.*/}
             <Route path="/new-password/:GLOBAL_ID" element={<PublicRoute element={<NewPassword />} />} />
             {/*Aqui estã as rotas da página de registo*/}
@@ -149,13 +144,12 @@ function App() {
             <Route path="/" element={<ProtectedRoute element={<Home />} />} />
             <Route path="/users-list" element={<ProtectedRoute element={<UserManagementTable />} />} />
             <Route path="/clients-list" element={<ProtectedRoute element={<ClientManagementTable />} />} />
-            <Route 
-            path="/add-client" element={<ProtectedRoute element={<AddNewClient />} />} />
+            <Route path="/add-client" element={<ProtectedRoute element={<AddNewClient />} />} />
             <Route path="/edit-profile" element={<ProtectedRoute element={<EditProfilePage />} />} />
             <Route path="/choose-company" element={<ProtectedRoute element={<ChooseCompanyRoute />} />} />
             <Route path="/report-models" element={<ProtectedRoute element={<ReportModelListPage />} />} />
             <Route path="/report-templates" element={<ProtectedRoute element={<ReportTemplatesPage />} />} />
-            <Route path="*" element={<Navigate to="/"/>} />
+            <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Layout>
       </Suspense>

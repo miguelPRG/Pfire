@@ -82,34 +82,36 @@ export default function ReportTemplatePage() {
 
   // Função para converter customFields do backend para o formato do formulário
   const convertCustomFieldsToFormFields = (customFields: any[]) => {
-    return customFields?.map((field: any) => {
-      const fieldName = field.key?.replace(/^custom_/, "") || "";
-      const fieldValue = field.value;
-      
-      if (fieldValue?.datatype === "object") {
-        // Para campos objeto, extrair subcampos
-        const subfields = Object.entries(fieldValue)
-          .filter(([key]) => !["datatype", "required"].includes(key))
-          .map(([key, val]: any) => ({
-            name: key,
-            datatype: val.datatype,
-            required: val.required
-          }));
-        
-        return {
-          name: fieldName,
-          datatype: fieldValue.datatype,
-          required: fieldValue.required,
-          subfields: subfields.length > 0 ? subfields : undefined
-        };
-      } else {
-        return {
-          name: fieldName,
-          datatype: fieldValue?.datatype || "",
-          required: fieldValue?.required || false
-        };
-      }
-    }) || [];
+    return (
+      customFields?.map((field: any) => {
+        const fieldName = field.key?.replace(/^custom_/, "") || "";
+        const fieldValue = field.value;
+
+        if (fieldValue?.datatype === "object") {
+          // Para campos objeto, extrair subcampos
+          const subfields = Object.entries(fieldValue)
+            .filter(([key]) => !["datatype", "required"].includes(key))
+            .map(([key, val]: any) => ({
+              name: key,
+              datatype: val.datatype,
+              required: val.required,
+            }));
+
+          return {
+            name: fieldName,
+            datatype: fieldValue.datatype,
+            required: fieldValue.required,
+            subfields: subfields.length > 0 ? subfields : undefined,
+          };
+        } else {
+          return {
+            name: fieldName,
+            datatype: fieldValue?.datatype || "",
+            required: fieldValue?.required || false,
+          };
+        }
+      }) || []
+    );
   };
 
   // Hook do formulário com valores padrão se estiver editando
@@ -121,13 +123,15 @@ export default function ReportTemplatePage() {
     reset, // Função para resetar o formulário
   } = useForm<FormSchema>({
     resolver: zodResolver(formSchema), // Usa o Zod para validação
-    defaultValues: isEditing ? {
-      modelName: editingModel.modelName,
-      fields: convertCustomFieldsToFormFields(editingModel.customFields)
-    } : {
-      modelName: "",
-      fields: []
-    }
+    defaultValues: isEditing
+      ? {
+          modelName: editingModel.modelName,
+          fields: convertCustomFieldsToFormFields(editingModel.customFields),
+        }
+      : {
+          modelName: "",
+          fields: [],
+        },
   });
 
   // Hook para manipular array de campos dinâmicos (adicionar, remover, atualizar)
@@ -142,7 +146,7 @@ export default function ReportTemplatePage() {
       const formattedFields = convertCustomFieldsToFormFields(editingModel.customFields);
       reset({
         modelName: editingModel.modelName,
-        fields: formattedFields
+        fields: formattedFields,
       });
     }
   }, [editingModel, isEditing, reset]);
@@ -171,7 +175,7 @@ export default function ReportTemplatePage() {
       setNewFieldError(null);
     } catch (e) {
       if (e instanceof z.ZodError) {
-        setNewFieldError(e.errors[0].message);
+        setNewFieldError(e.issues[0].message);
       } else {
         setNewFieldError("Erro ao validar campo.");
       }
@@ -228,7 +232,7 @@ export default function ReportTemplatePage() {
       // Usa PUT para edição ou POST para criação
       const method = isEditing ? "PUT" : "POST";
       const url = isEditing ? `/backend/modelo/${editingModel.id}` : "/backend/modelo";
-      
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -237,19 +241,19 @@ export default function ReportTemplatePage() {
       });
 
       const result = await res.json();
-      if (!res.ok) throw new Error(result.detail || `Erro ao ${isEditing ? 'atualizar' : 'criar'} modelo`);
+      if (!res.ok) throw new Error(result.detail || `Erro ao ${isEditing ? "atualizar" : "criar"} modelo`);
 
       // Navega de volta com mensagem de sucesso
       navigate("/report-models", {
         state: {
           message: {
-            text: `Modelo ${isEditing ? 'atualizado' : 'criado'} com sucesso!`,
-            error: false
-          }
-        }
+            text: `Modelo ${isEditing ? "atualizado" : "criado"} com sucesso!`,
+            error: false,
+          },
+        },
       });
     } catch (err: any) {
-      alert(err.message || `Erro ao ${isEditing ? 'atualizar' : 'criar'} modelo.`);
+      alert(err.message || `Erro ao ${isEditing ? "atualizar" : "criar"} modelo.`);
     }
   };
 
@@ -264,9 +268,7 @@ export default function ReportTemplatePage() {
           sx={{ display: "flex", flexDirection: "column", gap: 2 }}
         >
           {/* Título do formulário */}
-          <Typography variant="h6">
-            {isEditing ? 'Editar Modelo' : 'Criar Modelo'}
-          </Typography>
+          <Typography variant="h6">{isEditing ? "Editar Modelo" : "Criar Modelo"}</Typography>
 
           {/* Campo para nome do modelo */}
           <TextField
@@ -289,7 +291,7 @@ export default function ReportTemplatePage() {
                 if (newFieldError) setNewFieldError(null); // Limpa erro ao digitar
               }}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
+                if (e.key === "Enter") {
                   e.preventDefault(); // Previne o submit do formulário
                   addField(); // Chama a função de adicionar campo
                 }
@@ -333,10 +335,7 @@ export default function ReportTemplatePage() {
                   />
 
                   {/* Select para tipo de dado */}
-                  <FormControl
-                    fullWidth
-                    error={!!errors.fields?.[index]?.datatype}
-                  >
+                  <FormControl fullWidth error={!!errors.fields?.[index]?.datatype}>
                     <InputLabel>Tipo de Dados</InputLabel>
                     <Controller
                       control={control}
@@ -382,9 +381,7 @@ export default function ReportTemplatePage() {
                       )}
                     />
                     {errors.fields?.[index]?.datatype && (
-                      <FormHelperText>
-                        {errors.fields?.[index]?.datatype?.message}
-                      </FormHelperText>
+                      <FormHelperText>{errors.fields?.[index]?.datatype?.message}</FormHelperText>
                     )}
                   </FormControl>
                   <FormControlLabel
@@ -423,7 +420,7 @@ export default function ReportTemplatePage() {
                           });
                         }}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
+                          if (e.key === "Enter") {
                             e.preventDefault(); // Previne o submit do formulário
                             e.currentTarget.focus(); // Mantém o foco no campo atual
                           }
@@ -517,13 +514,8 @@ export default function ReportTemplatePage() {
             >
               Cancelar
             </Button>
-            <Button
-              variant="contained"
-              type="submit"
-              color="success"
-              sx={{ flex: 1, height: 48}}
-            >
-              {isEditing ? 'Atualizar Modelo' : 'Salvar Modelo'}
+            <Button variant="contained" type="submit" color="success" sx={{ flex: 1, height: 48 }}>
+              {isEditing ? "Atualizar Modelo" : "Salvar Modelo"}
             </Button>
           </Box>
         </Box>

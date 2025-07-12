@@ -264,7 +264,7 @@ export default function ClientManagementTable() {
         </div>
 
         <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-          {filteredRows.length >10 && (
+          {filteredRows.length > 10 && (
             <Pagination
               count={Math.ceil(filteredRows.length / rowsPerPage)}
               page={page + 1}

@@ -178,12 +178,14 @@ function ResponsiveAppBar() {
                 vertical: "top",
                 horizontal: "left",
               }}
-              PaperProps={{
-                sx: {
-                  mt: 3,
-                  minWidth: 140,
-                  maxWidth: 200,
-                  boxShadow: 3,
+              slotProps={{
+                paper: {
+                  sx: {
+                    mt: 3,
+                    minWidth: 140,
+                    maxWidth: 200,
+                    boxShadow: 3,
+                  },
                 },
               }}
             >

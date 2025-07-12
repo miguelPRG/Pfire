@@ -103,9 +103,10 @@ async def activate_user(user: UserActivation, request: Request):
 
     return {"message": "Utilizador ativado com sucesso"}
 
+
 # Expulsar utilizador de uma empresa
 @routerUserEmpresa.delete("/expel")
-async def expel_user(user: UserExpel,request: Request):
+async def expel_user(user: UserExpel, request: Request):
     # Validar o recaptcha
     await validar_recaptcha_token(user.recaptchaToken, "expel-user")
 
@@ -122,16 +123,14 @@ async def expel_user(user: UserExpel,request: Request):
 
     if not user_empresa_found:
         raise HTTPException(status_code=404, detail="Relação entre utilizador e empresa não encontrada.")
-    
+
     if not jwt.get("isSuperAdmin") and not user_empresa_found.get("isAdmin"):
         raise HTTPException(status_code=403, detail="Não tem permissão para expulsar um administrador da empresa.")
-    
+
     # Remover a relação entre o utilizador e a empresa
-    resultado = await users_empresas_collection.delete_one(
-        {"user_id": user.user_id, "empresa_id": user.empresa_id}
-    )
+    resultado = await users_empresas_collection.delete_one({"user_id": user.user_id, "empresa_id": user.empresa_id})
 
     if resultado.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Erro ao expulsar o utilizador ou já foi expulso.")
-    
+
     return {"message": "Utilizador expulso da empresa com sucesso!"}

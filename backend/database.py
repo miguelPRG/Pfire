@@ -82,6 +82,7 @@ async def delete_documentos_inativos():
     if user_empresa_result and user_empresa_result.deleted_count > 0:
         print(f"[DatabaseCleaner] {user_empresa_result.deleted_count} relação(ões) user_empresa removida(s).")
 
+
 async def apagar_empresas_vazias():
 
     # Listar todas as empresas com pelo menos 24 horas

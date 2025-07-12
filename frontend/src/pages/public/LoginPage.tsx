@@ -14,7 +14,7 @@ import PasswordField from "../../components/PasswordField";
 
 // Definir o esquema de validação com Zod
 const loginSchema = z.object({
-  email: z.string().nonempty("O email é obrigatório").email("Email inválido").trim(),
+  email: z.email("Email inválido").nonempty("O email é obrigatório").trim(),
   password: z.string().nonempty("A password é obrigatória"),
 });
 
@@ -38,8 +38,6 @@ function LoginPage() {
   } = useForm<LoginFormInputs>({
     resolver: zodResolver(loginSchema),
   });
-
-
 
   const onSubmit = async (data: LoginFormInputs) => {
     setAuthError({ error: false, message: "" });
@@ -293,7 +291,7 @@ function LoginPage() {
             </Button>
           </Box>
           <Typography variant="body1">
-            Não tens uma conta? <Link to='/register'>Regista-te</Link>
+            Não tens uma conta? <Link to="/register">Regista-te</Link>
           </Typography>
         </form>
       </Paper>

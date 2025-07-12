@@ -68,22 +68,22 @@ const commonComponents: Components = {
         marginBottom: "10px",
         boxShadow: "none", // 🔹 Remove qualquer sombra desnecessária
       },
-        },
-      },
-      MuiTextField: {
-        defaultProps: {
+    },
+  },
+  MuiTextField: {
+    defaultProps: {
       margin: "normal",
       fullWidth: true,
       variant: "filled",
       slotProps: {
         inputLabel: {
           style: {
-        fontSize: "0.95rem", // Aumenta o tamanho da fonte do label
+            fontSize: "0.95rem", // Aumenta o tamanho da fonte do label
           },
         },
       },
-        },
-        styleOverrides: {
+    },
+    styleOverrides: {
       root: {
         marginBottom: "10px",
         "&:hover .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline": {
@@ -95,12 +95,12 @@ const commonComponents: Components = {
           lineHeight: "1.2", // Aumenta a altura do label
           fontSize: "1.1rem",
         },
-        "& .MuiInputLabel-shrink": { top: -20 , left: -8},
+        "& .MuiInputLabel-shrink": { top: -20, left: -8 },
       },
-        },
-      },
-      MuiInputLabel: {
-        styleOverrides: {
+    },
+  },
+  MuiInputLabel: {
+    styleOverrides: {
       root: ({ theme }: any) => ({
         color: theme.palette.text.primary,
         "&.Mui-focused": {
@@ -110,10 +110,10 @@ const commonComponents: Components = {
           color: theme.palette.text.primary,
         },
       }),
-        },
-      },
-      MuiTypography: {
-        styleOverrides: {
+    },
+  },
+  MuiTypography: {
+    styleOverrides: {
       h1: {
         fontSize: "1.7rem",
         fontWeight: "bold",

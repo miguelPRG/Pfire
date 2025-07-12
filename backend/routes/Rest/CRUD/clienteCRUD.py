@@ -28,20 +28,21 @@ async def criar_cliente(cliente: ClienteCreate, request: Request):
 
         if not user_empresa:
             raise HTTPException(
-                status_code=403,
-                detail="Acesso negado! Não tens permissão para criar clientes nesta empresa."
+                status_code=403, detail="Acesso negado! Não tens permissão para criar clientes nesta empresa."
             )
 
     # 3) Preparar dados
     cliente_data = cliente.model_dump(by_alias=True)
-    cliente_data.update({
-        "empresa_id": empresa_id,
-        "created_by": user_id,
-        "updated_by": user_id,
-        "created_at": datetime.now(),
-        "updated_at": datetime.now(),
-        "isActive": True
-    })
+    cliente_data.update(
+        {
+            "empresa_id": empresa_id,
+            "created_by": user_id,
+            "updated_by": user_id,
+            "created_at": datetime.now(),
+            "updated_at": datetime.now(),
+            "isActive": True,
+        }
+    )
     del cliente_data["recaptchaToken"]
 
     # 4) Inserir e capturar duplicados
@@ -90,7 +91,6 @@ async def atualizar_cliente(cliente: ClienteUpdate, request: Request, id: str):
         raise HTTPException(404, detail="Cliente não encontrado. Verifica se existe e está ativo.")
 
     return {"message": "Cliente atualizado com sucesso!"}
-
 
 
 # Apagar um cliente
