@@ -1,4 +1,4 @@
-from .types.modeloType import Modelo
+from .types.modeloType import Modelo, ModeloList
 from database import modelos_collection, users_empresas_collection
 from .utils.limpar import filter_null_fields
 from fastapi import HTTPException
@@ -10,10 +10,9 @@ from bson import ObjectId
 @strawberry.type
 class ModeloQuery:
     @strawberry.field
-    async def modelos(self, info: Info, empresa_id: str, start: int = 0, lmt: int = 10) -> list[Modelo]:
+    async def getModelos(self, info: Info, empresa_id: str, start: int = 0) -> ModeloList:
 
-        if lmt <= 0 or lmt > 10:
-            lmt = 10
+        lmt = 10  # Limite padrão de resultados por página
 
         if start < 0:
             start = 0
@@ -58,4 +57,5 @@ class ModeloQuery:
 
             modelos.append(Modelo(**filter_null_fields(modelo_data)))
 
-        return modelos
+        total_modelos = await modelos_collection.count_documents({"empresa_id": empresa_id})
+        return ModeloList(modelos=modelos, totalModelos=total_modelos)

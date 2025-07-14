@@ -165,7 +165,7 @@ export default function AddNewClientPage() {
   };
 
   const handleCancel = () => {
-    navigate("/clients-list");
+    navigate(-1);
   };
 
   return (

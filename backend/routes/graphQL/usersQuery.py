@@ -1,4 +1,4 @@
-from .types.userType import User
+from .types.userType import User, UserList
 from database import users_collection, empresas_collection, users_empresas_collection
 from .utils.limpar import filter_null_fields
 from bson import ObjectId
@@ -10,9 +10,10 @@ from strawberry.types import Info
 @strawberry.type
 class UserQuery:
     @strawberry.field
-    async def users(self, info: Info, empresa_id: str, start: int = 0, lmt: int = 10) -> list[User]:
-        if lmt <= 0 or lmt > 10:
-            lmt = 10
+    async def getUsers(self, info: Info, empresa_id: str, start: int = 0) -> UserList:
+        
+        lmt = 10  # Limite padrão de resultados por página
+
         if start < 0:
             start = 0
 
@@ -62,4 +63,5 @@ class UserQuery:
 
             users.append(User(**filter_null_fields(user_data)))
 
-        return users
+        total_users = await users_empresas_collection.count_documents({"empresa_id": ObjectId(empresa_id)})
+        return UserList(users=users, totalUsers=total_users)

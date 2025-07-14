@@ -30,6 +30,7 @@ import { useAuth } from "../hooks/AuthContext";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import Notification from "../components/Notification";
+import LoadingAnimation from "../components/LoadingAnimation";
 
 declare var grecaptcha: any;
 
@@ -54,7 +55,6 @@ const inviteSchema = z.object({
 export default function UserManagementTable() {
   const theme = useTheme();
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [search, setSearch] = useState("");
   const [orderBy, setOrderBy] = useState<keyof User | null>(null);
   const [order, setOrder] = useState<"asc" | "desc">("asc");
@@ -62,11 +62,8 @@ export default function UserManagementTable() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const { empresa, user } = useAuth();
-  const { data, refetch } = useQuery(GET_USERS, {
-    variables: { empresaId: empresa?.id },
-    fetchPolicy: "cache-first",
-  });
   const [alert, setAlert] = useState<null | { message: string; isError: boolean }>(null);
+  const rowsPerPage = 10;
   // useForm para o popup
   const {
     register,
@@ -76,7 +73,22 @@ export default function UserManagementTable() {
     formState: { errors, isSubmitting },
   } = useForm<{ email: string }>({ defaultValues: { email: "" } });
 
-  const users: User[] = (data && data.users) || [];
+  const { data, loading, error, refetch } = useQuery(GET_USERS, {
+    variables: { empresaId: empresa?.id, start: page * rowsPerPage },
+    fetchPolicy: "cache-and-network",
+    notifyOnNetworkStatusChange: true,
+  });
+
+  const isLoadingFresh = loading || data?.networkStatus === 3;
+
+  if (isLoadingFresh) return <LoadingAnimation />;
+  if (error) return <Typography>Erro ao carregar utilizadores: {error.message}</Typography>;
+
+  const users: User[] = (data && data?.getUsers.users) || [];
+  const totalUsers = data?.getUsers?.totalUsers || 0;
+  const pageCount = Math.ceil(totalUsers / rowsPerPage);
+
+  console.log("Dados dos utilizadores:", users);
 
   const handleToggleStatus = async (user: User) => {
     const action = user.isActive ? "delete" : "activate";
@@ -320,34 +332,20 @@ export default function UserManagementTable() {
           gap: 2,
         }}
       >
-        <Select
-          value={rowsPerPage}
-          onChange={(e) => setRowsPerPage(Number(e.target.value))}
-          size="small"
-          sx={{
-            width: 180,
-            height: "32px",
-            mt: "10px",
-          }}
-        >
-          <MenuItem value={5}>Mostrar 5</MenuItem>
-          <MenuItem value={10}>Mostrar 10</MenuItem>
-          <MenuItem value={25}>Mostrar 25</MenuItem>
-        </Select>
-
         <TextField
           variant="outlined"
           size="small"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Pesquisar por nome"
-          InputProps={{
-            //revisar esto porque no funciona
-            startAdornment: (
-              <InputAdornment position="start">
-                <Search />
-              </InputAdornment>
-            ),
+          slotProps={{
+            input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search sx={{ color: theme.palette.primary.main }} />
+                </InputAdornment>
+              ),
+            },
           }}
           sx={{
             width: "75%",
@@ -494,9 +492,9 @@ export default function UserManagementTable() {
           mt: 2,
         }}
       >
-        {sortedRows.length > 10 && (
+        {pageCount > 1 && (
           <Pagination
-            count={Math.ceil(sortedRows.length / rowsPerPage)}
+            count={pageCount}
             page={page + 1}
             onChange={(_, value) => setPage(value - 1)}
             color="primary"

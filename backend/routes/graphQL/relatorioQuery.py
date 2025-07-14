@@ -1,4 +1,4 @@
-from .types.relatorioType import Relatorio
+from .types.relatorioType import Relatorio, RelatorioList
 from database import relatorios_collection, users_empresas_collection
 from .utils.limpar import filter_null_fields
 from fastapi import HTTPException
@@ -10,15 +10,14 @@ from bson import ObjectId
 @strawberry.type
 class RelatorioQuery:
     @strawberry.field
-    async def relatorios(
-        self, info: Info, empresa_id: str, id: str = None, start: int = 0, lmt: int = 10
-    ) -> list[Relatorio]:
+    async def getRelatorios(
+        self, info: Info, empresa_id: str, id: str = None, start: int = 0) -> RelatorioList:
+
 
         empresa_id = ObjectId(empresa_id)
 
-        if lmt <= 0 or lmt > 10:
-            lmt = 10
-
+        lmt = 10  # Limite padrão de resultados por página
+        
         if start < 0:
             start = 0
 
@@ -63,5 +62,5 @@ class RelatorioQuery:
 
             relatorios.append(Relatorio(**filter_null_fields(relatorio_data)))
 
-        # Retornar uma lista vazia se nenhum relatório for encontrado
-        return relatorios
+        total_relatorios = await relatorios_collection.count_documents(filtro)
+        return RelatorioList(relatorios=relatorios, totalRelatorios=total_relatorios)

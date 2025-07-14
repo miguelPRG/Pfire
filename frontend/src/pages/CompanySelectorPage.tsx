@@ -27,9 +27,10 @@ interface Empresa {
 }
 
 export default function CompanySelectorPage() {
-  const rowsPerPage = 6;
   const [page, setPage] = useState(0);
-
+  
+  const rowsPerPage = 6;
+  
   const { data, loading, error } = useQuery(GET_EMPRESAS, {
     fetchPolicy: "cache-and-network",
     notifyOnNetworkStatusChange: true, // Notifica quando os dados mais recentes estan disponiveis

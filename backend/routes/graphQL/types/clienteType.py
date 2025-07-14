@@ -18,3 +18,9 @@ class Cliente:
     updated_at: Optional[datetime] = None
     updated_by: Optional[str] = None
     isActive: Optional[bool] = None
+
+
+@strawberry.type
+class ClienteList:
+    clientes: list[Cliente]
+    totalClientes: int

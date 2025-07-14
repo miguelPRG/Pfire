@@ -13,3 +13,9 @@ class Modelo:
     updated_by: Optional[str] = None
     updated_at: Optional[datetime] = None
     custom_fields: list[JSON]
+
+
+@strawberry.type
+class ModeloList:
+    modelos: list[Modelo]
+    totalModelos: int

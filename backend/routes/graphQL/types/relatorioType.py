@@ -12,3 +12,9 @@ class Relatorio:
     created_at: datetime
     created_by: Optional[str] = None
     custom_fields: list[JSON]
+
+
+@strawberry.type
+class RelatorioList:
+    relatorios: list[Relatorio]
+    totalRelatorios: int

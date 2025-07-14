@@ -3,10 +3,8 @@ import {
   Box,
   Button,
   CircularProgress,
-  MenuItem,
   Pagination,
   Paper,
-  Select,
   Table,
   TableBody,
   TableCell,
@@ -21,7 +19,7 @@ import {
   Link,
 } from "@mui/material";
 import { ExpandLess, ExpandMore, Search, Delete } from "@mui/icons-material";
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 import { GET_MODELOS_RELATORIOS } from "../graphql/reportmodelsqueries";
@@ -47,30 +45,28 @@ export default function ReportModelListPage() {
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [expandedFields, setExpandedFields] = useState<Record<string, boolean>>({});
-
+  
   // Estado para alertas
   const [alert, setAlert] = useState<{ message: string; isError: boolean } | null>(null);
-
+  
+  const rowsPerPage = 10;
+  
   const { data, loading, error, refetch } = useQuery(GET_MODELOS_RELATORIOS, {
-    variables: { empresaId: typeof empresa === "object" ? empresa?.id : empresa, start: 0, lmt: 50 },
+    variables: { empresaId: empresa?.id, start: page * rowsPerPage },
     skip: !empresa,
-    fetchPolicy: "network-only",
+    fetchPolicy: "cache-and-network",
   });
 
   // useEffect para lidar com mensagens de estado
-  React.useEffect(() => {
-    if (location.state?.message) {
+  useEffect(() => {
+    if (location.state?.message || location.state?.reload) {
       setAlert({
         message: location.state.message.text,
         isError: location.state.message.error,
       });
       window.history.replaceState({}, document.title);
       refetch(); // Recarregar os dados após adicionar/editar modelo
-    } else if (location.state?.reload) {
-      refetch();
-      window.history.replaceState({}, document.title);
     }
   }, [location.state, refetch]);
 
@@ -119,8 +115,13 @@ export default function ReportModelListPage() {
     }
   };
 
-  const modelos = data?.modelosRelatorios || [];
-  const filtered = modelos.filter((m: any) => m.modelName.toLowerCase().includes(search.toLowerCase()));
+  const modelos: any[] = data?.getModelos?.modelos || [];
+  const totalModelos = data?.getModelos?.totalModelos || 0;
+  const pageCount = Math.ceil(totalModelos / rowsPerPage);
+
+  const filtered = modelos.filter((m: any) =>
+    m.modelName.toLowerCase().includes(search.toLowerCase())
+  );
   const paginated = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   const zebraColor = (index: number) =>
@@ -181,6 +182,11 @@ export default function ReportModelListPage() {
     );
   };
 
+  const isLoadingFresh = loading || data?.networkStatus === 3;
+
+  if (isLoadingFresh) return <CircularProgress />;
+  if (error) return <Typography color="error">Erro ao carregar modelos: {error.message}</Typography>;
+
   return (
     <>
       <Paper sx={{ width: "100%", p: 2, boxShadow: "none", backgroundColor: theme.palette.background.default }}>
@@ -198,40 +204,20 @@ export default function ReportModelListPage() {
         </Box>
 
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 2 }}>
-          <Select
-            value={rowsPerPage}
-            onChange={(e) => {
-              setRowsPerPage(Number(e.target.value));
-              setPage(0);
-            }}
-            size="small"
-            sx={{
-              width: 180,
-              height: "32px",
-              mt: "10px",
-              backgroundColor: theme.palette.background.paper,
-              "& .MuiOutlinedInput-notchedOutline": { borderColor: "transparent" },
-              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: theme.palette.divider },
-              "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: theme.palette.primary.main },
-            }}
-          >
-            <MenuItem value={5}>Mostrar 5</MenuItem>
-            <MenuItem value={10}>Mostrar 10</MenuItem>
-            <MenuItem value={25}>Mostrar 25</MenuItem>
-          </Select>
-
           <TextField
             variant="outlined"
             size="small"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Pesquisar por nome"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search sx={{ color: theme.palette.primary.main }} />
-                </InputAdornment>
-              ),
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search sx={{ color: theme.palette.primary.main }} />
+                  </InputAdornment>
+                ),
+              },
             }}
             sx={{
               width: "75%",
@@ -248,89 +234,83 @@ export default function ReportModelListPage() {
           />
         </Box>
 
-        {loading ? (
-          <CircularProgress />
-        ) : error ? (
-          <Typography color="error">Erro ao carregar modelos.</Typography>
-        ) : (
-          <TableContainer>
-            <Table>
-              <TableHead>
-                <TableRow sx={{ backgroundColor: theme.palette.background.paper }}>
+        <TableContainer>
+          <Table>
+            <TableHead>
+              <TableRow sx={{ backgroundColor: theme.palette.background.paper }}>
+                <TableCell>
+                  <strong>Nome</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Data</strong>
+                </TableCell>
+                <TableCell>
+                  <strong>Campos Personalizados</strong>
+                </TableCell>
+                <TableCell align="center">
+                  <strong>Ações</strong>
+                </TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {paginated.map((modelo: any, i: number) => (
+                <TableRow key={modelo.id} sx={{ backgroundColor: zebraColor(i) }}>
                   <TableCell>
-                    <strong>Nome</strong>
+                    <Link
+                      component="button"
+                      onClick={() =>
+                        navigate("/report-templates", {
+                          state: {
+                            modelo: {
+                              id: modelo.id,
+                              modelName: modelo.modelName,
+                              customFields: modelo.customFields,
+                              createdAt: modelo.createdAt,
+                            },
+                          },
+                        })
+                      }
+                      sx={{ cursor: "pointer", textDecoration: "none" }}
+                    >
+                      {modelo.modelName}
+                    </Link>
                   </TableCell>
+                  <TableCell>{new Date(modelo.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell>
-                    <strong>Data</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>Campos Personalizados</strong>
+                    {Array.isArray(modelo.customFields)
+                      ? modelo.customFields.map((field: any, index: number) => {
+                          const keyName = field.key?.replace(/^custom_/, "") || "(sem nome)";
+                          const value = field.value;
+                          return renderField(value, keyName);
+                        })
+                      : "-"}
                   </TableCell>
                   <TableCell align="center">
-                    <strong>Ações</strong>
+                    <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
+                      <IconButton
+                        onClick={() => handleDelete(modelo.id)}
+                        sx={{
+                          backgroundColor: "error.main",
+                          color: "#fff",
+                          "&:hover": {
+                            backgroundColor: "error.dark",
+                          },
+                        }}
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    </Box>
                   </TableCell>
                 </TableRow>
-              </TableHead>
-              <TableBody>
-                {paginated.map((modelo: any, i: number) => (
-                  <TableRow key={modelo.id} sx={{ backgroundColor: zebraColor(i) }}>
-                    <TableCell>
-                      <Link
-                        component="button"
-                        onClick={() =>
-                          navigate("/report-templates", {
-                            state: {
-                              modelo: {
-                                id: modelo.id,
-                                modelName: modelo.modelName,
-                                customFields: modelo.customFields,
-                                createdAt: modelo.createdAt,
-                              },
-                            },
-                          })
-                        }
-                        sx={{ cursor: "pointer", textDecoration: "none" }}
-                      >
-                        {modelo.modelName}
-                      </Link>
-                    </TableCell>
-                    <TableCell>{new Date(modelo.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      {Array.isArray(modelo.customFields)
-                        ? modelo.customFields.map((field: any, index: number) => {
-                            const keyName = field.key?.replace(/^custom_/, "") || "(sem nome)";
-                            const value = field.value;
-                            return renderField(value, keyName);
-                          })
-                        : "-"}
-                    </TableCell>
-                    <TableCell align="center">
-                      <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
-                        <IconButton
-                          onClick={() => handleDelete(modelo.id)}
-                          sx={{
-                            backgroundColor: "error.main",
-                            color: "#fff",
-                            "&:hover": {
-                              backgroundColor: "error.dark",
-                            },
-                          }}
-                        >
-                          <Delete fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        )}
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
 
-        {filtered.length > 10 && (
+        {pageCount > 1 && (
           <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2, alignItems: "center" }}>
             <Pagination
-              count={Math.ceil(filtered.length / rowsPerPage)}
+              count={pageCount}
               page={page + 1}
               onChange={(e, val) => setPage(val - 1)}
               color="primary"

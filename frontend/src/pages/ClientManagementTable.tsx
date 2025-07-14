@@ -14,8 +14,6 @@ import {
   TextField,
   Typography,
   Button,
-  Select,
-  MenuItem,
   InputAdornment,
   Link,
 } from "@mui/material";
@@ -25,6 +23,7 @@ import { GET_CLIENTES_BY_EMPRESA } from "../graphql/clientesqueries";
 import { useTheme } from "@mui/material/styles";
 import { useAuth } from "../hooks/AuthContext";
 import Notification from "../components/Notification";
+import LoadingAnimation from "../components/LoadingAnimation";
 
 interface Cliente {
   id: string;
@@ -38,35 +37,50 @@ interface Cliente {
 }
 
 export default function ClientManagementTable() {
+  // Todos os hooks no topo!
   const [page, setPage] = useState(0);
-  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [search, setSearch] = useState("");
   const [orderBy, setOrderBy] = useState<keyof Cliente | null>(null);
   const [order, setOrder] = useState<"asc" | "desc">("asc");
   const [alert, setAlert] = useState<null | { message: string; isError: boolean }>(null);
 
+  const rowsPerPage = 10;
   const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
   const { empresa } = useAuth();
 
-  const { data, refetch } = useQuery(GET_CLIENTES_BY_EMPRESA, {
-    variables: {
-      empresaId: empresa?.id,
-      start: page * rowsPerPage,
-      lmt: rowsPerPage,
-    },
+  const { data, loading, error, refetch } = useQuery(GET_CLIENTES_BY_EMPRESA, {
+    variables: { empresaId: empresa?.id, start: page * rowsPerPage },
+    fetchPolicy: "cache-and-network",
+    notifyOnNetworkStatusChange: true,
   });
 
-  console.log("Data fetched from GraphQL:", data);
+  const isLoadingFresh = loading || data?.networkStatus === 3;
 
-  const rows: Cliente[] = data?.clientes || [];
+  useEffect(() => {
+    if (location.state?.message) {
+      setAlert({
+        message: location.state.message.text,
+        isError: location.state.message.error,
+      });
+      window.history.replaceState({}, document.title);
+      refetch();
+    }
+  }, [location.state, refetch]);
+
+  // Só retorna depois de todos os hooks
+  if (isLoadingFresh) return <LoadingAnimation />;
+  if (error) return <Typography>Erro ao carregar clientes: {error.message}</Typography>;
+
+  const rows: Cliente[] = data?.getClientes?.clientes || [];
+  const totalClientes = data?.getClientes?.totalClientes || 0;
+  const pageCount = Math.ceil(totalClientes / rowsPerPage);
+
+  console.log("Rows:", rows);
 
   const handleChangePage = (_: unknown, newPage: number) => setPage(newPage);
-  const handleChangeRowsPerPage = (event: any) => {
-    setRowsPerPage(Number(event.target.value));
-    setPage(0);
-  };
+
   const handleSort = (property: keyof Cliente) => {
     const isAsc = orderBy === property && order === "asc";
     setOrder(isAsc ? "desc" : "asc");
@@ -83,17 +97,6 @@ export default function ClientManagementTable() {
       const bValue = b[orderBy]?.toString() || "";
       return order === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
     });
-
-  useEffect(() => {
-    if (location.state?.message) {
-      setAlert({
-        message: location.state.message.text,
-        isError: location.state.message.error,
-      });
-      window.history.replaceState({}, document.title);
-      refetch();
-    }
-  }, [location.state, refetch]);
 
   return (
     <>
@@ -138,47 +141,24 @@ export default function ClientManagementTable() {
             gap: 2,
           }}
         >
-          <Select
-            value={rowsPerPage}
-            onChange={handleChangeRowsPerPage}
-            size="small"
-            sx={{
-              width: 180,
-              backgroundColor: backgroundColor,
-              height: "32px",
-              mt: "10px",
-              "& .MuiOutlinedInput-notchedOutline": {
-                borderColor: "transparent",
-              },
-              "&:hover .MuiOutlinedInput-notchedOutline": {
-                borderColor: "#ccc",
-              },
-              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                borderColor: "#1976d2",
-              },
-            }}
-          >
-            <MenuItem value={5}>Mostrar 5</MenuItem>
-            <MenuItem value={10}>Mostrar 10</MenuItem>
-            <MenuItem value={25}>Mostrar 25</MenuItem>
-          </Select>
-
           <TextField
             variant="outlined"
             size="small"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Pesquisar"
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search
-                    sx={{
-                      color: theme.palette.mode === "dark" ? "#0DC7E8" : "#003366",
-                    }}
-                  />
-                </InputAdornment>
-              ),
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search
+                      sx={{
+                        color: theme.palette.mode === "dark" ? "#0DC7E8" : "#003366",
+                      }}
+                    />
+                  </InputAdornment>
+                ),
+              },
             }}
             sx={{
               "& .MuiOutlinedInput-root": {
@@ -264,9 +244,9 @@ export default function ClientManagementTable() {
         </div>
 
         <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
-          {filteredRows.length > 10 && (
+          {pageCount > 1 && (
             <Pagination
-              count={Math.ceil(filteredRows.length / rowsPerPage)}
+              count={pageCount}
               page={page + 1}
               onChange={(e, val) => handleChangePage(e, val - 1)}
               color="primary"

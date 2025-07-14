@@ -15,3 +15,9 @@ class User:
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     last_login: Optional[datetime] = None
+
+
+@strawberry.type
+class UserList:
+    users: list[User]
+    totalUsers: int

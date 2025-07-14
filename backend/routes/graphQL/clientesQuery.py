@@ -1,4 +1,4 @@
-from .types.clienteType import Cliente
+from .types.clienteType import Cliente, ClienteList
 from database import clientes_collection, users_empresas_collection
 from .utils.limpar import filter_null_fields
 from fastapi import HTTPException
@@ -10,12 +10,9 @@ from bson import ObjectId
 @strawberry.type
 class ClienteQuery:
     @strawberry.field
-    async def clientes(
-        self, info: Info, empresa_id: str, id: str = None, start: int = 0, lmt: int = 10
-    ) -> list[Cliente]:
+    async def getClientes(self, info: Info, empresa_id: str, id: str = None, start: int = 0) -> ClienteList:
 
-        if lmt <= 0 or lmt > 10:
-            lmt = 10
+        lmt = 10  # Limite padrão de resultados por página
 
         if start < 0:
             start = 0
@@ -70,4 +67,6 @@ class ClienteQuery:
 
             clientes.append(Cliente(**filter_null_fields(cliente_data)))
 
-        return clientes
+        total_clientes = await clientes_collection.count_documents(filtro)
+
+        return ClienteList(clientes=clientes, totalClientes=total_clientes)
