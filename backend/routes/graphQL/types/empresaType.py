@@ -18,3 +18,8 @@ class Empresa:
     created_by: Optional[str] = None
     updated_by: Optional[str] = None
     updated_at: Optional[datetime] = None
+
+@strawberry.type
+class EmpresaList:
+    empresas: list[Empresa]
+    totalEmpresas: int

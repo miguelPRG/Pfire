@@ -171,9 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (data && !empresa) {
-      console.log("Dados recebidos:", data);
-
-      const empresaData = data.empresas[0];
+      const empresaData = data.getEmpresas.empresas[0];
       setEmpresa({
         id: empresaData.id,
         nome: empresaData.nome,

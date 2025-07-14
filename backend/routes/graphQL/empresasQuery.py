@@ -1,4 +1,4 @@
-from .types.empresaType import Empresa
+from .types.empresaType import Empresa, EmpresaList
 from database import empresas_collection, users_empresas_collection
 from .utils.limpar import filter_null_fields
 import strawberry
@@ -7,22 +7,15 @@ from fastapi import HTTPException
 from bson import ObjectId
 from base64 import b64encode  # Importa o módulo base64 para conversão
 
-
 @strawberry.type
 class EmpresaQuery:
     @strawberry.field
-    async def empresas(self, info: Info, id: str = None, start: int = 0, lmt: int = 10) -> list[Empresa]:
-
-        if lmt <= 0 or lmt > 10:
-            lmt = 10
-
-        if start < 0:
-            start = 0
+    async def getEmpresas(self, info: Info, id: str = None, start: int = 0) -> EmpresaList:
 
         request = info.context["request"]  # Obtém o objeto de requisição
         jwt = getattr(request.state, "jwt", None)
 
-        empresas = []
+        lmt = 6
 
         # Se o id for fornecido, quero apenas essa empresa
         user_empresas = None
@@ -49,6 +42,8 @@ class EmpresaQuery:
             empresa_ids = [user_empresa["empresa_id"] for user_empresa in user_empresas]
             filtro = {"_id": {"$in": empresa_ids}}
 
+        total_empresas = await empresas_collection.count_documents(filtro)
+        empresas = []
         async for empresa in empresas_collection.find(filtro).skip(start).limit(lmt):
             empresa_data = {
                 "id": str(empresa.get("_id")),
@@ -87,4 +82,5 @@ class EmpresaQuery:
 
             empresas.append(Empresa(**filter_null_fields(empresa_data)))
 
-        return empresas
+        return EmpresaList(empresas=empresas, totalEmpresas=total_empresas)
+
