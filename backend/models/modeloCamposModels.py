@@ -119,7 +119,7 @@ class ModelosCamposCreate(BaseModel):
         if len(values.keys()) < 4:
             raise HTTPException(
                 status_code=400,
-                detail="Modelo deve conter pelo menos 4 campos: 'model_name', 'empresa_id', 'recaptchaToken' e um campo personalizado.",
+                detail="O modelo deve contar pelo menos um campo personalizado",
             )
 
         # Valida todos os campos personalizados no nível principal

@@ -1,3 +1,4 @@
+// Importa hooks e componentes do Apollo Client e Material UI
 import { useQuery } from "@apollo/client";
 import {
   Box,
@@ -17,8 +18,9 @@ import {
   IconButton,
   Grid,
   Link,
+  Tooltip,
 } from "@mui/material";
-import { ExpandLess, ExpandMore, Search, Delete } from "@mui/icons-material";
+import { ExpandLess, ExpandMore, Search, Delete, ContentCopy as ContentCopyIcon } from "@mui/icons-material";
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
@@ -26,6 +28,7 @@ import { GET_MODELOS_RELATORIOS } from "../graphql/reportmodelsqueries";
 import { useAuth } from "../hooks/AuthContext";
 import Notification from "../components/Notification";
 
+// Função utilitária para formatar tipos de campos
 const formatType = (type: string) => {
   const map: Record<string, string> = {
     string: "Texto",
@@ -37,26 +40,45 @@ const formatType = (type: string) => {
   return map[type] || type;
 };
 
+// Componente principal da página de listagem de modelos de relatórios
 export default function ReportModelListPage() {
+  // Recupera informações da empresa autenticada
   const { empresa } = useAuth();
+  // Hook para navegação entre rotas
   const navigate = useNavigate();
+  // Hook para acessar o tema atual
   const theme = useTheme();
+  // Hook para acessar informações da localização/rota
   const location = useLocation();
 
+  // Estado para pesquisa, paginação e campos expandidos
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
   const [expandedFields, setExpandedFields] = useState<Record<string, boolean>>({});
   
-  // Estado para alertas
+  // Estado para alertas (mensagens de sucesso/erro)
   const [alert, setAlert] = useState<{ message: string; isError: boolean } | null>(null);
   
-  const rowsPerPage = 10;
-  
+  const rowsPerPage = 3;
+
+  // Atualize o filtro de pesquisa para resetar a página ao pesquisar
+  /*
+  useEffect(() => {
+    setPage(0);
+  }, [search]);
+  */
+
+  // Certifique-se de que pageCount nunca é menor que 1
   const { data, loading, error, refetch } = useQuery(GET_MODELOS_RELATORIOS, {
     variables: { empresaId: empresa?.id, start: page * rowsPerPage },
     skip: !empresa,
     fetchPolicy: "cache-and-network",
+    notifyOnNetworkStatusChange: true,
   });
+
+  const totalModelos = data?.getModelos?.totalModelos || 0;
+  const pageCount = Math.max(1, Math.ceil(totalModelos / rowsPerPage));
+
 
   // useEffect para lidar com mensagens de estado
   useEffect(() => {
@@ -68,23 +90,25 @@ export default function ReportModelListPage() {
       window.history.replaceState({}, document.title);
       refetch(); // Recarregar os dados após adicionar/editar modelo
     }
+  }, [location.state, refetch])
+  
 
-    console.log("Lista foi chamada!")
-
-  }, [location.state, refetch]);
-
+  // Alterna expansão de campos do tipo objeto
   const toggleExpand = (key: string) => {
     setExpandedFields((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
+  // Função para deletar um modelo de relatório
   const handleDelete = async (id: string) => {
     if (!window.confirm("Tens certeza que desejas apagar este modelo?")) return;
 
     try {
+      // Executa reCAPTCHA antes de deletar
       const recaptchaToken = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
         action: "register",
       });
 
+      // Requisição para deletar modelo
       const res = await fetch(`/backend/modelo`, {
         method: "DELETE",
         credentials: "include",
@@ -101,7 +125,6 @@ export default function ReportModelListPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Erro ao apagar modelo");
 
-      // Exibir alerta de sucesso
       setAlert({
         message: "Modelo apagado com sucesso!",
         isError: false,
@@ -110,7 +133,6 @@ export default function ReportModelListPage() {
       refetch();
     } catch (err: any) {
       console.error(err);
-      // Exibir alerta de erro
       setAlert({
         message: err.message || "Erro ao apagar o modelo.",
         isError: true,
@@ -118,18 +140,62 @@ export default function ReportModelListPage() {
     }
   };
 
+  const handleClone = async (modeloId: string) => {
+    try {
+      const recaptchaToken = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
+        action: "clone",
+      });
+
+      const res = await fetch("/backend/modelo/clone", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          id: modeloId,
+          recaptchaToken,
+        }),
+      });
+
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch (err) {
+        data = text;
+      }
+
+      if (!res.ok) {
+        if (typeof data === "string") {
+          throw new Error(data || "Erro ao clonar modelo");
+        } else {
+          throw new Error(data.detail || "Erro ao clonar modelo");
+        }
+      }
+
+      setAlert({
+        message: "Modelo clonado com sucesso!",
+        isError: false,
+      });
+      refetch(); // Isso já força a consulta GraphQL a ser executada novamente
+    } catch (err: any) {
+      setAlert({
+        message: err.message || "Erro ao clonar modelo",
+        isError: true,
+      });
+    }
+  };
+
   const modelos: any[] = data?.getModelos?.modelos || [];
-  const totalModelos = data?.getModelos?.totalModelos || 0;
-  const pageCount = Math.ceil(totalModelos / rowsPerPage);
-
   const filtered = modelos.filter((m: any) =>
-    m.modelName.toLowerCase().includes(search.toLowerCase())
+    m.modelName.toLowerCase().includes(search)
   );
-  const paginated = filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
+  // NÃO FAÇA SLICE AQUI! Use filtered OU modelos diretamente
 
+  // Função para alternar cor de fundo das linhas (efeito zebra)
   const zebraColor = (index: number) =>
     theme.palette.mode === "dark" ? (index % 2 === 0 ? "#252525" : "#1d1d1d") : index % 2 === 0 ? "#f5f5f5" : "#e0e0e0";
 
+  // Função recursiva para renderizar campos personalizados, incluindo subcampos
   const renderField = (val: any, namePrefix = "", level = 0): React.ReactNode => {
     const isObject = val?.datatype === "object";
     const currentKey = namePrefix;
@@ -152,7 +218,7 @@ export default function ReportModelListPage() {
                 {level === 0 ? "Campo" : "Subcampo"}:{" "}
                 {namePrefix
                   .split(" / ")
-                  .at(-1)
+                  [namePrefix.split(" / ").length - 1]
                   ?.replace(/^custom_/, "")}
               </Typography>
               {isObject && (
@@ -192,7 +258,9 @@ export default function ReportModelListPage() {
 
   return (
     <>
+      {/* Container principal */}
       <Paper sx={{ width: "100%", p: 2, boxShadow: "none", backgroundColor: theme.palette.background.default }}>
+        {/* Cabeçalho com título e botão de adicionar */}
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 8 }}>
           <Typography variant="h5" sx={{ fontWeight: "bold", fontSize: 30, color: theme.palette.text.primary }}>
             Modelos de Relatórios
@@ -206,6 +274,7 @@ export default function ReportModelListPage() {
           </Button>
         </Box>
 
+        {/* Filtros: seleção de quantidade por página e campo de pesquisa */}
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 2 }}>
           <TextField
             variant="outlined"
@@ -256,7 +325,7 @@ export default function ReportModelListPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {paginated.map((modelo: any, i: number) => (
+              {(search ? filtered : modelos).map((modelo: any, i: number) => (
                 <TableRow key={modelo.id} sx={{ backgroundColor: zebraColor(i) }}>
                   <TableCell>
                     <Link
@@ -302,6 +371,25 @@ export default function ReportModelListPage() {
                       >
                         <Delete fontSize="small" />
                       </IconButton>
+                      <Tooltip title="Clonar Modelo">
+                        <IconButton onClick={() => handleClone(modelo.id)}>
+                          <ContentCopyIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={() =>
+                          navigate("/add-new-report", {
+                            state: {
+                              selectedModel: modelo, // Passa o modelo completo como estado
+                            },
+                          })
+                        }
+                        sx={{ textTransform: "none" }}
+                      >
+                        Adicionar Relatório
+                      </Button>
                     </Box>
                   </TableCell>
                 </TableRow>
@@ -315,9 +403,11 @@ export default function ReportModelListPage() {
             <Pagination
               count={pageCount}
               page={page + 1}
-              onChange={(e, val) => setPage(val - 1)}
+              onChange={(_, value) => setPage(value - 1)}
               color="primary"
               shape="rounded"
+              showFirstButton
+              showLastButton
             />
           </Box>
         )}

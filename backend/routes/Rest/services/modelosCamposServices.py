@@ -11,7 +11,7 @@ routerModelo = APIRouter(prefix="/modelo")
 @routerModelo.post("/clone")
 async def clone_report_template(request: Request, data: ModelosCamposClone):
     # verificar o recaptcha
-    await validar_recaptcha_token(data.recaptchaToken)
+    await validar_recaptcha_token(data.recaptchaToken, "clone")
     # 1) autenticação básica
     jwt = getattr(request.state, "jwt", {})
 

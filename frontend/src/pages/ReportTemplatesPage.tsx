@@ -318,7 +318,7 @@ export default function ReportTemplatePage() {
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
               {fields
                 .map((field, index) => ({ field, index }))
-                .filter(({ field }) => field !== null)
+                .filter(({ field }) => field && typeof field === "object" && field.name !== undefined && field.name !== null)
                 .map(({ field, index }) => (
                   <Box
                     key={field.id}
@@ -339,7 +339,7 @@ export default function ReportTemplatePage() {
                     <TextField
                       label="Nome do Campo"
                       {...register(`fields.${index}.name`)}
-                      defaultValue={field.name ?? ""}
+                      value={field.name ?? ""}
                       error={!!errors.fields?.[index]?.name}
                       helperText={errors.fields?.[index]?.name?.message}
                       fullWidth
@@ -416,29 +416,19 @@ export default function ReportTemplatePage() {
                         <Typography variant="subtitle2" sx={{ mb: 1 }}>
                           Subcampo
                         </Typography>
-                        <TextField
-                          label="Nome do Subcampo"
-                          value={(fields[index] as Field).subfields?.[0]?.name || ""}
-                          onChange={(e) => {
-                            const currentSubfields = (fields[index] as Field).subfields || [];
-                            const updatedSubfield = {
-                              ...(currentSubfields[0] || { name: "", datatype: "", required: false }),
-                              name: e.target.value,
-                            };
-                            update(index, {
-                              ...(fields[index] as Field),
-                              subfields: [updatedSubfield],
-                            });
-                          }}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              e.preventDefault(); // Previne o submit do formulário
-                              e.currentTarget.focus(); // Mantém o foco no campo atual
-                            }
-                          }}
-                          size="small"
-                          fullWidth
-                          sx={{ mb: 1 }}
+                        <Controller
+                          control={control}
+                          name={`fields.${index}.subfields.0.name`}
+                          render={({ field }) => (
+                            <TextField
+                              label="Nome do Subcampo"
+                              {...field}
+                              value={field.value ?? ""}
+                              size="small"
+                              fullWidth
+                              sx={{ mb: 1 }}
+                            />
+                          )}
                         />
 
                         <FormControl size="small" fullWidth>
@@ -473,40 +463,28 @@ export default function ReportTemplatePage() {
                             <MenuItem value="number">Número</MenuItem>
                             <MenuItem value="bool">Sim/Não</MenuItem>
                             <MenuItem value="date">Data</MenuItem>
-                            {/* Removido "object" para evitar ciclo */}
                           </Select>
                         </FormControl>
-                        <FormControlLabel
-                          control={
-                            <Checkbox
-                              checked={!!(fields[index] as Field).subfields?.[0]?.required}
-                              onChange={(e) => {
-                                const currentSubfields = (fields[index] as Field).subfields || [];
-                                const updatedSubfield = {
-                                  ...(currentSubfields[0] || { name: "", datatype: "", required: false }),
-                                  required: e.target.checked,
-                                };
-                                update(index, {
-                                  ...(fields[index] as Field),
-                                  subfields: [updatedSubfield],
-                                });
-                              }}
+                        <Controller
+                          control={control}
+                          name={`fields.${index}.subfields.0.required`}
+                          render={({ field }) => (
+                            <FormControlLabel
+                              control={<Checkbox checked={!!field.value} onChange={e => field.onChange(e.target.checked)} />}
+                              label="Subcampo Obrigatório"
                             />
-                          }
-                          label="Subcampo Obrigatório"
+                          )}
                         />
                       </Box>
                     )}
 
                     {/* Botão para remover campo */}
-                   <IconButton
+                    <IconButton
                       onClick={() => {
                         if (isEditing) {
                           setRemovedFields((prev) => [...prev, fields[index].name]);
-                          remove(index); // Remove do formulário
-                        } else {
-                          remove(index);
                         }
+                        remove(index); // Remove do formulário sempre
                       }}
                       type="button"
                       sx={{

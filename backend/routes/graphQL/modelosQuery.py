@@ -12,7 +12,7 @@ class ModeloQuery:
     @strawberry.field
     async def getModelos(self, info: Info, empresa_id: str, start: int = 0) -> ModeloList:
 
-        lmt = 10  # Limite padrão de resultados por página
+        lmt = 3  # Limite padrão de resultados por página
 
         if start < 0:
             start = 0

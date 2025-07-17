@@ -120,12 +120,13 @@ app.include_router(empresaCRUD.routerEmpresa)
 app.include_router(clienteCRUD.routerCliente)
 # Rotas dis modelos (REST)
 app.include_router(modelosCRUD.routerModelo)
+# Rotas de templates de relatórios (REST)
+app.include_router(modelosCamposServices.routerModelo)
 # Rotas de relatórios (REST)
 app.include_router(relatorioCRUD.routerRelatorio)
 # Rotas GraphQL
 app.include_router(graphql_router, prefix="/graphql")
-# Rotas de templates de relatórios (REST)
-app.include_router(modelosCamposServices.routerModelo)
+
 
 
 @app.get("/")
