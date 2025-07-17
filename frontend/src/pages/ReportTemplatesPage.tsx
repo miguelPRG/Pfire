@@ -80,6 +80,9 @@ export default function ReportTemplatePage() {
   // Estado para controlar a visibilidade do botão de scroll
   const [showScrollTop, setShowScrollTop] = useState(false);
 
+  // Estado para controlar campos removidos
+  const [removedFields, setRemovedFields] = useState<string[]>([]);
+
   // Função para converter customFields do backend para o formato do formulário
   const convertCustomFieldsToFormFields = (customFields: any[]) => {
     return (
@@ -149,6 +152,7 @@ export default function ReportTemplatePage() {
         fields: formattedFields,
       });
     }
+
   }, [editingModel, isEditing, reset]);
 
   // Efeito para mostrar/esconder o botão de scroll para o topo conforme o scroll da página
@@ -170,7 +174,7 @@ export default function ReportTemplatePage() {
         setNewFieldError("Nome do campo já existe!");
         return;
       }
-      append({ name: newFieldName, datatype: "", required: false });
+      append({ name: newFieldName, datatype: "", required: false});
       setNewFieldName("");
       setNewFieldError(null);
     } catch (e) {
@@ -199,8 +203,7 @@ export default function ReportTemplatePage() {
       // Monta o objeto de campos personalizados para o backend
       const customFields: Record<string, any> = {};
       data.fields.forEach((f) => {
-        if (f.datatype === "object" && Array.isArray(f.subfields)) {
-          // Para campos do tipo objeto, inclui os subcampos
+        if (f?.datatype === "object" && Array.isArray(f.subfields)) {
           const subfieldData: Record<string, any> = {};
           f.subfields.forEach((sub) => {
             subfieldData[sub.name] = {
@@ -214,11 +217,16 @@ export default function ReportTemplatePage() {
             ...subfieldData,
           };
         } else {
-          customFields[`custom_${f.name}`] = {
-            datatype: f.datatype,
-            required: f.required,
+          customFields[`custom_${f?.name}`] = {
+            datatype: f?.datatype,
+            required: f?.required,
           };
         }
+      });
+
+      // Adiciona os campos removidos como null ao payload
+      removedFields.forEach((fieldName) => {
+        customFields[`custom_${fieldName}`] = null;
       });
 
       // Monta o payload completo
@@ -232,7 +240,7 @@ export default function ReportTemplatePage() {
       // Usa PUT para edição ou POST para criação
       const method = isEditing ? "PUT" : "POST";
       const url = isEditing ? `/backend/modelo/${editingModel.id}` : "/backend/modelo";
-
+      
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -308,200 +316,210 @@ export default function ReportTemplatePage() {
           {/* Renderização dos campos personalizados adicionados */}
           <Box sx={{ width: "100%" }}>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
-              {fields.map((field, index) => (
-                <Box
-                  key={field.id}
-                  sx={{
-                    border: "1px solid #ccc",
-                    p: 2,
-                    borderRadius: 2,
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 1,
-                    width: "100%",
-                    mb: 2,
-                    minWidth: 250,
-                    boxSizing: "border-box",
-                  }}
-                >
-                  {/* Campo para nome do campo personalizado */}
-                  <TextField
-                    label="Nome do Campo"
-                    {...register(`fields.${index}.name`)}
-                    defaultValue={field.name}
-                    error={!!errors.fields?.[index]?.name}
-                    helperText={errors.fields?.[index]?.name?.message}
-                    fullWidth
-                  />
-
-                  {/* Select para tipo de dado */}
-                  <FormControl fullWidth error={!!errors.fields?.[index]?.datatype}>
-                    <InputLabel>Tipo de Dados</InputLabel>
-                    <Controller
-                      control={control}
-                      name={`fields.${index}.datatype`}
-                      render={({ field: controllerField }) => (
-                        <Select
-                          {...controllerField}
-                          label="Tipo de Dados"
-                          sx={{
-                            width: "100%",
-                            color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
-                            bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
-                          }}
-                          MenuProps={{
-                            PaperProps: {
-                              sx: {
-                                width: "35%",
-                                bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
-                                color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
-                              },
-                            },
-                          }}
-                          onChange={(e) => {
-                            controllerField.onChange(e);
-                            if (e.target.value === "object") {
-                              update(index, {
-                                ...fields[index],
-                                datatype: "object",
-                                subfields: [{ name: "", datatype: "", required: false }],
-                              });
-                            } else if (Array.isArray((fields[index] as Field).subfields)) {
-                              const { subfields, ...rest } = fields[index] as Field;
-                              update(index, { ...rest, datatype: e.target.value });
-                            }
-                          }}
-                        >
-                          <MenuItem value="string">Texto</MenuItem>
-                          <MenuItem value="number">Número</MenuItem>
-                          <MenuItem value="bool">Sim/Não</MenuItem>
-                          <MenuItem value="date">Data</MenuItem>
-                          <MenuItem value="object">Multicampo</MenuItem>
-                        </Select>
-                      )}
+              {fields
+                .map((field, index) => ({ field, index }))
+                .filter(({ field }) => field !== null)
+                .map(({ field, index }) => (
+                  <Box
+                    key={field.id}
+                    sx={{
+                      border: "1px solid #ccc",
+                      p: 2,
+                      borderRadius: 2,
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 1,
+                      width: "100%",
+                      mb: 2,
+                      minWidth: 250,
+                      boxSizing: "border-box",
+                    }}
+                  >
+                    {/* Campo para nome do campo personalizado */}
+                    <TextField
+                      label="Nome do Campo"
+                      {...register(`fields.${index}.name`)}
+                      defaultValue={field.name ?? ""}
+                      error={!!errors.fields?.[index]?.name}
+                      helperText={errors.fields?.[index]?.name?.message}
+                      fullWidth
                     />
-                    {errors.fields?.[index]?.datatype && (
-                      <FormHelperText>{errors.fields?.[index]?.datatype?.message}</FormHelperText>
-                    )}
-                  </FormControl>
-                  <FormControlLabel
-                    control={<Checkbox {...register(`fields.${index}.required`)} />}
-                    label="Campo Obrigatório"
-                  />
 
-                  {/* Renderiza apenas UM subcampo se o tipo for object */}
-                  {(fields[index] as Field)?.datatype === "object" && (
-                    <Box
-                      sx={{
-                        mt: 2,
-                        pl: 2,
-                        borderLeft: "2px solid #ccc",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 2,
-                        width: "100%",
-                      }}
-                    >
-                      <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                        Subcampo
-                      </Typography>
-                      <TextField
-                        label="Nome do Subcampo"
-                        value={(fields[index] as Field).subfields?.[0]?.name || ""}
-                        onChange={(e) => {
-                          const currentSubfields = (fields[index] as Field).subfields || [];
-                          const updatedSubfield = {
-                            ...(currentSubfields[0] || { name: "", datatype: "", required: false }),
-                            name: e.target.value,
-                          };
-                          update(index, {
-                            ...(fields[index] as Field),
-                            subfields: [updatedSubfield],
-                          });
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            e.preventDefault(); // Previne o submit do formulário
-                            e.currentTarget.focus(); // Mantém o foco no campo atual
-                          }
-                        }}
-                        size="small"
-                        fullWidth
-                        sx={{ mb: 1 }}
+                    {/* Select para tipo de dado */}
+                    <FormControl fullWidth error={!!errors.fields?.[index]?.datatype}>
+                      <InputLabel>Tipo de Dados</InputLabel>
+                      <Controller
+                        control={control}
+                        name={`fields.${index}.datatype`}
+                        render={({ field: controllerField }) => (
+                          <Select
+                            {...controllerField}
+                            label="Tipo de Dados"
+                            sx={{
+                              width: "100%",
+                              color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
+                              bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
+                            }}
+                            MenuProps={{
+                              PaperProps: {
+                                sx: {
+                                  width: "35%",
+                                  bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
+                                  color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
+                                },
+                              },
+                            }}
+                            onChange={(e) => {
+                              controllerField.onChange(e);
+                              if (e.target.value === "object") {
+                                update(index, {
+                                  ...fields[index],
+                                  datatype: "object",
+                                  subfields: [{ name: "", datatype: "", required: false }],
+                                });
+                              } else if (Array.isArray((fields[index] as Field).subfields)) {
+                                const { subfields, ...rest } = fields[index] as Field;
+                                update(index, { ...rest, datatype: e.target.value });
+                              }
+                            }}
+                          >
+                            <MenuItem value="string">Texto</MenuItem>
+                            <MenuItem value="number">Número</MenuItem>
+                            <MenuItem value="bool">Sim/Não</MenuItem>
+                            <MenuItem value="date">Data</MenuItem>
+                            <MenuItem value="object">Multicampo</MenuItem>
+                          </Select>
+                        )}
                       />
+                      {errors.fields?.[index]?.datatype && (
+                        <FormHelperText>{errors.fields?.[index]?.datatype?.message}</FormHelperText>
+                      )}
+                    </FormControl>
+                    <FormControlLabel
+                      control={<Checkbox {...register(`fields.${index}.required`)} />}
+                      label="Campo Obrigatório"
+                    />
 
-                      <FormControl size="small" fullWidth>
-                        <InputLabel>Tipo do Subcampo</InputLabel>
-                        <Select
-                          label="Tipo do Subcampo"
-                          value={(fields[index] as Field).subfields?.[0]?.datatype || ""}
+                    {/* Renderiza apenas UM subcampo se o tipo for object */}
+                    {(fields[index] as Field)?.datatype === "object" && (
+                      <Box
+                        sx={{
+                          mt: 2,
+                          pl: 2,
+                          borderLeft: "2px solid #ccc",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 2,
+                          width: "100%",
+                        }}
+                      >
+                        <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                          Subcampo
+                        </Typography>
+                        <TextField
+                          label="Nome do Subcampo"
+                          value={(fields[index] as Field).subfields?.[0]?.name || ""}
                           onChange={(e) => {
                             const currentSubfields = (fields[index] as Field).subfields || [];
                             const updatedSubfield = {
                               ...(currentSubfields[0] || { name: "", datatype: "", required: false }),
-                              datatype: e.target.value,
+                              name: e.target.value,
                             };
                             update(index, {
                               ...(fields[index] as Field),
                               subfields: [updatedSubfield],
                             });
                           }}
-                          sx={{
-                            color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
-                            bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault(); // Previne o submit do formulário
+                              e.currentTarget.focus(); // Mantém o foco no campo atual
+                            }
                           }}
-                          MenuProps={{
-                            PaperProps: {
-                              sx: {
-                                width: "35%",
-                              },
-                            },
-                          }}
-                        >
-                          <MenuItem value="string">Texto</MenuItem>
-                          <MenuItem value="number">Número</MenuItem>
-                          <MenuItem value="bool">Sim/Não</MenuItem>
-                          <MenuItem value="date">Data</MenuItem>
-                          {/* Removido "object" para evitar ciclo */}
-                        </Select>
-                      </FormControl>
-                      <FormControlLabel
-                        control={
-                          <Checkbox
-                            checked={!!(fields[index] as Field).subfields?.[0]?.required}
+                          size="small"
+                          fullWidth
+                          sx={{ mb: 1 }}
+                        />
+
+                        <FormControl size="small" fullWidth>
+                          <InputLabel>Tipo do Subcampo</InputLabel>
+                          <Select
+                            label="Tipo do Subcampo"
+                            value={(fields[index] as Field).subfields?.[0]?.datatype || ""}
                             onChange={(e) => {
                               const currentSubfields = (fields[index] as Field).subfields || [];
                               const updatedSubfield = {
                                 ...(currentSubfields[0] || { name: "", datatype: "", required: false }),
-                                required: e.target.checked,
+                                datatype: e.target.value,
                               };
                               update(index, {
                                 ...(fields[index] as Field),
                                 subfields: [updatedSubfield],
                               });
                             }}
-                          />
-                        }
-                        label="Subcampo Obrigatório"
-                      />
-                    </Box>
-                  )}
+                            sx={{
+                              color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
+                              bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
+                            }}
+                            MenuProps={{
+                              PaperProps: {
+                                sx: {
+                                  width: "35%",
+                                },
+                              },
+                            }}
+                          >
+                            <MenuItem value="string">Texto</MenuItem>
+                            <MenuItem value="number">Número</MenuItem>
+                            <MenuItem value="bool">Sim/Não</MenuItem>
+                            <MenuItem value="date">Data</MenuItem>
+                            {/* Removido "object" para evitar ciclo */}
+                          </Select>
+                        </FormControl>
+                        <FormControlLabel
+                          control={
+                            <Checkbox
+                              checked={!!(fields[index] as Field).subfields?.[0]?.required}
+                              onChange={(e) => {
+                                const currentSubfields = (fields[index] as Field).subfields || [];
+                                const updatedSubfield = {
+                                  ...(currentSubfields[0] || { name: "", datatype: "", required: false }),
+                                  required: e.target.checked,
+                                };
+                                update(index, {
+                                  ...(fields[index] as Field),
+                                  subfields: [updatedSubfield],
+                                });
+                              }}
+                            />
+                          }
+                          label="Subcampo Obrigatório"
+                        />
+                      </Box>
+                    )}
 
-                  {/* Botão para remover campo */}
-                  <IconButton
-                    onClick={() => remove(index)}
-                    type="button"
-                    sx={{
-                      backgroundColor: "error.main",
-                      color: "white",
-                      "&:hover": { bgcolor: "error.dark" },
-                      alignSelf: "center",
-                    }}
-                  >
-                    <DeleteIcon />
-                  </IconButton>
-                </Box>
-              ))}
+                    {/* Botão para remover campo */}
+                   <IconButton
+                      onClick={() => {
+                        if (isEditing) {
+                          setRemovedFields((prev) => [...prev, fields[index].name]);
+                          remove(index); // Remove do formulário
+                        } else {
+                          remove(index);
+                        }
+                      }}
+                      type="button"
+                      sx={{
+                        backgroundColor: "error.main",
+                        color: "white",
+                        "&:hover": { bgcolor: "error.dark" },
+                        alignSelf: "center",
+                      }}
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  </Box>
+                ))}
             </Box>
           </Box>
 

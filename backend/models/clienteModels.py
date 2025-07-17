@@ -31,6 +31,15 @@ class ClienteCreate(BaseModel):
             )
         return v
 
+    @field_validator("empresa_id")
+    @classmethod
+    def validar_empresa_id(cls, v):
+        if not ObjectId.is_valid(v):
+            raise HTTPException(
+                status_code=422, detail=f"ID inválido: {v}. Deve ser um ObjectId válido com 24 caracteres hexadecimais."
+            )
+        return v
+
 
 class ClienteUpdate(BaseModel):
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao cliente.")

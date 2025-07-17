@@ -17,7 +17,7 @@ def validate_fields(key, value):
 
     key = key.strip()  # Remove espaços em branco no início e no final
 
-    if not key.startswith("custom_"):
+    if not key.startswith("custom_") or key == "custom_":
         raise HTTPException(
             status_code=400,
             detail=f"O campo que está a tentar criar é inválido: {key}. Os campos personalizados devem começar com 'custom_'.",
@@ -26,7 +26,7 @@ def validate_fields(key, value):
     if not isinstance(value, dict):
         raise HTTPException(
             status_code=400,
-            detail=f"O campo que está a tentar criar:  {key} deve ser um dicionário com 'datatype' e 'required'.",
+            detail=f"O campo que está a tentar criar:  {key} deve ser um dicionário com os campos 'datatype' e 'required'.",
         )
 
     # Estas são as chaves permitidas por padrão
@@ -36,8 +36,8 @@ def validate_fields(key, value):
     if value.get("datatype") == "object":
         custom_fields = {k: v for k, v in value.items() if k not in {"datatype", "required"}}
 
-        # Verificar se existem subcampos personalizados que não começam com "custom_"
-        bad_fields = {k for k in custom_fields if not k.startswith("custom_")}
+        # Verificar se existem subcampos personalizados que não começam com "custom_" ou que são "custom_"
+        bad_fields = {k for k in custom_fields if not k.startswith("custom_" or k == "custom_")}
 
         if bad_fields:
             raise HTTPException(
@@ -59,10 +59,13 @@ def validate_fields(key, value):
         if any(subvalue.get("required") is True for subvalue in custom_fields.values()):
             value["required"] = True  # Define como True se algum subcampo for obrigatório
 
+        else:
+            value["required"] = False
+
         # Adiciona os subcampos às chaves permitidas
         allowed_keys.update(custom_fields.keys())
 
-    # Verifica se existem chaves extras
+    # Verifica se existem chaves extras além das permitidas (datatype e required)
     extra_keys = set(value.keys()) - allowed_keys
     if extra_keys:
         raise HTTPException(
@@ -79,7 +82,7 @@ def validate_fields(key, value):
     if datatype not in ALLOWED_DATATYPES:
         raise HTTPException(
             status_code=400,
-            detail=f"Tipo de dado inválido para o novo campo {key}: {datatype}. Tipos permitidos: {ALLOWED_DATATYPES}.",
+            detail=f"datatype inválido para o novo campo {key}: {datatype}. Tipos permitidos: {ALLOWED_DATATYPES}.",
         )
 
     if required is None:
@@ -134,7 +137,7 @@ class ModelosCamposUpdate(BaseModel):
         None, max_length=100, description="Nome do modelo. Deve ter no máximo 100 caracteres."
     )  # Ex: "extintores", "para-raios", "bocas de incêndio"
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
-    recaptchaToken: str
+    #recaptchaToken: str
     model_config = ConfigDict(extra="allow")  # Permite campos extras
 
     @field_validator("empresa_id", mode="before")
@@ -150,37 +153,15 @@ class ModelosCamposUpdate(BaseModel):
     @classmethod
     def validate_fields(cls, values):
         if "model_name" in values and isinstance(values["model_name"], str):
-            values["model_name"] = values["model_name"].strip()
+            values["model_name"] = values["model_name"].strip()        
 
-        # Aplica strip aos nomes dos campos personalizados e aos valores string
-        new_values = {}
+         # Valida todos os campos personalizados no nível principal
         for key, value in values.items():
-            trimmed_key = key.strip() if isinstance(key, str) else key
-
-            # Se for campo principal, apenas copia
-            if trimmed_key in MAIN_FIELDS:
-                new_values[trimmed_key] = value
-                continue
-
-            # Se for campo personalizado
-            def trim_strings_in_dict(d):
-                if isinstance(d, dict):
-                    return {(k.strip() if isinstance(k, str) else k): trim_strings_in_dict(v) for k, v in d.items()}
-                elif isinstance(d, str):
-                    return d.strip()
-                else:
-                    return d
-
-            new_values[trimmed_key] = trim_strings_in_dict(value)
-
-        # Valida todos os campos personalizados no nível principal
-        for key, value in new_values.items():
-            if key in MAIN_FIELDS:
+            if key in MAIN_FIELDS or value is None:
                 continue
             validate_fields(key, value)
 
-        return new_values
-
+        return values
 
 class ModelosCamposDelete(BaseModel):
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")

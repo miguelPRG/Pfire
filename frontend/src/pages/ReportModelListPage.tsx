@@ -68,6 +68,9 @@ export default function ReportModelListPage() {
       window.history.replaceState({}, document.title);
       refetch(); // Recarregar os dados após adicionar/editar modelo
     }
+
+    console.log("Lista foi chamada!")
+
   }, [location.state, refetch]);
 
   const toggleExpand = (key: string) => {

@@ -31,8 +31,15 @@ class EmpresaCreate(BaseModel):
 
 
 class EmpresaCreateAsLoggedUser(EmpresaCreate):
+    nome: str = Field(..., max_length=100, description="Nome da empresa. Deve ter no máximo 100 caracteres.")
+    nif: str = Field(..., pattern=r"^[1235689]\d{8}$")
+    localidade: str = Field(
+        ..., max_length=100, description="Localidade da empresa. Deve ter no máximo 100 caracteres."
+    )
+    morada: str = Field(..., max_length=255, description="Morada da empresa. Deve ter no máximo 255 caracteres.")
+    codigo_postal: str = Field(..., pattern=r"^\d{4}-\d{3}$")
+    telefone: str = Field(..., pattern=r"^\+?[0-9\s\-()]{7,15}$")  # Correção aqui
     recaptchaToken: str
-    pass
 
 
 class EmpresaUpdate(BaseModel):
