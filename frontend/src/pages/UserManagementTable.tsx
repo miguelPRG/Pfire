@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Table,
   TableBody,
@@ -8,8 +8,6 @@ import {
   TableRow,
   Paper,
   TextField,
-  Select,
-  MenuItem,
   Box,
   Pagination,
   TableSortLabel,
@@ -24,8 +22,8 @@ import {
 } from "@mui/material";
 import { Search, Delete } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
-import { useQuery } from "@apollo/client";
-import { GET_USERS } from "../graphql/usersqueries";
+import { useQuery, useLazyQuery } from "@apollo/client";
+import { GET_USERS, GET_USERS_BY_NAME } from "../graphql/usersqueries";
 import { useAuth } from "../hooks/AuthContext";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
@@ -56,6 +54,7 @@ export default function UserManagementTable() {
   const theme = useTheme();
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
+  const [searchTriggered, setSearchTriggered] = useState(false);
   const [orderBy, setOrderBy] = useState<keyof User | null>(null);
   const [order, setOrder] = useState<"asc" | "desc">("asc");
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -79,13 +78,53 @@ export default function UserManagementTable() {
     notifyOnNetworkStatusChange: true,
   });
 
+  // Lazy query para pesquisa remota
+  const [getUsersByName, { data: searchData }] = useLazyQuery(GET_USERS_BY_NAME, {
+    fetchPolicy: "cache-and-network",
+    notifyOnNetworkStatusChange: true,
+  });
+
+  // Pesquisa local/remota
+  useEffect(() => {
+    if (search.trim() === "") {
+      setSearchTriggered(false);
+      return;
+    }
+    const localResults = (data?.getUsers?.users || []).filter((row: User) =>
+      row.nome?.toLowerCase().includes(search.toLowerCase())
+    );
+    if (localResults.length === 0) {
+      getUsersByName({
+        variables: { empresaId: empresa?.id, nome: search, start: 0 },
+      });
+      setSearchTriggered(true);
+    } else {
+      setSearchTriggered(false);
+    }
+  }, [search, data, empresa?.id, getUsersByName]);
+
+  // Decide que dados mostrar
+  const users: User[] =
+    search.trim() === ""
+      ? data?.getUsers?.users || []
+      : searchTriggered
+        ? searchData?.getUserByName?.users || []
+        : (data?.getUsers?.users || []).filter((row: User) =>
+            row.nome?.toLowerCase().includes(search.toLowerCase())
+          );
+
+  const totalUsers =
+    search.trim() === ""
+      ? data?.getUsers?.totalUsers || 0
+      : searchTriggered
+        ? searchData?.getUserByName?.totalUsers || 0
+        : users.length;
+
   const isLoadingFresh = loading || data?.networkStatus === 3;
 
   if (isLoadingFresh) return <LoadingAnimation />;
   if (error) return <Typography>Erro ao carregar utilizadores: {error.message}</Typography>;
 
-  const users: User[] = (data && data?.getUsers.users) || [];
-  const totalUsers = data?.getUsers?.totalUsers || 0;
   const pageCount = Math.ceil(totalUsers / rowsPerPage);
 
   console.log("Dados dos utilizadores:", users);

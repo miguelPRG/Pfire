@@ -84,3 +84,58 @@ class EmpresaQuery:
 
         return EmpresaList(empresas=empresas, totalEmpresas=total_empresas)
 
+    @strawberry.field
+    async def getEmpresaByName(self, info: Info, nome: str, start: int = 0) -> EmpresaList:
+        lmt = 6
+        if start < 0:
+            start = 0
+
+        request = info.context["request"]
+        jwt = getattr(request.state, "jwt", None)
+
+        if jwt.get("isSuperAdmin", False):
+            filtro = {"nome": {"$regex": nome, "$options": "i"}}
+        else:
+            user_empresas = await users_empresas_collection.find({"user_id": ObjectId(jwt["user_id"])}).to_list(None)
+            empresa_ids = [user_empresa["empresa_id"] for user_empresa in user_empresas]
+            filtro = {
+                "_id": {"$in": empresa_ids},
+                "nome": {"$regex": nome, "$options": "i"}
+            }
+
+        total_empresas = await empresas_collection.count_documents(filtro)
+        empresas = []
+        async for empresa in empresas_collection.find(filtro).skip(start).limit(lmt):
+            empresa_data = {
+                "id": str(empresa.get("_id")),
+                "nome": empresa.get("nome"),
+                "nif": empresa.get("nif"),
+                "telefone": empresa.get("telefone"),
+                "morada": empresa.get("morada"),
+                "localidade": empresa.get("localidade"),
+                "codigo_postal": empresa.get("codigo_postal"),
+                "created_by": empresa.get("created_by"),
+                "created_at": empresa.get("created_at"),
+                "updated_by": empresa.get("updated_by"),
+                "updated_at": empresa.get("updated_at"),
+            }
+            if empresa.get("logo"):
+                from base64 import b64encode
+                logo_base64 = b64encode(empresa["logo"]).decode("utf-8")
+                empresa_data["logo"] = logo_base64
+
+            if jwt.get("isSuperAdmin", False):
+                empresa_data["isAdmin"] = True
+            else:
+                empresa_data["isAdmin"] = any(
+                    user_empresa["empresa_id"] == empresa["_id"] and user_empresa.get("isAdmin", False)
+                    for user_empresa in user_empresas
+                )
+
+            empresa_data = {
+                k: v for k, v in empresa_data.items() if k not in ["created_by", "updated_by", "updated_at"]
+            }
+            empresas.append(Empresa(**filter_null_fields(empresa_data)))
+
+        return EmpresaList(empresas=empresas, totalEmpresas=total_empresas)
+

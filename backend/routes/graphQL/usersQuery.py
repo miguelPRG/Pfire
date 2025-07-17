@@ -65,3 +65,57 @@ class UserQuery:
 
         total_users = await users_empresas_collection.count_documents({"empresa_id": ObjectId(empresa_id)})
         return UserList(users=users, totalUsers=total_users)
+
+    @strawberry.field
+    async def getUserByName(self, info: Info, empresa_id: str, nome: str, start: int = 0) -> UserList:
+        lmt = 10
+        if start < 0:
+            start = 0
+
+        request = info.context["request"]
+        jwt = getattr(request.state, "jwt", None)
+        users = []
+
+        empresa = await empresas_collection.find_one({"_id": ObjectId(empresa_id)})
+        if not empresa:
+            raise HTTPException(status_code=404, detail="Empresa não encontrada.")
+
+        if not jwt.get("isSuperAdmin", False):
+            user_empresa = await users_empresas_collection.find_one(
+                {"user_id": ObjectId(jwt["user_id"]), "empresa_id": ObjectId(empresa_id), "isAdmin": True}
+            )
+            if not user_empresa:
+                raise HTTPException(
+                    status_code=403, detail="Acesso negado. Apenas administradores podem visualizar os utilizadores."
+                )
+
+        filtro = {"empresa_id": ObjectId(empresa_id)}
+        user_empresas_cursor = users_empresas_collection.find(filtro)
+        user_empresas = await user_empresas_cursor.to_list(None)
+        user_ids = [ue["user_id"] for ue in user_empresas]
+
+        query = {
+            "_id": {"$in": user_ids},
+            "nome": {"$regex": nome, "$options": "i"}
+        }
+
+        async for user in users_collection.find(query).skip(start).limit(lmt):
+            user_empresa = next((ue for ue in user_empresas if ue["user_id"] == user["_id"]), {})
+            role = "Admin" if user_empresa.get("isAdmin") else "User"
+            user_data = {
+                "id": str(user.get("_id")),
+                "nome": user.get("nome"),
+                "email": user.get("email"),
+                "telefone": user.get("telefone"),
+                "role": role,
+                "created_at": user.get("created_at"),
+                "updated_at": user.get("updated_at"),
+                "last_login": user.get("last_login"),
+                "isActive": user.get("isActive"),
+            }
+            if not jwt.get("isSuperAdmin", False):
+                user_data = {k: v for k, v in user_data.items() if k not in ["created_at", "updated_at"]}
+            users.append(User(**filter_null_fields(user_data)))
+
+        total_users = await users_collection.count_documents(query)
+        return UserList(users=users, totalUsers=total_users)

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import {
   Button,
   Paper,
@@ -6,9 +6,12 @@ import {
   Box,
   Grid,
   Pagination,
+  TextField,
+  InputAdornment,
 } from "@mui/material";
-import { useQuery } from "@apollo/client";
-import { GET_EMPRESAS } from "../graphql/empresasqueries";
+import { Search } from "@mui/icons-material";
+import { useQuery, useLazyQuery } from "@apollo/client";
+import { GET_EMPRESAS, GET_EMPRESAS_BY_NAME } from "../graphql/empresasqueries";
 import { useAuth } from "../hooks/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
@@ -27,24 +30,58 @@ interface Empresa {
 }
 
 export default function CompanySelectorPage() {
+  const [search, setSearch] = useState("");
+  const [searchTriggered, setSearchTriggered] = useState(false);
   const [page, setPage] = useState(0);
-  
   const rowsPerPage = 6;
-  
+
   const { data, loading, error } = useQuery(GET_EMPRESAS, {
     fetchPolicy: "cache-and-network",
-    notifyOnNetworkStatusChange: true, // Notifica quando os dados mais recentes estan disponiveis
-    variables: {
-      start: page * rowsPerPage,
-    },
+    notifyOnNetworkStatusChange: true,
+    variables: { start: page * rowsPerPage },
   });
 
-  const isLoadingFresh = loading || data?.networkStatus === 3; // 3 é o status de refetching
+  const [getEmpresasByName, { data: searchData }] = useLazyQuery(GET_EMPRESAS_BY_NAME, {
+    fetchPolicy: "cache-and-network",
+    notifyOnNetworkStatusChange: true,
+  });
 
-  const empresas: Empresa[] = Array.isArray(data?.getEmpresas?.empresas)
-    ? data.getEmpresas.empresas
-    : [];
-  const pageCount = Math.ceil((data?.getEmpresas?.totalEmpresas || 0) / rowsPerPage);
+  useEffect(() => {
+    if (search.trim() === "") {
+      setSearchTriggered(false);
+      return;
+    }
+    const localResults = (data?.getEmpresas?.empresas || []).filter((row: Empresa) =>
+      row.nome?.toLowerCase().includes(search.toLowerCase())
+    );
+    if (localResults.length === 0) {
+      getEmpresasByName({
+        variables: { nome: search, start: 0 },
+      });
+      setSearchTriggered(true);
+    } else {
+      setSearchTriggered(false);
+    }
+  }, [search, data, getEmpresasByName]);
+
+  const empresas: Empresa[] =
+    search.trim() === ""
+      ? data?.getEmpresas?.empresas || []
+      : searchTriggered
+        ? searchData?.getEmpresaByName?.empresas || []
+        : (data?.getEmpresas?.empresas || []).filter((row: Empresa) =>
+            row.nome?.toLowerCase().includes(search.toLowerCase())
+          );
+
+  const totalEmpresas =
+    search.trim() === ""
+      ? data?.getEmpresas?.totalEmpresas || 0
+      : searchTriggered
+        ? searchData?.getEmpresaByName?.totalEmpresas || 0
+        : empresas.length;
+
+  const pageCount = Math.ceil(totalEmpresas / rowsPerPage);
+  const isLoadingFresh = loading || data?.networkStatus === 3;
 
   const { chooseCompany } = useAuth();
   const navigate = useNavigate();
@@ -87,7 +124,35 @@ export default function CompanySelectorPage() {
               Selecionar Empresa
             </Typography>
           </Box>
-
+          <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    mb: 2,
+                    gap: 2,
+                  }}
+                >
+                  <TextField
+                    variant="outlined"
+                    size="small"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Pesquisar por nome"
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <Search sx={{ color: theme.palette.primary.main }} />
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                    sx={{
+                      width: "75%",
+                      mt: 1,
+                    }}
+                  />
+                </Box>
           <Grid
             container
             spacing={3}

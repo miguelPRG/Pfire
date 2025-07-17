@@ -18,3 +18,22 @@ export const GET_EMPRESAS = gql`
     }
   }
 `;
+
+export const GET_EMPRESAS_BY_NAME = gql`
+  query GetEmpresaByName($nome: String!, $start: Int) {
+    getEmpresaByName(nome: $nome, start: $start) {
+      empresas {
+        id
+        nome
+        nif
+        telefone
+        morada
+        localidade
+        logo
+        isAdmin
+        codigoPostal
+      }
+      totalEmpresas
+    }
+  }
+`;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@apollo/client";
+import { useQuery, useLazyQuery } from "@apollo/client";
 import {
   Table,
   TableBody,
@@ -19,7 +19,7 @@ import {
 } from "@mui/material";
 import { Search } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
-import { GET_CLIENTES_BY_EMPRESA } from "../graphql/clientesqueries";
+import { GET_CLIENTES_BY_EMPRESA, GET_CLIENTES_BY_NAME } from "../graphql/clientesqueries";
 import { useTheme } from "@mui/material/styles";
 import { useAuth } from "../hooks/AuthContext";
 import Notification from "../components/Notification";
@@ -40,6 +40,7 @@ export default function ClientManagementTable() {
   // Todos os hooks no topo!
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
+  const [searchTriggered, setSearchTriggered] = useState(false);
   const [orderBy, setOrderBy] = useState<keyof Cliente | null>(null);
   const [order, setOrder] = useState<"asc" | "desc">("asc");
   const [alert, setAlert] = useState<null | { message: string; isError: boolean }>(null);
@@ -52,6 +53,12 @@ export default function ClientManagementTable() {
 
   const { data, loading, error, refetch } = useQuery(GET_CLIENTES_BY_EMPRESA, {
     variables: { empresaId: empresa?.id, start: page * rowsPerPage },
+    fetchPolicy: "cache-and-network",
+    notifyOnNetworkStatusChange: true,
+  });
+
+  // Esta consulta é lazy e será utilizada apenas caso o cliente pesuise por um cliente que não está na página atual
+  const [getClientesByName, { data: searchData }] = useLazyQuery(GET_CLIENTES_BY_NAME, {
     fetchPolicy: "cache-and-network",
     notifyOnNetworkStatusChange: true,
   });
@@ -69,12 +76,50 @@ export default function ClientManagementTable() {
     }
   }, [location.state, refetch]);
 
+  // Pesquisa local primeiro, se não encontrar, pesquisa na base de dados
+  useEffect(() => {
+    if (search.trim() === "") {
+      setSearchTriggered(false);
+      return;
+    }
+
+    // Pesquisa local
+    const localResults = (data?.getClientes?.clientes || []).filter((row: Cliente) =>
+      row.nome?.toLowerCase().includes(search.toLowerCase())
+    );
+
+    if (localResults.length === 0) {
+      // Pesquisa remota
+      getClientesByName({
+        variables: { empresaId: empresa?.id, nome: search, start: 0 },
+      });
+      setSearchTriggered(true);
+    } else {
+      setSearchTriggered(false);
+    }
+  }, [search, data, empresa?.id, getClientesByName]);
+
   // Só retorna depois de todos os hooks
   if (isLoadingFresh) return <LoadingAnimation />;
   if (error) return <Typography>Erro ao carregar clientes: {error.message}</Typography>;
 
-  const rows: Cliente[] = data?.getClientes?.clientes || [];
-  const totalClientes = data?.getClientes?.totalClientes || 0;
+  // Decide que dados mostrar
+  const rows: Cliente[] =
+    search.trim() === ""
+      ? data?.getClientes?.clientes || []
+      : searchTriggered
+        ? searchData?.getClienteByName?.clientes || []
+        : (data?.getClientes?.clientes || []).filter((row: Cliente) =>
+            row.nome?.toLowerCase().includes(search.toLowerCase())
+          );
+
+  const totalClientes =
+    search.trim() === ""
+      ? data?.getClientes?.totalClientes || 0
+      : searchTriggered
+        ? searchData?.getClienteByName?.totalClientes || 0
+        : rows.length;
+
   const pageCount = Math.ceil(totalClientes / rowsPerPage);
 
   console.log("Rows:", rows);
@@ -132,7 +177,6 @@ export default function ClientManagementTable() {
             Adicionar novo Cliente
           </Button>
         </Box>
-
         <Box
           sx={{
             display: "flex",
@@ -151,11 +195,7 @@ export default function ClientManagementTable() {
               input: {
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Search
-                      sx={{
-                        color: theme.palette.mode === "dark" ? "#0DC7E8" : "#003366",
-                      }}
-                    />
+                    <Search sx={{ color: theme.palette.primary.main }} />
                   </InputAdornment>
                 ),
               },

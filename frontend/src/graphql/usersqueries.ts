@@ -19,3 +19,22 @@ export const GET_USERS = gql`
     }
   }
 `;
+
+export const GET_USERS_BY_NAME = gql`
+  query GetUserByName($empresaId: String!, $nome: String!, $start: Int) {
+    getUserByName(empresaId: $empresaId, nome: $nome, start: $start) {
+      users {
+        id
+        nome
+        email
+        telefone
+        role
+        createdAt
+        updatedAt
+        lastLogin
+        isActive
+      }
+      totalUsers
+    }
+  }
+`;
