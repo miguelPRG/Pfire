@@ -16,6 +16,10 @@ import {
   Button,
   InputAdornment,
   Link,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from "@mui/material";
 import { Search } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -24,6 +28,9 @@ import { useTheme } from "@mui/material/styles";
 import { useAuth } from "../hooks/AuthContext";
 import Notification from "../components/Notification";
 import LoadingAnimation from "../components/LoadingAnimation";
+
+
+declare var grecaptcha: any;
 
 interface Cliente {
   id: string;
@@ -34,6 +41,7 @@ interface Cliente {
   localidade?: string;
   morada?: string;
   codigoPostal?: string;
+  isActive?: boolean;
 }
 
 export default function ClientManagementTable() {
@@ -44,6 +52,8 @@ export default function ClientManagementTable() {
   const [orderBy, setOrderBy] = useState<keyof Cliente | null>(null);
   const [order, setOrder] = useState<"asc" | "desc">("asc");
   const [alert, setAlert] = useState<null | { message: string; isError: boolean }>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
 
   const rowsPerPage = 10;
   const theme = useTheme();
@@ -122,8 +132,6 @@ export default function ClientManagementTable() {
 
   const pageCount = Math.ceil(totalClientes / rowsPerPage);
 
-  console.log("Rows:", rows);
-
   const handleChangePage = (_: unknown, newPage: number) => setPage(newPage);
 
   const handleSort = (property: keyof Cliente) => {
@@ -142,6 +150,60 @@ export default function ClientManagementTable() {
       const bValue = b[orderBy]?.toString() || "";
       return order === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
     });
+
+  // Função para apagar cliente
+  const apagarCliente = async (cliente: Cliente, hardDelete: boolean) => {
+    try {
+      // Chama tua API REST para apagar cliente
+      // Exemplo:
+
+      console.log("Apagando cliente:", cliente);
+
+      const url = hardDelete ? "/backend/cliente/hard-delete" : "/backend/cliente/";
+
+      const res = await fetch(url, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          id: cliente.id,
+          empresa_id: empresa?.id,
+          recaptchaToken: await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", { action: "delete" }),
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.detail || "Erro ao apagar cliente.");
+      setAlert({ message: json.message || "Cliente apagado com sucesso!", isError: false });
+      await refetch();
+    } catch (err: any) {
+      setAlert({ message: err.message || "Erro ao apagar cliente.", isError: true });
+    }
+  };
+
+  // Função para ativar cliente
+  const ativarCliente = async (cliente: Cliente) => {
+    
+    console.log("Ativando cliente:", cliente);
+    
+    try {
+      const res = await fetch("/backend/cliente/activate", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          id: cliente.id,
+          empresa_id: empresa?.id,
+          recaptchaToken: await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", { action: "activate" }),
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.detail || "Erro ao ativar cliente.");
+      setAlert({ message: json.message || "Cliente ativado com sucesso!", isError: false });
+      await refetch();
+    } catch (err: any) {
+      setAlert({ message: err.message || "Erro ao ativar cliente.", isError: true });
+    }
+  };
 
   return (
     <>
@@ -234,15 +296,13 @@ export default function ClientManagementTable() {
             <Table>
               <TableHead>
                 <TableRow style={{ backgroundColor }}>
-                  {["nome", "email", "telefone", "nif", "localidade", "morada", "codigoPostal"].map((key) => (
+                  {["nome", "email", "telefone", "nif", "localidade", "morada", "codigoPostal", "estado", ""].map((key) => (
                     <TableCell
                       key={key}
-                      onClick={() => handleSort(key as keyof Cliente)}
-                      sx={{ fontWeight: "bold", cursor: "pointer" }}
+                      onClick={["nome", "email", "telefone", "nif", "localidade", "morada", "codigoPostal", "estado"].includes(key) ? () => handleSort(key as keyof Cliente) : undefined}
+                      sx={{ fontWeight: "bold", cursor: ["nome", "email", "telefone", "nif", "localidade", "morada", "codigoPostal", "estado"].includes(key) ? "pointer" : "default" }}
                     >
-                      <TableSortLabel active={orderBy === key} direction={orderBy === key ? order : "asc"}>
-                        {key === "codigoPostal" ? "Código Postal" : key.toUpperCase()}
-                      </TableSortLabel>
+                      {key === "codigoPostal" ? "Código Postal" : key.toUpperCase()}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -275,6 +335,50 @@ export default function ClientManagementTable() {
                       <TableCell>{cliente.localidade}</TableCell>
                       <TableCell>{cliente.morada}</TableCell>
                       <TableCell>{cliente.codigoPostal}</TableCell>
+                      {/* Botão círculo que alterna estado */}
+                      <TableCell>
+                        <Button
+                          variant="contained"
+                          size="small"
+                          sx={{
+                            width: 55,
+                            height: 55,
+                            borderRadius: "50%",
+                            backgroundColor: cliente.isActive ? theme.palette.success.main : theme.palette.error.main,
+                            color: "#fff",
+                            fontWeight: "bold",
+                            fontSize: 15,
+                            minWidth: 0,
+                            px: 0,
+                          }}
+                          onClick={async () => {
+                            if (cliente.isActive) {
+                              await apagarCliente(cliente, false);
+                            } else {
+                              await ativarCliente(cliente);
+                            }
+                          }}
+                        >
+                          {cliente.isActive ? "Ativo" : "Inativo"}
+                        </Button>
+                      </TableCell>
+                      {/* Botão Apagar permanentemente */}
+                      <TableCell>
+                        {!cliente.isActive && (
+                          <Button
+                            variant="contained"
+                            color="error"
+                            size="small"
+                            sx={{ borderRadius: "20px", minWidth: 0, px: 1.5, width: "auto", textTransform: "none" }}
+                            onClick={() => {
+                              setSelectedCliente(cliente);
+                              setDeleteDialogOpen(true);
+                            }}
+                          >
+                            Apagar permanentemente
+                          </Button>
+                        )}
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -296,6 +400,34 @@ export default function ClientManagementTable() {
         </Box>
       </Paper>
       <Notification alert={alert} setAlert={setAlert} />
+      {/* Dialog de confirmação para apagar permanentemente */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle sx={{ fontWeight: "bold" }}>Eliminar cliente permanentemente!</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Tem certeza que deseja eliminar este cliente <strong>de forma permanente?</strong> Esta ação não pode ser desfeita!
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} variant="outlined">
+            Cancelar
+          </Button>
+          <Button
+            onClick={async () => {
+              if (selectedCliente) {
+                // Aqui chama a API para apagar permanentemente (hard delete)
+                await apagarCliente(selectedCliente, true);
+                setDeleteDialogOpen(false);
+                setSelectedCliente(null);
+              }
+            }}
+            color="error"
+            variant="contained"
+          >
+            Confirmar
+          </Button>
+        </DialogActions>
+      </Dialog>
     </>
   );
 }

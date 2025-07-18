@@ -10,7 +10,7 @@ from bson import ObjectId
 @strawberry.type
 class ClienteQuery:
     @strawberry.field
-    async def getClientes(self, info: Info, empresa_id: str, id: str = None, start: int = 0) -> ClienteList:
+    async def getClientes(self, info: Info, empresa_id: str, start: int = 0) -> ClienteList:
 
         lmt = 10  # Limite padrão de resultados por página
 
@@ -22,10 +22,7 @@ class ClienteQuery:
 
         empresa_id = ObjectId(empresa_id)
 
-        if id:
-            filtro = {"_id": ObjectId(id), "isActive": True}
-        else:
-            filtro = {"empresa_id": empresa_id, "isActive": True}
+        filtro = {"empresa_id": empresa_id}
 
         if not jwt.get("isSuperAdmin", False):
             user_empresa = await users_empresas_collection.find_one(
@@ -92,7 +89,6 @@ class ClienteQuery:
 
         filtro = {
             "empresa_id": empresa_id,
-            "isActive": True,
             "nome": {"$regex": nome, "$options": "i"}
         }
 

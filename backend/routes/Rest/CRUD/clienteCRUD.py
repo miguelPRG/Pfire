@@ -63,8 +63,9 @@ async def criar_cliente(cliente: ClienteCreate, request: Request):
 
 
 # Atualizar um cliente
-@routerCliente.put("/{id}")
+@routerCliente.put("/update/{id}")
 async def atualizar_cliente(cliente: ClienteUpdate, request: Request, id: str):
+
     jwt = getattr(request.state, "jwt", None)
     user_id = ObjectId(jwt["user_id"])
     try:
@@ -124,12 +125,41 @@ async def apagar_cliente(cliente: ClienteActivion, request: Request):
 
     return {"message": "Cliente apagado com sucesso!"}
 
+@routerCliente.delete("/hard-delete")
+async def hard_delete_cliente(cliente: ClienteActivion, request: Request):
+    
+    jwt = getattr(request.state, "jwt", None)
+    user_id = ObjectId(jwt["user_id"])
+
+    await validar_recaptcha_token(cliente.recaptchaToken, "delete")
+
+    try:
+        cliente.id = ObjectId(cliente.id)
+        cliente.empresa_id = ObjectId(cliente.empresa_id)
+    except:
+        raise HTTPException(400, detail="ID inválido.")
+
+    if not jwt.get("isSuperAdmin", None):
+        user_empresa = await users_empresas_collection.find_one(
+            {"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True}
+        )
+        if not user_empresa:
+            raise HTTPException(403, detail="Acesso negado! Não tens permissão para apagar clientes nesta empresa.")
+
+    result = await clientes_collection.delete_one({"_id": cliente.id})
+    if not result.deleted_count:
+        raise HTTPException(404, detail="Cliente não encontrado.")
+
+    return {"message": "Cliente apagado com sucesso!"}
 
 # Ativar um cliente
 @routerCliente.put("/activate")
 async def reativar_cliente(cliente: ClienteActivion, request: Request):
     jwt = getattr(request.state, "jwt", None)
     user_id = ObjectId(jwt["user_id"])
+
+    print("Reativando cliente:", cliente)
+
     try:
         cliente.id = ObjectId(cliente.id)
         cliente.empresa_id = ObjectId(cliente.empresa_id)

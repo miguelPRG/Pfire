@@ -108,7 +108,7 @@ export default function AddNewClientPage() {
       console.log("Dados enviados para o backend:", body);
 
       // O backend espera recaptchaToken e empresa_id no corpo
-      const response = await fetch(`/backend/cliente/${dados.id}`, {
+      const response = await fetch(`/backend/cliente/update/${dados.id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -218,7 +218,6 @@ export default function AddNewClientPage() {
           label="NIF"
           error={!!errors.nif}
           helperText={errors.nif?.message}
-          required
           fullWidth
         />
         <TextField

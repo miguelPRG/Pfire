@@ -51,11 +51,6 @@ async def delete_documentos_inativos():
         except Exception as e:
             print(f"[DatabaseCleaner] Erro ao remover utilizador Firebase {uid}: {e}")
 
-    # Crie as tasks obrigatórias
-    tasks = [
-        clientes_collection.delete_many({"isActive": False}),
-        relatorios_collection.delete_many({"isActive": False}),
-    ]
     # Adicione tasks de Firebase se houver uids
     tasks += [delete_firebase_user(uid) for uid in firebase_uids]
     # Adicione tasks de remoção de relações e utilizadores se houver ids
@@ -66,17 +61,10 @@ async def delete_documentos_inativos():
     # Execute tudo em paralelo
     results = await gather(*tasks)
 
-    # Log dos resultados principais
-    cliente_result = results[0]
-    relatorio_result = results[1]
     # Firebase tasks não retornam nada, então os resultados de user_empresa e user estão no final
     user_empresa_result = results[-2] if inactive_user_ids else None
     user_result = results[-1] if inactive_user_ids else None
 
-    if cliente_result.deleted_count > 0:
-        print(f"[DatabaseCleaner] {cliente_result.deleted_count} cliente(s) inativo(s) removido(s).")
-    if relatorio_result.deleted_count > 0:
-        print(f"[DatabaseCleaner] {relatorio_result.deleted_count} relatório(s) inativo(s) removido(s).")
     if user_result and user_result.deleted_count > 0:
         print(f"[DatabaseCleaner] {user_result.deleted_count} utilizador(es) inativo(s) removido(s).")
     if user_empresa_result and user_empresa_result.deleted_count > 0:
