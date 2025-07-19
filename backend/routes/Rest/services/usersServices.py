@@ -469,7 +469,7 @@ async def invite_user_to_empresa(request: Request, user: UserInvitation):
         raise HTTPException(status_code=404, detail="Empresa não encontrada.")
 
     # Se não for super administrador, verificar se o utilizador tem permissão para convidar
-    if not jwt["isSuperAdmin"]:
+    if not jwt.get("isSuperAdmin", False):
         user_empresa = await users_empresas_collection.find_one(
             {"user_id": user_id, "empresa_id": empresa_id, "isAdmin": True}
         )
