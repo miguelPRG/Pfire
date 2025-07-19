@@ -109,9 +109,7 @@ export default function UserManagementTable() {
       ? data?.getUsers?.users || []
       : searchTriggered
         ? searchData?.getUserByName?.users || []
-        : (data?.getUsers?.users || []).filter((row: User) =>
-            row.nome?.toLowerCase().includes(search.toLowerCase())
-          );
+        : (data?.getUsers?.users || []).filter((row: User) => row.nome?.toLowerCase().includes(search.toLowerCase()));
 
   const totalUsers =
     search.trim() === ""

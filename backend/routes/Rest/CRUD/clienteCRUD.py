@@ -125,9 +125,10 @@ async def apagar_cliente(cliente: ClienteActivion, request: Request):
 
     return {"message": "Cliente apagado com sucesso!"}
 
+
 @routerCliente.delete("/hard-delete")
 async def hard_delete_cliente(cliente: ClienteActivion, request: Request):
-    
+
     jwt = getattr(request.state, "jwt", None)
     user_id = ObjectId(jwt["user_id"])
 
@@ -151,6 +152,7 @@ async def hard_delete_cliente(cliente: ClienteActivion, request: Request):
         raise HTTPException(404, detail="Cliente não encontrado.")
 
     return {"message": "Cliente apagado com sucesso!"}
+
 
 # Ativar um cliente
 @routerCliente.put("/activate")

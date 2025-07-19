@@ -137,7 +137,7 @@ class ModelosCamposUpdate(BaseModel):
         None, max_length=100, description="Nome do modelo. Deve ter no máximo 100 caracteres."
     )  # Ex: "extintores", "para-raios", "bocas de incêndio"
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
-    #recaptchaToken: str
+    # recaptchaToken: str
     model_config = ConfigDict(extra="allow")  # Permite campos extras
 
     @field_validator("empresa_id", mode="before")
@@ -153,15 +153,16 @@ class ModelosCamposUpdate(BaseModel):
     @classmethod
     def validate_fields(cls, values):
         if "model_name" in values and isinstance(values["model_name"], str):
-            values["model_name"] = values["model_name"].strip()        
+            values["model_name"] = values["model_name"].strip()
 
-         # Valida todos os campos personalizados no nível principal
+        # Valida todos os campos personalizados no nível principal
         for key, value in values.items():
             if key in MAIN_FIELDS or value is None:
                 continue
             validate_fields(key, value)
 
         return values
+
 
 class ModelosCamposDelete(BaseModel):
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")

@@ -4,10 +4,10 @@ import { useTheme } from "@mui/material/styles";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useAuth } from "../hooks/AuthContext";
+import { useAuth } from "../../../hooks/AuthContext";
 import { useState } from "react";
-import GlobalPhone from "../components/GlobalPhone";
-import validarNIF from "./utils/isValidNIF";
+import GlobalPhone from "../../../components/GlobalPhone";
+import validarNIF from "../../utils/isValidNIF";
 
 declare var grecaptcha: any;
 // Esquema de validação com Zod
@@ -213,13 +213,7 @@ export default function AddNewClientPage() {
           fullWidth
         />
         <GlobalPhone fieldName="telefone" control={control} errors={errors} />
-        <TextField
-          {...register("nif")}
-          label="NIF"
-          error={!!errors.nif}
-          helperText={errors.nif?.message}
-          fullWidth
-        />
+        <TextField {...register("nif")} label="NIF" error={!!errors.nif} helperText={errors.nif?.message} fullWidth />
         <TextField
           {...register("localidade")}
           label="Localidade"

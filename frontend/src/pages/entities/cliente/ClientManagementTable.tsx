@@ -29,7 +29,6 @@ import { useAuth } from "../hooks/AuthContext";
 import Notification from "../components/Notification";
 import LoadingAnimation from "../components/LoadingAnimation";
 
-
 declare var grecaptcha: any;
 
 interface Cliente {
@@ -168,7 +167,9 @@ export default function ClientManagementTable() {
         body: JSON.stringify({
           id: cliente.id,
           empresa_id: empresa?.id,
-          recaptchaToken: await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", { action: "delete" }),
+          recaptchaToken: await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
+            action: "delete",
+          }),
         }),
       });
       const json = await res.json();
@@ -182,9 +183,8 @@ export default function ClientManagementTable() {
 
   // Função para ativar cliente
   const ativarCliente = async (cliente: Cliente) => {
-    
     console.log("Ativando cliente:", cliente);
-    
+
     try {
       const res = await fetch("/backend/cliente/activate", {
         method: "PUT",
@@ -193,7 +193,9 @@ export default function ClientManagementTable() {
         body: JSON.stringify({
           id: cliente.id,
           empresa_id: empresa?.id,
-          recaptchaToken: await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", { action: "activate" }),
+          recaptchaToken: await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
+            action: "activate",
+          }),
         }),
       });
       const json = await res.json();
@@ -296,15 +298,44 @@ export default function ClientManagementTable() {
             <Table>
               <TableHead>
                 <TableRow style={{ backgroundColor }}>
-                  {["nome", "email", "telefone", "nif", "localidade", "morada", "codigoPostal", "estado", ""].map((key) => (
-                    <TableCell
-                      key={key}
-                      onClick={["nome", "email", "telefone", "nif", "localidade", "morada", "codigoPostal", "estado"].includes(key) ? () => handleSort(key as keyof Cliente) : undefined}
-                      sx={{ fontWeight: "bold", cursor: ["nome", "email", "telefone", "nif", "localidade", "morada", "codigoPostal", "estado"].includes(key) ? "pointer" : "default" }}
-                    >
-                      {key === "codigoPostal" ? "Código Postal" : key.toUpperCase()}
-                    </TableCell>
-                  ))}
+                  {["nome", "email", "telefone", "nif", "localidade", "morada", "codigoPostal", "estado", ""].map(
+                    (key) => (
+                      <TableCell
+                        key={key}
+                        onClick={
+                          [
+                            "nome",
+                            "email",
+                            "telefone",
+                            "nif",
+                            "localidade",
+                            "morada",
+                            "codigoPostal",
+                            "estado",
+                          ].includes(key)
+                            ? () => handleSort(key as keyof Cliente)
+                            : undefined
+                        }
+                        sx={{
+                          fontWeight: "bold",
+                          cursor: [
+                            "nome",
+                            "email",
+                            "telefone",
+                            "nif",
+                            "localidade",
+                            "morada",
+                            "codigoPostal",
+                            "estado",
+                          ].includes(key)
+                            ? "pointer"
+                            : "default",
+                        }}
+                      >
+                        {key === "codigoPostal" ? "Código Postal" : key.toUpperCase()}
+                      </TableCell>
+                    )
+                  )}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -405,7 +436,8 @@ export default function ClientManagementTable() {
         <DialogTitle sx={{ fontWeight: "bold" }}>Eliminar cliente permanentemente!</DialogTitle>
         <DialogContent>
           <Typography>
-            Tem certeza que deseja eliminar este cliente <strong>de forma permanente?</strong> Esta ação não pode ser desfeita!
+            Tem certeza que deseja eliminar este cliente <strong>de forma permanente?</strong> Esta ação não pode ser
+            desfeita!
           </Typography>
         </DialogContent>
         <DialogActions>

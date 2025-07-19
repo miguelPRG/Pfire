@@ -37,4 +37,3 @@ export const GET_CLIENTES_BY_NAME = gql`
     }
   }
 `;
-

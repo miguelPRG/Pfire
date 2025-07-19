@@ -4,6 +4,7 @@ from models.modeloCamposModels import ModelosCamposCreate, ModelosCamposUpdate, 
 from database import modelos_collection, users_empresas_collection, empresas_collection
 from bson import ObjectId
 from datetime import datetime
+
 routerModelo = APIRouter(prefix="/modelo", tags=["modelo"])
 
 
@@ -71,8 +72,8 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
 @routerModelo.put("/{id}")
 async def update_modelo(request: Request, modelo: ModelosCamposUpdate, id: str):
     # 1) Validar token reCAPTCHA
-    #await validar_recaptcha_token(modelo.recaptchaToken, "register")
-    
+    # await validar_recaptcha_token(modelo.recaptchaToken, "register")
+
     id = ObjectId(id)
 
     # 2) Extrair payload JWT
@@ -123,7 +124,8 @@ async def update_modelo(request: Request, modelo: ModelosCamposUpdate, id: str):
     if result.modified_count == 0:
         raise HTTPException(status_code=500, detail="Erro ao atualizar o modelo.")
 
-    return {"message": "Modelo atualizado com sucesso!"} 
+    return {"message": "Modelo atualizado com sucesso!"}
+
 
 # Apagar Modelo
 @routerModelo.delete("/")

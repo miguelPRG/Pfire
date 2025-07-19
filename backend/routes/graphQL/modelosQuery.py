@@ -79,10 +79,7 @@ class ModeloQuery:
                     status_code=403, detail="Acesso negado! Não tens permissão para ver modelos nesta empresa."
                 )
 
-        filtro = {
-            "empresa_id": empresa_id,
-            "model_name": {"$regex": nome, "$options": "i"}
-        }
+        filtro = {"empresa_id": empresa_id, "model_name": {"$regex": nome, "$options": "i"}}
 
         modelos = []
         async for modelo in modelos_collection.find(filtro).skip(start).limit(lmt):

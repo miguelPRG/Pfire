@@ -55,10 +55,10 @@ export default function ReportModelListPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [expandedFields, setExpandedFields] = useState<Record<string, boolean>>({});
-  
+
   // Estado para alertas (mensagens de sucesso/erro)
   const [alert, setAlert] = useState<{ message: string; isError: boolean } | null>(null);
-  
+
   const rowsPerPage = 3;
 
   // Atualize o filtro de pesquisa para resetar a página ao pesquisar
@@ -79,7 +79,6 @@ export default function ReportModelListPage() {
   const totalModelos = data?.getModelos?.totalModelos || 0;
   const pageCount = Math.max(1, Math.ceil(totalModelos / rowsPerPage));
 
-
   // useEffect para lidar com mensagens de estado
   useEffect(() => {
     if (location.state?.message || location.state?.reload) {
@@ -90,8 +89,7 @@ export default function ReportModelListPage() {
       window.history.replaceState({}, document.title);
       refetch(); // Recarregar os dados após adicionar/editar modelo
     }
-  }, [location.state, refetch])
-  
+  }, [location.state, refetch]);
 
   // Alterna expansão de campos do tipo objeto
   const toggleExpand = (key: string) => {
@@ -186,9 +184,7 @@ export default function ReportModelListPage() {
   };
 
   const modelos: any[] = data?.getModelos?.modelos || [];
-  const filtered = modelos.filter((m: any) =>
-    m.modelName.toLowerCase().includes(search)
-  );
+  const filtered = modelos.filter((m: any) => m.modelName.toLowerCase().includes(search));
   // NÃO FAÇA SLICE AQUI! Use filtered OU modelos diretamente
 
   // Função para alternar cor de fundo das linhas (efeito zebra)
@@ -216,10 +212,7 @@ export default function ReportModelListPage() {
             <Box sx={{ display: "flex", alignItems: "center" }}>
               <Typography fontSize={12} fontWeight={500} color="primary">
                 {level === 0 ? "Campo" : "Subcampo"}:{" "}
-                {namePrefix
-                  .split(" / ")
-                  [namePrefix.split(" / ").length - 1]
-                  ?.replace(/^custom_/, "")}
+                {namePrefix.split(" / ")[namePrefix.split(" / ").length - 1]?.replace(/^custom_/, "")}
               </Typography>
               {isObject && (
                 <IconButton onClick={() => toggleExpand(currentKey)} size="small" sx={{ ml: "auto" }}>

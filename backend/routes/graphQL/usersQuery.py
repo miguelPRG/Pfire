@@ -11,7 +11,7 @@ from strawberry.types import Info
 class UserQuery:
     @strawberry.field
     async def getUsers(self, info: Info, empresa_id: str, start: int = 0) -> UserList:
-        
+
         lmt = 10  # Limite padrão de resultados por página
 
         if start < 0:
@@ -94,10 +94,7 @@ class UserQuery:
         user_empresas = await user_empresas_cursor.to_list(None)
         user_ids = [ue["user_id"] for ue in user_empresas]
 
-        query = {
-            "_id": {"$in": user_ids},
-            "nome": {"$regex": nome, "$options": "i"}
-        }
+        query = {"_id": {"$in": user_ids}, "nome": {"$regex": nome, "$options": "i"}}
 
         async for user in users_collection.find(query).skip(start).limit(lmt):
             user_empresa = next((ue for ue in user_empresas if ue["user_id"] == user["_id"]), {})

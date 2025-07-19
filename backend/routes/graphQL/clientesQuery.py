@@ -87,10 +87,7 @@ class ClienteQuery:
                     status_code=403, detail="Acesso negado! Não tens permissão para ver clientes nesta empresa."
                 )
 
-        filtro = {
-            "empresa_id": empresa_id,
-            "nome": {"$regex": nome, "$options": "i"}
-        }
+        filtro = {"empresa_id": empresa_id, "nome": {"$regex": nome, "$options": "i"}}
 
         clientes = []
         async for cliente in clientes_collection.find(filtro).skip(start).limit(lmt):

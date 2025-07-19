@@ -21,16 +21,16 @@ function delay<T>(promise: Promise<T>, ms: number = 0): Promise<T> {
 const Login = lazy(() => import("../pages/public/LoginPage"));
 const Register = lazy(() => import("../pages/public/RegisterPage"));
 const Home = lazy(() => import("../pages/HomePage"));
-const UserManagementTable = lazy(() => import("../pages/UserManagementTable"));
-const ClientManagementTable = lazy(() => import("../pages/ClientManagementTable"));
+const UserManagementTable = lazy(() => import("../pages/entities/user/UserManagementTable"));
+const ClientManagementTable = lazy(() => import("../pages/entities/cliente/ClientManagementTable"));
 const EmailOperation = lazy(() => import("./EmailOperation"));
 const NewPassword = lazy(() => import("../pages/public/NewPasswordPage"));
-const AddNewClient = lazy(() => import("../pages/AddNewClientPage"));
+const AddNewClient = lazy(() => import("../pages/entities/cliente/AddNewClientPage"));
 const EditProfilePage = lazy(() => import("../pages/EditProfilePage"));
 const ForgotPasswordPage = lazy(() => import("../pages/public/ForgotPasswordPage"));
 const ChooseCompany = lazy(() => import("../pages/CompanySelectorPage"));
-const ReportModelListPage = lazy(() => import("../pages/ReportModelListPage"));
-const ReportTemplatesPage = lazy(() => import("../pages/ReportTemplatesPage"));
+const ReportModelListPage = lazy(() => import("../pages/entities/modelo/ReportModelListPage"));
+const ReportTemplatesPage = lazy(() => import("../pages/entities/modelo/ReportTemplatesPage"));
 
 // Rotas que podem ser utilizados apenas depois de autenticação
 const ProtectedRoute = ({ element }: { element: ReactElement }) => {

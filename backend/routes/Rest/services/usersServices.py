@@ -294,7 +294,7 @@ async def register_user(data: UserRegister, request: Request):
 
             if "nif" in text:
                 raise HTTPException(status_code=409, detail="O NIF já está registrado.")
-            
+
             if "nome" in text:
                 raise HTTPException(status_code=409, detail="O nome da empresa já está registrado.")
 

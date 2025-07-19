@@ -68,16 +68,15 @@ async def confirm_user(global_id: str, request: Request):
         raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
 
     user_update = users_collection.update_one({"_id": user_id}, {"$set": {"isActive": True}})
-    global_id_data =  global_ids_collection.delete_one({"global_id": global_id})
+    global_id_data = global_ids_collection.delete_one({"global_id": global_id})
 
     user_update, global_id_data = await gather(user_update, global_id_data)
 
     if not user_update.modified_count:
         raise HTTPException(status_code=409, detail="Erro ao ativar o utilizador.")
-    
-    if global_id_data.deleted_count == 0:
-        raise HTTPException(status_code=500, detail="Erro ao remover o global ID após ativação.")    
 
+    if global_id_data.deleted_count == 0:
+        raise HTTPException(status_code=500, detail="Erro ao remover o global ID após ativação.")
 
     return {"message": "Utilizador ativado com sucesso!"}
 
@@ -111,7 +110,7 @@ async def reset_password(request: Request, user: UserChangePassword):
 
     if not user_update.modified_count:
         raise HTTPException(status_code=409, detail="Erro ao atualizar a password do utilizador.")
-    
+
     if global_id_deelete.deleted_count == 0:
         raise HTTPException(status_code=500, detail="Erro ao remover o global ID após atualização da password.")
 
@@ -149,7 +148,7 @@ async def accept_invite(global_id: str, request: Request):
     user_empresa_insertion = users_empresas_collection.insert_one(user_empresa_data)
     global_delete = global_ids_collection.delete_one({"global_id": global_id})
 
-    user_empresa, global_delete = await gather(user_empresa_insertion,global_delete)
+    user_empresa, global_delete = await gather(user_empresa_insertion, global_delete)
 
     if not user_empresa.inserted_id:
         raise HTTPException(status_code=500, detail="Erro ao aceitar o convite.")

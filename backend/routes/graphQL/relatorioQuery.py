@@ -10,14 +10,12 @@ from bson import ObjectId
 @strawberry.type
 class RelatorioQuery:
     @strawberry.field
-    async def getRelatorios(
-        self, info: Info, empresa_id: str, id: str = None, start: int = 0) -> RelatorioList:
-
+    async def getRelatorios(self, info: Info, empresa_id: str, id: str = None, start: int = 0) -> RelatorioList:
 
         empresa_id = ObjectId(empresa_id)
 
         lmt = 10  # Limite padrão de resultados por página
-        
+
         if start < 0:
             start = 0
 
@@ -75,10 +73,7 @@ class RelatorioQuery:
         jwt = getattr(request.state, "jwt", None)
         empresa_id = ObjectId(empresa_id)
 
-        filtro = {
-            "empresa_id": empresa_id,
-            "nome": {"$regex": nome, "$options": "i"}
-        }
+        filtro = {"empresa_id": empresa_id, "nome": {"$regex": nome, "$options": "i"}}
 
         if not jwt.get("isSuperAdmin", False):
             user_empresa = await users_empresas_collection.find_one(

@@ -128,7 +128,6 @@ app.include_router(relatorioCRUD.routerRelatorio)
 app.include_router(graphql_router, prefix="/graphql")
 
 
-
 @app.get("/")
 async def root(request: Request):
     """Rota de teste que retorna os dados do usuário autenticado"""

@@ -1,17 +1,8 @@
-import { useEffect, useLayoutEffect, useState } from "react";
-import {
-  Button,
-  Paper,
-  Typography,
-  Box,
-  Grid,
-  Pagination,
-  TextField,
-  InputAdornment,
-} from "@mui/material";
+import { useEffect, useLayoutEffect, useState, useRef } from "react";
+import { Button, Paper, Typography, Box, Grid, Pagination, TextField, InputAdornment } from "@mui/material";
 import { Search } from "@mui/icons-material";
 import { useQuery, useLazyQuery } from "@apollo/client";
-import { GET_EMPRESAS, GET_EMPRESAS_BY_NAME } from "../graphql/empresasqueries";
+import { GET_EMPRESAS } from "../graphql/empresasqueries";
 import { useAuth } from "../hooks/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
@@ -31,70 +22,59 @@ interface Empresa {
 
 export default function CompanySelectorPage() {
   const [search, setSearch] = useState("");
-  const [searchTriggered, setSearchTriggered] = useState(false);
   const [page, setPage] = useState(0);
   const rowsPerPage = 6;
 
+  // Consulta inicial (sem filtro de nome)
   const { data, loading, error } = useQuery(GET_EMPRESAS, {
-    fetchPolicy: "cache-and-network",
-    notifyOnNetworkStatusChange: true,
+    fetchPolicy: "cache-first",
     variables: { start: page * rowsPerPage },
   });
 
-  const [getEmpresasByName, { data: searchData }] = useLazyQuery(GET_EMPRESAS_BY_NAME, {
-    fetchPolicy: "cache-and-network",
-    notifyOnNetworkStatusChange: true,
+  // Consulta remota para pesquisa
+  const [fetchEmpresas, { data: searchData, loading: searchLoading }] = useLazyQuery(GET_EMPRESAS, {
+    fetchPolicy: "network-only",
   });
 
+  // Empresas do cache inicial
+  const cachedEmpresas: Empresa[] = data?.getEmpresas?.empresas || [];
+
+  // Empresas do resultado da pesquisa remota
+  const remoteEmpresas: Empresa[] = searchData?.getEmpresas?.empresas || [];
+
+  // Decide qual lista mostrar
+  let empresas: Empresa[] = cachedEmpresas.filter((row: Empresa) =>
+    row.nome?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Se não encontrou localmente e search não está vazio, faz consulta remota
   useEffect(() => {
-    if (search.trim() === "") {
-      setSearchTriggered(false);
-      return;
-    }
-    const localResults = (data?.getEmpresas?.empresas || []).filter((row: Empresa) =>
-      row.nome?.toLowerCase().includes(search.toLowerCase())
-    );
-    if (localResults.length === 0) {
-      getEmpresasByName({
-        variables: { nome: search, start: 0 },
+    if (search && empresas.length === 0) {
+      fetchEmpresas({ variables: { name: search, start: 0 } }).then(() => {
+        // Após consulta, devolve o foco ao campo de pesquisa
+        searchInputRef.current?.focus();
       });
-      setSearchTriggered(true);
-    } else {
-      setSearchTriggered(false);
     }
-  }, [search, data, getEmpresasByName]);
+    // eslint-disable-next-line
+  }, [search]);
 
-  const empresas: Empresa[] =
-    search.trim() === ""
-      ? data?.getEmpresas?.empresas || []
-      : searchTriggered
-        ? searchData?.getEmpresaByName?.empresas || []
-        : (data?.getEmpresas?.empresas || []).filter((row: Empresa) =>
-            row.nome?.toLowerCase().includes(search.toLowerCase())
-          );
+  // Se houver resultado remoto, filtra também pelo texto pesquisado
+  if (search && empresas.length === 0 && remoteEmpresas.length > 0) {
+    empresas = remoteEmpresas.filter((row: Empresa) => row.nome?.toLowerCase().includes(search.toLowerCase()));
+  }
 
-  const totalEmpresas =
-    search.trim() === ""
-      ? data?.getEmpresas?.totalEmpresas || 0
-      : searchTriggered
-        ? searchData?.getEmpresaByName?.totalEmpresas || 0
-        : empresas.length;
-
+  const totalEmpresas = data?.getEmpresas?.totalEmpresas || 0;
   const pageCount = Math.ceil(totalEmpresas / rowsPerPage);
-  const isLoadingFresh = loading || data?.networkStatus === 3;
+
+  const isLoadingFresh = loading || searchLoading;
 
   const { chooseCompany } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // UseLayoutEffect para verificar qual empresa foi selecionada pelo user, caso esteja esteja guardada no localStorage
   useLayoutEffect(() => {
-
-    console.log("Data de empresas:", data);
-
     if (data?.getEmpresas?.empresas) {
-      console.log("Empresas obtidas: ", data.empresas);
-
       const empresaId = localStorage.getItem("empresaId");
       if (empresaId) {
         const sel = data.getEmpresas.empresas.find((e: Empresa) => e.id === empresaId);
@@ -108,12 +88,10 @@ export default function CompanySelectorPage() {
   if (isLoadingFresh) return <LoadingAnimation />;
   if (error) return <Typography>Erro ao carregar empresas: {error.message}</Typography>;
 
-
   const handleSelect = (emp: Empresa) => {
     chooseCompany({ ...emp, logo: emp.logo ?? "" });
     navigate("/");
   };
-  
 
   return (
     <>
@@ -125,44 +103,37 @@ export default function CompanySelectorPage() {
             </Typography>
           </Box>
           <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    mb: 2,
-                    gap: 2,
-                  }}
-                >
-                  <TextField
-                    variant="outlined"
-                    size="small"
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Pesquisar por nome"
-                    slotProps={{
-                      input: {
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <Search sx={{ color: theme.palette.primary.main }} />
-                          </InputAdornment>
-                        ),
-                      },
-                    }}
-                    sx={{
-                      width: "75%",
-                      mt: 1,
-                    }}
-                  />
-                </Box>
-          <Grid
-            container
-            spacing={3}
-            alignItems="stretch"
-            justifyContent="center"
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              mb: 2,
+              gap: 2,
+            }}
           >
+            <TextField
+              variant="outlined"
+              size="small"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Pesquisar por nome"
+              inputRef={searchInputRef}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search sx={{ color: theme.palette.primary.main }} />
+                  </InputAdornment>
+                ),
+              }}
+              sx={{
+                width: "75%",
+                mt: 1,
+              }}
+            />
+          </Box>
+          <Grid container spacing={3} alignItems="stretch" justifyContent="center">
             {empresas.map((emp) => {
               const isSelected = emp.id === localStorage.getItem("empresaId");
-              const gridSizes =
-                empresas.length > 1 ? { xs: 12, sm: 6, md: 4 } : { xs: 12 };
+              const gridSizes = empresas.length > 1 ? { xs: 12, sm: 6, md: 4 } : { xs: 12 };
               return (
                 <Grid {...gridSizes} key={emp.id}>
                   <Paper
@@ -182,9 +153,7 @@ export default function CompanySelectorPage() {
                           : "#f3fef8"
                         : theme.palette.background.paper,
                       color: theme.palette.text.primary,
-                      border: isSelected
-                        ? "2px solid #2e7d32"
-                        : "1px solid #e0e0e0",
+                      border: isSelected ? "2px solid #2e7d32" : "1px solid #e0e0e0",
                       transition: "transform 0.2s ease",
                       "&:hover": { transform: "scale(1.01)" },
                     }}
@@ -205,14 +174,7 @@ export default function CompanySelectorPage() {
                       />
                     )}
 
-                    <Box
-                      display="flex"
-                      flexDirection="column"
-                      textAlign="center"
-                      gap={0.5}
-                      mt={3}
-                      width="100%"
-                    >
+                    <Box display="flex" flexDirection="column" textAlign="center" gap={0.5} mt={3} width="100%">
                       <Typography variant="h3" gutterBottom mb={5}>
                         {emp.nome}
                       </Typography>
@@ -243,9 +205,7 @@ export default function CompanySelectorPage() {
                         fontSize: { xs: "0.95rem", sm: "1rem" },
                       }}
                     >
-                      {isSelected
-                        ? "Empresa selecionada"
-                        : "Gerenciar esta empresa"}
+                      {isSelected ? "Empresa selecionada" : "Gerenciar esta empresa"}
                     </Button>
                   </Paper>
                 </Grid>
@@ -254,16 +214,16 @@ export default function CompanySelectorPage() {
           </Grid>
 
           {pageCount > 1 && (
-          <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-            <Pagination
-              count={pageCount}
-              page={page + 1}
-              onChange={(_, value) => setPage(value - 1)}
-              color="primary"
-              showFirstButton
-              showLastButton
-            />
-          </Box>
+            <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+              <Pagination
+                count={pageCount}
+                page={page + 1}
+                onChange={(_, value) => setPage(value - 1)}
+                color="primary"
+                showFirstButton
+                showLastButton
+              />
+            </Box>
           )}
         </Paper>
       </Box>
