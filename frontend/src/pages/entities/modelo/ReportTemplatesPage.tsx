@@ -20,7 +20,7 @@ import {
 } from "@mui/material"; // Componentes de UI do Material UI
 import DeleteIcon from "@mui/icons-material/Delete"; // Ícone de deletar
 import { useState, useEffect } from "react"; // Hooks do React
-import { useAuth } from "../hooks/AuthContext"; // Contexto de autenticação
+import { useAuth } from "../../../hooks/AuthContext"; // Contexto de autenticação
 import { useTheme } from "@mui/material/styles"; // Tema do Material UI
 import ArrowCircleUpIcon from "@mui/icons-material/ArrowCircleUp"; // Ícone de scroll para o topo
 

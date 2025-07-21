@@ -25,54 +25,42 @@ export default function CompanySelectorPage() {
   const [page, setPage] = useState(0);
   const rowsPerPage = 6;
 
-  // Consulta inicial (sem filtro de nome)
-  const { data, loading, error } = useQuery(GET_EMPRESAS, {
+  // Consulta inicial (cache/página)
+  const { data, error, loading } = useQuery(GET_EMPRESAS, {
     fetchPolicy: "cache-first",
     variables: { start: page * rowsPerPage },
   });
 
-  // Consulta remota para pesquisa
-  const [fetchEmpresas, { data: searchData, loading: searchLoading }] = useLazyQuery(GET_EMPRESAS, {
-    fetchPolicy: "network-only",
+  // Pesquisa remota por nome
+  const [fetchEmpresas, { data: searchData }] = useLazyQuery(GET_EMPRESAS, {
+    fetchPolicy: "cache-first",
   });
-
-  // Empresas do cache inicial
-  const cachedEmpresas: Empresa[] = data?.getEmpresas?.empresas || [];
-
-  // Empresas do resultado da pesquisa remota
-  const remoteEmpresas: Empresa[] = searchData?.getEmpresas?.empresas || [];
-
-  // Decide qual lista mostrar
-  let empresas: Empresa[] = cachedEmpresas.filter((row: Empresa) =>
-    row.nome?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  // Se não encontrou localmente e search não está vazio, faz consulta remota
-  useEffect(() => {
-    if (search && empresas.length === 0) {
-      fetchEmpresas({ variables: { name: search, start: 0 } }).then(() => {
-        // Após consulta, devolve o foco ao campo de pesquisa
-        searchInputRef.current?.focus();
-      });
-    }
-    // eslint-disable-next-line
-  }, [search]);
-
-  // Se houver resultado remoto, filtra também pelo texto pesquisado
-  if (search && empresas.length === 0 && remoteEmpresas.length > 0) {
-    empresas = remoteEmpresas.filter((row: Empresa) => row.nome?.toLowerCase().includes(search.toLowerCase()));
-  }
-
-  const totalEmpresas = data?.getEmpresas?.totalEmpresas || 0;
-  const pageCount = Math.ceil(totalEmpresas / rowsPerPage);
-
-  const isLoadingFresh = loading || searchLoading;
 
   const { chooseCompany } = useAuth();
   const navigate = useNavigate();
   const theme = useTheme();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // Dispara busca remota se search não está vazio
+  useEffect(() => {
+    if (search) {
+      fetchEmpresas({ variables: { name: search } });
+    }
+    // eslint-disable-next-line
+  }, [search]);
+
+  // Decide qual fonte de dados usar. Se o search estiver vazio, usa os dados da consulta inicial; caso contrário, usa os dados da pesquisa.
+  const empresas: Empresa[] = search
+    ? searchData?.getEmpresas?.empresas || []
+    : data?.getEmpresas?.empresas || [];
+
+  const totalEmpresas: number = search
+    ? searchData?.getEmpresas?.totalEmpresas || 0
+    : data?.getEmpresas?.totalEmpresas || 0;
+
+  const pageCount = Math.ceil(totalEmpresas / rowsPerPage);
+
+  // Este useLayoutEffect garante que, se uma empresa já estiver selecionada (armazenada no localStorage), ela será escolhida automaticamente ao carregar a página.
   useLayoutEffect(() => {
     if (data?.getEmpresas?.empresas) {
       const empresaId = localStorage.getItem("empresaId");
@@ -85,7 +73,7 @@ export default function CompanySelectorPage() {
     }
   }, [data]);
 
-  if (isLoadingFresh) return <LoadingAnimation />;
+  if (loading) return <LoadingAnimation />;
   if (error) return <Typography>Erro ao carregar empresas: {error.message}</Typography>;
 
   const handleSelect = (emp: Empresa) => {
@@ -114,7 +102,10 @@ export default function CompanySelectorPage() {
               variant="outlined"
               size="small"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(0); // Volta para a primeira página ao pesquisar
+              }}
               placeholder="Pesquisar por nome"
               inputRef={searchInputRef}
               InputProps={{

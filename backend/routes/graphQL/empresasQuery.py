@@ -12,7 +12,7 @@ from base64 import b64encode  # Importa o módulo base64 para conversão
 class EmpresaQuery:
     @strawberry.field
     async def getEmpresas(
-        self, info: Info, id: str = None, start: int = 0, name: str = "", nif: str = ""
+        self, info: Info, id: str = None, start: int = 0, name: str = None, nif: str = None
     ) -> EmpresaList:
         request = info.context["request"]
         jwt = getattr(request.state, "jwt", None)

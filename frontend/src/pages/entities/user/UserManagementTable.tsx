@@ -23,12 +23,13 @@ import {
 import { Search, Delete } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { useQuery, useLazyQuery } from "@apollo/client";
-import { GET_USERS, GET_USERS_BY_NAME } from "../graphql/usersqueries";
-import { useAuth } from "../hooks/AuthContext";
+import { GET_USERS } from "../../../graphql/usersqueries";
+import { useAuth } from "../../../hooks/AuthContext";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
-import Notification from "../components/Notification";
-import LoadingAnimation from "../components/LoadingAnimation";
+import { zodResolver } from "@hookform/resolvers/zod";
+import Notification from "../../../components/Notification";
+import LoadingAnimation from "../../../components/LoadingAnimation";
 
 declare var grecaptcha: any;
 
@@ -47,14 +48,13 @@ interface User {
 }
 
 const inviteSchema = z.object({
-  email: z.email("Email inválido"),
+  email: z.string().email("Email inválido"),
 });
 
 export default function UserManagementTable() {
   const theme = useTheme();
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
-  const [searchTriggered, setSearchTriggered] = useState(false);
   const [orderBy, setOrderBy] = useState<keyof User | null>(null);
   const [order, setOrder] = useState<"asc" | "desc">("asc");
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -63,104 +63,47 @@ export default function UserManagementTable() {
   const { empresa, user } = useAuth();
   const [alert, setAlert] = useState<null | { message: string; isError: boolean }>(null);
   const rowsPerPage = 10;
-  // useForm para o popup
+
+  // React Hook Form para o convite
   const {
     register,
     handleSubmit,
     reset,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<{ email: string }>({ defaultValues: { email: "" } });
+  } = useForm<{ email: string }>({
+    resolver: zodResolver(inviteSchema),
+  });
 
+  // Consulta inicial (cache/página)
   const { data, loading, error, refetch } = useQuery(GET_USERS, {
-    variables: { empresaId: empresa?.id, start: page * rowsPerPage },
-    fetchPolicy: "cache-and-network",
-    notifyOnNetworkStatusChange: true,
+    variables: { empresaId: empresa?.id, start: page * rowsPerPage, name: search || undefined },
+    fetchPolicy: "cache-first",
   });
 
-  // Lazy query para pesquisa remota
-  const [getUsersByName, { data: searchData }] = useLazyQuery(GET_USERS_BY_NAME, {
-    fetchPolicy: "cache-and-network",
-    notifyOnNetworkStatusChange: true,
+  // Pesquisa remota por nome
+  const [getUsersByName, { data: searchData }] = useLazyQuery(GET_USERS, {
+    fetchPolicy: "cache-first",
   });
 
-  // Pesquisa local/remota
+  // Dispara busca remota se search não está vazio
   useEffect(() => {
-    if (search.trim() === "") {
-      setSearchTriggered(false);
-      return;
+    if (search) {
+      getUsersByName({ variables: { empresaId: empresa?.id, name: search, start: page * rowsPerPage } });
     }
-    const localResults = (data?.getUsers?.users || []).filter((row: User) =>
-      row.nome?.toLowerCase().includes(search.toLowerCase())
-    );
-    if (localResults.length === 0) {
-      getUsersByName({
-        variables: { empresaId: empresa?.id, nome: search, start: 0 },
-      });
-      setSearchTriggered(true);
-    } else {
-      setSearchTriggered(false);
-    }
-  }, [search, data, empresa?.id, getUsersByName]);
+    // eslint-disable-next-line
+  }, [search, page, empresa]);
 
-  // Decide que dados mostrar
-  const users: User[] =
-    search.trim() === ""
-      ? data?.getUsers?.users || []
-      : searchTriggered
-        ? searchData?.getUserByName?.users || []
-        : (data?.getUsers?.users || []).filter((row: User) => row.nome?.toLowerCase().includes(search.toLowerCase()));
+  // Decide qual fonte de dados usar
+  const users: User[] = search
+    ? searchData?.getUsers?.users || []
+    : data?.getUsers?.users || [];
 
-  const totalUsers =
-    search.trim() === ""
-      ? data?.getUsers?.totalUsers || 0
-      : searchTriggered
-        ? searchData?.getUserByName?.totalUsers || 0
-        : users.length;
-
-  const isLoadingFresh = loading || data?.networkStatus === 3;
-
-  if (isLoadingFresh) return <LoadingAnimation />;
-  if (error) return <Typography>Erro ao carregar utilizadores: {error.message}</Typography>;
+  const totalUsers: number = search
+    ? searchData?.getUsers?.totalUsers || 0
+    : data?.getUsers?.totalUsers || 0;
 
   const pageCount = Math.ceil(totalUsers / rowsPerPage);
-
-  console.log("Dados dos utilizadores:", users);
-
-  const handleToggleStatus = async (user: User) => {
-    const action = user.isActive ? "delete" : "activate";
-    const url = user.isActive ? "/backend/user" : "/backend/user/activate";
-    const method = user.isActive ? "DELETE" : "PUT";
-
-    try {
-      const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-        action,
-      });
-
-      const res = await fetch(url, {
-        method,
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          id: user.id,
-          email: user.email,
-          recaptchaToken,
-        }),
-      });
-
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.detail || "Erro ao atualizar status.");
-      console.log(user);
-
-      if (method === "DELETE") {
-        await refetch();
-      }
-    } catch (error) {
-      console.error("Erro no handleToggleStatus:", error);
-    }
-  };
 
   const handleToggleAdmin = async (user: User) => {
     const isAdmin = user.isAdmin;
@@ -208,7 +151,6 @@ export default function UserManagementTable() {
   };
 
   const sortedRows = [...users]
-    .filter((u) => u.nome.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => {
       if (!orderBy) return 0;
       return order === "asc"

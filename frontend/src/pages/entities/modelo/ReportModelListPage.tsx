@@ -1,9 +1,8 @@
 // Importa hooks e componentes do Apollo Client e Material UI
-import { useQuery } from "@apollo/client";
+import { useQuery, useLazyQuery } from "@apollo/client";
 import {
   Box,
   Button,
-  CircularProgress,
   Pagination,
   Paper,
   Table,
@@ -24,9 +23,10 @@ import { ExpandLess, ExpandMore, Search, Delete, ContentCopy as ContentCopyIcon 
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
-import { GET_MODELOS_RELATORIOS } from "../graphql/reportmodelsqueries";
-import { useAuth } from "../hooks/AuthContext";
-import Notification from "../components/Notification";
+import { GET_MODELOS_RELATORIOS } from "../../../graphql/reportmodelsqueries";
+import { useAuth } from "../../../hooks/AuthContext";
+import Notification from "../../../components/Notification";
+import LoadingAnimation from "../../../components/LoadingAnimation";
 
 // Função utilitária para formatar tipos de campos
 const formatType = (type: string) => {
@@ -53,30 +53,41 @@ export default function ReportModelListPage() {
 
   // Estado para pesquisa, paginação e campos expandidos
   const [search, setSearch] = useState("");
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(0);
   const [expandedFields, setExpandedFields] = useState<Record<string, boolean>>({});
-
-  // Estado para alertas (mensagens de sucesso/erro)
   const [alert, setAlert] = useState<{ message: string; isError: boolean } | null>(null);
 
   const rowsPerPage = 3;
 
-  // Atualize o filtro de pesquisa para resetar a página ao pesquisar
-  /*
-  useEffect(() => {
-    setPage(0);
-  }, [search]);
-  */
-
-  // Certifique-se de que pageCount nunca é menor que 1
+  // Consulta inicial (cache/página)
   const { data, loading, error, refetch } = useQuery(GET_MODELOS_RELATORIOS, {
     variables: { empresaId: empresa?.id, start: page * rowsPerPage },
     skip: !empresa,
-    fetchPolicy: "cache-and-network",
-    notifyOnNetworkStatusChange: true,
+    fetchPolicy: "cache-first",
   });
 
-  const totalModelos = data?.getModelos?.totalModelos || 0;
+  // Pesquisa remota por nome
+  const [getModelosByName, { data: searchData }] = useLazyQuery(GET_MODELOS_RELATORIOS, {
+    fetchPolicy: "cache-first",
+  });
+
+  // Dispara busca remota se search não está vazio
+  useEffect(() => {
+    if (search) {
+      getModelosByName({ variables: { empresaId: empresa?.id, name: search, start: page * rowsPerPage } });
+    }
+    // eslint-disable-next-line
+  }, [search, page, empresa]);
+
+  // Decide qual fonte de dados usar
+  const modelos: any[] = search
+    ? searchData?.getModelos?.modelos || []
+    : data?.getModelos?.modelos || [];
+
+  const totalModelos: number = search
+    ? searchData?.getModelos?.totalModelos || 0
+    : data?.getModelos?.totalModelos || 0;
+
   const pageCount = Math.max(1, Math.ceil(totalModelos / rowsPerPage));
 
   // useEffect para lidar com mensagens de estado
@@ -183,10 +194,6 @@ export default function ReportModelListPage() {
     }
   };
 
-  const modelos: any[] = data?.getModelos?.modelos || [];
-  const filtered = modelos.filter((m: any) => m.modelName.toLowerCase().includes(search));
-  // NÃO FAÇA SLICE AQUI! Use filtered OU modelos diretamente
-
   // Função para alternar cor de fundo das linhas (efeito zebra)
   const zebraColor = (index: number) =>
     theme.palette.mode === "dark" ? (index % 2 === 0 ? "#252525" : "#1d1d1d") : index % 2 === 0 ? "#f5f5f5" : "#e0e0e0";
@@ -244,9 +251,7 @@ export default function ReportModelListPage() {
     );
   };
 
-  const isLoadingFresh = loading || data?.networkStatus === 3;
-
-  if (isLoadingFresh) return <CircularProgress />;
+  if (loading) return <LoadingAnimation />;
   if (error) return <Typography color="error">Erro ao carregar modelos: {error.message}</Typography>;
 
   return (
@@ -318,7 +323,7 @@ export default function ReportModelListPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {(search ? filtered : modelos).map((modelo: any, i: number) => (
+              {modelos.map((modelo: any, i: number) => (
                 <TableRow key={modelo.id} sx={{ backgroundColor: zebraColor(i) }}>
                   <TableCell>
                     <Link

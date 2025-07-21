@@ -10,7 +10,6 @@ import {
   Paper,
   Box,
   Pagination,
-  TableSortLabel,
   TextField,
   Typography,
   Button,
@@ -23,11 +22,11 @@ import {
 } from "@mui/material";
 import { Search } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
-import { GET_CLIENTES_BY_EMPRESA, GET_CLIENTES_BY_NAME } from "../graphql/clientesqueries";
+import { GET_CLIENTES_BY_EMPRESA } from "../../../graphql/clientesqueries";
 import { useTheme } from "@mui/material/styles";
-import { useAuth } from "../hooks/AuthContext";
-import Notification from "../components/Notification";
-import LoadingAnimation from "../components/LoadingAnimation";
+import { useAuth } from "../../../hooks/AuthContext";
+import Notification from "../../../components/Notification";
+import LoadingAnimation from "../../../components/LoadingAnimation";
 
 declare var grecaptcha: any;
 
@@ -47,7 +46,6 @@ export default function ClientManagementTable() {
   // Todos os hooks no topo!
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState("");
-  const [searchTriggered, setSearchTriggered] = useState(false);
   const [orderBy, setOrderBy] = useState<keyof Cliente | null>(null);
   const [order, setOrder] = useState<"asc" | "desc">("asc");
   const [alert, setAlert] = useState<null | { message: string; isError: boolean }>(null);
@@ -60,19 +58,16 @@ export default function ClientManagementTable() {
   const location = useLocation();
   const { empresa } = useAuth();
 
-  const { data, loading, error, refetch } = useQuery(GET_CLIENTES_BY_EMPRESA, {
+  // Consulta inicial (cache)
+  const { data, loading, error , refetch } = useQuery(GET_CLIENTES_BY_EMPRESA, {
     variables: { empresaId: empresa?.id, start: page * rowsPerPage },
-    fetchPolicy: "cache-and-network",
-    notifyOnNetworkStatusChange: true,
+    fetchPolicy: "cache-first",
   });
 
-  // Esta consulta é lazy e será utilizada apenas caso o cliente pesuise por um cliente que não está na página atual
-  const [getClientesByName, { data: searchData }] = useLazyQuery(GET_CLIENTES_BY_NAME, {
-    fetchPolicy: "cache-and-network",
-    notifyOnNetworkStatusChange: true,
+  // Consulta remota para pesquisa
+  const [getClientesByName, { data: searchData, loading: searchLoading }] = useLazyQuery(GET_CLIENTES_BY_EMPRESA, {
+    fetchPolicy: "network-only",
   });
-
-  const isLoadingFresh = loading || data?.networkStatus === 3;
 
   useEffect(() => {
     if (location.state?.message) {
@@ -81,53 +76,38 @@ export default function ClientManagementTable() {
         isError: location.state.message.error,
       });
       window.history.replaceState({}, document.title);
-      refetch();
     }
-  }, [location.state, refetch]);
+  }, [location.state]);
 
-  // Pesquisa local primeiro, se não encontrar, pesquisa na base de dados
+  // Clientes do cache inicial
+  const cachedClientes: Cliente[] = data?.getClientes?.clientes || [];
+
+  // Clientes do resultado da pesquisa remota
+  const remoteClientes: Cliente[] = searchData?.getClientes?.clientes || [];
+
+  // Decide qual lista mostrar
+  let clientes: Cliente[] = cachedClientes.filter((row: Cliente) =>
+    row.nome?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // Se não encontrou localmente e search não está vazio, faz consulta remota
   useEffect(() => {
-    if (search.trim() === "") {
-      setSearchTriggered(false);
-      return;
+    if (search && clientes.length === 0) {
+      getClientesByName({ variables: { empresaId: empresa?.id, nome: search, start: 0 } });
     }
+    // eslint-disable-next-line
+  }, [search]);
 
-    // Pesquisa local
-    const localResults = (data?.getClientes?.clientes || []).filter((row: Cliente) =>
-      row.nome?.toLowerCase().includes(search.toLowerCase())
-    );
+  // Se houver resultado remoto, filtra também pelo texto pesquisado
+  if (search && clientes.length === 0 && remoteClientes.length > 0) {
+    clientes = remoteClientes.filter((row: Cliente) => row.nome?.toLowerCase().includes(search.toLowerCase()));
+  }
 
-    if (localResults.length === 0) {
-      // Pesquisa remota
-      getClientesByName({
-        variables: { empresaId: empresa?.id, nome: search, start: 0 },
-      });
-      setSearchTriggered(true);
-    } else {
-      setSearchTriggered(false);
-    }
-  }, [search, data, empresa?.id, getClientesByName]);
-
-  // Só retorna depois de todos os hooks
-  if (isLoadingFresh) return <LoadingAnimation />;
-  if (error) return <Typography>Erro ao carregar clientes: {error.message}</Typography>;
-
-  // Decide que dados mostrar
-  const rows: Cliente[] =
-    search.trim() === ""
-      ? data?.getClientes?.clientes || []
-      : searchTriggered
-        ? searchData?.getClienteByName?.clientes || []
-        : (data?.getClientes?.clientes || []).filter((row: Cliente) =>
-            row.nome?.toLowerCase().includes(search.toLowerCase())
-          );
-
+  // Decide o total de clientes para paginação
   const totalClientes =
-    search.trim() === ""
-      ? data?.getClientes?.totalClientes || 0
-      : searchTriggered
-        ? searchData?.getClienteByName?.totalClientes || 0
-        : rows.length;
+    search && clientes.length === 0 && searchData?.getClientes?.totalClientes
+      ? searchData.getClientes.totalClientes
+      : data?.getClientes?.totalClientes || 0;
 
   const pageCount = Math.ceil(totalClientes / rowsPerPage);
 
@@ -141,7 +121,7 @@ export default function ClientManagementTable() {
 
   const backgroundColor = theme.palette.mode === "dark" ? "rgb(12,12,12)" : "#f0f0f0";
 
-  const filteredRows = rows
+  const filteredRows = clientes
     .filter((row) => row.nome?.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => {
       if (!orderBy) return 0;
@@ -206,6 +186,9 @@ export default function ClientManagementTable() {
       setAlert({ message: err.message || "Erro ao ativar cliente.", isError: true });
     }
   };
+
+  if (loading || searchLoading) return <LoadingAnimation />;
+  if (error) return <Typography>Erro ao carregar clientes: {error.message}</Typography>;
 
   return (
     <>
