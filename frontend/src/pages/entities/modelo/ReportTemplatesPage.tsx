@@ -36,6 +36,7 @@ const fieldSchema = z.object({
   name: z.string().min(1, "Nome do subcampo é obrigatório").trim(),
   datatype: z.string().min(1, "Tipo de dados é obrigatório").trim(),
   required: z.boolean(),
+  items: z.array(z.string().min(1, "Item do array é obrigatório").trim()).optional(),
   subfields: z.array(subfieldSchema).optional(),
 });
 
@@ -119,13 +120,14 @@ export default function ReportTemplatePage() {
 
   // Hook do formulário com valores padrão se estiver editando
   const {
-    register, // Registra campos do formulário
-    handleSubmit, // Handler para submissão
-    control, // Controle para campos dinâmicos
-    formState: { errors }, // Erros de validação
-    reset, // Função para resetar o formulário
+    register, 
+    handleSubmit,
+    control,
+    formState: { errors },
+    reset,
+    watch, 
   } = useForm<FormSchema>({
-    resolver: zodResolver(formSchema), // Usa o Zod para validação
+    resolver: zodResolver(formSchema),
     defaultValues: isEditing
       ? {
           modelName: editingModel.modelName,
@@ -136,6 +138,9 @@ export default function ReportTemplatePage() {
           fields: [],
         },
   });
+
+  /* Aqui é onde utilizamos o watch para monitorar o nome dos campos dinâmicos, permitindo atualizações em tempo real nos formulários filhos, caso se trate de um campo do tipo object ou array */
+  const watchedFields = watch("fields");
 
   // Hook para manipular array de campos dinâmicos (adicionar, remover, atualizar)
   const { fields, append, remove, update } = useFieldArray({
@@ -184,14 +189,7 @@ export default function ReportTemplatePage() {
       }
     }
   };
-
-  /**
-   * Handler para submissão do formulário.
-   * - Executa o reCAPTCHA.
-   * - Monta o payload para o backend.
-   * - Faz a requisição POST/PUT para criar/atualizar o modelo.
-   * - Exibe alertas de sucesso ou erro.
-   */
+  
   const onSubmit = async (data: FormSchema) => {
     try {
       // Executa o reCAPTCHA Enterprise
@@ -215,6 +213,12 @@ export default function ReportTemplatePage() {
             required: f.required,
             ...subfieldData,
           };
+        } else if (f?.datatype === "array" && Array.isArray(f.items)) {
+          customFields[`custom_${f.name}`] = {
+            datatype: f.datatype,
+            required: f.required,
+            items: f.items,
+          };
         } else {
           customFields[`custom_${f?.name}`] = {
             datatype: f?.datatype,
@@ -234,12 +238,15 @@ export default function ReportTemplatePage() {
         empresa_id: typeof empresa === "object" ? empresa?.id : empresa,
         recaptchaToken,
         ...customFields,
+        
       };
 
       // Usa PUT para edição ou POST para criação
       const method = isEditing ? "PUT" : "POST";
       const url = isEditing ? `/backend/modelo/${editingModel.id}` : "/backend/modelo";
 
+      console.log("Payload enviado:", payload);
+      
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -249,7 +256,7 @@ export default function ReportTemplatePage() {
 
       const result = await res.json();
       if (!res.ok) throw new Error(result.detail || `Erro ao ${isEditing ? "atualizar" : "criar"} modelo`);
-
+      
       // Navega de volta com mensagem de sucesso
       navigate("/report-models", {
         state: {
@@ -340,7 +347,6 @@ export default function ReportTemplatePage() {
                     <TextField
                       label="Nome do Campo"
                       {...register(`fields.${index}.name`)}
-                      value={field.name ?? ""}
                       error={!!errors.fields?.[index]?.name}
                       helperText={errors.fields?.[index]?.name?.message}
                       fullWidth
@@ -372,15 +378,25 @@ export default function ReportTemplatePage() {
                             }}
                             onChange={(e) => {
                               controllerField.onChange(e);
-                              if (e.target.value === "object") {
+                              const value = e.target.value;
+                              if (value === "object") {
                                 update(index, {
                                   ...fields[index],
                                   datatype: "object",
                                   subfields: [{ name: "", datatype: "", required: false }],
+                                  items: undefined, // limpa items se existia
                                 });
-                              } else if (Array.isArray((fields[index] as Field).subfields)) {
-                                const { subfields, ...rest } = fields[index] as Field;
-                                update(index, { ...rest, datatype: e.target.value });
+                              } else if (value === "array") {
+                                update(index, {
+                                  ...fields[index],
+                                  datatype: "array",
+                                  items: [],
+                                  subfields: undefined, // limpa subfields se existia
+                                });
+                              } else {
+                                // Limpa subfields e items se existiam
+                                const { subfields, items, ...rest } = fields[index] as Field;
+                                update(index, { ...rest, datatype: value });
                               }
                             }}
                           >
@@ -389,6 +405,7 @@ export default function ReportTemplatePage() {
                             <MenuItem value="bool">Sim/Não</MenuItem>
                             <MenuItem value="date">Data</MenuItem>
                             <MenuItem value="object">Multicampo</MenuItem>
+                            <MenuItem value="array">Lista</MenuItem>
                           </Select>
                         )}
                       />
@@ -396,26 +413,160 @@ export default function ReportTemplatePage() {
                         <FormHelperText>{errors.fields?.[index]?.datatype?.message}</FormHelperText>
                       )}
                     </FormControl>
-                    <FormControlLabel
-                      control={<Checkbox {...register(`fields.${index}.required`)} />}
-                      label="Campo Obrigatório"
-                    />
+                    {(fields[index] as Field)?.datatype !== "object" && (
+                      <FormControlLabel
+                        control={<Checkbox {...register(`fields.${index}.required`)} />}
+                        label="Campo Obrigatório"
+                      />
+                    )}
+                    {/* Renderiza UI para inserir opções do campo array */}
+                    {(fields[index] as Field)?.datatype === "array" && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 2,
+                          width: "100%",
+                          mt: 2,
+                          border: "2px solid #ccc",
+                          borderRadius: 1,
+                          p: 2,
+                          boxShadow: 2,
+                        }}
+                      >
+                        <Typography
+                          variant="h6"
+                          sx={{
+                            textAlign: "center",
+                            fontWeight: "bold",
+                            color: "primary.main",
+                            letterSpacing: 1,
+                            mb: 1,
+                          }}
+                        >
+                          Opções de {watchedFields?.[index]?.name || ""}
+                        </Typography>
+                        <Controller
+                          control={control}
+                          name={`fields.${index}.items`}
+                          render={({ field }) => {
+                            // Garante que field.value é sempre um array
+                            const items: string[] = Array.isArray(field.value) ? field.value : [];
+                            const [inputValue, setInputValue] = useState("");
 
-                    {/* Renderiza apenas UM subcampo se o tipo for object */}
+                            const addItem = () => {
+                              const trimmed = inputValue.trim();
+                              if (trimmed && !items.includes(trimmed)) {
+                                field.onChange([...items, trimmed]);
+                                setInputValue("");
+                              }
+                            };
+
+                            const removeItem = (removeIdx: number) => {
+                              field.onChange(items.filter((_, idx) => idx !== removeIdx));
+                            };
+
+                            return (
+                              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                                <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                                  <TextField
+                                    label="Nova opção"
+                                    value={inputValue}
+                                    onChange={(e) => setInputValue(e.target.value)}
+                                    size="small"
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        addItem();
+                                      }
+                                    }}
+                                    fullWidth
+                                  />
+                                  <Button
+                                    variant="contained"
+                                    onClick={addItem}
+                                    type="button"
+                                    sx={{
+                                      height: 40,
+                                      fontWeight: "bold",
+                                      bgcolor: "primary.main",
+                                      color: "white",
+                                      "&:hover": { bgcolor: "primary.dark" },
+                                    }}
+                                  >
+                                    Adicionar
+                                  </Button>
+                                </Box>
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    width: "100%",
+                                    gap: 1,
+                                    mt: 1,
+                                  }}
+                                >
+                                  {items.length === 0 && (
+                                    <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center" }}>
+                                      Nenhuma opção adicionada ainda.
+                                    </Typography>
+                                  )}
+                                  {items.map((item, idx) => (
+                                    <Box
+                                      key={item + idx}
+                                      sx={{
+                                        display: "flex",
+                                        flexDirection: "row",
+                                        alignItems: "center",
+                                        width: "100%",
+                                        justifyContent: "space-between",
+                                        bgcolor: "grey.200",
+                                        borderRadius: 1,
+                                        px: 2,
+                                        py: 1,
+                                        boxShadow: 1,
+                                      }}
+                                    >
+                                      <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                        {idx}- {item}
+                                      </Typography>
+                                      <IconButton
+                                        size="small"
+                                        onClick={() => removeItem(idx)}
+                                          sx={{
+                                            backgroundColor: "error.main",
+                                            color: "white",
+                                            "&:hover": { bgcolor: "error.dark" },
+                                            alignSelf: "center",
+                                          }}
+                                      >
+                                        <DeleteIcon fontSize="small" />
+                                      </IconButton>
+                                    </Box>
+                                  ))}
+                                </Box>
+                              </Box>
+                            );
+                          }}
+                        />
+                      </Box>
+                    )}
+                    {/* Renderiza UI para campos do tipo objeto */}
                     {(fields[index] as Field)?.datatype === "object" && (
                       <Box
                         sx={{
                           mt: 2,
                           pl: 2,
-                          borderLeft: "2px solid #ccc",
+                          border: "1px solid #ccc",
+                          borderRadius: 1,
                           display: "flex",
                           flexDirection: "column",
                           gap: 2,
                           width: "100%",
                         }}
                       >
-                        <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                          Subcampo
+                        <Typography variant="subtitle2" sx={{ mt: 1 }}>
+                          Subcampo de {watchedFields?.[index]?.name || ""}
                         </Typography>
                         <Controller
                           control={control}
@@ -480,7 +631,6 @@ export default function ReportTemplatePage() {
                         />
                       </Box>
                     )}
-
                     {/* Botão para remover campo */}
                     <IconButton
                       onClick={() => {

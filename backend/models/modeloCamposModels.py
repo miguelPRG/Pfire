@@ -9,11 +9,11 @@ MAIN_FIELDS = {
     "recaptchaToken",
 }
 
-ALLOWED_DATATYPES = {"number", "string", "bool", "object", "date"}  # Tipos de dados permitidos
+ALLOWED_DATATYPES = {"number", "string", "bool", "object", "date", "array"}  # Tipos de dados permitidos
 
 
 # Função auxiliar para validação de campos personalizados no método de criação
-def validate_fields(key, value):
+def validate_field(key, value):
 
     key = key.strip()  # Remove espaços em branco no início e no final
 
@@ -36,15 +36,6 @@ def validate_fields(key, value):
     if value.get("datatype") == "object":
         custom_fields = {k: v for k, v in value.items() if k not in {"datatype", "required"}}
 
-        # Verificar se existem subcampos personalizados que não começam com "custom_" ou que são "custom_"
-        bad_fields = {k for k in custom_fields if not k.startswith("custom_" or k == "custom_")}
-
-        if bad_fields:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Foram encontrados subcampos inválidos: {bad_fields}. Os campos personalizados devem começar com 'custom_'.",
-            )
-
         # Verificar se o campo do tipo object possui pelo menos um subcampo custom_
         if not custom_fields:
             raise HTTPException(
@@ -52,8 +43,17 @@ def validate_fields(key, value):
                 detail=f"O campo que está a tentar criar:  {key} do tipo 'object' deve conter pelo menos um subcampo personalizado (custom_).",
             )
 
+        # Verificar se existem subcampos personalizados que não começam com "custom_" ou que são "custom_"
+        bad_fields = {k for k in custom_fields if not k.startswith("custom_") and k != "custom_"}
+
+        if bad_fields:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Foram encontrados subcampos inválidos: {bad_fields}. Os campos personalizados devem começar com 'custom_'.",
+            )
+
         for subkey, subvalue in custom_fields.items():
-            validate_fields(subkey, subvalue)  # Valida recursivamente os subcampos
+            validate_field(subkey, subvalue)  # Valida recursivamente os subcampos
 
         # Verifica se algum subcampo tem required=True
         if any(subvalue.get("required") is True for subvalue in custom_fields.values()):
@@ -64,6 +64,23 @@ def validate_fields(key, value):
 
         # Adiciona os subcampos às chaves permitidas
         allowed_keys.update(custom_fields.keys())
+
+    elif value.get("datatype") == "array":
+        # Se for um array, então ele deve ter um subcampo "items" do tipo list que define as opções do array
+        if "items" not in value or not isinstance(value["items"], list):
+            raise HTTPException(
+                status_code=400,
+                detail=f"O campo que está a tentar criar: {key} do tipo 'array' deve conter um subcampo 'items' com as opções do array.",
+            )
+        
+        # Verificar se todos os elemetos de items são strings
+        if not all(isinstance(item, str) for item in value["items"]):
+            raise HTTPException(
+                status_code=400,
+                detail=f"O campo que está a tentar criar: {key} do tipo 'array' deve conter apenas strings no subcampo 'items'.",
+            )
+        # Atualizar allowed_keys para incluir 'items'
+        allowed_keys.add("items")
 
     # Verifica se existem chaves extras além das permitidas (datatype e required)
     extra_keys = set(value.keys()) - allowed_keys
@@ -98,7 +115,7 @@ def validate_fields(key, value):
 class ModelosCamposCreate(BaseModel):
     model_name: str = Field(..., max_length=100, description="Nome do modelo. Deve ter no máximo 100 caracteres.")
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
-    recaptchaToken: str
+    #recaptchaToken: str
     model_config = ConfigDict(extra="allow")  # Permite campos extras
 
     @field_validator("empresa_id", mode="before")
@@ -126,7 +143,7 @@ class ModelosCamposCreate(BaseModel):
         for key, value in values.items():
             if key in MAIN_FIELDS:
                 continue
-            validate_fields(key, value)
+            validate_field(key, value)
 
         return values
 
@@ -159,7 +176,7 @@ class ModelosCamposUpdate(BaseModel):
         for key, value in values.items():
             if key in MAIN_FIELDS or value is None:
                 continue
-            validate_fields(key, value)
+            validate_field(key, value)
 
         return values
 

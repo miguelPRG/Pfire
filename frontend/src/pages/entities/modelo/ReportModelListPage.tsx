@@ -36,6 +36,7 @@ const formatType = (type: string) => {
     bool: "Sim/Não",
     date: "Data de criação",
     object: "Grupo de Campos",
+    array: "Lista",
   };
   return map[type] || type;
 };
@@ -201,6 +202,7 @@ export default function ReportModelListPage() {
   // Função recursiva para renderizar campos personalizados, incluindo subcampos
   const renderField = (val: any, namePrefix = "", level = 0): React.ReactNode => {
     const isObject = val?.datatype === "object";
+    const isArray = val?.datatype === "array";
     const currentKey = namePrefix;
     const isExpanded = expandedFields[currentKey] ?? true;
 
@@ -221,7 +223,7 @@ export default function ReportModelListPage() {
                 {level === 0 ? "Campo" : "Subcampo"}:{" "}
                 {namePrefix.split(" / ")[namePrefix.split(" / ").length - 1]?.replace(/^custom_/, "")}
               </Typography>
-              {isObject && (
+              {isObject || isArray && (
                 <IconButton onClick={() => toggleExpand(currentKey)} size="small" sx={{ ml: "auto" }}>
                   {isExpanded ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
                 </IconButton>
@@ -245,6 +247,21 @@ export default function ReportModelListPage() {
                 })}
               </Box>
             )}
+
+            {isArray && isExpanded && (
+              <Box sx={{ mt: 1, display: "flex", flexDirection: "column", textAlign: "left" }}>
+                {val.items.map((item: any, index: number) => (
+                  <Typography variant="body2"><span style={{ fontWeight: "bold" }}>Item {index + 1}:</span> {item}</Typography>
+                ))}
+              </Box>
+            )}
+
+            {!isObject && !isArray && (
+              <Typography fontSize={13} mt={1}>
+                Valor: <strong>{val?.value || "(sem valor)"}</strong>
+              </Typography>
+            )}
+
           </Paper>
         </Grid>
       </Grid>
