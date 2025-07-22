@@ -139,7 +139,7 @@ export default function ReportTemplatePage() {
         },
   });
 
-  /* Aqui é onde utilizamos o watch para monitorar o nome dos campos dinâmicos, permitindo atualizações em tempo real nos formulários filhos, caso se trate de um campo do tipo object ou array */
+  /* Aqui é onde utilizamos o watch para monitorizar o nome dos campos dinâmicos, permitindo atualizações em tempo real nos formulários filhos, caso se trate de um campo do tipo object ou array */
   const watchedFields = watch("fields");
 
   // Hook para manipular array de campos dinâmicos (adicionar, remover, atualizar)
@@ -203,7 +203,7 @@ export default function ReportTemplatePage() {
         if (f?.datatype === "object" && Array.isArray(f.subfields)) {
           const subfieldData: Record<string, any> = {};
           f.subfields.forEach((sub) => {
-            subfieldData[sub.name] = {
+            subfieldData[`custom_${sub.name}`] = {
               datatype: sub.datatype,
               required: sub.required,
             };

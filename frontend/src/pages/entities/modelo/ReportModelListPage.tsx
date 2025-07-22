@@ -57,6 +57,7 @@ export default function ReportModelListPage() {
   const [page, setPage] = useState(0);
   const [expandedFields, setExpandedFields] = useState<Record<string, boolean>>({});
   const [alert, setAlert] = useState<{ message: string; isError: boolean } | null>(null);
+  const [cloningId, setCloningId] = useState<string | null>(null);
 
   const rowsPerPage = 3;
 
@@ -151,6 +152,7 @@ export default function ReportModelListPage() {
   };
 
   const handleClone = async (modeloId: string) => {
+    setCloningId(modeloId); // Desativa o botão
     try {
       const recaptchaToken = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
         action: "clone",
@@ -186,12 +188,14 @@ export default function ReportModelListPage() {
         message: "Modelo clonado com sucesso!",
         isError: false,
       });
-      refetch(); // Isso já força a consulta GraphQL a ser executada novamente
+      refetch();
     } catch (err: any) {
       setAlert({
         message: err.message || "Erro ao clonar modelo",
         isError: true,
       });
+    } finally {
+      setCloningId(null); // Reativa o botão
     }
   };
 
@@ -387,7 +391,10 @@ export default function ReportModelListPage() {
                         <Delete fontSize="small" />
                       </IconButton>
                       <Tooltip title="Clonar Modelo">
-                        <IconButton onClick={() => handleClone(modelo.id)}>
+                        <IconButton
+                          onClick={() => handleClone(modelo.id)}
+                          disabled={cloningId === modelo.id}
+                        >
                           <ContentCopyIcon />
                         </IconButton>
                       </Tooltip>

@@ -77,8 +77,10 @@ export default function CompanySelectorPage() {
   if (error) return <Typography>Erro ao carregar empresas: {error.message}</Typography>;
 
   const handleSelect = (emp: Empresa) => {
+
+    const url = localStorage.getItem("empresaId") ? -1 : "/";
     chooseCompany({ ...emp, logo: emp.logo ?? "" });
-    navigate("/");
+    navigate(url);
   };
 
   return (
