@@ -1,5 +1,5 @@
 // Importações de bibliotecas e componentes necessários
-import { useForm, useFieldArray, Controller } from "react-hook-form"; // Hooks para manipulação de formulários dinâmicos
+import { useForm, useFieldArray, Controller, useFormContext } from "react-hook-form"; // Adicione useFormContext se necessário
 import { zodResolver } from "@hookform/resolvers/zod"; // Integração do Zod com react-hook-form
 import { z } from "zod"; // Validação de esquemas
 import { useNavigate, useLocation } from "react-router-dom"; // Navegação entre páginas
@@ -120,12 +120,14 @@ export default function ReportTemplatePage() {
 
   // Hook do formulário com valores padrão se estiver editando
   const {
-    register, 
+    register,
     handleSubmit,
     control,
     formState: { errors },
     reset,
-    watch, 
+    watch,
+    setError,
+    clearErrors,
   } = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: isEditing
@@ -444,7 +446,7 @@ export default function ReportTemplatePage() {
                             mb: 1,
                           }}
                         >
-                          Opções de {watchedFields?.[index]?.name || ""}
+                          Opções de <strong>{watchedFields?.[index]?.name || ""}</strong>
                         </Typography>
                         <Controller
                           control={control}
@@ -565,70 +567,165 @@ export default function ReportTemplatePage() {
                           width: "100%",
                         }}
                       >
-                        <Typography variant="subtitle2" sx={{ mt: 1 }}>
-                          Subcampo de {watchedFields?.[index]?.name || ""}
+                        <Typography variant="h6" sx={{ mt: 1 }}>
+                          Subcampos de <strong>{watchedFields?.[index]?.name || ""}</strong>
                         </Typography>
-                        <Controller
-                          control={control}
-                          name={`fields.${index}.subfields.0.name`}
-                          render={({ field }) => (
-                            <TextField
-                              label="Nome do Subcampo"
-                              {...field}
-                              value={field.value ?? ""}
+                        {/* Renderiza todos os subfields */}
+                        {(fields[index] as Field).subfields?.map((subfield, subIdx) => (
+                          <Box
+                            key={subIdx}
+                            sx={{
+                              mb: 2,
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              width: "100%",
+                            }}
+                          >
+                            <Controller
+                              control={control}
+                              name={`fields.${index}.subfields.${subIdx}.name`}
+                              render={({ field }) => (
+                                <TextField
+                                  label={`Nome do Subcampo ${subIdx + 1}`}
+                                  {...field}
+                                  value={field.value ?? ""}
+                                  size="small"
+                                  fullWidth
+                                  sx={{ mb: 1 }}
+                                  error={!!errors.fields?.[index]?.subfields?.[subIdx]?.name}
+                                  helperText={errors.fields?.[index]?.subfields?.[subIdx]?.name?.message}
+                                  onChange={(e) => {
+                                    field.onChange(e);
+                                    // Limpa erro se preenchido
+                                    if (e.target.value.trim()) {
+                                      clearErrors(`fields.${index}.subfields.${subIdx}.name`);
+                                    }
+                                  }}
+                                />
+                              )}
+                            />
+                            <FormControl
                               size="small"
                               fullWidth
                               sx={{ mb: 1 }}
+                              error={!!errors.fields?.[index]?.subfields?.[subIdx]?.datatype}
+                            >
+                              <InputLabel>Tipo do Subcampo</InputLabel>
+                              <Select
+                                label="Tipo do Subcampo"
+                                value={subfield.datatype || ""}
+                                onChange={(e) => {
+                                  const currentSubfields = (fields[index] as Field).subfields || [];
+                                  const updatedSubfield = {
+                                    ...(currentSubfields[subIdx] || { name: "", datatype: "", required: false }),
+                                    datatype: e.target.value,
+                                  };
+                                  const updatedSubfields = [...currentSubfields];
+                                  updatedSubfields[subIdx] = updatedSubfield;
+                                  update(index, {
+                                    ...(fields[index] as Field),
+                                    subfields: updatedSubfields,
+                                  });
+                                  // Limpa erro se preenchido
+                                  if (e.target.value.trim()) {
+                                    clearErrors(`fields.${index}.subfields.${subIdx}.datatype`);
+                                  }
+                                }}
+                                sx={{
+                                  color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
+                                  bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
+                                }}
+                                MenuProps={{
+                                  PaperProps: {
+                                    sx: {
+                                      width: "35%",
+                                    },
+                                  },
+                                }}
+                              >
+                                <MenuItem value="string">Texto</MenuItem>
+                                <MenuItem value="number">Número</MenuItem>
+                                <MenuItem value="bool">Sim/Não</MenuItem>
+                                <MenuItem value="date">Data</MenuItem>
+                              </Select>
+                              {errors.fields?.[index]?.subfields?.[subIdx]?.datatype && (
+                                <FormHelperText>
+                                  {errors.fields?.[index]?.subfields?.[subIdx]?.datatype?.message}
+                                </FormHelperText>
+                              )}
+                            </FormControl>
+                            <Controller
+                              control={control}
+                              name={`fields.${index}.subfields.${subIdx}.required`}
+                              render={({ field }) => (
+                                <FormControlLabel
+                                  control={
+                                    <Checkbox checked={!!field.value} onChange={(e) => field.onChange(e.target.checked)} />
+                                  }
+                                  label="Subcampo Obrigatório"
+                                />
+                              )}
                             />
-                          )}
-                        />
-
-                        <FormControl size="small" fullWidth>
-                          <InputLabel>Tipo do Subcampo</InputLabel>
-                          <Select
-                            label="Tipo do Subcampo"
-                            value={(fields[index] as Field).subfields?.[0]?.datatype || ""}
-                            onChange={(e) => {
-                              const currentSubfields = (fields[index] as Field).subfields || [];
-                              const updatedSubfield = {
-                                ...(currentSubfields[0] || { name: "", datatype: "", required: false }),
-                                datatype: e.target.value,
-                              };
-                              update(index, {
-                                ...(fields[index] as Field),
-                                subfields: [updatedSubfield],
-                              });
-                            }}
-                            sx={{
-                              color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
-                              bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
-                            }}
-                            MenuProps={{
-                              PaperProps: {
-                                sx: {
-                                  width: "35%",
-                                },
-                              },
-                            }}
-                          >
-                            <MenuItem value="string">Texto</MenuItem>
-                            <MenuItem value="number">Número</MenuItem>
-                            <MenuItem value="bool">Sim/Não</MenuItem>
-                            <MenuItem value="date">Data</MenuItem>
-                          </Select>
-                        </FormControl>
-                        <Controller
-                          control={control}
-                          name={`fields.${index}.subfields.0.required`}
-                          render={({ field }) => (
-                            <FormControlLabel
-                              control={
-                                <Checkbox checked={!!field.value} onChange={(e) => field.onChange(e.target.checked)} />
-                              }
-                              label="Subcampo Obrigatório"
-                            />
-                          )}
-                        />
+                            {/* Botão para remover subfield */}
+                            <IconButton
+                              size="small"
+                              onClick={() => {
+                                const currentSubfields = (fields[index] as Field).subfields || [];
+                                const updatedSubfields = currentSubfields.filter((_, i) => i !== subIdx);
+                                update(index, {
+                                  ...(fields[index] as Field),
+                                  subfields: updatedSubfields,
+                                });
+                              }}
+                              sx={{
+                                backgroundColor: "error.main",
+                                color: "white",
+                                "&:hover": { bgcolor: "error.dark" },
+                                alignSelf: "center",
+                                mt: 1,
+                              }}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                          </Box>
+                        ))}
+                        {/* Botão para adicionar novo subfield */}
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          onClick={() => {
+                            const currentSubfields = (fields[index] as Field).subfields || [];
+                            if (
+                              currentSubfields.length > 0 &&
+                              (
+                                !currentSubfields[currentSubfields.length - 1].name.trim() ||
+                                !currentSubfields[currentSubfields.length - 1].datatype.trim()
+                              )
+                            ) {
+                              setError(
+                                `fields.${index}.subfields.${currentSubfields.length - 1}.name`,
+                                { type: "manual", message: "Preencha o nome do subcampo." }
+                              );
+                              setError(
+                                `fields.${index}.subfields.${currentSubfields.length - 1}.datatype`,
+                                { type: "manual", message: "Preencha o tipo do subcampo." }
+                              );
+                              return;
+                            }
+                            update(index, {
+                              ...(fields[index] as Field),
+                              subfields: [
+                                ...currentSubfields,
+                                { name: "", datatype: "", required: false },
+                              ],
+                            });
+                          }}
+                          sx={{ mt: 1, alignSelf: "flex-start" }}
+                        >
+                          Adicionar Subcampo
+                        </Button>
                       </Box>
                     )}
                     {/* Botão para remover campo */}
