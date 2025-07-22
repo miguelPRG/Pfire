@@ -37,6 +37,7 @@ async def get_global_id(global_id: str, request: Request):
     # Converte ObjectIds para strings
     global_id_data["_id"] = str(global_id_data["_id"])
     global_id_data["host_user_id"] = str(global_id_data["host_user_id"]) if "host_user_id" in global_id_data else None
+    global_id_data["guest_user_id"] = str(global_id_data["guest_user_id"]) if "guest_user_id" in global_id_data else None
     global_id_data["empresa_id"] = str(global_id_data["empresa_id"]) if "empresa_id" in global_id_data else None
     global_id_data["user_id"] = str(global_id_data["user_id"]) if "user_id" in global_id_data else None
     global_id_data["created_by"] = str(global_id_data["created_by"]) if "created_by" in global_id_data else None
@@ -118,42 +119,57 @@ async def reset_password(request: Request, user: UserChangePassword):
 
 
 # Aceitar convite para uma empresa
-@routerUser.put("/email/invite-accept/{global_id}")
+@routerUser.put("/email/accept-invite/{global_id}")
 async def accept_invite(global_id: str, request: Request):
 
     # Verificar se o global ID Eexiste
 
     global_id_data = await global_ids_collection.find_one({"global_id": global_id, "operation": "convite"})
 
-    if not global_id_data or not global_id_data.get("user_exists", False):
+    print("Global ID Data:", global_id_data)
+
+
+    if not global_id_data or global_id_data.get("email"):
         raise HTTPException(status_code=404, detail="Global ID não encontrado ou inválido.")
 
     # Criar novo user_empresa
-    user_id = global_id_data["user_id"]
+    host_user_id = global_id_data["host_user_id"]
     empresa_id = global_id_data["empresa_id"]
+    guest_user_id = global_id_data["guest_user_id"]
     data = datetime.now()
 
+    print(" Pre criamos o convite")
+
     user_empresa = UserEmpresaCreate(
-        user_id=user_id,
+        user_id=guest_user_id,
         empresa_id=empresa_id,
         isAdmin=False,  # Por padrão, o novo usuário não é administrador
-        created_by=user_id,
+        created_by=host_user_id,
         created_at=data,
-        updated_by=user_id,
+        updated_by=host_user_id,
         updated_at=data,
     )
 
     user_empresa_data = user_empresa.model_dump(by_alias=True)
 
-    user_empresa_insertion = users_empresas_collection.insert_one(user_empresa_data)
-    global_delete = global_ids_collection.delete_one({"global_id": global_id})
+    print("Dados do convite:", user_empresa_data)
 
-    user_empresa, global_delete = await gather(user_empresa_insertion, global_delete)
+    try:
+        print("Vamos criar o convite.")
 
-    if not user_empresa.inserted_id:
-        raise HTTPException(status_code=500, detail="Erro ao aceitar o convite.")
+        user_empresa_insertion = users_empresas_collection.insert_one(user_empresa_data)
+        global_delete = global_ids_collection.delete_one({"global_id": global_id})
 
-    if global_delete.deleted_count == 0:
-        raise HTTPException(status_code=500, detail="Erro ao remover o global ID após aceitar o convite.")
+        user_empresa, global_delete = await gather(user_empresa_insertion, global_delete)
+
+
+        if not str(user_empresa.inserted_id):
+            raise HTTPException(status_code=500, detail="Erro ao aceitar o convite.")
+
+        if global_delete.deleted_count == 0:
+            raise HTTPException(status_code=500, detail="Erro ao remover o global ID após aceitar o convite.")
+
+    except DuplicateKeyError as e:
+            raise HTTPException(status_code=409, detail="Erro ao aceitar o convite.")
 
     return {"message": f"Convite aceite com sucesso!"}

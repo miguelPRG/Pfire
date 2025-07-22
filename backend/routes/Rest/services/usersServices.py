@@ -498,19 +498,25 @@ async def invite_user_to_empresa(request: Request, user: UserInvitation):
 
     # Criar o convite
     global_id = str(uuid4())
+    print("Global ID gerado:", global_id)
     # Este global_id tem 3 parametros adicionais para facilitar o convite: user_id, empresa_id e user_exists(boolean)
-    global_id_insertion = await global_ids_collection.insert_one(
-        {
-            "global_id": global_id,
-            "host_user_id": user_id,
-            "empresa_id": empresa_id,
-            # Vamos guardar o email do utilizador que foi convidado, caso ainda não exista
-            "email": user.email if existing_user is None else None,
-            "operation": "convite",
-            "created_at": datetime.now(),
-            "created_by": user_id,
-        }
-    )
+
+    global_id_data = {
+        "global_id": global_id,
+        "host_user_id": user_id,
+        "empresa_id": empresa_id,
+        "operation": "convite",
+        "created_at": datetime.now(),
+        "created_by": user_id,
+    }
+
+    if existing_user:
+        global_id_data["guest_user_id"] = existing_user["_id"]
+
+    else:
+        global_id_data["email"] = user.email
+
+    global_id_insertion = await global_ids_collection.insert_one(global_id_data)
 
     if not global_id_insertion.inserted_id:
         raise HTTPException(status_code=500, detail="Erro na criação do ID global.")

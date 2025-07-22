@@ -234,9 +234,9 @@ export default function UserManagementTable() {
       });
 
       const json = await res.json();
-      if (!res.ok) throw new Error(json.detail || "Erro ao eliminar utilizador.");
+      if (!res.ok) throw new Error(json.detail || "Erro ao expulsar utilizador.");
       setAlert({
-        message: json.detail || "Utilizador eliminado com sucesso.",
+        message: json.detail || "Utilizador expulso com sucesso.",
         isError: false,
       });
       await refetch(); // Atualiza a lista de utilizadores
@@ -522,8 +522,8 @@ export default function UserManagementTable() {
 
       {/* Dialog de confirmação de exclusão */}
       <Dialog open={deleteDialogOpen} onClose={handleCancelDelete}>
-        <DialogTitle>Eliminar utilizador</DialogTitle>
-        <DialogContent>Tem certeza que deseja eliminar este utilizador?</DialogContent>
+        <DialogTitle>Expular Utilizador!</DialogTitle>
+        <DialogContent>Tem certeza que deseja expular este utilizador?</DialogContent>
         <DialogActions>
           <Button onClick={handleCancelDelete} variant="outlined">
             Cancelar

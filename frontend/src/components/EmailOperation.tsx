@@ -40,19 +40,26 @@ function EmailOperation() {
         },
         convite: async () => {
           let globalIdData: { email: string | null; operation: string | null } | null = null;
+          
+          console.log("GLOBAL_ID:", GLOBAL_ID);
 
           try {
             // Buscar e guardar os dados do global_id
             const globalIdResponse = await fetch(`/backend/user/get-global-id/${GLOBAL_ID}`);
             if (globalIdResponse.ok) {
               globalIdData = await globalIdResponse.json();
+
+              if (globalIdData?.operation !== "convite") {
+                throw new Error("Esta operação não é um convite.");
+              }
+
             } else {
-              throw new Error("Erro ao buscar dados do ID global.");
+              throw new Error("Operação Inválida! O botão que foi enviado no email já não funciona.");
             }
-          } catch {
+          } catch (error) {
             setUserConfirmation({
               isConfirmed: false,
-              message: "Operação Expirada! O botão que foi enviado no email já não funciona.",
+              message: String(error) || "Operação Inválida! O botão que foi enviado no email já não funciona.",
             });
             return;
           }
