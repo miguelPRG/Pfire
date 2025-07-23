@@ -82,13 +82,9 @@ export default function ReportModelListPage() {
   }, [search, page, empresa]);
 
   // Decide qual fonte de dados usar
-  const modelos: any[] = search
-    ? searchData?.getModelos?.modelos || []
-    : data?.getModelos?.modelos || [];
+  const modelos: any[] = search ? searchData?.getModelos?.modelos || [] : data?.getModelos?.modelos || [];
 
-  const totalModelos: number = search
-    ? searchData?.getModelos?.totalModelos || 0
-    : data?.getModelos?.totalModelos || 0;
+  const totalModelos: number = search ? searchData?.getModelos?.totalModelos || 0 : data?.getModelos?.totalModelos || 0;
 
   const pageCount = Math.max(1, Math.ceil(totalModelos / rowsPerPage));
 
@@ -158,16 +154,18 @@ export default function ReportModelListPage() {
         action: "clone",
       });
 
+      // Solo envía lo que el backend espera
       const res = await fetch("/backend/modelo/clone", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          id: modeloId,
+          id: modeloId, // Debe ser el ObjectId válido (24 chars)
           recaptchaToken,
         }),
       });
 
+      // Lee el texto de la respuesta SOLO UNA VEZ
       const text = await res.text();
       let data;
       try {
@@ -227,11 +225,12 @@ export default function ReportModelListPage() {
                 {level === 0 ? "Campo" : "Subcampo"}:{" "}
                 {namePrefix.split(" / ")[namePrefix.split(" / ").length - 1]?.replace(/^custom_/, "")}
               </Typography>
-              {isObject || isArray && (
-                <IconButton onClick={() => toggleExpand(currentKey)} size="small" sx={{ ml: "auto" }}>
-                  {isExpanded ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
-                </IconButton>
-              )}
+              {isObject ||
+                (isArray && (
+                  <IconButton onClick={() => toggleExpand(currentKey)} size="small" sx={{ ml: "auto" }}>
+                    {isExpanded ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
+                  </IconButton>
+                ))}
             </Box>
 
             <Typography fontSize={13}>
@@ -255,7 +254,9 @@ export default function ReportModelListPage() {
             {isArray && isExpanded && (
               <Box sx={{ mt: 1, display: "flex", flexDirection: "column", textAlign: "left" }}>
                 {val.items.map((item: any, index: number) => (
-                  <Typography variant="body2"><span style={{ fontWeight: "bold" }}>Item {index + 1}:</span> {item}</Typography>
+                  <Typography variant="body2">
+                    <span style={{ fontWeight: "bold" }}>Item {index + 1}:</span> {item}
+                  </Typography>
                 ))}
               </Box>
             )}
@@ -265,7 +266,6 @@ export default function ReportModelListPage() {
                 Valor: <strong>{val?.value || "(sem valor)"}</strong>
               </Typography>
             )}
-
           </Paper>
         </Grid>
       </Grid>
@@ -391,10 +391,7 @@ export default function ReportModelListPage() {
                         <Delete fontSize="small" />
                       </IconButton>
                       <Tooltip title="Clonar Modelo">
-                        <IconButton
-                          onClick={() => handleClone(modelo.id)}
-                          disabled={cloningId === modelo.id}
-                        >
+                        <IconButton onClick={() => handleClone(modelo.id)} disabled={cloningId === modelo.id}>
                           <ContentCopyIcon />
                         </IconButton>
                       </Tooltip>
@@ -408,7 +405,7 @@ export default function ReportModelListPage() {
                             },
                           })
                         }
-                        sx={{ textTransform: "none" }}
+                        sx={{ textTransform: "none", width: "150px", height: "40px" }}
                       >
                         Adicionar Relatório
                       </Button>
@@ -425,11 +422,9 @@ export default function ReportModelListPage() {
             <Pagination
               count={pageCount}
               page={page + 1}
-              onChange={(_, value) => setPage(value - 1)}
+              onChange={(_, val) => setPage(val - 1)}
               color="primary"
               shape="rounded"
-              showFirstButton
-              showLastButton
             />
           </Box>
         )}

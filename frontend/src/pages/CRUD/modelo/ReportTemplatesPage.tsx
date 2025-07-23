@@ -84,7 +84,6 @@ export default function ReportTemplatePage() {
   // Estado para controlar campos removidos
   const [removedFields, setRemovedFields] = useState<string[]>([]);
 
-
   // Função para converter customFields do backend para o formato do formulário
   const convertCustomFieldsToFormFields = (customFields: any[]) => {
     return (
@@ -161,10 +160,8 @@ export default function ReportTemplatePage() {
 
   // useEffect para resetar o formulário quando mudar de modelo
   useEffect(() => {
-
-
-    if(location?.state?.modelo){
-      console.log("Aqui estão os dados do modelo a ser editado: ", location?.state?.modelo)
+    if (location?.state?.modelo) {
+      console.log("Aqui estão os dados do modelo a ser editado: ", location?.state?.modelo);
     }
 
     if (isEditing) {
@@ -206,7 +203,7 @@ export default function ReportTemplatePage() {
       }
     }
   };
-  
+
   const onSubmit = async (data: FormSchema) => {
     try {
       // Executa o reCAPTCHA Enterprise
@@ -255,7 +252,6 @@ export default function ReportTemplatePage() {
         empresa_id: typeof empresa === "object" ? empresa?.id : empresa,
         recaptchaToken,
         ...customFields,
-        
       };
 
       // Usa PUT para edição ou POST para criação
@@ -263,7 +259,7 @@ export default function ReportTemplatePage() {
       const url = isEditing ? `/backend/modelo/${editingModel.id}` : "/backend/modelo";
 
       console.log("Payload enviado:", payload);
-      
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -273,7 +269,7 @@ export default function ReportTemplatePage() {
 
       const result = await res.json();
       if (!res.ok) throw new Error(result.detail || `Erro ao ${isEditing ? "atualizar" : "criar"} modelo`);
-      
+
       // Navega de volta com mensagem de sucesso
       navigate("/report-models", {
         state: {
@@ -550,12 +546,12 @@ export default function ReportTemplatePage() {
                                       <IconButton
                                         size="small"
                                         onClick={() => removeItem(idx)}
-                                          sx={{
-                                            backgroundColor: "error.main",
-                                            color: "white",
-                                            "&:hover": { bgcolor: "error.dark" },
-                                            alignSelf: "center",
-                                          }}
+                                        sx={{
+                                          backgroundColor: "error.main",
+                                          color: "white",
+                                          "&:hover": { bgcolor: "error.dark" },
+                                          alignSelf: "center",
+                                        }}
                                       >
                                         <DeleteIcon fontSize="small" />
                                       </IconButton>
@@ -677,7 +673,10 @@ export default function ReportTemplatePage() {
                               render={({ field }) => (
                                 <FormControlLabel
                                   control={
-                                    <Checkbox checked={!!field.value} onChange={(e) => field.onChange(e.target.checked)} />
+                                    <Checkbox
+                                      checked={!!field.value}
+                                      onChange={(e) => field.onChange(e.target.checked)}
+                                    />
                                   }
                                   label="Subcampo Obrigatório"
                                 />
@@ -714,27 +713,22 @@ export default function ReportTemplatePage() {
                             const currentSubfields = (fields[index] as Field).subfields || [];
                             if (
                               currentSubfields.length > 0 &&
-                              (
-                                !currentSubfields[currentSubfields.length - 1].name.trim() ||
-                                !currentSubfields[currentSubfields.length - 1].datatype.trim()
-                              )
+                              (!currentSubfields[currentSubfields.length - 1].name.trim() ||
+                                !currentSubfields[currentSubfields.length - 1].datatype.trim())
                             ) {
-                              setError(
-                                `fields.${index}.subfields.${currentSubfields.length - 1}.name`,
-                                { type: "manual", message: "Preencha o nome do subcampo." }
-                              );
-                              setError(
-                                `fields.${index}.subfields.${currentSubfields.length - 1}.datatype`,
-                                { type: "manual", message: "Preencha o tipo do subcampo." }
-                              );
+                              setError(`fields.${index}.subfields.${currentSubfields.length - 1}.name`, {
+                                type: "manual",
+                                message: "Preencha o nome do subcampo.",
+                              });
+                              setError(`fields.${index}.subfields.${currentSubfields.length - 1}.datatype`, {
+                                type: "manual",
+                                message: "Preencha o tipo do subcampo.",
+                              });
                               return;
                             }
                             update(index, {
                               ...(fields[index] as Field),
-                              subfields: [
-                                ...currentSubfields,
-                                { name: "", datatype: "", required: false },
-                              ],
+                              subfields: [...currentSubfields, { name: "", datatype: "", required: false }],
                             });
                           }}
                           sx={{ mt: 1, alignSelf: "flex-start" }}

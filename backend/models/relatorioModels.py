@@ -6,6 +6,7 @@ MAIN_FIELDS = {
     "relatorio_name",
     "modelo_campos_id",
     "cliente_id",
+    "empresa_id",
     "recaptchaToken",
 }
 

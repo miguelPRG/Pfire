@@ -31,6 +31,7 @@ const ForgotPasswordPage = lazy(() => import("../pages/public/ForgotPasswordPage
 const ChooseCompany = lazy(() => import("../pages/CompanySelectorPage"));
 const ReportModelListPage = lazy(() => import("../pages/CRUD/modelo/ReportModelListPage"));
 const ReportTemplatesPage = lazy(() => import("../pages/CRUD/modelo/ReportTemplatesPage"));
+const AddNewReportPage = lazy(() => import("../pages/AddNewReportPage"));
 
 // Rotas que podem ser utilizados apenas depois de autenticação
 const ProtectedRoute = ({ element }: { element: ReactElement }) => {
@@ -55,8 +56,6 @@ const ProtectedRoute = ({ element }: { element: ReactElement }) => {
 // Rotas públicas, acessível sem autenticação
 const PublicRoute = ({ element }: { element: ReactElement }) => {
   const { user } = useAuth();
-
-  console.log("Rota Publica");
 
   return user ? <Navigate to="/" /> : element;
 };
@@ -149,6 +148,9 @@ function App() {
             <Route path="/choose-company" element={<ProtectedRoute element={<ChooseCompanyRoute />} />} />
             <Route path="/report-models" element={<ProtectedRoute element={<ReportModelListPage />} />} />
             <Route path="/report-templates" element={<ProtectedRoute element={<ReportTemplatesPage />} />} />
+            <Route path="/add-new-report" element={<ProtectedRoute element={<AddNewReportPage />} />} />
+
+            {/* Rota de fallback para redirecionar usuários não autenticados */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Layout>

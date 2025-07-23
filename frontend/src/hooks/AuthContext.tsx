@@ -139,13 +139,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           });
         } else {
           setLoading(false); // <--- indica que o carregamento falhou
-          console.log("Loading terminado");
           throw new Error(userData.detail || "Erro ao autenticar utilizador");
         }
       } catch (error) {
         console.error("Erro ao verificar autenticação:", error);
-      } finally {
-        console.log("Verificação de autenticação concluída");
       }
     }
     checkAuth();
@@ -251,7 +248,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         action: "register",
       });
 
-      // Adiciona o recaptchaToken ao payload.user
       payload.recaptchaToken = token;
 
       // Verifica se a empresa é null e remove do payload se for
@@ -282,8 +278,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error("Erro ao registrar usuário:", error);
       throw error;
-    } finally {
-      sessionStorage.removeItem("email"); // Limpa o email do sessionStorage após o registo
     }
   }
 
@@ -344,8 +338,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function logout() {
     try {
-      setLoading(true); // <--- adicione isto para indicar que o logout está em progresso
-
       await fetch("backend/user/logout", {
         method: "POST",
         credentials: "include",

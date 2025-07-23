@@ -40,7 +40,7 @@ function EmailOperation() {
         },
         convite: async () => {
           let globalIdData: { email: string | null; operation: string | null } | null = null;
-          
+
           console.log("GLOBAL_ID:", GLOBAL_ID);
 
           try {
@@ -52,7 +52,6 @@ function EmailOperation() {
               if (globalIdData?.operation !== "convite") {
                 throw new Error("Esta operação não é um convite.");
               }
-
             } else {
               throw new Error("Operação Inválida! O botão que foi enviado no email já não funciona.");
             }

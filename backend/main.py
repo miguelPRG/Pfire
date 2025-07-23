@@ -29,29 +29,15 @@ async def lifespan(app: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 # Configuração de CORS
-allowed_origins = [
-    "http://frontend:80",
-    "http://frontend:443",
-    "http://localhost:3000",
-    "https://pfireteste-11849.firebaseapp.com",
-]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,  # Domínios permitidos
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],  # Inclua OPTIONS
-    allow_headers=["Content-Type", "Host", "Cookie"],  # Permita todos os cabeçalhos necessários
+    allow_headers=["Content-Type", "Host", "Cookie"]
+
 )
 
-
-@app.middleware("http")
-async def options_method_middleware(request: Request, call_next):
-    """Middleware para lidar especificamente com requisições OPTIONS."""
-    if request.method == "OPTIONS":
-        # Permite que requisições OPTIONS passem imediatamente
-        return await call_next(request)
-    return await call_next(request)
 
 
 @app.middleware("http")
@@ -128,8 +114,17 @@ app.include_router(relatorioCRUD.routerRelatorio)
 app.include_router(graphql_router, prefix="/graphql")
 
 
+
 @app.get("/")
 async def root(request: Request):
     """Rota de teste que retorna os dados do usuário autenticado"""
     jwt = getattr(request.state, "jwt", None)
     return {"message": "Bem-vindo ao backend com FastAPI e MongoDB!", "user": jwt["nome"] if jwt else None}
+
+@app.middleware("http")
+async def options_method_middleware(request: Request, call_next):
+    """Middleware para lidar especificamente com requisições OPTIONS."""
+    if request.method == "OPTIONS":
+        # Permite que requisições OPTIONS passem imediatamente
+        return await call_next(request)
+    return await call_next(request)
