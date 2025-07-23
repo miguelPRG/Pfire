@@ -62,6 +62,7 @@ export default function UserManagementTable() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const { empresa, user } = useAuth();
   const [alert, setAlert] = useState<null | { message: string; isError: boolean }>(null);
+  const [roleLoading, setRoleLoading] = useState<{ [userId: string]: boolean }>({});
   const rowsPerPage = 10;
 
   // React Hook Form para o convite
@@ -76,7 +77,7 @@ export default function UserManagementTable() {
   });
 
   // Consulta inicial (cache/página)
-  const { data, loading, error, refetch } = useQuery(GET_USERS, {
+  const { data, refetch, loading } = useQuery(GET_USERS, {
     variables: { empresaId: empresa?.id, start: page * rowsPerPage, name: search || undefined },
     fetchPolicy: "cache-first",
   });
@@ -106,12 +107,11 @@ export default function UserManagementTable() {
   const pageCount = Math.ceil(totalUsers / rowsPerPage);
 
   const handleToggleAdmin = async (user: User) => {
-    const isAdmin = user.isAdmin;
-    const endpoint = isAdmin ? "/backend/user/revoke_admin" : "/backend/user/set_admin";
-
+    setRoleLoading((prev) => ({ ...prev, [user.id]: true }));
+    const endpoint = user.role == "Admin" ? "/backend/user/revoke_admin" : "/backend/user/set_admin";
     try {
       const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-        action: isAdmin ? "revoke_admin" : "set_admin",
+        action: user.role == "Admin" ? "revoke_admin" : "set_admin",
       });
       const res = await fetch(endpoint, {
         method: "PUT",
@@ -127,19 +127,19 @@ export default function UserManagementTable() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.detail || "Erro ao alterar papel.");
 
-      if (json.message?.includes("admin")) {
-        await refetch();
-      } else {
-        setAlert({
-          message: "Papel alterado com sucesso!",
-          isError: false,
-        });
-      }
+      setAlert({
+        message: "Papel alterado com sucesso!",
+        isError: false,
+      });
+
+      await refetch();
     } catch (err) {
       setAlert({
         message: err instanceof Error ? err.message : "Erro ao alterar papel.",
         isError: true,
       });
+    } finally {
+      setRoleLoading((prev) => ({ ...prev, [user.id]: false }));
     }
   };
 
@@ -265,7 +265,7 @@ export default function UserManagementTable() {
     setDeleteDialogOpen(false);
     setSelectedUserId(null);
   };
-
+  if (loading) return <LoadingAnimation />;
   return (
     <Paper sx={{ width: "100%", p: 2, boxShadow: "none" }}>
       <Container
@@ -425,8 +425,9 @@ export default function UserManagementTable() {
                         textTransform: "none",
                       }}
                       onClick={() => handleToggleAdmin(user)}
+                      disabled={!!roleLoading[user.id]}
                     >
-                      {user.role}
+                      {roleLoading[user.id] ? "Alterando..." : user.role}
                     </Button>
                   </TableCell>
                   <TableCell align="center">

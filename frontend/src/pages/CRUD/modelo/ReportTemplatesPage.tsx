@@ -1,5 +1,5 @@
 // Importações de bibliotecas e componentes necessários
-import { useForm, useFieldArray, Controller, useFormContext } from "react-hook-form"; // Adicione useFormContext se necessário
+import { useForm, useFieldArray, Controller } from "react-hook-form"; // Adicione useFormContext se necessário
 import { zodResolver } from "@hookform/resolvers/zod"; // Integração do Zod com react-hook-form
 import { z } from "zod"; // Validação de esquemas
 import { useNavigate, useLocation } from "react-router-dom"; // Navegação entre páginas
@@ -84,6 +84,7 @@ export default function ReportTemplatePage() {
   // Estado para controlar campos removidos
   const [removedFields, setRemovedFields] = useState<string[]>([]);
 
+
   // Função para converter customFields do backend para o formato do formulário
   const convertCustomFieldsToFormFields = (customFields: any[]) => {
     return (
@@ -106,6 +107,14 @@ export default function ReportTemplatePage() {
             datatype: fieldValue.datatype,
             required: fieldValue.required,
             subfields: subfields.length > 0 ? subfields : undefined,
+          };
+        } else if (fieldValue?.datatype === "array") {
+          // Corrigido: inclui items
+          return {
+            name: fieldName,
+            datatype: fieldValue.datatype,
+            required: fieldValue.required,
+            items: Array.isArray(fieldValue.items) ? fieldValue.items : [],
           };
         } else {
           return {
@@ -141,7 +150,7 @@ export default function ReportTemplatePage() {
         },
   });
 
-  /* Aqui é onde utilizamos o watch para monitorizar o nome dos campos dinâmicos, permitindo atualizações em tempo real nos formulários filhos, caso se trate de um campo do tipo object ou array */
+  /* Aqui é onde utilizamos o watch para monitorizar o nome dos campos dinâmicos, permitindo atualizações em tempo real nos formulários filhos, caso se trate de um campo do tipo object ou array  */
   const watchedFields = watch("fields");
 
   // Hook para manipular array de campos dinâmicos (adicionar, remover, atualizar)
@@ -152,6 +161,12 @@ export default function ReportTemplatePage() {
 
   // useEffect para resetar o formulário quando mudar de modelo
   useEffect(() => {
+
+
+    if(location?.state?.modelo){
+      console.log("Aqui estão os dados do modelo a ser editado: ", location?.state?.modelo)
+    }
+
     if (isEditing) {
       const formattedFields = convertCustomFieldsToFormFields(editingModel.customFields);
       reset({
