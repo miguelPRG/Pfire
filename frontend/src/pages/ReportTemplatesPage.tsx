@@ -152,7 +152,6 @@ export default function ReportTemplatePage() {
         fields: formattedFields,
       });
     }
-
   }, [editingModel, isEditing, reset]);
 
   // Efeito para mostrar/esconder o botão de scroll para o topo conforme o scroll da página
@@ -174,7 +173,7 @@ export default function ReportTemplatePage() {
         setNewFieldError("Nome do campo já existe!");
         return;
       }
-      append({ name: newFieldName, datatype: "", required: false});
+      append({ name: newFieldName, datatype: "", required: false });
       setNewFieldName("");
       setNewFieldError(null);
     } catch (e) {
@@ -240,7 +239,7 @@ export default function ReportTemplatePage() {
       // Usa PUT para edição ou POST para criação
       const method = isEditing ? "PUT" : "POST";
       const url = isEditing ? `/backend/modelo/${editingModel.id}` : "/backend/modelo";
-      
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -318,7 +317,9 @@ export default function ReportTemplatePage() {
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
               {fields
                 .map((field, index) => ({ field, index }))
-                .filter(({ field }) => field && typeof field === "object" && field.name !== undefined && field.name !== null)
+                .filter(
+                  ({ field }) => field && typeof field === "object" && field.name !== undefined && field.name !== null
+                )
                 .map(({ field, index }) => (
                   <Box
                     key={field.id}
@@ -470,7 +471,9 @@ export default function ReportTemplatePage() {
                           name={`fields.${index}.subfields.0.required`}
                           render={({ field }) => (
                             <FormControlLabel
-                              control={<Checkbox checked={!!field.value} onChange={e => field.onChange(e.target.checked)} />}
+                              control={
+                                <Checkbox checked={!!field.value} onChange={(e) => field.onChange(e.target.checked)} />
+                              }
                               label="Subcampo Obrigatório"
                             />
                           )}

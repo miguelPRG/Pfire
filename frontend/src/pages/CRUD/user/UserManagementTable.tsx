@@ -96,13 +96,9 @@ export default function UserManagementTable() {
   }, [search, page, empresa]);
 
   // Decide qual fonte de dados usar
-  const users: User[] = search
-    ? searchData?.getUsers?.users || []
-    : data?.getUsers?.users || [];
+  const users: User[] = search ? searchData?.getUsers?.users || [] : data?.getUsers?.users || [];
 
-  const totalUsers: number = search
-    ? searchData?.getUsers?.totalUsers || 0
-    : data?.getUsers?.totalUsers || 0;
+  const totalUsers: number = search ? searchData?.getUsers?.totalUsers || 0 : data?.getUsers?.totalUsers || 0;
 
   const pageCount = Math.ceil(totalUsers / rowsPerPage);
 
@@ -150,13 +146,12 @@ export default function UserManagementTable() {
     setOrderBy(property);
   };
 
-  const sortedRows = [...users]
-    .sort((a, b) => {
-      if (!orderBy) return 0;
-      return order === "asc"
-        ? a[orderBy]!.toString().localeCompare(b[orderBy]!.toString())
-        : b[orderBy]!.toString().localeCompare(a[orderBy]!.toString());
-    });
+  const sortedRows = [...users].sort((a, b) => {
+    if (!orderBy) return 0;
+    return order === "asc"
+      ? a[orderBy]!.toString().localeCompare(b[orderBy]!.toString())
+      : b[orderBy]!.toString().localeCompare(a[orderBy]!.toString());
+  });
 
   const zebraColor = (index: number) =>
     theme.palette.mode === "dark" ? (index % 2 === 0 ? "#252525" : "#1d1d1d") : index % 2 === 0 ? "#f5f5f5" : "#e0e0e0";

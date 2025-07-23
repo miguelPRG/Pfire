@@ -59,7 +59,7 @@ export default function ClientManagementTable() {
   const { empresa } = useAuth();
 
   // Consulta inicial (cache)
-  const { data, loading, error , refetch } = useQuery(GET_CLIENTES_BY_EMPRESA, {
+  const { data, loading, error, refetch } = useQuery(GET_CLIENTES_BY_EMPRESA, {
     variables: { empresaId: empresa?.id, start: page * rowsPerPage },
     fetchPolicy: "cache-first",
   });

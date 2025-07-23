@@ -50,9 +50,7 @@ export default function CompanySelectorPage() {
   }, [search]);
 
   // Decide qual fonte de dados usar. Se o search estiver vazio, usa os dados da consulta inicial; caso contrário, usa os dados da pesquisa.
-  const empresas: Empresa[] = search
-    ? searchData?.getEmpresas?.empresas || []
-    : data?.getEmpresas?.empresas || [];
+  const empresas: Empresa[] = search ? searchData?.getEmpresas?.empresas || [] : data?.getEmpresas?.empresas || [];
 
   const totalEmpresas: number = search
     ? searchData?.getEmpresas?.totalEmpresas || 0
@@ -77,7 +75,6 @@ export default function CompanySelectorPage() {
   if (error) return <Typography>Erro ao carregar empresas: {error.message}</Typography>;
 
   const handleSelect = (emp: Empresa) => {
-
     const url = localStorage.getItem("empresaId") ? -1 : "/";
     chooseCompany({ ...emp, logo: emp.logo ?? "" });
     navigate(url);

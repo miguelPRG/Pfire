@@ -9,7 +9,6 @@ import { useState } from "react";
 import GlobalPhone from "../../../components/GlobalPhone";
 import validarNIF from "../../utils/isValidNIF";
 
-declare var grecaptcha: any;
 // Esquema de validação com Zod
 const addClientSchema = z.object({
   nome: z.string().nonempty("O nome é obrigatório").trim(),
@@ -31,23 +30,26 @@ const addClientSchema = z.object({
     .regex(/^\d{4}-\d{3}$/, "Número de telefone inválido"),
 });
 
+// Define o tipo dos inputs do formulário, omitindo recaptchaToken
 type AddClientFormInputs = Omit<z.infer<typeof addClientSchema>, "recaptchaToken">;
 
+// Componente principal da página
 export default function AddNewClientPage() {
-  const location = useLocation();
-  const cliente = location.state?.cliente;
-  const { empresa } = useAuth();
-  const navigate = useNavigate();
-  const theme = useTheme();
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const location = useLocation(); // Hook para acessar o estado de navegação
+  const cliente = location.state?.cliente; // Recupera cliente do estado, se existir (edição)
+  const { empresa } = useAuth(); // Recupera dados da empresa do contexto de autenticação
+  const navigate = useNavigate(); // Hook para navegação programática
+  const theme = useTheme(); // Acessa o tema do Material UI
+  const [errorMessage, setErrorMessage] = useState<string | null>(null); // Estado para mensagens de erro
 
+  // Inicializa o formulário com react-hook-form e zodResolver
   const {
-    register,
-    handleSubmit,
-    control,
-    formState: { errors, isSubmitting },
+    register, // Função para registrar campos
+    handleSubmit, // Função para lidar com submit
+    control, // Controle para campos customizados
+    formState: { errors, isSubmitting }, // Estado do formulário (erros e status de envio)
   } = useForm<AddClientFormInputs>({
-    resolver: zodResolver(addClientSchema),
+    resolver: zodResolver(addClientSchema), // Usa o esquema Zod para validação
     defaultValues: cliente
       ? {
           nome: cliente.nome || "",
@@ -58,13 +60,14 @@ export default function AddNewClientPage() {
           morada: cliente.morada || "",
           codigo_postal: cliente.codigoPostal || "",
         }
-      : {},
+      : {}, // Se estiver editando, preenche os campos com os dados do cliente
   });
 
+  // Função para enviar novo cliente ao backend
   const enviarNovoCliente = async (dados: AddClientFormInputs, recaptchaToken: string) => {
     try {
       if (!empresa?.id || !/^[a-f\d]{24}$/i.test(empresa.id)) {
-        throw new Error("ID da empresa inválido ou não fornecido.");
+        throw new Error("ID da empresa inválido ou não fornecido."); // Valida o ID da empresa
       }
 
       // O backend espera recaptchaToken e empresa_id no corpo
@@ -73,7 +76,7 @@ export default function AddNewClientPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include",
+        credentials: "include", // Inclui cookies na requisição
         body: JSON.stringify({
           ...dados,
           empresa_id: empresa.id,
@@ -81,23 +84,24 @@ export default function AddNewClientPage() {
         }),
       });
 
-      const data = await response.json();
+      const data = await response.json(); // Lê resposta do backend
 
       if (!response.ok) {
-        alert(data.detail || "Erro ao criar cliente");
+        alert(data.detail || "Erro ao criar cliente"); // Mostra erro se houver
       }
     } catch (error) {
-      throw error;
+      throw error; // Propaga erro para tratamento externo
     }
   };
 
+  // Função para atualizar cliente existente
   const atualizarCliente = async (dados: AddClientFormInputs & { id: string }, recaptchaToken: string) => {
     try {
       if (!empresa?.id || !/^[a-f\d]{24}$/i.test(empresa.id)) {
-        throw new Error("ID da empresa inválido ou não fornecido.");
+        throw new Error("ID da empresa inválido ou não fornecido."); // Valida ID da empresa
       }
       if (!dados.id || !/^[a-f\d]{24}$/i.test(dados.id)) {
-        throw new Error("ID do cliente inválido ou não fornecido.");
+        throw new Error("ID do cliente inválido ou não fornecido."); // Valida ID do cliente
       }
 
       var body = JSON.stringify({
@@ -105,7 +109,7 @@ export default function AddNewClientPage() {
         empresa_id: empresa.id,
         recaptchaToken,
       });
-      console.log("Dados enviados para o backend:", body);
+      console.log("Dados enviados para o backend:", body); // Log para debug
 
       // O backend espera recaptchaToken e empresa_id no corpo
       const response = await fetch(`/backend/cliente/update/${dados.id}`, {
@@ -113,7 +117,6 @@ export default function AddNewClientPage() {
         headers: {
           "Content-Type": "application/json",
         },
-
         credentials: "include",
         body: JSON.stringify({
           ...dados,
@@ -122,36 +125,40 @@ export default function AddNewClientPage() {
         }),
       });
 
-      const data = await response.json();
+      const data = await response.json(); // Lê resposta do backend
 
-      console.log("Resposta do backend:", data);
+      console.log("Resposta do backend:", data); // Log para debug
 
       if (!response.ok) {
-        alert(data.detail || "Erro ao atualizar cliente");
+        alert(data.detail || "Erro ao atualizar cliente"); // Mostra erro se houver
       }
     } catch (error) {
-      throw error;
+      throw error; // Propaga erro para tratamento externo
     }
   };
 
+  // Função chamada ao submeter o formulário
   const onSubmit = async (formData: AddClientFormInputs) => {
-    setErrorMessage(null);
+    setErrorMessage(null); // Limpa mensagem de erro
     try {
+      // Executa reCAPTCHA e obtém token
       const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
         action: "register",
       });
 
       if (!empresa?.id) {
-        setErrorMessage("Empresa não encontrada.");
+        setErrorMessage("Empresa não encontrada."); // Verifica se empresa existe
         return;
       }
 
       if (cliente) {
+        // Se for edição, atualiza cliente
         await atualizarCliente({ ...formData, id: cliente.id }, recaptchaToken);
         navigate("/clients-list", {
           state: { message: { error: false, text: "Cliente atualizado com sucesso!" } },
         });
       } else {
+        // Se for novo, envia novo cliente
         await enviarNovoCliente(formData, recaptchaToken);
         navigate("/clients-list", {
           state: { message: { error: false, text: "Novo cliente adicionado com sucesso!" } },
@@ -160,14 +167,16 @@ export default function AddNewClientPage() {
     } catch (error: any) {
       setErrorMessage(
         cliente ? error?.message || "Erro ao atualizar cliente." : error?.message || "Erro ao adicionar cliente."
-      );
+      ); // Mostra mensagem de erro apropriada
     }
   };
 
+  // Função para cancelar e voltar à lista de clientes
   const handleCancel = () => {
     navigate(-1);
   };
 
+  // Renderização do componente
   return (
     <Paper sx={{ maxWidth: 600, mx: "auto", mt: 5, p: 4 }}>
       {errorMessage && (
@@ -185,12 +194,12 @@ export default function AddNewClientPage() {
           textAlign: "center",
         }}
       >
-        {cliente ? "Editar Cliente" : "Adicionar novo Cliente"}
+        {cliente ? "Editar Cliente" : "Adicionar novo Cliente"} {/* Título dinâmico */}
       </Typography>
 
       <Box
         component="form"
-        onSubmit={handleSubmit(onSubmit)}
+        onSubmit={handleSubmit(onSubmit)} // Lida com submit do formulário
         sx={{
           display: "flex",
           flexDirection: "column",
@@ -198,14 +207,14 @@ export default function AddNewClientPage() {
         }}
       >
         <TextField
-          {...register("nome")}
+          {...register("nome")} // Campo nome
           label="Nome"
           error={!!errors.nome}
           helperText={errors.nome?.message}
           fullWidth
         />
         <TextField
-          {...register("email")}
+          {...register("email")} // Campo email
           label="Email"
           type="email"
           error={!!errors.email}
@@ -215,27 +224,26 @@ export default function AddNewClientPage() {
         <GlobalPhone fieldName="telefone" control={control} errors={errors} />
         <TextField {...register("nif")} label="NIF" error={!!errors.nif} helperText={errors.nif?.message} fullWidth />
         <TextField
-          {...register("localidade")}
+          {...register("localidade")} // Campo localidade
           label="Localidade"
           error={!!errors.localidade}
           helperText={errors.localidade?.message}
           fullWidth
         />
         <TextField
-          {...register("morada")}
+          {...register("morada")} // Campo morada
           label="Morada"
           error={!!errors.morada}
           helperText={errors.morada?.message}
           fullWidth
         />
         <TextField
-          {...register("codigo_postal")}
+          {...register("codigo_postal")} // Campo código postal
           label="Código Postal"
           error={!!errors.codigo_postal}
           helperText={errors.codigo_postal?.message}
           fullWidth
         />
-
         <Box
           sx={{
             display: "flex",
@@ -247,7 +255,7 @@ export default function AddNewClientPage() {
         >
           <Button
             variant="outlined"
-            onClick={handleCancel}
+            onClick={handleCancel} // Botão cancelar
             sx={{
               flex: 1,
 
@@ -270,7 +278,7 @@ export default function AddNewClientPage() {
               },
               minWidth: 0,
             }}
-            disabled={isSubmitting}
+            disabled={isSubmitting} // Desabilita enquanto está enviando
           >
             {isSubmitting
               ? cliente
