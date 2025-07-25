@@ -40,6 +40,7 @@ interface Cliente {
   morada?: string;
   codigoPostal?: string;
   isActive?: boolean;
+  createdAt?: string; // novo campo
 }
 
 export default function ClientManagementTable() {
@@ -66,7 +67,7 @@ export default function ClientManagementTable() {
 
   // Consulta remota para pesquisa
   const [getClientesByName, { data: searchData, loading: searchLoading }] = useLazyQuery(GET_CLIENTES_BY_EMPRESA, {
-    fetchPolicy: "network-only",
+    fetchPolicy: "cache-first",
   });
 
   useEffect(() => {
@@ -281,44 +282,58 @@ export default function ClientManagementTable() {
             <Table>
               <TableHead>
                 <TableRow style={{ backgroundColor }}>
-                  {["nome", "email", "telefone", "nif", "localidade", "morada", "codigoPostal", "estado", ""].map(
-                    (key) => (
-                      <TableCell
-                        key={key}
-                        onClick={
-                          [
-                            "nome",
-                            "email",
-                            "telefone",
-                            "nif",
-                            "localidade",
-                            "morada",
-                            "codigoPostal",
-                            "estado",
-                          ].includes(key)
-                            ? () => handleSort(key as keyof Cliente)
-                            : undefined
-                        }
-                        sx={{
-                          fontWeight: "bold",
-                          cursor: [
-                            "nome",
-                            "email",
-                            "telefone",
-                            "nif",
-                            "localidade",
-                            "morada",
-                            "codigoPostal",
-                            "estado",
-                          ].includes(key)
-                            ? "pointer"
-                            : "default",
-                        }}
-                      >
-                        {key === "codigoPostal" ? "Código Postal" : key.toUpperCase()}
-                      </TableCell>
-                    )
-                  )}
+                  {[
+                    "nome",
+                    "email",
+                    "telefone",
+                    "nif",
+                    "localidade",
+                    "morada",
+                    "codigoPostal",
+                    "createdAt", // <-- aqui!
+                    ...(empresa?.isAdmin ? ["estado", ""] : []), // <-- aqui!
+                  ].map((key) => (
+                    <TableCell
+                      key={key}
+                      onClick={
+                        [
+                          "nome",
+                          "email",
+                          "telefone",
+                          "nif",
+                          "localidade",
+                          "morada",
+                          "codigoPostal",
+                          "createdAt", // <-- aqui!
+                        ].includes(key)
+                          ? () => handleSort(key as keyof Cliente)
+                          : undefined
+                      }
+                      sx={{
+                        fontWeight: "bold",
+                        cursor: [
+                          "nome",
+                          "email",
+                          "telefone",
+                          "nif",
+                          "localidade",
+                          "morada",
+                          "codigoPostal",
+                          "createdAt", // <-- aqui!
+                          "estado",
+                        ].includes(key)
+                          ? "pointer"
+                          : "default",
+                        ...(key === "morada" && { maxWidth: 80, width: 80, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }),
+                      }}
+                    >
+                      {key === "codigoPostal"
+                        ? "Código Postal"
+                        : key === "createdAt"
+                        ? "Criado em"
+                        : key.toUpperCase()}
+                    </TableCell>
+                  ))}
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -347,60 +362,73 @@ export default function ClientManagementTable() {
                       <TableCell>{cliente.telefone}</TableCell>
                       <TableCell>{cliente.nif}</TableCell>
                       <TableCell>{cliente.localidade}</TableCell>
-                      <TableCell>{cliente.morada}</TableCell>
+                      <TableCell sx={{ maxWidth: 80, width: 80, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {cliente.morada}
+                      </TableCell>
                       <TableCell>{cliente.codigoPostal}</TableCell>
-                      {/* Botão círculo que alterna estado */}
+                      {/* Novo campo criado em */}
                       <TableCell>
-                        <Button
-                          variant="contained"
-                          size="small"
-                          sx={{
-                            width: 55,
-                            height: 55,
-                            borderRadius: "50%",
-                            backgroundColor: cliente.isActive ? theme.palette.success.main : theme.palette.error.main,
-                            color: "#fff",
-                            fontWeight: "bold",
-                            fontSize: 15,
-                            minWidth: 0,
-                            px: 0,
-                          }}
-                          onClick={async () => {
-                            if (cliente.isActive) {
-                              await apagarCliente(cliente, false);
-                            } else {
-                              await ativarCliente(cliente);
-                            }
-                          }}
-                        >
-                          {cliente.isActive ? "Ativo" : "Inativo"}
-                        </Button>
+                        {cliente.createdAt
+                          ? new Date(cliente.createdAt).toLocaleDateString("pt-PT")
+                          : ""}
                       </TableCell>
-                      {/* Botão Apagar permanentemente */}
-                      <TableCell>
-                        {!cliente.isActive && (
-                          <Button
-                            variant="contained"
-                            color="error"
-                            size="small"
-                            sx={{ borderRadius: "20px", minWidth: 0, px: 1.5, width: "auto", textTransform: "none" }}
-                            onClick={() => {
-                              setSelectedCliente(cliente);
-                              setDeleteDialogOpen(true);
-                            }}
-                          >
-                            Apagar permanentemente
-                          </Button>
-                        )}
-                      </TableCell>
+                      {empresa?.isAdmin ? (
+                        <>
+                          <TableCell>
+                            <Button
+                              variant="contained"
+                              size="small"
+                              sx={{
+                                width: 55,
+                                height: 55,
+                                borderRadius: "50%",
+                                backgroundColor: cliente.isActive ? theme.palette.success.main : theme.palette.error.main,
+                                color: "#fff",
+                                fontWeight: "bold",
+                                fontSize: 15,
+                                minWidth: 0,
+                                px: 0,
+                              }}
+                              onClick={async () => {
+                                if (cliente.isActive) {
+                                  await apagarCliente(cliente, false);
+                                } else {
+                                  await ativarCliente(cliente);
+                                }
+                              }}
+                            >
+                              {cliente.isActive ? "Ativo" : "Inativo"}
+                            </Button>
+                          </TableCell>
+                          <TableCell>
+                            {!cliente.isActive && (
+                              <Button
+                                variant="contained"
+                                color="error"
+                                size="small"
+                                sx={{ borderRadius: "20px", minWidth: 0, px: 1.5, width: "auto", textTransform: "none" }}
+                                onClick={() => {
+                                  setSelectedCliente(cliente);
+                                  setDeleteDialogOpen(true);
+                                }}
+                              >
+                                Apagar permanentemente
+                              </Button>
+                            )}
+                          </TableCell>
+                        </>
+                      ) : (
+                        <>
+                          
+                        </>
+                      )}
                     </TableRow>
                   );
-                })}
+                })} {/* fecha o map */}
               </TableBody>
             </Table>
           </TableContainer>
         </div>
-
         <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
           {pageCount > 1 && (
             <Pagination

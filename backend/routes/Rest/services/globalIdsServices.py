@@ -10,6 +10,7 @@ from database import (
 )  # Ajuste o caminho conforme sua estrutura
 from passlib.context import CryptContext
 from asyncio import gather
+from pymongo.errors import DuplicateKeyError
 
 routerUser = APIRouter(prefix="/user")
 pwd_context = CryptContext(

@@ -7,6 +7,7 @@ import {
   Engineering as EngineeringIcon,
 } from "@mui/icons-material";
 import GroupIcon from "@mui/icons-material/Group";
+import { useAuth } from "../hooks/AuthContext";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -16,7 +17,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const navigate = useNavigate();
   const [openReports, setOpenReports] = useState(false);
-
+  const { empresa } = useAuth();
   const handleToggleReports = () => {
     setOpenReports(!openReports);
   };
@@ -47,7 +48,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             <ListItemText primary="Relatórios" />
           </ListItemButton>
         </ListItem>
-
         {/* Modelos - Com submenu */}
         <ListItem disablePadding>
           <ListItemButton onClick={() => handleNavigation("/report-models")}>
@@ -57,7 +57,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             <ListItemText primary="Modelos" />
           </ListItemButton>
         </ListItem>
-
         <ListItem disablePadding>
           <ListItemButton onClick={() => handleNavigation("/clients-list")}>
             <ListItemIcon>
@@ -66,14 +65,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             <ListItemText primary="Clientes" />
           </ListItemButton>
         </ListItem>
-        <ListItem disablePadding>
-          <ListItemButton onClick={() => handleNavigation("/users-list")}>
-            <ListItemIcon>
-              <EngineeringIcon />
-            </ListItemIcon>
-            <ListItemText primary="Funcionários" />
-          </ListItemButton>
-        </ListItem>
+        {empresa?.isAdmin && (
+          <ListItem disablePadding>
+            <ListItemButton onClick={() => handleNavigation("/users-list")}>
+              <ListItemIcon>
+                <EngineeringIcon />
+              </ListItemIcon>
+              <ListItemText primary="Funcionários" />
+            </ListItemButton>
+          </ListItem>
+        )}
       </List>
     </Box>
   );

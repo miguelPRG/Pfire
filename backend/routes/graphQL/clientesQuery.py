@@ -21,10 +21,15 @@ class ClienteQuery:
         jwt = getattr(request.state, "jwt", None)
 
         empresa_id = ObjectId(empresa_id)
+        user_id = ObjectId(jwt["user_id"])
 
         if not jwt.get("isSuperAdmin", False):
+
+            print("Empresa ID:", empresa_id)
+            print("User ID:", jwt["user_id"])
+
             user_empresa = await users_empresas_collection.find_one(
-                {"empresa_id": empresa_id, "user_id": jwt["user_id"]}
+                {"empresa_id": empresa_id, "user_id": user_id}
             )
 
             if not user_empresa:

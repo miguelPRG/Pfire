@@ -41,8 +41,6 @@ function EmailOperation() {
         convite: async () => {
           let globalIdData: { email: string | null; operation: string | null } | null = null;
 
-          console.log("GLOBAL_ID:", GLOBAL_ID);
-
           try {
             // Buscar e guardar os dados do global_id
             const globalIdResponse = await fetch(`/backend/user/get-global-id/${GLOBAL_ID}`);

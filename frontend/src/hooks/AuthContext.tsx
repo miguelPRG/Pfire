@@ -178,7 +178,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localidade: empresaData.localidade,
         codigoPostal: empresaData.codigoPostal,
         logo: empresaData.logo,
-        isAdmin: empresaData.isAdmin ?? null,
+        isAdmin: empresaData.isAdmin ?? user.isSuperAdmin ?? false, // Se isAdmin for null, usa isSuperAdmin
       });
 
       setLoading(false); // <--- indica que o carregamento foi concluído

@@ -34,7 +34,7 @@ const formatType = (type: string) => {
     string: "Texto",
     number: "Número",
     bool: "Sim/Não",
-    date: "Data de criação",
+    date: "Data",
     object: "Grupo de Campos",
     array: "Lista",
   };
@@ -333,7 +333,7 @@ export default function ReportModelListPage() {
                   <strong>Nome</strong>
                 </TableCell>
                 <TableCell>
-                  <strong>Data</strong>
+                  <strong>Data de criação</strong>
                 </TableCell>
                 <TableCell>
                   <strong>Campos Personalizados</strong>
@@ -378,11 +378,13 @@ export default function ReportModelListPage() {
                   </TableCell>
                   <TableCell align="center">
                     <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
-                      <IconButton
-                        onClick={() => handleDelete(modelo.id)}
-                        sx={{
-                          backgroundColor: "error.main",
-                          color: "#fff",
+                      {empresa?.isAdmin && (
+                        <>
+                          <IconButton
+                            onClick={() => handleDelete(modelo.id)}
+                            sx={{
+                              backgroundColor: "error.main",
+                              color: "#fff",
                           "&:hover": {
                             backgroundColor: "error.dark",
                           },
@@ -390,14 +392,16 @@ export default function ReportModelListPage() {
                       >
                         <Delete fontSize="small" />
                       </IconButton>
-                      <Tooltip title="Clonar Modelo">
+                        <Tooltip title="Clonar Modelo">
                         <IconButton onClick={() => handleClone(modelo.id)} disabled={cloningId === modelo.id}>
                           <ContentCopyIcon />
                         </IconButton>
                       </Tooltip>
-                      <Button
-                        variant="contained"
-                        color="primary"
+                    </>
+                  )}
+                  <Button
+                    variant="contained"
+                    color="primary"
                         onClick={() =>
                           navigate("/add-new-report", {
                             state: {

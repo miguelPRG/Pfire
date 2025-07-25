@@ -12,6 +12,7 @@ export const GET_CLIENTES_BY_EMPRESA = gql`
         localidade
         morada
         codigoPostal
+        createdAt
         isActive
       }
       totalClientes
