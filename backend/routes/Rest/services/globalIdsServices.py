@@ -38,7 +38,9 @@ async def get_global_id(global_id: str, request: Request):
     # Converte ObjectIds para strings
     global_id_data["_id"] = str(global_id_data["_id"])
     global_id_data["host_user_id"] = str(global_id_data["host_user_id"]) if "host_user_id" in global_id_data else None
-    global_id_data["guest_user_id"] = str(global_id_data["guest_user_id"]) if "guest_user_id" in global_id_data else None
+    global_id_data["guest_user_id"] = (
+        str(global_id_data["guest_user_id"]) if "guest_user_id" in global_id_data else None
+    )
     global_id_data["empresa_id"] = str(global_id_data["empresa_id"]) if "empresa_id" in global_id_data else None
     global_id_data["user_id"] = str(global_id_data["user_id"]) if "user_id" in global_id_data else None
     global_id_data["created_by"] = str(global_id_data["created_by"]) if "created_by" in global_id_data else None
@@ -129,7 +131,6 @@ async def accept_invite(global_id: str, request: Request):
 
     print("Global ID Data:", global_id_data)
 
-
     if not global_id_data or global_id_data.get("email"):
         raise HTTPException(status_code=404, detail="Global ID não encontrado ou inválido.")
 
@@ -163,7 +164,6 @@ async def accept_invite(global_id: str, request: Request):
 
         user_empresa, global_delete = await gather(user_empresa_insertion, global_delete)
 
-
         if not str(user_empresa.inserted_id):
             raise HTTPException(status_code=500, detail="Erro ao aceitar o convite.")
 
@@ -171,6 +171,6 @@ async def accept_invite(global_id: str, request: Request):
             raise HTTPException(status_code=500, detail="Erro ao remover o global ID após aceitar o convite.")
 
     except DuplicateKeyError as e:
-            raise HTTPException(status_code=409, detail="Erro ao aceitar o convite.")
+        raise HTTPException(status_code=409, detail="Erro ao aceitar o convite.")
 
     return {"message": f"Convite aceite com sucesso!"}

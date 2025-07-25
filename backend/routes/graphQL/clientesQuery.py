@@ -10,7 +10,9 @@ from bson import ObjectId
 @strawberry.type
 class ClienteQuery:
     @strawberry.field
-    async def getClientes(self, info: Info, empresa_id: str, start: int = 0 , name: str = "", nif: str = "") -> ClienteList:
+    async def getClientes(
+        self, info: Info, empresa_id: str, start: int = 0, name: str = "", nif: str = ""
+    ) -> ClienteList:
 
         lmt = 10  # Limite padrão de resultados por página
 
@@ -28,9 +30,7 @@ class ClienteQuery:
             print("Empresa ID:", empresa_id)
             print("User ID:", jwt["user_id"])
 
-            user_empresa = await users_empresas_collection.find_one(
-                {"empresa_id": empresa_id, "user_id": user_id}
-            )
+            user_empresa = await users_empresas_collection.find_one({"empresa_id": empresa_id, "user_id": user_id})
 
             if not user_empresa:
                 raise HTTPException(
@@ -78,4 +78,3 @@ class ClienteQuery:
         total_clientes = await clientes_collection.count_documents(filtro)
 
         return ClienteList(clientes=clientes, totalClientes=total_clientes)
-

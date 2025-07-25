@@ -88,69 +88,69 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
             raise HTTPException(status_code=400, detail=f"O campo {key} não está listado no modelo.")
 
     def verificar_campos_recursivamente(modelo_fields, relatorio_fields, parent_key=""):
-     for key, value in modelo_fields.items():
-        full_key = f"{parent_key}.{key}" if parent_key else key
+        for key, value in modelo_fields.items():
+            full_key = f"{parent_key}.{key}" if parent_key else key
 
-        # Verificar se o campo está presente no relatório
-        if key not in relatorio_fields:
-            if value.get("required", False):
-                raise HTTPException(
-                    status_code=400, detail=f"O campo {full_key} é obrigatório e não foi fornecido."
-                )
-            continue
+            # Verificar se o campo está presente no relatório
+            if key not in relatorio_fields:
+                if value.get("required", False):
+                    raise HTTPException(
+                        status_code=400, detail=f"O campo {full_key} é obrigatório e não foi fornecido."
+                    )
+                continue
 
-        # Verificar o tipo de dado do campo
-        if value["datatype"] == "number" and not isinstance(relatorio_fields[key], (int, float)):
-            raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser um número.")
+            # Verificar o tipo de dado do campo
+            if value["datatype"] == "number" and not isinstance(relatorio_fields[key], (int, float)):
+                raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser um número.")
 
-        elif value["datatype"] in ["string", "date"]:
-            if not isinstance(relatorio_fields[key], str):
-                raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser uma string.")
+            elif value["datatype"] in ["string", "date"]:
+                if not isinstance(relatorio_fields[key], str):
+                    raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser uma string.")
 
-        elif value["datatype"] == "bool" and not isinstance(relatorio_fields[key], bool):
-            raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser um booleano (true/false).")
+            elif value["datatype"] == "bool" and not isinstance(relatorio_fields[key], bool):
+                raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser um booleano (true/false).")
 
-        elif value["datatype"] == "object" and not isinstance(relatorio_fields[key], dict):
-            raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser um objeto ou dicionário.")
+            elif value["datatype"] == "object" and not isinstance(relatorio_fields[key], dict):
+                raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser um objeto ou dicionário.")
 
-        # Verificar formato de data se for string do tipo "date"
-        if value["datatype"] == "date":
-            date_regex = compile(r"^\d{2}/\d{2}/\d{4}$")
-            if not date_regex.match(relatorio_fields[key]):
-                raise HTTPException(
-                    status_code=400, detail=f"O campo {full_key} deve ser uma data no formato DD/MM/YYYY."
-                )
+            # Verificar formato de data se for string do tipo "date"
+            if value["datatype"] == "date":
+                date_regex = compile(r"^\d{2}/\d{2}/\d{4}$")
+                if not date_regex.match(relatorio_fields[key]):
+                    raise HTTPException(
+                        status_code=400, detail=f"O campo {full_key} deve ser uma data no formato DD/MM/YYYY."
+                    )
 
-        # Verificar recursivamente objetos
-        if value["datatype"] == "object":
-            custom_fields = {}
+            # Verificar recursivamente objetos
+            if value["datatype"] == "object":
+                custom_fields = {}
 
-            for k in relatorio_fields[key].keys():
-                if not k.startswith("custom_"):
+                for k in relatorio_fields[key].keys():
+                    if not k.startswith("custom_"):
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"O campo {full_key} não pode conter subcampos que não começam com 'custom_'.",
+                        )
+                    else:
+                        custom_fields[k] = relatorio_fields[key][k]
+
+                if not custom_fields:
                     raise HTTPException(
                         status_code=400,
-                        detail=f"O campo {full_key} não pode conter subcampos que não começam com 'custom_'.",
-                    )
-                else:
-                    custom_fields[k] = relatorio_fields[key][k]
-
-            if not custom_fields:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"O campo {full_key} deve conter pelo menos um subcampo personalizado (custom_).",
-                )
-
-            # Verificar se os subcampos estão no modelo
-            subcampos_modelo = {k: v for k, v in value.items() if k.startswith("custom_")}
-
-            for subkey in custom_fields.keys():
-                if subkey not in subcampos_modelo:
-                    raise HTTPException(
-                        status_code=400, detail=f"O subcampo {full_key}.{subkey} não está listado no modelo."
+                        detail=f"O campo {full_key} deve conter pelo menos um subcampo personalizado (custom_).",
                     )
 
-            # Chamada recursiva
-            verificar_campos_recursivamente(subcampos_modelo, custom_fields, full_key)
+                # Verificar se os subcampos estão no modelo
+                subcampos_modelo = {k: v for k, v in value.items() if k.startswith("custom_")}
+
+                for subkey in custom_fields.keys():
+                    if subkey not in subcampos_modelo:
+                        raise HTTPException(
+                            status_code=400, detail=f"O subcampo {full_key}.{subkey} não está listado no modelo."
+                        )
+
+                # Chamada recursiva
+                verificar_campos_recursivamente(subcampos_modelo, custom_fields, full_key)
 
     # Verificar os campos do relatório em relação ao modelo
     verificar_campos_recursivamente(modelo_fields, relatorio_fields)

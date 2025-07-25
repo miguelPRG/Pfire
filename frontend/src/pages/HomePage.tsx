@@ -114,12 +114,13 @@ function HomePage() {
               color: theme.palette.mode === "dark" ? "#eee" : "inherit",
             })}
           >
-            Você é <strong>{empresa?.isAdmin ? "Administrador" : "Técnico"}</strong> da empresa <strong>{empresa?.nome}</strong>
+            Você é <strong>{empresa?.isAdmin ? "Administrador" : "Técnico"}</strong> da empresa{" "}
+            <strong>{empresa?.nome}</strong>
           </Typography>
         </Box>
         {/* Lista de relatórios */}
         <Typography variant="h5" sx={{ mt: 4, mb: 2, textAlign: "left" }}>
-            Aqui estão os relatórios
+          Aqui estão os relatórios
         </Typography>
         <Box
           sx={(theme) => ({
@@ -134,37 +135,37 @@ function HomePage() {
           })}
         >
           <Grid container spacing={2}>
-            {loading
-              ? Array.from({ length: 3 }).map((_, idx) => (
-                  <Grid item xs={12} sm={6} md={4} key={idx}>
-                    <Card sx={{ p: 2 }}>
-                      <Skeleton variant="text" width="60%" height={32} />
-                      <Skeleton variant="text" width="80%" />
-                      <Skeleton variant="rectangular" height={40} sx={{ mt: 1 }} />
-                    </Card>
-                  </Grid>
-                ))
-              : reports.length === 0 ? (
-                  <Grid item xs={12}>
-                    <Typography color="text.secondary">Ainda não criou nenhum relatório.</Typography>
-                  </Grid>
-                ) : (
-                  reports.slice(0, 6).map((report) => (
-                    <Grid item xs={12} sm={6} md={4} key={report.id}>
-                      <Card sx={{ p: 2, minHeight: 120, display: "flex", flexDirection: "column", gap: 1 }}>
-                        <Typography variant="subtitle1" fontWeight="bold">
-                          Relatório #{report.id}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Cliente: {report.clienteId}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          Data: {new Date(report.createdAt).toLocaleDateString("pt-PT")}
-                        </Typography>
-                      </Card>
-                    </Grid>
-                  ))
-                )}
+            {loading ? (
+              Array.from({ length: 3 }).map((_, idx) => (
+                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={idx}>
+                  <Card sx={{ p: 2 }}>
+                    <Skeleton variant="text" width="60%" height={32} />
+                    <Skeleton variant="text" width="80%" />
+                    <Skeleton variant="rectangular" height={40} sx={{ mt: 1 }} />
+                  </Card>
+                </Grid>
+              ))
+            ) : reports.length === 0 ? (
+              <Grid size={{ xs: 12 }}>
+                <Typography color="text.secondary">Ainda não criou nenhum relatório.</Typography>
+              </Grid>
+            ) : (
+              reports.slice(0, 6).map((report) => (
+                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={report.id}>
+                  <Card sx={{ p: 2, minHeight: 120, display: "flex", flexDirection: "column", gap: 1 }}>
+                    <Typography variant="subtitle1" fontWeight="bold">
+                      Relatório #{report.id}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Cliente: {report.clienteId}
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Data: {new Date(report.createdAt).toLocaleDateString("pt-PT")}
+                    </Typography>
+                  </Card>
+                </Grid>
+              ))
+            )}
           </Grid>
         </Box>
       </Paper>

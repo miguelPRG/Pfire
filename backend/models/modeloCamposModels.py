@@ -72,7 +72,7 @@ def validate_field(key, value):
                 status_code=400,
                 detail=f"O campo que está a tentar criar: {key} do tipo 'array' deve conter um subcampo 'items' com as opções do array.",
             )
-        
+
         # Verificar se todos os elemetos de items são strings
         if not all(isinstance(item, str) for item in value["items"]):
             raise HTTPException(
@@ -115,7 +115,7 @@ def validate_field(key, value):
 class ModelosCamposCreate(BaseModel):
     model_name: str = Field(..., max_length=100, description="Nome do modelo. Deve ter no máximo 100 caracteres.")
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
-    #recaptchaToken: str
+    # recaptchaToken: str
     model_config = ConfigDict(extra="allow")  # Permite campos extras
 
     @field_validator("empresa_id", mode="before")

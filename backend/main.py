@@ -34,10 +34,8 @@ app.add_middleware(
     allow_origins=["http://localhost:3000"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],  # Inclua OPTIONS
-    allow_headers=["Content-Type", "Host", "Cookie"]
-
+    allow_headers=["Content-Type", "Host", "Cookie"],
 )
-
 
 
 @app.middleware("http")
@@ -114,12 +112,12 @@ app.include_router(relatorioCRUD.routerRelatorio)
 app.include_router(graphql_router, prefix="/graphql")
 
 
-
 @app.get("/")
 async def root(request: Request):
     """Rota de teste que retorna os dados do usuário autenticado"""
     jwt = getattr(request.state, "jwt", None)
     return {"message": "Bem-vindo ao backend com FastAPI e MongoDB!", "user": jwt["nome"] if jwt else None}
+
 
 @app.middleware("http")
 async def options_method_middleware(request: Request, call_next):

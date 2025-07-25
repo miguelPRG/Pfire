@@ -385,23 +385,23 @@ export default function ReportModelListPage() {
                             sx={{
                               backgroundColor: "error.main",
                               color: "#fff",
-                          "&:hover": {
-                            backgroundColor: "error.dark",
-                          },
-                        }}
-                      >
-                        <Delete fontSize="small" />
-                      </IconButton>
-                        <Tooltip title="Clonar Modelo">
-                        <IconButton onClick={() => handleClone(modelo.id)} disabled={cloningId === modelo.id}>
-                          <ContentCopyIcon />
-                        </IconButton>
-                      </Tooltip>
-                    </>
-                  )}
-                  <Button
-                    variant="contained"
-                    color="primary"
+                              "&:hover": {
+                                backgroundColor: "error.dark",
+                              },
+                            }}
+                          >
+                            <Delete fontSize="small" />
+                          </IconButton>
+                          <Tooltip title="Clonar Modelo">
+                            <IconButton onClick={() => handleClone(modelo.id)} disabled={cloningId === modelo.id}>
+                              <ContentCopyIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </>
+                      )}
+                      <Button
+                        variant="contained"
+                        color="primary"
                         onClick={() =>
                           navigate("/add-new-report", {
                             state: {

@@ -14,7 +14,6 @@ export const lightTheme = createTheme({
   },
   typography: {
     fontFamily: '"Inter", "Roboto", sans-serif',
-   
   },
   components: commonComponents,
 });
@@ -32,7 +31,6 @@ export const darkTheme = createTheme({
   },
   typography: {
     fontFamily: '"Inter", "Roboto", sans-serif',
-    
   },
   components: commonComponents,
 });

@@ -324,14 +324,16 @@ export default function ClientManagementTable() {
                         ].includes(key)
                           ? "pointer"
                           : "default",
-                        ...(key === "morada" && { maxWidth: 80, width: 80, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }),
+                        ...(key === "morada" && {
+                          maxWidth: 80,
+                          width: 80,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }),
                       }}
                     >
-                      {key === "codigoPostal"
-                        ? "Código Postal"
-                        : key === "createdAt"
-                        ? "Criado em"
-                        : key.toUpperCase()}
+                      {key === "codigoPostal" ? "Código Postal" : key === "createdAt" ? "Criado em" : key.toUpperCase()}
                     </TableCell>
                   ))}
                 </TableRow>
@@ -362,15 +364,21 @@ export default function ClientManagementTable() {
                       <TableCell>{cliente.telefone}</TableCell>
                       <TableCell>{cliente.nif}</TableCell>
                       <TableCell>{cliente.localidade}</TableCell>
-                      <TableCell sx={{ maxWidth: 80, width: 80, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      <TableCell
+                        sx={{
+                          maxWidth: 80,
+                          width: 80,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
                         {cliente.morada}
                       </TableCell>
                       <TableCell>{cliente.codigoPostal}</TableCell>
                       {/* Novo campo criado em */}
                       <TableCell>
-                        {cliente.createdAt
-                          ? new Date(cliente.createdAt).toLocaleDateString("pt-PT")
-                          : ""}
+                        {cliente.createdAt ? new Date(cliente.createdAt).toLocaleDateString("pt-PT") : ""}
                       </TableCell>
                       {empresa?.isAdmin ? (
                         <>
@@ -382,7 +390,9 @@ export default function ClientManagementTable() {
                                 width: 55,
                                 height: 55,
                                 borderRadius: "50%",
-                                backgroundColor: cliente.isActive ? theme.palette.success.main : theme.palette.error.main,
+                                backgroundColor: cliente.isActive
+                                  ? theme.palette.success.main
+                                  : theme.palette.error.main,
                                 color: "#fff",
                                 fontWeight: "bold",
                                 fontSize: 15,
@@ -406,7 +416,13 @@ export default function ClientManagementTable() {
                                 variant="contained"
                                 color="error"
                                 size="small"
-                                sx={{ borderRadius: "20px", minWidth: 0, px: 1.5, width: "auto", textTransform: "none" }}
+                                sx={{
+                                  borderRadius: "20px",
+                                  minWidth: 0,
+                                  px: 1.5,
+                                  width: "auto",
+                                  textTransform: "none",
+                                }}
                                 onClick={() => {
                                   setSelectedCliente(cliente);
                                   setDeleteDialogOpen(true);
@@ -418,13 +434,12 @@ export default function ClientManagementTable() {
                           </TableCell>
                         </>
                       ) : (
-                        <>
-                          
-                        </>
+                        <></>
                       )}
                     </TableRow>
                   );
-                })} {/* fecha o map */}
+                })}{" "}
+                {/* fecha o map */}
               </TableBody>
             </Table>
           </TableContainer>

@@ -10,7 +10,9 @@ from strawberry.types import Info
 @strawberry.type
 class UserQuery:
     @strawberry.field
-    async def getUsers(self, info: Info, empresa_id: str, start: int = 0 , name: str = None, email: str = None) -> UserList:
+    async def getUsers(
+        self, info: Info, empresa_id: str, start: int = 0, name: str = None, email: str = None
+    ) -> UserList:
 
         lmt = 10  # Limite padrão de resultados por página
 
@@ -43,11 +45,8 @@ class UserQuery:
         if email:
             filtro["email"] = {"$regex": f"^{email}", "$options": "i"}
 
-
         # ✅ Listar utilizadores da empresa
-        async for user_empresa in (
-            users_empresas_collection.find(filtro).skip(start).limit(lmt)
-        ):
+        async for user_empresa in users_empresas_collection.find(filtro).skip(start).limit(lmt):
             user = await users_collection.find_one({"_id": user_empresa["user_id"]})
             if not user:
                 continue
@@ -74,4 +73,3 @@ class UserQuery:
 
         total_users = await users_empresas_collection.count_documents({"empresa_id": ObjectId(empresa_id)})
         return UserList(users=users, totalUsers=total_users)
-

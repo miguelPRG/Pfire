@@ -6,6 +6,7 @@ import strawberry
 from strawberry.types import Info
 from bson import ObjectId
 
+
 @strawberry.type
 class ModeloQuery:
     @strawberry.field
@@ -18,14 +19,12 @@ class ModeloQuery:
 
         request = info.context["request"]
         jwt = getattr(request.state, "jwt", None)
-        
+
         empresa_id = ObjectId(empresa_id)
         user_id = ObjectId(jwt["user_id"])
 
         if not jwt.get("isSuperAdmin", False):
-            user_empresa = await users_empresas_collection.find_one(
-                {"empresa_id": empresa_id, "user_id": user_id}
-            )
+            user_empresa = await users_empresas_collection.find_one({"empresa_id": empresa_id, "user_id": user_id})
 
             if not user_empresa:
                 raise HTTPException(
@@ -65,4 +64,3 @@ class ModeloQuery:
 
         total_modelos = await modelos_collection.count_documents({"empresa_id": empresa_id})
         return ModeloList(modelos=modelos, totalModelos=total_modelos)
-
