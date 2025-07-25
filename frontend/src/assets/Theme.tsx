@@ -14,14 +14,7 @@ export const lightTheme = createTheme({
   },
   typography: {
     fontFamily: '"Inter", "Roboto", sans-serif',
-    h1: {
-      fontFamily: '"Poppins", sans-serif',
-      fontSize: "2rem",
-    },
-    h2: {
-      fontFamily: '"Poppins", sans-serif',
-      fontSize: "1.5rem",
-    },
+   
   },
   components: commonComponents,
 });
@@ -39,18 +32,7 @@ export const darkTheme = createTheme({
   },
   typography: {
     fontFamily: '"Inter", "Roboto", sans-serif',
-    h1: {
-      fontFamily: '"Poppins", sans-serif',
-      fontSize: "2rem",
-      fontWeight: 600,
-      color: "#E0E0E0",
-    },
-    h2: {
-      fontFamily: '"Poppins", sans-serif',
-      fontSize: "1.5rem",
-      fontWeight: 500,
-      color: "#E0E0E0",
-    },
+    
   },
   components: commonComponents,
 });

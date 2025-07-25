@@ -123,11 +123,24 @@ const commonComponents: Components = {
         fontWeight: "bold",
       },
       h3: {
+        fontSize: "1.3rem",
+        fontWeight: "bold",
+      },
+      h4: {
         fontSize: "1.2rem",
         fontWeight: "bold",
       },
-      body1: {
+      h5: {
+        fontSize: "1.1rem",
+        fontWeight: "bold",
+      },
+      h6: {
         fontSize: "1rem",
+        fontWeight: "bold",
+      },
+
+      body1: {
+        fontSize: "1.2rem",
         "& a": {
           color: "#1976D2", // Define a cor dos links
           textDecoration: "none", // Remove o sublinhado
