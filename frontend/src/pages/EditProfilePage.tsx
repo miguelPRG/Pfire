@@ -1,5 +1,5 @@
 import { useAuth } from "../hooks/AuthContext";
-import { Box, Button, Container, TextField, Typography, Paper, Grid, Alert } from "@mui/material";
+import { Box, Button, Container, TextField, Typography, Paper, Grid, Alert, Breadcrumbs } from "@mui/material";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,6 +8,9 @@ import { useEffect, useState, useRef } from "react";
 import isValidNIF from "./utils/isValidNIF";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
 import PasswordField from "../components/PasswordField";
+import StyledBreadcrumb from "../components/StyledBreadCrumbs";
+import { useNavigate } from "react-router-dom";
+import HomeIcon from "@mui/icons-material/Home";
 
 // Schemas
 const userInfoSchema = z.object({
@@ -86,7 +89,7 @@ function SectionForm({ title, onSubmit, children }: Omit<SectionFormProps, "mess
 
 function EditProfilePage() {
   const { user, empresa, updateUser, updatePassword, updateCompany } = useAuth();
-
+  const navigate = useNavigate();
   // Estado global para o alerta
   const [globalMessage, setGlobalMessage] = useState<MessageType>(null);
 
@@ -205,6 +208,19 @@ function EditProfilePage() {
           </Alert>
         </Box>
       )}
+      <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 3, backgroundColor: "background.paper" , maxWidth: "200px", borderRadius: 5, padding: 0.5 }}>
+        <StyledBreadcrumb
+          component="a"
+          sx={{ cursor: "pointer" }}
+          onClick={() => navigate("/")}
+          icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
+        />
+        <StyledBreadcrumb
+          sx={{fontSize: "0.9rem"}}
+          component="span"
+          label="Editar Perfil"
+        />
+      </Breadcrumbs>
       <SectionForm title="Alterar Nome e Telefone" onSubmit={userInfoForm.handleSubmit(handleSubmitUserUpdate)}>
         <Grid container spacing={2}>
           <Grid size={{ xs: 12 }}>

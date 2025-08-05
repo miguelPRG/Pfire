@@ -18,6 +18,7 @@ import {
   Grid,
   Link,
   Tooltip,
+  Breadcrumbs
 } from "@mui/material";
 import { ExpandLess, ExpandMore, Search, Delete, ContentCopy as ContentCopyIcon } from "@mui/icons-material";
 import { useEffect, useState } from "react";
@@ -27,6 +28,8 @@ import { GET_MODELOS_RELATORIOS } from "../../../graphql/reportmodelsqueries";
 import { useAuth } from "../../../hooks/AuthContext";
 import Notification from "../../../components/Notification";
 import LoadingAnimation from "../../../components/LoadingAnimation";
+import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
+import HomeIcon from "@mui/icons-material/Home";
 
 // Função utilitária para formatar tipos de campos
 const formatType = (type: string) => {
@@ -279,6 +282,21 @@ export default function ReportModelListPage() {
     <>
       {/* Container principal */}
       <Paper sx={{ width: "100%", p: 2, boxShadow: "none", backgroundColor: theme.palette.background.default }}>
+        {/* Breadcrumbs */}
+        <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 3, backgroundColor: "background.paper" , maxWidth: "200px", borderRadius: 5, padding: 0.5 }}>
+        <StyledBreadcrumb
+          component="a"
+          sx={{ cursor: "pointer" }}
+          onClick={() => navigate("/")}
+          icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
+        />
+        <StyledBreadcrumb
+          sx={{fontSize: "0.9rem"}}
+          component="span"
+          label="Clientes"
+        />
+      </Breadcrumbs>
+        {/* Fim Breadcrumbs */}
         {/* Cabeçalho com título e botão de adicionar */}
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 8 }}>
           <Typography variant="h5" sx={{ fontWeight: "bold", fontSize: 30, color: theme.palette.text.primary }}>
