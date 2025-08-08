@@ -228,3 +228,39 @@ async def activate_relatorio(relatorio: RelatorioActivation, request: Request):
         raise HTTPException(status_code=404, detail="Relatório não encontrado ou já foi apagado!")
 
     return {"message": "Relatório reativado com sucesso!"}
+
+# Apagar Relatório Permanentemente
+@routerRelatorio.delete("/hard-delete")
+async def hard_delete_relatorio(relatorio: RelatorioActivation, request: Request):
+
+    # Validar reCAPTCHA token
+    await validar_recaptcha_token(relatorio.recaptchaToken, "hard_delete")
+
+    # Sacar jwt
+    jwt = getattr(request.state, "jwt", None)
+
+    # Permissões iguais ao soft delete
+    if not jwt.get("isSuperAdmin"):
+        user_empresa = await users_empresas_collection.find_one(
+            {"user_id": jwt["user_id"], "empresa_id": ObjectId(relatorio.empresa_id)}
+        )
+        if not user_empresa:
+            raise HTTPException(
+                status_code=403,
+                detail="Usuário não tem permissão para apagar relatórios para esta empresa"
+            )
+
+    # Só apaga se já estiver inativo
+    result = await relatorios_collection.delete_one({
+        "_id": ObjectId(relatorio.id),
+        "empresa_id": ObjectId(relatorio.empresa_id),
+        "isActive": False
+    })
+
+    if result.deleted_count == 0:
+        raise HTTPException(
+            status_code=404,
+            detail="Relatório não encontrado ou ainda está ativo."
+        )
+
+    return {"message": "Relatório apagado permanentemente com sucesso!"}

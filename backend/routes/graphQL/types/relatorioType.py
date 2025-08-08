@@ -12,6 +12,10 @@ class Relatorio:
     created_at: datetime
     created_by: Optional[str] = None
     custom_fields: list[JSON]
+    relatorio_name: str
+    cliente_name: Optional[str] = None  
+    isActive: Optional[bool] = None
+
 
 
 @strawberry.type

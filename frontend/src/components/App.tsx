@@ -29,10 +29,10 @@ const AddNewClient = lazy(() => import("../pages/CRUD/cliente/AddNewClientPage")
 const EditProfilePage = lazy(() => import("../pages/EditProfilePage"));
 const ForgotPasswordPage = lazy(() => import("../pages/public/ForgotPasswordPage"));
 const ChooseCompany = lazy(() => import("../pages/CompanySelectorPage"));
-const ReportModelListPage = lazy(() => import("../pages/CRUD/modelo/ReportModelListPage"));
-const ReportTemplatesPage = lazy(() => import("../pages/CRUD/modelo/ReportTemplatesPage"));
+const ReportModelListPage = lazy(() => import("../pages/CRUD/modelo/ModelListPage"));
+const ReportTemplatesPage = lazy(() => import("../pages/CRUD/modelo/ModelEditPage"));
 const AddNewReportPage = lazy(() => import("../pages/AddNewReportPage"));
-
+const ReportListPage = lazy(() => import("../pages/CRUD/relatorios/ReportListPage"));
 // Rotas que podem ser utilizados apenas depois de autenticação
 const ProtectedRoute = ({ element }: { element: ReactElement }) => {
   const { user, empresa } = useAuth();
@@ -148,6 +148,9 @@ function App() {
             <Route path="/choose-company" element={<ProtectedRoute element={<ChooseCompanyRoute />} />} />
             <Route path="/report-models" element={<ProtectedRoute element={<ReportModelListPage />} />} />
             <Route path="/report-templates" element={<ProtectedRoute element={<ReportTemplatesPage />} />} />
+            <Route path="/add-new-report" element={<ProtectedRoute element={<AddNewReportPage />} />} />
+            <Route path="/reports-list" element={<ProtectedRoute element={<ReportListPage />} />} />
+            {/* Rota de fallback para redirecionar usuários não autenticados */}
             <Route path="/add-new-report" element={<ProtectedRoute element={<AddNewReportPage />} />} />
 
             {/* Rota de fallback para redirecionar usuários não autenticados */}

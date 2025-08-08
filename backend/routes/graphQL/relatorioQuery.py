@@ -1,5 +1,5 @@
 from .types.relatorioType import Relatorio, RelatorioList
-from database import relatorios_collection, users_empresas_collection
+from database import relatorios_collection, users_empresas_collection, clientes_collection
 from .utils.limpar import filter_null_fields
 from fastapi import HTTPException
 import strawberry
@@ -14,7 +14,7 @@ class RelatorioQuery:
 
         empresa_id = ObjectId(empresa_id)
 
-        lmt = 10  # Limite padrão de resultados por página
+        lmt = 3  # Limite padrão de resultados por página
 
         if start < 0:
             start = 0
@@ -41,6 +41,10 @@ class RelatorioQuery:
 
         # Buscar relatórios no banco de dados
         async for relatorio in relatorios_collection.find(filtro).skip(start).limit(lmt):
+            # Buscar o nome do cliente com base no cliente_id
+            cliente = await clientes_collection.find_one({"_id": ObjectId(relatorio.get("cliente_id"))})
+            cliente_name = cliente.get("nome") if cliente else None
+
             # Extraia os campos personalizados (chaves que começam com "custom_")
             custom_fields = [{"key": k, "value": v} for k, v in relatorio.items() if k.startswith("custom_")]
 
@@ -49,9 +53,12 @@ class RelatorioQuery:
                 "id": str(relatorio.get("_id")),
                 "modelo_campos_id": str(relatorio.get("modelo_campos_id")),
                 "cliente_id": str(relatorio.get("cliente_id")),
+                "cliente_name": cliente_name,  # Adiciona o nome do cliente
                 "created_by": str(relatorio.get("created_by")),
                 "created_at": relatorio.get("created_at"),
-                "custom_fields": custom_fields,  # Adiciona os campos personalizados como lista
+                "custom_fields": custom_fields,
+                "relatorio_name": relatorio.get("relatorio_name"),
+                "isActive": relatorio.get("isActive"),
             }
 
             # Remover campos restritos para usuários não administradores
