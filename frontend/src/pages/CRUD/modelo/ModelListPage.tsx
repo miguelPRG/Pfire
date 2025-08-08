@@ -30,6 +30,7 @@ import Notification from "../../../components/Notification";
 import LoadingAnimation from "../../../components/LoadingAnimation";
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
 import HomeIcon from "@mui/icons-material/Home";
+import { Controller, useForm } from "react-hook-form";
 
 // Função utilitária para formatar tipos de campos
 const formatType = (type: string) => {
@@ -58,9 +59,10 @@ export default function ReportModelListPage() {
   // Estado para pesquisa, paginação e campos expandidos
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
-  const [expandedFields, setExpandedFields] = useState<Record<string, boolean>>({});
   const [alert, setAlert] = useState<{ message: string; isError: boolean } | null>(null);
   const [cloningId, setCloningId] = useState<string | null>(null);
+
+  const { control } = useForm();
 
   const rowsPerPage = 3;
 
@@ -103,11 +105,7 @@ export default function ReportModelListPage() {
     }
   }, [location.state, refetch]);
 
-  // Alterna expansão de campos do tipo objeto
-  const toggleExpand = (key: string) => {
-    setExpandedFields((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-
+  
   // Função para deletar um modelo de relatório
   const handleDelete = async (id: string) => {
     if (!window.confirm("Tens certeza que desejas apagar este modelo?")) return;
@@ -209,7 +207,6 @@ export default function ReportModelListPage() {
     const isObject = val?.datatype === "object";
     const isArray = val?.datatype === "array";
     const currentKey = namePrefix;
-    const isExpanded = expandedFields[currentKey] ?? true;
 
     return (
       <Grid container spacing={1} sx={{ pl: level > 0 ? 2 : 0 }} key={currentKey}>
@@ -228,12 +225,22 @@ export default function ReportModelListPage() {
                 {level === 0 ? "Campo" : "Subcampo"}:{" "}
                 {namePrefix.split(" / ")[namePrefix.split(" / ").length - 1]?.replace(/^custom_/, "")}
               </Typography>
-              {isObject ||
-                (isArray && (
-                  <IconButton onClick={() => toggleExpand(currentKey)} size="small" sx={{ ml: "auto" }}>
-                    {isExpanded ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
-                  </IconButton>
-                ))}
+              {(isObject || isArray) && (
+                <Controller
+                  control={control}
+                  name={`expandedFields.${currentKey}`}
+                  defaultValue={true} // Define o estado inicial como expandido
+                  render={({ field }) => (
+                    <IconButton
+                      onClick={() => field.onChange(!field.value)} // Alterna o estado
+                      size="small"
+                      sx={{ ml: "auto" }}
+                    >
+                      {field.value ? <ExpandLess fontSize="small" /> : <ExpandMore fontSize="small" />}
+                    </IconButton>
+                  )}
+                />
+              )}
             </Box>
 
             <Typography fontSize={13}>
@@ -245,28 +252,46 @@ export default function ReportModelListPage() {
               <strong style={{ color: val?.required ? "#388e3c" : "#d32f2f" }}>{val?.required ? "Sim" : "Não"}</strong>
             </Typography>
 
-            {isObject && isExpanded && (
-              <Box sx={{ mt: 1 }}>
-                {Object.entries(val).map(([subKey, subVal]: any) => {
-                  if (["datatype", "required"].includes(subKey)) return null;
-                  return renderField(subVal, `${namePrefix} / ${subKey}`, level + 1);
-                })}
-              </Box>
+            {isObject && (
+              <Controller
+                control={control}
+                name={`expandedFields.${currentKey}`}
+                defaultValue={true}
+                render={({ field }) =>
+                  field.value && (
+                    <Box sx={{ mt: 1 }}>
+                      {Object.entries(val).map(([subKey, subVal]: any) => {
+                        if (["datatype", "required"].includes(subKey)) return null;
+                        return renderField(subVal, `${namePrefix} / ${subKey}`, level + 1);
+                      })}
+                    </Box>
+                  )
+                }
+              />
             )}
 
-            {isArray && isExpanded && (
-              <Box sx={{ mt: 1, display: "flex", flexDirection: "column", textAlign: "left" }}>
-                {val.items.map((item: any, index: number) => (
-                  <Typography variant="body2">
-                    <span style={{ fontWeight: "bold" }}>Item {index + 1}:</span> {item}
-                  </Typography>
-                ))}
-              </Box>
+            {isArray && (
+              <Controller
+                control={control}
+                name={`expandedFields.${currentKey}`}
+                defaultValue={true}
+                render={({ field }) =>
+                  field.value && (
+                    <Box sx={{ mt: 1, display: "flex", flexDirection: "column", textAlign: "left" }}>
+                      {val.items.map((item: any, index: number) => (
+                        <Typography variant="body2" key={index}>
+                          <span style={{ fontWeight: "bold" }}>Item {index + 1}:</span> {item}
+                        </Typography>
+                      ))}
+                    </Box>
+                  )
+                }
+              />
             )}
 
-            {!isObject && !isArray && (
+            {!isObject && !isArray && val?.value !== undefined && (
               <Typography fontSize={13} mt={1}>
-                Valor: <strong>{val?.value || "(sem valor)"}</strong>
+                Valor: <strong>{val?.value}</strong>
               </Typography>
             )}
           </Paper>
@@ -284,18 +309,18 @@ export default function ReportModelListPage() {
       <Paper sx={{ width: "100%", p: 2, boxShadow: "none", backgroundColor: theme.palette.background.default }}>
         {/* Breadcrumbs */}
         <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 3, backgroundColor: "background.paper" , maxWidth: "200px", borderRadius: 5, padding: 0.5 }}>
-        <StyledBreadcrumb
-          component="a"
-          sx={{ cursor: "pointer" }}
-          onClick={() => navigate("/")}
-          icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
-        />
-        <StyledBreadcrumb
-          sx={{fontSize: "0.9rem"}}
-          component="span"
-          label="Clientes"
-        />
-      </Breadcrumbs>
+          <StyledBreadcrumb
+            component="a"
+            sx={{ cursor: "pointer" }}
+            onClick={() => navigate("/")}
+            icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
+          />
+          <StyledBreadcrumb
+            sx={{fontSize: "0.9rem"}}
+            component="span"
+            label="Modelos"
+          />
+        </Breadcrumbs>
         {/* Fim Breadcrumbs */}
         {/* Cabeçalho com título e botão de adicionar */}
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 8 }}>
@@ -395,9 +420,51 @@ export default function ReportModelListPage() {
                       : "-"}
                   </TableCell>
                   <TableCell align="center">
-                    <Box sx={{ display: "flex", gap: 1, justifyContent: "center" }}>
+                    <Box sx={{ display: "flex", gap: 2, justifyContent: "space-between" }}>
                       {empresa?.isAdmin && (
                         <>
+                          <Tooltip title="Adicionar Relatório" placement="top" >
+                            <IconButton
+                              onClick={() =>
+                                navigate("/add-new-report", {
+                                  state: {
+                                    selectedModel: modelo,
+                                  },
+                                })
+                              }
+                              sx={{
+                                color: "#fff",
+                                backgroundColor: "primary.main",
+                                border: "1px solid",
+                                borderColor: "primary.main",
+                                "&:hover": {
+                                  backgroundColor: "primary.dark",
+                                  color: "#fff",
+                                },
+                                width: 40,
+                                height: 40,
+                              }}
+                            >
+                              <Typography
+                                component="span"
+                                sx={{
+                                  fontSize: 26,
+                                  fontWeight: "bold",
+                                  color: "#fff",
+                                }}
+                              >
+                                +
+                              </Typography>
+                            </IconButton>
+                          </Tooltip>
+                         
+                          <Tooltip title="Clonar Modelo" placement="top" sx={{width: 40,
+                                height: 40 }}>
+                            <IconButton onClick={() => handleClone(modelo.id)} disabled={cloningId === modelo.id}>
+                              <ContentCopyIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Excluir modelo" placement="top">
                           <IconButton
                             onClick={() => handleDelete(modelo.id)}
                             sx={{
@@ -406,31 +473,16 @@ export default function ReportModelListPage() {
                               "&:hover": {
                                 backgroundColor: "error.dark",
                               },
+                              width: 40,
+                                height: 40,
                             }}
                           >
                             <Delete fontSize="small" />
                           </IconButton>
-                          <Tooltip title="Clonar Modelo">
-                            <IconButton onClick={() => handleClone(modelo.id)} disabled={cloningId === modelo.id}>
-                              <ContentCopyIcon />
-                            </IconButton>
                           </Tooltip>
                         </>
                       )}
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={() =>
-                          navigate("/add-new-report", {
-                            state: {
-                              selectedModel: modelo, // Passa o modelo completo como estado
-                            },
-                          })
-                        }
-                        sx={{ textTransform: "none", width: "150px", height: "40px" }}
-                      >
-                        Adicionar Relatório
-                      </Button>
+                        
                     </Box>
                   </TableCell>
                 </TableRow>

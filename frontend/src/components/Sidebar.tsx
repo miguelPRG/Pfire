@@ -41,7 +41,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       <List sx={{ flexGrow: 1 }}>
         {/* Relatórios - Com submenu */}
         <ListItem disablePadding>
-          <ListItemButton onClick={handleToggleReports}>
+          <ListItemButton onClick={() => handleNavigation("/reports-list")}>
             <ListItemIcon>
               <DescriptionIcon />
             </ListItemIcon>

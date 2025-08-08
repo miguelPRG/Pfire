@@ -17,6 +17,7 @@ import {
   InputLabel,
   FormControl,
   FormHelperText,
+  Tooltip,
 } from "@mui/material"; // Componentes de UI do Material UI
 import DeleteIcon from "@mui/icons-material/Delete"; // Ícone de deletar
 import { useState, useEffect } from "react"; // Hooks do React
@@ -288,7 +289,7 @@ export default function ReportTemplatePage() {
   return (
     <>
       {/* Card principal do formulário */}
-      <Paper elevation={3} sx={{ maxWidth: 700, mx: "auto", mt: 4, p: 3 }}>
+      <Paper elevation={3} sx={{ maxWidth: 700, mx: "auto", mt: 4, p: 3 ,mb: 10}}>
         <Box
           component="form"
           onSubmit={handleSubmit(onSubmit)}
@@ -428,7 +429,18 @@ export default function ReportTemplatePage() {
                     </FormControl>
                     {(fields[index] as Field)?.datatype !== "object" && (
                       <FormControlLabel
-                        control={<Checkbox {...register(`fields.${index}.required`)} />}
+                        control={
+                          <Controller
+                            control={control}
+                            name={`fields.${index}.required`}
+                            render={({ field }) => (
+                              <Checkbox
+                                checked={field.value || false} // Garante que o valor inicial seja booleano
+                                onChange={(e) => field.onChange(e.target.checked)} // Atualiza o estado corretamente
+                              />
+                            )}
+                          />
+                        }
                         label="Campo Obrigatório"
                       />
                     )}
@@ -463,7 +475,6 @@ export default function ReportTemplatePage() {
                           control={control}
                           name={`fields.${index}.items`}
                           render={({ field }) => {
-                            // Garante que field.value é sempre um array
                             const items: string[] = Array.isArray(field.value) ? field.value : [];
                             const [inputValue, setInputValue] = useState("");
 
@@ -481,7 +492,7 @@ export default function ReportTemplatePage() {
 
                             return (
                               <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                                <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
+                                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, alignItems: "center" }}>
                                   <TextField
                                     label="Nova opção"
                                     value={inputValue}
@@ -494,6 +505,13 @@ export default function ReportTemplatePage() {
                                       }
                                     }}
                                     fullWidth
+                                    sx={{
+                                      bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
+                                      color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
+                                      "& .MuiInputBase-input": {
+                                        color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
+                                      },
+                                    }}
                                   />
                                   <Button
                                     variant="contained"
@@ -533,15 +551,21 @@ export default function ReportTemplatePage() {
                                         alignItems: "center",
                                         width: "100%",
                                         justifyContent: "space-between",
-                                        bgcolor: "grey.200",
+                                        bgcolor: theme.palette.mode === "dark" ? "grey.800" : "grey.200",
                                         borderRadius: 1,
                                         px: 2,
                                         py: 1,
                                         boxShadow: 1,
                                       }}
                                     >
-                                      <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                        {idx}- {item}
+                                      <Typography
+                                        variant="body1"
+                                        sx={{
+                                          fontWeight: 500,
+                                          color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
+                                        }}
+                                      >
+                                        {idx + 1}- {item}
                                       </Typography>
                                       <IconButton
                                         size="small"
@@ -773,26 +797,44 @@ export default function ReportTemplatePage() {
               {isEditing ? "Atualizar Modelo" : "Salvar Modelo"}
             </Button>
           </Box>
+
         </Box>
       </Paper>
 
       {/* Botão flutuante para rolar para o topo */}
       {showScrollTop && (
-        <Box sx={{ position: "fixed", bottom: 18, left: 10, zIndex: 1300 }}>
-          <IconButton
-            color="primary"
-            size="small"
-            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            sx={{
-              bgcolor: "primary.main",
-              color: "white",
-              "&:hover": { bgcolor: "primary.dark" },
-            }}
-          >
-            <ArrowCircleUpIcon fontSize="small" />
-          </IconButton>
-        </Box>
-      )}
+  <Tooltip
+    title="Adicionar novo campo"
+    placement="top"
+    PopperProps={{
+      modifiers: [
+        {
+          name: 'offset',
+          options: {
+            offset: [10, -3], // leve espaço vertical apenas, sem deslocamento lateral
+          },
+        },
+      ],
+    }}
+  >
+    <Box sx={{ position: "fixed", bottom: 18, left: 45, zIndex: 1300 }}>
+      <IconButton
+        color="primary"
+        size="small"
+        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+        sx={{
+          bgcolor: "primary.main",
+          color: "white",
+          "&:hover": { bgcolor: "primary.dark" },
+          width: 45,
+          height: 45,
+        }}
+      >
+        <ArrowCircleUpIcon fontSize="small" />
+      </IconButton>
+    </Box>
+  </Tooltip>
+)}
     </>
   );
 }

@@ -1,5 +1,5 @@
 // Importa o React e o hook useState para gerenciar estados locais do componente
-import { useState, Fragment } from "react";
+import { useState, Fragment , useRef} from "react";
 // Importa hooks do React Router para navegação e acesso à localização
 import { useLocation, useNavigate } from "react-router-dom";
 // Importa componentes de UI do Material-UI
@@ -15,6 +15,7 @@ import {
   FormControl,
   InputLabel,
   Autocomplete,
+  Checkbox,
 } from "@mui/material";
 // Importa o hook de autenticação personalizado
 import { useAuth } from "../hooks/AuthContext";
@@ -59,7 +60,9 @@ function AddNewReportPage() {
     skip: !empresa?.id, // Só executa se houver empresa
   });
 
-  // Função para exibir o nome do campo removendo o prefixo "custom_"
+
+  // Função para exibir o nome do cam
+  // po removendo o prefixo "custom_"
   const displayName = (key: string) => key.replace(/^custom_/, "");
 
   // Se não houver modelo selecionado, exibe mensagem de erro
@@ -77,62 +80,59 @@ function AddNewReportPage() {
   };
 
   // Função para construir o schema de validação dinâmico usando zod
-  const buildSchema = () => {
-    const dynamicFields: Record<string, any> = {};
+ const buildSchema = () => {
+  const dynamicFields: Record<string, any> = {};
 
-    selectedModel.customFields.forEach((field: any) => {
-      const value = field.value;
-      const key = field.key;
+  selectedModel.customFields.forEach((field: any) => {
+    const value = field.value;
+    const key = field.key;
 
-      const makeSchemaByType = (type: string, required: boolean) => {
-        switch (type) {
-          case "number":
-            return z.number().refine((val) => !required || val !== null, {
-              message: "Campo obrigatório",
-            });
-
-          case "boolean":
-            return z.boolean().refine((val) => val !== null, {
-              message: "O valor deve ser verdadeiro ou falso",
-            });
-
-          case "date":
-            return z.string().refine((val) => !required || /^\d{2}\/\d{2}\/\d{4}$/.test(val), {
-              message: "Formato de data inválido (DD/MM/AAAA)",
-            });
-
-          case "array":
-            return z.array(z.string().min(1, "Campo obrigatório")).refine((val) => !required || val.length > 0, {
-              message: "Campo obrigatório",
-            });
-
-          case "string":
-          default:
-            return z.string().refine((val) => !required || val.trim() !== "", {
-              message: "Campo obrigatório",
-            });
-        }
-      };
-
-      if (value.datatype === "object") {
-        Object.entries(value).forEach(([subKey, subValue]: [string, any]) => {
-          if (!["datatype", "required", "label"].includes(subKey)) {
-            dynamicFields[subKey] = makeSchemaByType(subValue.datatype, subValue.required ?? false);
-          }
-        });
-      } else {
-        dynamicFields[key] = makeSchemaByType(value.datatype, value.required ?? false);
+    const makeSchemaByType = (type: string, required: boolean) => {
+      switch (type) {
+        case "number":
+          return z.number().refine((val) => !required || val !== null, {
+            message: "Campo obrigatório",
+          });
+        case "date":
+          return z.string().refine((val) => !required || /^\d{2}\/\d{2}\/\d{4}$/.test(val), {
+            message: "Formato de data inválido (DD/MM/AAAA)",
+          });
+        case "array":
+          return z
+    .array(z.string().min(1, "Campo obrigatório"))
+    .refine((val) => val.length > 0, {
+      message: "Campo obrigatório",
+    });
+        case "string":
+        default:
+          return z.string().refine((val) => !required || val.trim() !== "", {
+            message: "Campo obrigatório",
+          });
       }
-    });
+    };
 
-    return z.object({
-      relatorio_name: z.string().min(1, "O nome do relatório é obrigatório"),
-      modelo_campos_id: z.string(),
-      cliente_id: z.string().min(1, "Selecione um cliente"),
-      empresa_id: z.string(),
-      ...dynamicFields,
-    });
-  };
+    if (value.datatype === "object") {
+      Object.entries(value).forEach(([subKey, subValue]: [string, any]) => {
+        if (!["datatype", "required", "label"].includes(subKey)) {
+          const fullSubKey = subKey.startsWith("custom_") ? subKey : `custom_${subKey}`;
+          dynamicFields[fullSubKey] = makeSchemaByType(subValue.datatype, subValue.required ?? false);
+        }
+      });
+    } else if (value.datatype !== "bool") {
+      // Ignora validação para campos booleanos
+      const fullKey = key.startsWith("custom_") ? key : `custom_${key}`;
+      dynamicFields[fullKey] = makeSchemaByType(value.datatype, value.required ?? false);
+    }
+  });
+
+  return z.object({
+    relatorio_name: z.string().min(1, "O nome do relatório é obrigatório"),
+    modelo_campos_id: z.string(),
+    cliente_id: z.string().min(1, "Selecione um cliente"),
+    empresa_id: z.string(),
+    ...dynamicFields,
+  });
+};
 
   // Função para tratar e validar os valores dos campos customizados
   const handleCustomField = (key: string, value: any, formData: any) => {
@@ -159,30 +159,25 @@ function AddNewReportPage() {
           }
           return numberValue;
 
-        case "boolean":
-          return rawValue === true || rawValue === "true";
-
-        case "string":
-          return String(rawValue);
-
-        case "object":
-          if (typeof rawValue !== "object" || rawValue === null) {
-            throw new Error(`O campo ${fullKey} deve ser um objeto válido.`);
-          }
-          return rawValue;
+        case "bool":
+          return !!rawValue; // Converte para booleano
 
         case "array":
           if (!Array.isArray(rawValue)) {
-            throw new Error(`O campo ${fullKey} deve ser uma lista de valores.`);
+            // Converte strings separadas por vírgulas em um array
+            const arrayValue = String(rawValue)
+              .split(",")
+              .map((item) => item.trim()); // Remove espaços extras
+            return arrayValue;
           }
           return rawValue;
 
+        case "string":
         default:
-          return rawValue?.toString() || "";
+          return String(rawValue);
       }
     }
 
-    console.log(`Campo ${fullKey} está vazio ou não definido.`);
     return ""; // Evita undefined
   };
 
@@ -207,32 +202,50 @@ function AddNewReportPage() {
         recaptchaToken,
       };
 
-      // Adiciona campos customizados ao payload no formato achatado (flat)
       selectedModel.customFields.forEach((field: any) => {
-        const value = field.value;
-        const baseKey = field.key;
+  const value = field.value;
+  const baseKey = field.key;
 
-        if (value.datatype === "object") {
-          // Para campos objeto, trata cada subcampo
-          Object.entries(value).forEach(([subKey, subValue]: [string, any]) => {
-            if (!["datatype", "required", "label"].includes(subKey)) {
-              const sanitizedSubKey = subKey.replace(/\s+/g, "_");
-              const processedValue = handleCustomField(sanitizedSubKey, subValue, formData);
-              const fullKey = sanitizedSubKey.startsWith("custom_") ? sanitizedSubKey : `custom_${sanitizedSubKey}`;
-              payload[fullKey] = processedValue !== undefined ? processedValue : null; // Preenche com null
-            }
-          });
+  if (value.datatype === "object") {
+    // Trata cada subcampo
+    Object.entries(value).forEach(([subKey, subValue]: [string, any]) => {
+      if (!["datatype", "required", "label"].includes(subKey)) {
+        const sanitizedSubKey = subKey.replace(/\s+/g, "_");
+        const fullKey = sanitizedSubKey.startsWith("custom_")
+          ? sanitizedSubKey
+          : `custom_${sanitizedSubKey}`;
+
+        if (subValue.datatype === "bool") {
+          // se marcado -> true, se não -> false
+          payload[fullKey] = formData[fullKey] === true;
         } else {
-          // Para campos simples, trata diretamente
-          const processedValue = handleCustomField(baseKey, value, formData);
-          const fullKey = baseKey.startsWith("custom_") ? baseKey : `custom_${baseKey}`;
-          payload[fullKey] = processedValue !== undefined ? processedValue : null; // Preenche com null
+          const processedValue = handleCustomField(sanitizedSubKey, subValue, formData);
+          payload[fullKey] = processedValue !== undefined ? processedValue : null;
         }
-        console.log("payload", payload);
-      });
+      }
+    });
+  } else {
+    // Campo simples
+    const fullKey = baseKey.startsWith("custom_") ? baseKey : `custom_${baseKey}`;
 
-      // DEBUG: Verificar conteúdo dos campos customizados
-      console.log("Conteúdo dos campos customizados:");
+    if (value.datatype === "bool") {
+      // se marcado -> true, se não -> false
+      payload[fullKey] = formData[fullKey] === true;
+    } else {
+      let processedValue = handleCustomField(fullKey, value, formData);
+
+      if (value.datatype === "array" && !Array.isArray(processedValue)) {
+        processedValue = processedValue
+          ? String(processedValue).split(",").map((item) => item.trim())
+          : [];
+      }
+
+      payload[fullKey] = processedValue !== undefined ? processedValue : null;
+    }
+  }
+});
+
+     
       Object.entries(payload).forEach(([key, value]) => {
         if (key.startsWith("custom_")) {
           console.log(`${key}:`, value, " | Tipo:", Array.isArray(value) ? "array" : typeof value);
@@ -256,9 +269,7 @@ function AddNewReportPage() {
         throw new Error("Modelo deve conter pelo menos um campo personalizado.");
       }
 
-      // Logs de debug
-      console.log("Payload final antes do envio:", payload);
-      console.log("Tipos dos campos:");
+   
       Object.entries(payload).forEach(([key, value]) => {
         console.log(`${key}: ${typeof value}`);
       });
@@ -277,8 +288,18 @@ function AddNewReportPage() {
       }
 
       // Exibe alerta de sucesso e navega para página de modelos
-      alert("Relatório adicionado com sucesso!");
-      navigate("/report-models");
+      
+      // --- sucesso ---
+navigate("/reports-list", {
+  state: {
+    message: {
+      text: "Relatório adicionado com sucesso!",
+      error: false,
+    },
+    reload: true, // opcional: força refetch na lista
+  },
+});
+
     } catch (err: any) {
       // Se o erro for de validação zod, exibe os erros nos campos
       if (err instanceof z.ZodError) {
@@ -351,7 +372,6 @@ function AddNewReportPage() {
             {selectedModel.customFields.map((field: any) => {
               const value = field.value;
               const baseKey = field.key;
-              const fullKey = baseKey;
               const label = value.label || displayName(baseKey);
 
               // Se for um campo composto (object)
@@ -371,62 +391,22 @@ function AddNewReportPage() {
                         ? sanitizedSubKey
                         : `custom_${sanitizedSubKey}`;
 
-                      const subLabel = subValue.label || displayName(subKey);
+                      const subLabel = displayName(subKey); // Garante que o prefixo "custom_" seja removido
 
                       return (
                         <Box key={fullSubKey} sx={{ width: "100%", mt: 1 }}>
-                          {subValue.datatype === "boolean" ? (
-                            <FormControl fullWidth>
-                              <InputLabel shrink>{subLabel}</InputLabel>
-                              <Select
-                                value={formData[fullSubKey] ?? ""}
-                                onChange={(e) => handleInputChange(fullSubKey, e.target.value === "true")}
-                              >
-                                <MenuItem value="true">Sim</MenuItem>
-                                <MenuItem value="false">Não</MenuItem>
-                              </Select>
-                              {errors[fullSubKey] && (
-                                <Typography variant="caption" color="error">
-                                  {errors[fullSubKey]}
-                                </Typography>
-                              )}
-                            </FormControl>
-                          ) : subValue.datatype === "array" && Array.isArray(subValue.items) ? (
-                            <FormControl fullWidth>
-                              <InputLabel>{subLabel}</InputLabel>
-                              <Select
-                                multiple
-                                value={formData[fullSubKey] ?? []}
-                                onChange={(e) => handleInputChange(fullSubKey, e.target.value)}
-                                renderValue={(selected) => (selected as string[]).join(", ")}
-                              >
-                                {subValue.items.map((option: string) => (
-                                  <MenuItem key={option} value={option}>
-                                    {option}
-                                  </MenuItem>
-                                ))}
-                              </Select>
-
-                              {errors[fullSubKey] && (
-                                <Typography variant="caption" color="error">
-                                  {errors[fullSubKey]}
-                                </Typography>
-                              )}
-                            </FormControl>
-                          ) : (
-                            <TextField
-                              fullWidth
-                              label={value.datatype === "date" ? undefined : label}
-                              type={
-                                value.datatype === "number" ? "number" : value.datatype === "date" ? "date" : "text"
-                              }
-                              InputLabelProps={value.datatype === "date" ? { shrink: true } : undefined}
-                              value={formData[fullKey] ?? ""}
-                              onChange={(e) => handleInputChange(fullKey, e.target.value)}
-                              error={!!errors[fullKey]}
-                              helperText={errors[fullKey]}
-                            />
-                          )}
+                          <TextField
+                            fullWidth
+                            label={subLabel} // Exibe o rótulo do subcampo sem o prefixo "custom_"
+                            type={
+                              subValue.datatype === "number" ? "number" : subValue.datatype === "date" ? "date" : "text"
+                            }
+                            InputLabelProps={subValue.datatype === "date" ? { shrink: true } : undefined}
+                            value={formData[fullSubKey] ?? ""}
+                            onChange={(e) => handleInputChange(fullSubKey, e.target.value)}
+                            error={!!errors[fullSubKey]}
+                            helperText={errors[fullSubKey]}
+                          />
                         </Box>
                       );
                     })}
@@ -436,65 +416,120 @@ function AddNewReportPage() {
 
               // Campo simples
               return (
-                <Box key={fullKey} sx={{ width: "100%", mt: 1 }}>
-                  {value.datatype === "boolean" ? (
-                    <FormControl fullWidth>
-                      <InputLabel shrink>{label}</InputLabel>
-                      <Select
-                        value={formData[fullKey] ?? ""}
-                        onChange={(e) => handleInputChange(fullKey, e.target.value === "true")}
-                      >
-                        <MenuItem value="true">Sim</MenuItem>
-                        <MenuItem value="false">Não</MenuItem>
-                      </Select>
-                      {errors[fullKey] && (
-                        <Typography variant="caption" color="error">
-                          {errors[fullKey]}
-                        </Typography>
-                      )}
-                    </FormControl>
+                <Box key={baseKey} sx={{ width: "100%", mt: 1 }}>
+                  {value.datatype === "bool" ? (
+                    (() => {
+                      const fullKey = baseKey.startsWith("custom_") ? baseKey : `custom_${baseKey}`;
+                      return (
+                        <FormControl fullWidth error={!!errors[fullKey]}>
+                          <Box sx={{ display: "flex", alignItems: "center" }}>
+                            <Checkbox
+                              checked={!!formData[fullKey]} // Converte para booleano
+                              onChange={(e) => handleInputChange(fullKey, e.target.checked)} // Atualiza o estado com true/false
+                            />
+                            <Typography>{label}</Typography>
+                          </Box>
+                          {errors[fullKey] && (
+                            <Typography variant="caption" color="error">
+                              {errors[fullKey]}
+                            </Typography>
+                          )}
+                        </FormControl>
+                      );
+                    })()
                   ) : value.datatype === "array" && Array.isArray(value.items) ? (
-                    <FormControl fullWidth>
-                      <InputLabel>{label}</InputLabel>
-                      <Select
-                        multiple
-                        value={formData[fullKey] ?? []}
-                        onChange={(e) => handleInputChange(fullKey, e.target.value)}
-                        renderValue={(selected) => (selected as string[]).join(", ")}
-                      >
-                        {value.items.map((option: string) => (
-                          <MenuItem key={option} value={option}>
-                            {option}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                      {errors[fullKey] && (
-                        <Typography variant="caption" color="error">
-                          {errors[fullKey]}
-                        </Typography>
-                      )}
-                    </FormControl>
+                   <FormControl fullWidth sx={{ mt: 2 }}>
+  <InputLabel
+    sx={{
+      "&.Mui-focused": {
+        transform: "translate(6px, -18px) scale(0.75)",
+      },
+    }}
+  >
+    {label}
+  </InputLabel>
+  <Select
+    value={formData[baseKey] ?? ""}
+    onChange={(e) => handleInputChange(baseKey, e.target.value)}
+    renderValue={(selected) => selected}
+    
+  MenuProps={{
+    PaperProps: {
+      sx: {
+        border: `1px solid ${theme.palette.divider}`,
+        borderRadius: 2,
+        boxShadow: 2,
+        backgroundColor: theme.palette.background.paper,
+        color: theme.palette.text.primary,
+        width: "20%",
+      },
+    },
+  }}
+    sx={{
+      backgroundColor: theme.palette.background.paper,
+      color: theme.palette.text.primary,
+      "& .MuiSelect-icon": {
+        color: theme.palette.text.primary,
+      },
+      "& .MuiOutlinedInput-notchedOutline": {
+        borderColor: theme.palette.divider,
+      },
+      "&:hover .MuiOutlinedInput-notchedOutline": {
+        borderColor: theme.palette.primary.main,
+      },
+      "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+        borderColor: theme.palette.primary.main,
+      },
+    }}
+  >
+    {value.items.map((option: string) => (
+      <MenuItem
+        key={option}
+        value={option}
+        sx={{
+          backgroundColor: theme.palette.background.paper,
+          color: theme.palette.text.primary,
+          "&.Mui-selected": {
+            backgroundColor: theme.palette.action.selected,
+          },
+          "&:hover": {
+            backgroundColor: theme.palette.action.hover,
+          },
+        }}
+      >
+        {option}
+      </MenuItem>
+    ))}
+  </Select>
+
+  {errors[baseKey] && (
+    <Typography variant="caption" color="error">
+      {errors[baseKey]}
+    </Typography>
+  )}
+</FormControl>
+
+
                   ) : (
                     <TextField
                       fullWidth
                       label={value.datatype === "date" ? undefined : label}
                       type={value.datatype === "number" ? "number" : value.datatype === "date" ? "date" : "text"}
                       InputLabelProps={value.datatype === "date" ? { shrink: true } : undefined}
-                      onChange={(e) => handleInputChange(fullKey, e.target.value)}
-                      error={!!errors[fullKey]}
-                      helperText={errors[fullKey]}
+                      value={formData[baseKey] ?? ""}
+                      onChange={(e) => handleInputChange(baseKey, e.target.value)}
+                      error={!!errors[baseKey]}
+                      helperText={errors[baseKey]}
                     />
                   )}
                 </Box>
               );
             })}
           </Paper>
-
           <Box sx={{ width: "100%" }}>
             <Autocomplete
               fullWidth
               options={
-                // Só mostra opções se o usuário começou a digitar
                 formData.clienteInput && formData.clienteInput.length > 0
                   ? data?.getClientes?.clientes.filter((c: any) =>
                       c.nome.toLowerCase().includes(formData.clienteInput.toLowerCase())
@@ -523,6 +558,10 @@ function AddNewReportPage() {
                     }));
                   }}
                   value={formData.clienteInput || ""}
+                  InputProps={{
+                    ...params.InputProps,
+                    endAdornment: null, // Remove o ícone da seta azul
+                  }}
                 />
               )}
               loading={loading}
@@ -544,7 +583,12 @@ function AddNewReportPage() {
             <Button variant="outlined" onClick={() => navigate("/report-models")}>
               Cancelar
             </Button>
-            <Button type="submit" variant="contained" color="primary">
+            <Button type="submit" variant="contained" color="primary" sx={{  backgroundColor: theme.palette.success.main,
+              color: "white",
+              "&:hover": {
+                backgroundColor: theme.palette.success.dark,
+              },
+            }}>
               Salvar Relatório
             </Button>
           </Box>
