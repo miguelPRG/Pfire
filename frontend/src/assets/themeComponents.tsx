@@ -171,16 +171,13 @@ const commonComponents: Components = {
       },
     },
   },
-     MuiFormControl: {
-      styleOverrides: {
-        root: {
-          marginTop: 10, // reduz a margem externa superior
-         
-        },
+  MuiFormControl: {
+    styleOverrides: {
+      root: {
+        marginTop: 10, // reduz a margem externa superior
       },
     },
- 
-
+  },
 };
 
 export default commonComponents;

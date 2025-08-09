@@ -19,7 +19,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Breadcrumbs
+  Breadcrumbs,
 } from "@mui/material";
 import { Search, Delete } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
@@ -268,18 +268,17 @@ export default function UserManagementTable() {
   if (loading) return <LoadingAnimation />;
   return (
     <Paper sx={{ width: "100%", p: 2, boxShadow: "none" }}>
-     <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 3, backgroundColor: "background.paper" , maxWidth: "200px", borderRadius: 5, padding: 0.5 }}>
+      <Breadcrumbs
+        aria-label="breadcrumb"
+        sx={{ mb: 3, backgroundColor: "background.paper", maxWidth: "200px", borderRadius: 5, padding: 0.5 }}
+      >
         <StyledBreadcrumb
           component="a"
           sx={{ cursor: "pointer" }}
           onClick={() => navigate("/")}
           icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
         />
-        <StyledBreadcrumb
-          sx={{fontSize: "0.9rem"}}
-          component="span"
-          label="Funcionários"
-        />
+        <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} component="span" label="Funcionários" />
       </Breadcrumbs>
       <Container
         sx={{

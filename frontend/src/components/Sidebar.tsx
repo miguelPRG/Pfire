@@ -16,11 +16,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
   const navigate = useNavigate();
-  const [openReports, setOpenReports] = useState(false);
   const { empresa } = useAuth();
-  const handleToggleReports = () => {
-    setOpenReports(!openReports);
-  };
 
   const handleNavigation = (path: string) => {
     navigate(path);

@@ -18,7 +18,7 @@ import {
   Grid,
   Link,
   Tooltip,
-  Breadcrumbs
+  Breadcrumbs,
 } from "@mui/material";
 import { ExpandLess, ExpandMore, Search, Delete, ContentCopy as ContentCopyIcon } from "@mui/icons-material";
 import { useEffect, useState } from "react";
@@ -105,7 +105,6 @@ export default function ReportModelListPage() {
     }
   }, [location.state, refetch]);
 
-  
   // Função para deletar um modelo de relatório
   const handleDelete = async (id: string) => {
     if (!window.confirm("Tens certeza que desejas apagar este modelo?")) return;
@@ -308,18 +307,17 @@ export default function ReportModelListPage() {
       {/* Container principal */}
       <Paper sx={{ width: "100%", p: 2, boxShadow: "none", backgroundColor: theme.palette.background.default }}>
         {/* Breadcrumbs */}
-        <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 3, backgroundColor: "background.paper" , maxWidth: "200px", borderRadius: 5, padding: 0.5 }}>
+        <Breadcrumbs
+          aria-label="breadcrumb"
+          sx={{ mb: 3, backgroundColor: "background.paper", maxWidth: "200px", borderRadius: 5, padding: 0.5 }}
+        >
           <StyledBreadcrumb
             component="a"
             sx={{ cursor: "pointer" }}
             onClick={() => navigate("/")}
             icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
           />
-          <StyledBreadcrumb
-            sx={{fontSize: "0.9rem"}}
-            component="span"
-            label="Modelos"
-          />
+          <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} component="span" label="Modelos" />
         </Breadcrumbs>
         {/* Fim Breadcrumbs */}
         {/* Cabeçalho com título e botão de adicionar */}
@@ -423,7 +421,7 @@ export default function ReportModelListPage() {
                     <Box sx={{ display: "flex", gap: 2, justifyContent: "space-between" }}>
                       {empresa?.isAdmin && (
                         <>
-                          <Tooltip title="Adicionar Relatório" placement="top" >
+                          <Tooltip title="Adicionar Relatório" placement="top">
                             <IconButton
                               onClick={() =>
                                 navigate("/add-new-report", {
@@ -457,32 +455,30 @@ export default function ReportModelListPage() {
                               </Typography>
                             </IconButton>
                           </Tooltip>
-                         
-                          <Tooltip title="Clonar Modelo" placement="top" sx={{width: 40,
-                                height: 40 }}>
+
+                          <Tooltip title="Clonar Modelo" placement="top" sx={{ width: 40, height: 40 }}>
                             <IconButton onClick={() => handleClone(modelo.id)} disabled={cloningId === modelo.id}>
                               <ContentCopyIcon />
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Excluir modelo" placement="top">
-                          <IconButton
-                            onClick={() => handleDelete(modelo.id)}
-                            sx={{
-                              backgroundColor: "error.main",
-                              color: "#fff",
-                              "&:hover": {
-                                backgroundColor: "error.dark",
-                              },
-                              width: 40,
+                            <IconButton
+                              onClick={() => handleDelete(modelo.id)}
+                              sx={{
+                                backgroundColor: "error.main",
+                                color: "#fff",
+                                "&:hover": {
+                                  backgroundColor: "error.dark",
+                                },
+                                width: 40,
                                 height: 40,
-                            }}
-                          >
-                            <Delete fontSize="small" />
-                          </IconButton>
+                              }}
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
                           </Tooltip>
                         </>
                       )}
-                        
                     </Box>
                   </TableCell>
                 </TableRow>

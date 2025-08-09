@@ -208,18 +208,17 @@ function EditProfilePage() {
           </Alert>
         </Box>
       )}
-      <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 3, backgroundColor: "background.paper" , maxWidth: "200px", borderRadius: 5, padding: 0.5 }}>
+      <Breadcrumbs
+        aria-label="breadcrumb"
+        sx={{ mb: 3, backgroundColor: "background.paper", maxWidth: "200px", borderRadius: 5, padding: 0.5 }}
+      >
         <StyledBreadcrumb
           component="a"
           sx={{ cursor: "pointer" }}
           onClick={() => navigate("/")}
           icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
         />
-        <StyledBreadcrumb
-          sx={{fontSize: "0.9rem"}}
-          component="span"
-          label="Editar Perfil"
-        />
+        <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} component="span" label="Editar Perfil" />
       </Breadcrumbs>
       <SectionForm title="Alterar Nome e Telefone" onSubmit={userInfoForm.handleSubmit(handleSubmitUserUpdate)}>
         <Grid container spacing={2}>

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeAll } from "vitest";
 import "@testing-library/jest-dom";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
-import RegisterPage from "../pages/RegisterPage";
+import RegisterPage from "../pages/public/RegisterPage";
 import { AuthContext } from "../hooks/AuthContext";
 import React from "react";
 
@@ -29,7 +29,7 @@ describe("RegisterPage", () => {
       <AuthContext.Provider
         value={{
           user: null,
-          empresaId: null,
+          empresa: null,
           loading: false,
           login: vi.fn(),
           registerUser: registerUserMock,

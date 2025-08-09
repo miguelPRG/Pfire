@@ -19,7 +19,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Breadcrumbs
+  Breadcrumbs,
 } from "@mui/material";
 import { Search } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -197,19 +197,18 @@ export default function ClientManagementTable() {
   return (
     <>
       <Paper sx={{ width: "100%", p: 2, boxShadow: "none" }}>
-         <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 3, backgroundColor: "background.paper" , maxWidth: "200px", borderRadius: 5, padding: 0.5 }}>
-        <StyledBreadcrumb
-          component="a"
-          sx={{ cursor: "pointer" }}
-          onClick={() => navigate("/")}
-          icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
-        />
-        <StyledBreadcrumb
-          sx={{fontSize: "0.9rem"}}
-          component="span"
-          label="Clientes"
-        />
-      </Breadcrumbs>
+        <Breadcrumbs
+          aria-label="breadcrumb"
+          sx={{ mb: 3, backgroundColor: "background.paper", maxWidth: "200px", borderRadius: 5, padding: 0.5 }}
+        >
+          <StyledBreadcrumb
+            component="a"
+            sx={{ cursor: "pointer" }}
+            onClick={() => navigate("/")}
+            icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
+          />
+          <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} component="span" label="Clientes" />
+        </Breadcrumbs>
         <Box
           sx={{
             display: "flex",

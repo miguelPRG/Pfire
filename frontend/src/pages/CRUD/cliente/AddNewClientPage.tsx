@@ -9,6 +9,8 @@ import { useState } from "react";
 import GlobalPhone from "../../../components/GlobalPhone";
 import validarNIF from "../../utils/isValidNIF";
 
+declare var grecaptcha: any;
+
 // Esquema de validação com Zod
 const addClientSchema = z.object({
   nome: z.string().nonempty("O nome é obrigatório").trim(),

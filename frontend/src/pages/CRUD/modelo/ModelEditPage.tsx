@@ -289,7 +289,7 @@ export default function ReportTemplatePage() {
   return (
     <>
       {/* Card principal do formulário */}
-      <Paper elevation={3} sx={{ maxWidth: 700, mx: "auto", mt: 4, p: 3 ,mb: 10}}>
+      <Paper elevation={3} sx={{ maxWidth: 700, mx: "auto", mt: 4, p: 3, mb: 10 }}>
         <Box
           component="form"
           onSubmit={handleSubmit(onSubmit)}
@@ -797,44 +797,45 @@ export default function ReportTemplatePage() {
               {isEditing ? "Atualizar Modelo" : "Salvar Modelo"}
             </Button>
           </Box>
-
         </Box>
       </Paper>
 
       {/* Botão flutuante para rolar para o topo */}
       {showScrollTop && (
-  <Tooltip
-    title="Adicionar novo campo"
-    placement="top"
-    PopperProps={{
-      modifiers: [
-        {
-          name: 'offset',
-          options: {
-            offset: [10, -3], // leve espaço vertical apenas, sem deslocamento lateral
-          },
-        },
-      ],
-    }}
-  >
-    <Box sx={{ position: "fixed", bottom: 18, left: 45, zIndex: 1300 }}>
-      <IconButton
-        color="primary"
-        size="small"
-        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        sx={{
-          bgcolor: "primary.main",
-          color: "white",
-          "&:hover": { bgcolor: "primary.dark" },
-          width: 45,
-          height: 45,
-        }}
-      >
-        <ArrowCircleUpIcon fontSize="small" />
-      </IconButton>
-    </Box>
-  </Tooltip>
-)}
+        <Tooltip
+          title="Adicionar novo campo"
+          placement="top"
+          slotProps={{
+            popper: {
+              modifiers: [
+                {
+                  name: "offset",
+                  options: {
+                    offset: [10, -3], // leve espaço vertical apenas, sem deslocamento lateral
+                  },
+                },
+              ],
+            },
+          }}
+        >
+          <Box sx={{ position: "fixed", bottom: 18, left: 45, zIndex: 1300 }}>
+            <IconButton
+              color="primary"
+              size="small"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              sx={{
+                bgcolor: "primary.main",
+                color: "white",
+                "&:hover": { bgcolor: "primary.dark" },
+                width: 45,
+                height: 45,
+              }}
+            >
+              <ArrowCircleUpIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        </Tooltip>
+      )}
     </>
   );
 }

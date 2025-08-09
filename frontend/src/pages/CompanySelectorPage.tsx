@@ -1,5 +1,15 @@
 import { useEffect, useLayoutEffect, useState, useRef } from "react";
-import { Button, Paper, Typography, Box, Grid, Pagination, TextField, InputAdornment, Breadcrumbs } from "@mui/material";
+import {
+  Button,
+  Paper,
+  Typography,
+  Box,
+  Grid,
+  Pagination,
+  TextField,
+  InputAdornment,
+  Breadcrumbs,
+} from "@mui/material";
 import StyledBreadcrumb from "../components/StyledBreadCrumbs";
 import { Search } from "@mui/icons-material";
 import HomeIcon from "@mui/icons-material/Home";
@@ -87,19 +97,18 @@ export default function CompanySelectorPage() {
       <Box sx={{ p: 4, maxWidth: "1300px", mx: "auto" }}>
         <Paper sx={{ p: 4, borderRadius: 4 }} elevation={3}>
           {/* Breadcrumbs */}
-          <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 3, backgroundColor: "background.paper" , maxWidth: "200px", borderRadius: 5, padding: 0.5 }}>
-        <StyledBreadcrumb
-          component="a"
-          sx={{ cursor: "pointer" }}
-          onClick={() => navigate("/")}
-          icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
-        />
-        <StyledBreadcrumb
-          sx={{fontSize: "0.9rem"}}
-          component="span"
-          label="Clientes"
-        />
-      </Breadcrumbs>
+          <Breadcrumbs
+            aria-label="breadcrumb"
+            sx={{ mb: 3, backgroundColor: "background.paper", maxWidth: "200px", borderRadius: 5, padding: 0.5 }}
+          >
+            <StyledBreadcrumb
+              component="a"
+              sx={{ cursor: "pointer" }}
+              onClick={() => navigate("/")}
+              icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
+            />
+            <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} component="span" label="Clientes" />
+          </Breadcrumbs>
           {/* Fim Breadcrumbs */}
 
           <Box sx={{ width: "100%", mb: 4, textAlign: "center" }}>
@@ -107,39 +116,39 @@ export default function CompanySelectorPage() {
               Selecionar Empresa
             </Typography>
           </Box>
-            <Box
+          <Box
             sx={{
               display: "flex",
               justifyContent: "space-between",
               mb: 2,
               gap: 2,
             }}
-            >
+          >
             <TextField
               variant="outlined"
               size="small"
               value={search}
               onChange={(e) => {
-              setSearch(e.target.value);
-              setPage(0); // Volta para a primeira página ao pesquisar
+                setSearch(e.target.value);
+                setPage(0); // Volta para a primeira página ao pesquisar
               }}
               placeholder="Pesquisar por nome"
               inputRef={searchInputRef}
               slotProps={{
-              input: {
-                startAdornment: (
-                <InputAdornment position="start">
-                  <Search sx={{ color: theme.palette.primary.main }} />
-                </InputAdornment>
-                ),
-              },
+                input: {
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search sx={{ color: theme.palette.primary.main }} />
+                    </InputAdornment>
+                  ),
+                },
               }}
               sx={{
-              width: "75%",
-              mt: 1,
+                width: "75%",
+                mt: 1,
               }}
             />
-            </Box>
+          </Box>
           <Grid container spacing={3} alignItems="stretch" justifyContent="center">
             {empresas.map((emp) => {
               const isSelected = emp.id === localStorage.getItem("empresaId");
