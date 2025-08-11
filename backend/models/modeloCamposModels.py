@@ -34,7 +34,8 @@ def validate_field(key, value):
 
     # Se for um campo de datatype "object", adiciona as chaves permitidas
     if value.get("datatype") == "object":
-        custom_fields = {k: v for k, v in value.items() if k not in {"datatype", "required"}}
+        # Só considera subcampos que não são None
+        custom_fields = {k: v for k, v in value.items() if k not in {"datatype", "required"} and v is not None}
 
         # Verificar se o campo do tipo object possui pelo menos um subcampo custom_
         if not custom_fields:
@@ -53,14 +54,16 @@ def validate_field(key, value):
             )
 
         for subkey, subvalue in custom_fields.items():
+            if subvalue is None:
+                continue
             validate_field(subkey, subvalue)  # Valida recursivamente os subcampos
 
-        # Verifica se algum subcampo tem required=True
-        if any(subvalue.get("required") is True for subvalue in custom_fields.values()):
-            value["required"] = True  # Define como True se algum subcampo for obrigatório
+            # Verifica se algum subcampo tem required=True
+            if any(subvalue.get("required") is True for subvalue in custom_fields.values()):
+                value["required"] = True  # Define como True se algum subcampo for obrigatório
 
-        else:
-            value["required"] = False
+            else:
+                value["required"] = False
 
         # Adiciona os subcampos às chaves permitidas
         allowed_keys.update(custom_fields.keys())
@@ -83,7 +86,8 @@ def validate_field(key, value):
         allowed_keys.add("items")
 
     # Verifica se existem chaves extras além das permitidas (datatype e required)
-    extra_keys = set(value.keys()) - allowed_keys
+    # Só considera chaves cujo valor NÃO é None
+    extra_keys = {k for k in value.keys() if value[k] is not None} - allowed_keys
     if extra_keys:
         raise HTTPException(
             status_code=400, detail=f"O campo que está a tentar criar: {key} contém chaves inválidas: {extra_keys}."

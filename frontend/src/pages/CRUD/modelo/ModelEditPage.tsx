@@ -64,7 +64,6 @@ export default function ReportTemplatePage() {
   // Hook para navegação entre páginas
   const navigate = useNavigate();
   const location = useLocation();
-
   // Recupera informações da empresa autenticada
   const { empresa } = useAuth();
 
@@ -85,6 +84,10 @@ export default function ReportTemplatePage() {
   // Estado para controlar campos removidos
   const [removedFields, setRemovedFields] = useState<string[]>([]);
 
+  // Adicione este estado para guardar nomes originais ao editar
+  const [originalFieldNames, setOriginalFieldNames] = useState<string[]>([]);
+  const [originalSubfieldNames, setOriginalSubfieldNames] = useState<Record<string, string[]>>({});
+
   // Função para converter customFields do backend para o formato do formulário
   const convertCustomFieldsToFormFields = (customFields: any[]) => {
     return (
@@ -97,7 +100,8 @@ export default function ReportTemplatePage() {
           const subfields = Object.entries(fieldValue)
             .filter(([key]) => !["datatype", "required"].includes(key))
             .map(([key, val]: any) => ({
-              name: key,
+              // Remove o prefixo custom_ dos subcampos para exibição ao usuário
+              name: key.replace(/^custom_/, ""),
               datatype: val.datatype,
               required: val.required,
             }));
@@ -171,6 +175,15 @@ export default function ReportTemplatePage() {
         modelName: editingModel.modelName,
         fields: formattedFields,
       });
+      // Salva nomes originais dos campos e subcampos
+      setOriginalFieldNames(formattedFields.map((f: any) => f.name));
+      const subfieldsMap: Record<string, string[]> = {};
+      formattedFields.forEach((f: any) => {
+        if (f.datatype === "object" && Array.isArray(f.subfields)) {
+          subfieldsMap[f.name] = f.subfields.map((sf: any) => sf.name);
+        }
+      });
+      setOriginalSubfieldNames(subfieldsMap);
     }
   }, [editingModel, isEditing, reset]);
 
@@ -214,7 +227,7 @@ export default function ReportTemplatePage() {
 
       // Monta o objeto de campos personalizados para o backend
       const customFields: Record<string, any> = {};
-      data.fields.forEach((f) => {
+      data.fields.forEach((f, idx) => {
         if (f?.datatype === "object" && Array.isArray(f.subfields)) {
           const subfieldData: Record<string, any> = {};
           f.subfields.forEach((sub) => {
@@ -246,6 +259,37 @@ export default function ReportTemplatePage() {
       removedFields.forEach((fieldName) => {
         customFields[`custom_${fieldName}`] = null;
       });
+
+      // --- NOVO: Detecta renomeações de campos e subcampos ---
+      if (isEditing) {
+        // Campos renomeados
+        originalFieldNames.forEach((origName, idx) => {
+          const exists = data.fields.some((f) => f.name === origName);
+          if (!exists) {
+            // Campo foi renomeado ou removido
+            customFields[`custom_${origName}`] = null;
+          }
+        });
+        // Subcampos renomeados
+        Object.entries(originalSubfieldNames).forEach(([parent, origSubs]) => {
+          // Procura o campo atual correspondente
+          const currentField = data.fields.find((f) => f.name === parent && f.datatype === "object");
+          if (currentField && Array.isArray(currentField.subfields)) {
+            origSubs.forEach((origSub) => {
+              const exists = currentField.subfields?.some((sf) => sf.name === origSub);
+              if (!exists) {
+                // Subcampo foi renomeado ou removido
+                // Envia a chave antiga do subcampo como null dentro do campo pai
+                if (!customFields[`custom_${parent}`]) {
+                  customFields[`custom_${parent}`] = { datatype: "object", required: currentField.required };
+                }
+                customFields[`custom_${parent}`][`custom_${origSub}`] = null;
+              }
+            });
+          }
+        });
+      }
+      // --- FIM NOVO ---
 
       // Monta o payload completo
       const payload = {
@@ -624,20 +668,12 @@ export default function ReportTemplatePage() {
                               render={({ field }) => (
                                 <TextField
                                   label={`Nome do Subcampo ${subIdx + 1}`}
-                                  {...field}
-                                  value={field.value ?? ""}
+                                  {...register(`fields.${index}.subfields.${subIdx}.name`)}
                                   size="small"
                                   fullWidth
                                   sx={{ mb: 1 }}
                                   error={!!errors.fields?.[index]?.subfields?.[subIdx]?.name}
                                   helperText={errors.fields?.[index]?.subfields?.[subIdx]?.name?.message}
-                                  onChange={(e) => {
-                                    field.onChange(e);
-                                    // Limpa erro se preenchido
-                                    if (e.target.value.trim()) {
-                                      clearErrors(`fields.${index}.subfields.${subIdx}.name`);
-                                    }
-                                  }}
                                 />
                               )}
                             />

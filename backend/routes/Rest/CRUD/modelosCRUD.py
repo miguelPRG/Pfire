@@ -100,13 +100,30 @@ async def update_modelo(request: Request, modelo: ModelosCamposUpdate, id: str):
     update_fields = {}
     unset_fields = {}
 
-    for key, value in data.items():
-        if key in ["empresa_id"]:
-            continue
+    def process_field(prefix, value):
         if value is None:
-            unset_fields[key] = ""
+            unset_fields[prefix] = ""
+        elif isinstance(value, dict):
+            # Só adiciona ao $set se houver subcampos válidos
+            valid = {}
+            for k, v in value.items():
+                process_field(f"{prefix}.{k}" if prefix else k, v)
+                if v is not None:
+                    valid[k] = v
+            if valid:
+                # Só adiciona ao update_fields se não for apenas subcampos None
+                if prefix:
+                    # Para subcampos, não faz update_fields (Mongo não aceita $set parcial de subcampos aninhados via dict)
+                    pass
+                else:
+                    update_fields[prefix] = {**valid}
         else:
-            update_fields[key] = value
+            update_fields[prefix] = value
+
+    for key, value in data.items():
+        if key in ["model_name", "empresa_id"]:
+            continue
+        process_field(key, value)
 
     update_fields["updated_by"] = user_id
     update_fields["updated_at"] = datetime.now()
