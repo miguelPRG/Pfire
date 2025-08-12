@@ -4,21 +4,20 @@ import {
   Paper,
   Typography,
   Box,
-  Grid,
   Pagination,
   TextField,
   InputAdornment,
   Breadcrumbs,
 } from "@mui/material";
-import StyledBreadcrumb from "../components/StyledBreadCrumbs";
 import { Search } from "@mui/icons-material";
-import HomeIcon from "@mui/icons-material/Home";
 import { useQuery, useLazyQuery } from "@apollo/client";
 import { GET_EMPRESAS } from "../graphql/empresasqueries";
 import { useAuth } from "../hooks/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 import LoadingAnimation from "../components/LoadingAnimation";
+import StyledBreadcrumb from "../components/StyledBreadCrumbs";
+import HomeIcon from "@mui/icons-material/Home";
 
 interface Empresa {
   id: string;
@@ -37,13 +36,11 @@ export default function CompanySelectorPage() {
   const [page, setPage] = useState(0);
   const rowsPerPage = 6;
 
-  // Consulta inicial (cache/página)
   const { data, error, loading } = useQuery(GET_EMPRESAS, {
     fetchPolicy: "cache-first",
     variables: { start: page * rowsPerPage },
   });
 
-  // Pesquisa remota por nome
   const [fetchEmpresas, { data: searchData }] = useLazyQuery(GET_EMPRESAS, {
     fetchPolicy: "cache-first",
   });
@@ -53,32 +50,26 @@ export default function CompanySelectorPage() {
   const theme = useTheme();
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  // Dispara busca remota se search não está vazio
   useEffect(() => {
-    if (search) {
-      fetchEmpresas({ variables: { name: search } });
-    }
-    // eslint-disable-next-line
+    if (search) fetchEmpresas({ variables: { name: search } });
   }, [search]);
 
-  // Decide qual fonte de dados usar. Se o search estiver vazio, usa os dados da consulta inicial; caso contrário, usa os dados da pesquisa.
-  const empresas: Empresa[] = search ? searchData?.getEmpresas?.empresas || [] : data?.getEmpresas?.empresas || [];
+  const empresas: Empresa[] = search
+    ? searchData?.getEmpresas?.empresas || []
+    : data?.getEmpresas?.empresas || [];
 
   const totalEmpresas: number = search
     ? searchData?.getEmpresas?.totalEmpresas || 0
     : data?.getEmpresas?.totalEmpresas || 0;
 
-  const pageCount = Math.ceil(totalEmpresas / rowsPerPage);
+  const pageCount = Math.ceil((totalEmpresas + 1) / rowsPerPage);
 
-  // Este useLayoutEffect garante que, se uma empresa já estiver selecionada (armazenada no localStorage), ela será escolhida automaticamente ao carregar a página.
   useLayoutEffect(() => {
     if (data?.getEmpresas?.empresas) {
       const empresaId = localStorage.getItem("empresaId");
       if (empresaId) {
         const sel = data.getEmpresas.empresas.find((e: Empresa) => e.id === empresaId);
-        if (sel) {
-          chooseCompany({ ...sel, logo: sel.logo ?? "" });
-        }
+        if (sel) chooseCompany({ ...sel, logo: sel.logo ?? "" });
       }
     }
   }, [data]);
@@ -92,45 +83,209 @@ export default function CompanySelectorPage() {
     navigate(url);
   };
 
+  function EmpresaCard({ emp }: { emp: Empresa }) {
+    const { empresa } = useAuth();
+    const isSelected = emp.id === empresa?.id;
+    return (
+      <Paper
+        elevation={theme.palette.mode === "dark" ? 2 : 6}
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "space-between",
+          minHeight: 380,
+          height: 380,
+          width: 260,
+          borderRadius: 4,
+          background:
+            theme.palette.mode === "dark"
+              ? theme.palette.background.paper
+              : "#fff",
+          border: `1.5px solid ${
+            isSelected
+              ? theme.palette.success.main
+              : theme.palette.mode === "dark"
+              ? theme.palette.divider
+              : "#e0e0e0"
+          }`,
+          p: 3,
+          boxShadow:
+            theme.palette.mode === "dark"
+              ? "0 6px 18px rgba(0,0,0,0.35)"
+              : "0px 6px 18px 0px #0e185522",
+          transition: "transform .16s, border-color .16s, box-shadow .16s",
+          "&:hover": {
+            transform: "scale(1.025)",
+            borderColor: isSelected? theme.palette.success.main : theme.palette.primary.main,
+            boxShadow:
+              theme.palette.mode === "dark"
+                ? "0 10px 24px rgba(0,0,0,0.45)"
+                : "0 10px 24px rgba(14,24,85,0.22)",
+          },
+        }}
+      >
+        <Box
+          sx={{
+            width: 110,
+            height: 110,
+            borderRadius: "50%",
+            background:
+              theme.palette.mode === "dark" ? "#1f2530" : "#f4f7fb",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden",
+            mb: 2,
+            border: `1.5px solid ${
+              theme.palette.mode === "dark" ? theme.palette.divider : "#e0e0e0"
+            }`,
+          }}
+        >
+          {emp.logo ? (
+            <Box
+              component="img"
+              src={`data:image/png;base64,${emp.logo}`}
+              alt={`Logo de ${emp.nome}`}
+              sx={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                borderRadius: "50%",
+              }}
+            />
+          ) : (
+            <Box sx={{ color: theme.palette.text.disabled, fontSize: 48 }}>🏢</Box>
+          )}
+        </Box>
+
+        <Typography
+          variant="h6"
+          fontWeight="bold"
+          align="center"
+          sx={{
+            mb: 1.5,
+            fontSize: "1.23rem",
+            lineHeight: 1.12,
+            minHeight: 44,
+            color: theme.palette.text.primary,
+            maxWidth: 220,
+          }}
+        >
+          {emp.nome}
+        </Typography>
+
+        <Typography
+          variant="body1"
+          align="center"
+          sx={{
+            color:
+              theme.palette.mode === "dark"
+                ? theme.palette.text.secondary
+                : "#31343c",
+            minHeight: 48,
+            mb: 2,
+            fontSize: "1.06rem",
+            maxWidth: 230,
+            wordBreak: "break-word",
+          }}
+        >
+          <b>Localidade:</b> {emp.localidade}
+          <br />
+          <b>NIF:</b> {emp.nif}
+        </Typography>
+
+        <Button
+          variant="contained"
+          size="large"
+          sx={{
+            mt: 2,
+            fontWeight: "bold",
+            borderRadius: 3,
+            backgroundColor: isSelected ? theme.palette.success.main : theme.palette.primary.main,
+            pointerEvents: isSelected ? "none" : "auto",
+            width: "100%",
+            fontSize: "1.06rem",
+            letterSpacing: 0.25,
+            textTransform: "none",
+            boxShadow:
+              theme.palette.mode === "dark"
+                ? "0 4px 10px rgba(0,0,0,0.5)"
+                : "0px 3px 10px 0px #0e185514",
+            py: 1.2,
+          }}
+          onClick={() => handleSelect(emp)}
+        >
+          {isSelected ? "Empresa selecionada" : "Gerenciar empresa"}
+        </Button>
+      </Paper>
+    );
+  }
+
   return (
     <>
-      <Box sx={{ p: 4, maxWidth: "1300px", mx: "auto" }}>
-        <Paper sx={{ p: 4, borderRadius: 4 }} elevation={3}>
+      <Box
+        sx={{
+          p: 4,
+          maxWidth: "1500px",
+          mx: "auto",
+          bgcolor:
+            theme.palette.mode === "dark"
+              ? theme.palette.background.default
+              : "transparent",
+          transition: "background-color .2s",
+        }}
+      >
+        <Paper
+          elevation={theme.palette.mode === "dark" ? 2 : 3}
+          sx={{
+            p: 4,
+            borderRadius: 4,
+            background:
+              theme.palette.mode === "dark"
+                ? "linear-gradient(180deg, #0f1420 0%, #111827 100%)"
+                : "#fcfdff",
+            border: `1px solid ${
+              theme.palette.mode === "dark" ? "#1f2a37" : "#e9eef6"
+            }`,
+          }}
+        >
           {/* Breadcrumbs */}
-          <Breadcrumbs
-            aria-label="breadcrumb"
-            sx={{ mb: 3, backgroundColor: "background.paper", maxWidth: "200px", borderRadius: 5, padding: 0.5 }}
-          >
+          <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 3, backgroundColor: "background.paper", maxWidth: "200px", borderRadius: 5, padding: 0.5 }}>
             <StyledBreadcrumb
               component="a"
               sx={{ cursor: "pointer" }}
               onClick={() => navigate("/")}
               icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
             />
-            <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} component="span" label="Clientes" />
+            <StyledBreadcrumb
+              sx={{ fontSize: "0.9rem" }}
+              component="span"
+              label="Empresas"
+            />
           </Breadcrumbs>
-          {/* Fim Breadcrumbs */}
 
+          {/* Título */}
           <Box sx={{ width: "100%", mb: 4, textAlign: "center" }}>
-            <Typography variant="h1" fontWeight="bold">
+            <Typography
+              variant="h4"
+              fontWeight="bold"
+              letterSpacing={1.5}
+              sx={{ color: theme.palette.text.primary }}
+            >
               Selecionar Empresa
             </Typography>
           </Box>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              mb: 2,
-              gap: 2,
-            }}
-          >
+
+          {/* Buscador */}
+          <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
             <TextField
               variant="outlined"
               size="small"
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
-                setPage(0); // Volta para a primeira página ao pesquisar
+                setPage(0);
               }}
               placeholder="Pesquisar por nome"
               inputRef={searchInputRef}
@@ -138,100 +293,163 @@ export default function CompanySelectorPage() {
                 input: {
                   startAdornment: (
                     <InputAdornment position="start">
-                      <Search sx={{ color: theme.palette.primary.main }} />
+                      <Search
+                        sx={{
+                          color:
+                            theme.palette.mode === "dark"
+                              ? theme.palette.primary.light
+                              : theme.palette.primary.main,
+                        }}
+                      />
                     </InputAdornment>
                   ),
                 },
               }}
               sx={{
-                width: "75%",
-                mt: 1,
+                width: { xs: "100%", sm: "75%" },
+                maxWidth: 600,
+                "& .MuiOutlinedInput-root": {
+                  bgcolor:
+                    theme.palette.mode === "dark"
+                      ? "#0b1220"
+                      : "#ffffff",
+                  color: theme.palette.text.primary,
+                  borderRadius: 2,
+                  "& fieldset": {
+                    borderColor:
+                      theme.palette.mode === "dark"
+                        ? "#1f2a37"
+                        : "#d7ddea",
+                  },
+                  "&:hover fieldset": {
+                    borderColor: theme.palette.primary.main,
+                  },
+                  "&.Mui-focused fieldset": {
+                    borderColor: theme.palette.primary.main,
+                    borderWidth: 2,
+                  },
+                },
+                "& .MuiInputBase-input::placeholder": {
+                  color:
+                    theme.palette.mode === "dark"
+                      ? theme.palette.text.disabled
+                      : undefined,
+                  opacity: 1,
+                },
               }}
             />
           </Box>
-          <Grid container spacing={3} alignItems="stretch" justifyContent="center">
-            {empresas.map((emp) => {
-              const isSelected = emp.id === localStorage.getItem("empresaId");
-              const gridSizes = empresas.length > 1 ? { xs: 12, sm: 6, md: 4 } : { xs: 12 };
+
+          {/* Crear nueva empresa */}
+          <Box sx={{ mb: 5, display: "flex", justifyContent: "center", alignItems: "center" }}>
+            <Paper
+              elevation={theme.palette.mode === "dark" ? 1 : 4}
+              sx={{
+                border: `2px dashed ${
+                  theme.palette.mode === "dark"
+                    ? theme.palette.primary.dark
+                    : "#2196f3"
+                }`,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                width: { xs: "100%", md: "98%" },
+                minHeight: 220,
+                borderRadius: 3,
+                transition: "transform .2s, background .2s, box-shadow .2s",
+                background:
+                  theme.palette.mode === "dark" ? "#0b1220" : "#f8fbff",
+                "&:hover": {
+                  backgroundColor:
+                    theme.palette.mode === "dark" ? "#0e1730" : "#e3f2fd",
+                  transform: "scale(1.012)",
+                  boxShadow:
+                    theme.palette.mode === "dark"
+                      ? "0 8px 18px rgba(0,0,0,0.5)"
+                      : "0 8px 18px rgba(14,24,85,0.18)",
+                },
+                py: 5,
+              }}
+              onClick={() => navigate("/criar-empresa")}
+            >
+              <Box
+                sx={{
+                  width: 72,
+                  height: 72,
+                  background: theme.palette.primary.main,
+                  borderRadius: "50%",
+                  color: theme.palette.getContrastText(theme.palette.primary.main),
+                  fontWeight: "bold",
+                  fontSize: 42,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  mb: 2,
+                  boxShadow:
+                    theme.palette.mode === "dark"
+                      ? "0 6px 16px rgba(0,0,0,0.6)"
+                      : "0 6px 16px rgba(0,0,0,0.12)",
+                }}
+              >
+                +
+              </Box>
+              <Typography
+                variant="h5"
+                fontWeight="bold"
+                align="center"
+                sx={{ color: theme.palette.text.primary }}
+              >
+                Criar nova empresa
+              </Typography>
+              <Typography
+                variant="body1"
+                align="center"
+                sx={{
+                  mt: 1,
+                  maxWidth: 500,
+                  color: theme.palette.text.secondary,
+                }}
+              >
+                Clique aqui para criar uma nova empresa
+              </Typography>
+            </Paper>
+          </Box>
+
+          {/* Empresas en 2 filas */}
+          {empresas.length === 0 ? (
+            <Box sx={{ textAlign: "center", py: 8, color: theme.palette.text.secondary }}>
+              <Typography variant="h6">Nenhuma empresa encontrada.</Typography>
+            </Box>
+          ) : (
+            [0, 3].map((start) => {
+              const empresasSlice = empresas.slice(start, start + 3);
+              if (empresasSlice.length === 0) return null;
               return (
-                <Grid {...gridSizes} key={emp.id}>
-                  <Paper
-                    elevation={4}
-                    sx={{
-                      p: { xs: 2, sm: 3 },
-                      width: 340,
-                      height: 520,
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      borderRadius: 3,
-                      backgroundColor: isSelected
-                        ? theme.palette.mode === "dark"
-                          ? theme.palette.background.paper
-                          : "#f3fef8"
-                        : theme.palette.background.paper,
-                      color: theme.palette.text.primary,
-                      border: isSelected ? "2px solid #2e7d32" : "1px solid #e0e0e0",
-                      transition: "transform 0.2s ease",
-                      "&:hover": { transform: "scale(1.01)" },
-                    }}
-                  >
-                    {emp.logo && (
-                      <Box
-                        component="img"
-                        src={`data:image/png;base64,${emp.logo}`}
-                        alt={`Logo de ${emp.nome}`}
-                        sx={{
-                          width: { xs: 130, sm: 160, md: 180 },
-                          height: { xs: 130, sm: 160, md: 180 },
-                          objectFit: "cover",
-                          borderRadius: "50%",
-                          border: "1px solid #e0e0e0",
-                          background: "#f5f5f5",
-                        }}
-                      />
-                    )}
-
-                    <Box display="flex" flexDirection="column" textAlign="center" gap={0.5} mt={3} width="100%">
-                      <Typography variant="h3" gutterBottom mb={5}>
-                        {emp.nome}
-                      </Typography>
-                      <Typography variant="body2">
-                        <strong>Localidade:</strong> {emp.localidade}
-                      </Typography>
-                      <Typography variant="body2">
-                        <strong>Morada:</strong> {emp.morada}
-                      </Typography>
-                      <Typography variant="body2">
-                        <strong>Código Postal:</strong> {emp.codigoPostal}
-                      </Typography>
-                      <Typography variant="body2">
-                        <strong>NIF:</strong> {emp.nif}
-                      </Typography>
-                    </Box>
-
-                    <Button
-                      variant="contained"
-                      color={isSelected ? "success" : "primary"}
-                      onClick={() => handleSelect(emp)}
-                      sx={{
-                        mt: 3,
-                        fontWeight: "bold",
-                        borderRadius: 2,
-                        pointerEvents: isSelected ? "none" : "auto",
-                        width: "100%",
-                        fontSize: { xs: "0.95rem", sm: "1rem" },
-                      }}
-                    >
-                      {isSelected ? "Empresa selecionada" : "Gerenciar esta empresa"}
-                    </Button>
-                  </Paper>
-                </Grid>
+                <Box
+                  key={start}
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(3, 1fr)",
+                    gap: 4,
+                    width: "100%",
+                    mx: "auto",
+                    minHeight: 400,
+                    justifyItems: "center",
+                    pb: 1,
+                    mt: start === 0 ? 0 : 2,
+                  }}
+                >
+                  {empresasSlice.map((emp) => (
+                    <EmpresaCard key={emp.id} emp={emp} />
+                  ))}
+                </Box>
               );
-            })}
-          </Grid>
+            })
+          )}
 
+          {/* Paginación */}
           {pageCount > 1 && (
             <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
               <Pagination
@@ -241,6 +459,28 @@ export default function CompanySelectorPage() {
                 color="primary"
                 showFirstButton
                 showLastButton
+                sx={{
+                  "& .MuiPaginationItem-root": {
+                    color: theme.palette.text.primary,
+                  },
+                  "& .MuiPaginationItem-root.Mui-selected": {
+                    backgroundColor:
+                      theme.palette.mode === "dark"
+                        ? theme.palette.primary.dark
+                        : theme.palette.primary.main,
+                    color: theme.palette.getContrastText(
+                      theme.palette.mode === "dark"
+                        ? theme.palette.primary.dark
+                        : theme.palette.primary.main
+                    ),
+                    "&:hover": {
+                      backgroundColor:
+                        theme.palette.mode === "dark"
+                          ? theme.palette.primary.main
+                          : theme.palette.primary.dark,
+                    },
+                  },
+                }}
               />
             </Box>
           )}

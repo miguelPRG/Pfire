@@ -1,5 +1,5 @@
 import { lazy, ReactElement, Suspense, useEffect, memo } from "react";
-import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/AuthContext";
 import { useTema } from "../hooks/TemaContext";
 import { Box, IconButton } from "@mui/material";
@@ -36,22 +36,24 @@ const ReportListPage = lazy(() => import("../pages/CRUD/relatorios/ReportListPag
 // Rotas que podem ser utilizados apenas depois de autenticação
 const ProtectedRoute = ({ element }: { element: ReactElement }) => {
   const { user, empresa } = useAuth();
+  const location = useLocation();
 
-  if (user) {
-    if (element.type.name === "ChooseCompanyRoute") {
-      return <ChooseCompanyRoute />;
-    }
-    if (!empresa) {
-      console.log("Empresa não selecionada, redirecionando para a seleção de empresa.");
-      return <Navigate to="/choose-company" />;
-    }
-    return element;
+  if (!user) {
+    console.log("Usuário não autenticado, redirecionando para a página de login.");
+    return <Navigate to="/login" />;
   }
 
-  console.log("Usuário não autenticado, redirecionando para a página de login.");
+  // ✅ Permitir acesso sem empresa apenas a estas rotas
+  const allowedWithoutEmpresa = ["/choose-company", "/criar-empresa"];
 
-  return <Navigate to="/login" />;
+  if (!empresa && !allowedWithoutEmpresa.includes(location.pathname)) {
+    console.log("Empresa não selecionada, redirecionando para a seleção de empresa.");
+    return <Navigate to="/choose-company" />;
+  }
+
+  return element;
 };
+
 
 // Rotas públicas, acessível sem autenticação
 const PublicRoute = ({ element }: { element: ReactElement }) => {
