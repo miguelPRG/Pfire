@@ -28,7 +28,7 @@ const NewPassword = lazy(() => import("../pages/public/NewPasswordPage"));
 const AddNewClient = lazy(() => import("../pages/CRUD/cliente/AddNewClientPage"));
 const EditProfilePage = lazy(() => import("../pages/EditProfilePage"));
 const ForgotPasswordPage = lazy(() => import("../pages/public/ForgotPasswordPage"));
-const ChooseCompany = lazy(() => import("../pages/CompanySelectorPage"));
+const ChooseCompany = lazy(() => import("../pages/CRUD/empresa/CompanySelectorPage"));
 const ReportModelListPage = lazy(() => import("../pages/CRUD/modelo/ModelListPage"));
 const ReportTemplatesPage = lazy(() => import("../pages/CRUD/modelo/ModelEditPage"));
 const AddNewReportPage = lazy(() => import("../pages/AddNewReportPage"));

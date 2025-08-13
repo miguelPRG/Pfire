@@ -28,10 +28,6 @@ import { GET_USERS } from "../../../graphql/usersqueries";
 import { useAuth } from "../../../hooks/AuthContext";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
-<<<<<<< HEAD:frontend/src/pages/UserManagementTable.tsx
-import Notification from "../components/Notification";
-import LoadingAnimation from "../components/LoadingAnimation";
-=======
 import { zodResolver } from "@hookform/resolvers/zod";
 import Notification from "../../../components/Notification";
 import LoadingAnimation from "../../../components/LoadingAnimation";
@@ -70,16 +66,11 @@ export default function UserManagementTable() {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const { empresa, user } = useAuth();
   const [alert, setAlert] = useState<null | { message: string; isError: boolean }>(null);
-<<<<<<< HEAD:frontend/src/pages/UserManagementTable.tsx
-  const rowsPerPage = 10;
-  // useForm para o popup
-=======
   const [roleLoading, setRoleLoading] = useState<{ [userId: string]: boolean }>({});
   const rowsPerPage = 10;
   const navigate = useNavigate();
 
   // React Hook Form para o convite
->>>>>>> origin/develop:frontend/src/pages/CRUD/user/UserManagementTable.tsx
   const {
     register,
     handleSubmit,
@@ -90,30 +81,11 @@ export default function UserManagementTable() {
     resolver: zodResolver(inviteSchema),
   });
 
-<<<<<<< HEAD:frontend/src/pages/UserManagementTable.tsx
-  const { data, loading, error, refetch } = useQuery(GET_USERS, {
-    variables: { empresaId: empresa?.id, start: page * rowsPerPage },
-    fetchPolicy: "cache-and-network",
-    notifyOnNetworkStatusChange: true,
-  });
-
-  const isLoadingFresh = loading || data?.networkStatus === 3;
-
-  if (isLoadingFresh) return <LoadingAnimation />;
-  if (error) return <Typography>Erro ao carregar utilizadores: {error.message}</Typography>;
-
-  const users: User[] = (data && data?.getUsers.users) || [];
-  const totalUsers = data?.getUsers?.totalUsers || 0;
-  const pageCount = Math.ceil(totalUsers / rowsPerPage);
-
-  console.log("Dados dos utilizadores:", users);
-=======
   // Consulta inicial (cache/página)
   const { data, refetch, loading } = useQuery(GET_USERS, {
     variables: { empresaId: empresa?.id, start: page * rowsPerPage, name: search || undefined },
     fetchPolicy: "cache-first",
   });
->>>>>>> origin/develop:frontend/src/pages/CRUD/user/UserManagementTable.tsx
 
   // Pesquisa remota por nome
   const [getUsersByName, { data: searchData }] = useLazyQuery(GET_USERS, {
