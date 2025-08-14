@@ -31,7 +31,7 @@ const ForgotPasswordPage = lazy(() => import("../pages/public/ForgotPasswordPage
 const ChooseCompany = lazy(() => import("../pages/CRUD/empresa/CompanySelectorPage"));
 const ReportModelListPage = lazy(() => import("../pages/CRUD/modelo/ModelListPage"));
 const ReportTemplatesPage = lazy(() => import("../pages/CRUD/modelo/ModelEditPage"));
-const AddNewReportPage = lazy(() => import("../pages/AddNewReportPage"));
+const AddNewReportPage = lazy(() => import("../pages/CRUD/relatorios/AddNewReportPage"));
 const ReportListPage = lazy(() => import("../pages/CRUD/relatorios/ReportListPage"));
 // Rotas que podem ser utilizados apenas depois de autenticação
 const ProtectedRoute = ({ element }: { element: ReactElement }) => {
