@@ -45,9 +45,9 @@ def main():
     else:
         create_virtual_env()
 
-    # Atualizar pip
-    print("Atualizando o pip...")
-    subprocess.run([venv_python, "-m", "pip", "install", "--upgrade", "pip"], check=True)
+    # Atualizar pip (impede versão superior a 25.0)
+    print("Atualizando o pip (máx. versão 25.0)...")
+    subprocess.run([venv_python, "-m", "pip", "install", "--upgrade", "pip<24.1"], check=True)
 
     # Instalar as dependências do requirements.txt
     if os.path.isfile("requirements.txt"):
