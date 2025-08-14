@@ -18,12 +18,15 @@ import {
   FormControl,
   FormHelperText,
   Tooltip,
+  Breadcrumbs,              // <--- adicionado
 } from "@mui/material"; // Componentes de UI do Material UI
 import DeleteIcon from "@mui/icons-material/Delete"; // Ícone de deletar
 import { useState, useEffect } from "react"; // Hooks do React
 import { useAuth } from "../../../hooks/AuthContext"; // Contexto de autenticação
 import { useTheme } from "@mui/material/styles"; // Tema do Material UI
 import ArrowCircleUpIcon from "@mui/icons-material/ArrowCircleUp"; // Ícone de scroll para o topo
+import HomeIcon from "@mui/icons-material/Home";            // <--- adicionado
+import StyledBreadcrumb from "../../../components/StyledBreadCrumbs"; // <--- adicionado
 
 // Esquema de validação para um subcampo personalizado
 const subfieldSchema = z.object({
@@ -332,6 +335,40 @@ export default function ReportTemplatePage() {
   // Renderização do componente
   return (
     <>
+      {/* Breadcrumbs */}
+       <Box sx={{ width: "100%", display: "flex", flexDirection: "column", padding: 2 }}>
+        <Breadcrumbs
+          aria-label="breadcrumb"
+          sx={{
+            mr: "auto",
+            mb: 3,
+            backgroundColor: "background.paper",
+            maxWidth: 320,
+            borderRadius: 5,
+            p: 0.5,
+            boxShadow: 1,
+          }}
+        >
+          <StyledBreadcrumb
+            component="a"
+            sx={{ cursor: "pointer" }}
+            onClick={() => navigate("/")}
+            icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
+          />
+            <StyledBreadcrumb
+              component="a"
+              sx={{ cursor: "pointer", fontSize: "0.9rem" }}
+              label="Modelos"
+              onClick={() => navigate("/report-models")}
+            />
+          <StyledBreadcrumb
+            component="span"
+            sx={{ fontSize: "0.9rem" }}
+            label={isEditing ? "Editar Modelo" : "Novo Modelo"}
+          />
+        </Breadcrumbs>
+      
+
       {/* Card principal do formulário */}
       <Paper elevation={3} sx={{ maxWidth: 700, mx: "auto", mt: 4, p: 3, mb: 10 }}>
         <Box
@@ -835,6 +872,7 @@ export default function ReportTemplatePage() {
           </Box>
         </Box>
       </Paper>
+      </Box>
 
       {/* Botão flutuante para rolar para o topo */}
       {showScrollTop && (

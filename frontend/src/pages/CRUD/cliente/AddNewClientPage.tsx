@@ -1,4 +1,4 @@
-import { Box, Button, TextField, Typography, Paper, Alert } from "@mui/material";
+import { Box, Button, TextField, Typography, Paper, Alert, Breadcrumbs } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 import { useForm } from "react-hook-form";
@@ -8,6 +8,8 @@ import { useAuth } from "../../../hooks/AuthContext";
 import { useState } from "react";
 import GlobalPhone from "../../../components/GlobalPhone";
 import validarNIF from "../../utils/isValidNIF";
+import HomeIcon from "@mui/icons-material/Home"; // Adicione esta linha
+import StyledBreadcrumb from "../../../components/StyledBreadCrumbs"; // Adicione esta linha
 
 declare var grecaptcha: any;
 
@@ -180,6 +182,38 @@ export default function AddNewClientPage() {
 
   // Renderização do componente
   return (
+      <Box sx={{ width: "100%", display: "flex", flexDirection: "column", padding: 2 }}>
+
+         <Breadcrumbs
+    aria-label="breadcrumb"
+    sx={{
+      mr: "auto",               // EMPURRA para a direita
+      backgroundColor: "background.paper",
+      borderRadius: 5,
+      p: 0.5,
+      boxShadow: 1,
+      // opcional: mantém largura máxima da “pílula”
+      maxWidth: 320,
+    }}
+  >
+        <StyledBreadcrumb
+          component="a"
+          sx={{ cursor: "pointer" }}
+          onClick={() => navigate("/")}
+          icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
+        />
+        <StyledBreadcrumb
+          sx={{ cursor: "pointer", fontSize: "0.9rem" }}
+          component="a"
+          label="Clientes"
+          onClick={() => navigate("/clients-list")}
+        />
+        <StyledBreadcrumb
+          sx={{ fontSize: "0.9rem" }}
+          component="span"
+          label={cliente ? "Editar Cliente" : "Novo Cliente"}
+        />
+      </Breadcrumbs>
     <Paper sx={{ maxWidth: 600, mx: "auto", mt: 5, p: 4 }}>
       {errorMessage && (
         <Box mb={2}>
@@ -293,5 +327,6 @@ export default function AddNewClientPage() {
         </Box>
       </Box>
     </Paper>
+    </Box>
   );
 }
