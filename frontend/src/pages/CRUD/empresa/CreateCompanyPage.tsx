@@ -9,15 +9,14 @@ import {
   Alert,
   CircularProgress,
   useTheme,
-  Stack,
 } from "@mui/material";
 import BusinessIcon from "@mui/icons-material/Business";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import isValidNIF from "./utils/isValidNIF";
-import GlobalPhone from "../components/GlobalPhone";
+import isValidNIF from "../../utils/isValidNIF";
+import GlobalPhone from "../../../components/GlobalPhone";
 
 // 📌 Esquema de validação
 const empresaSchema = z.object({

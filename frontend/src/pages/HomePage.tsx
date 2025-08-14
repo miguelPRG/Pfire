@@ -1,25 +1,34 @@
 import { useAuth } from "../hooks/AuthContext";
-import { Paper, Typography, Container, Box, Grid, Card, Skeleton } from "@mui/material";
-import { GET_REPORTS_BY_COMPANY } from "../graphql/reportsQueries";
+import { Paper, Typography, Container, Box, Skeleton, useMediaQuery } from "@mui/material";
+import { useTheme } from "@mui/material/styles";
 import { useQuery } from "@apollo/client";
-
-interface Report {
-  id: string;
-  modeloCamposId: string;
-  clienteId: string;
-  createdAt: string;
-  customFields: Record<string, any>;
-}
+import { PieChart } from '@mui/x-charts/PieChart';
+import { GET_RELATORIES_COUNT_BY_CLIENTES } from "../graphql/reportsQueries";
 
 function HomePage() {
   const { user, empresa } = useAuth();
-  const { data, loading } = useQuery(GET_REPORTS_BY_COMPANY, {
+  const theme = useTheme();
+  const isXs = useMediaQuery(theme.breakpoints.down("sm"));
+  const isSm = useMediaQuery(theme.breakpoints.between("sm", "md"));
+
+  // Query para o gráfico
+  const { data: chartData, loading } = useQuery(GET_RELATORIES_COUNT_BY_CLIENTES , {
     variables: { empresaId: empresa?.id },
     skip: !empresa?.id,
   });
 
-  // Extrai os relatórios da resposta (ajusta conforme o nome do campo na tua query)
-  const reports: Report[] = data?.getReportsByCompany || [];
+  console.log("Dados do graphql:", chartData);
+
+  const pieData = chartData?.reports?.map((r: { clienteId: string; count: number; clienteName: string }) => ({
+    id: r.clienteId,
+    value: r.count,
+    label: r.clienteName,
+  })) || [];
+
+  // Responsividade do gráfico
+  let chartSize = 250;
+  if (isXs) chartSize = 180;
+  else if (isSm) chartSize = 220;
 
   return (
     <Container maxWidth="lg">
@@ -118,56 +127,44 @@ function HomePage() {
             <strong>{empresa?.nome}</strong>
           </Typography>
         </Box>
-        {/* Lista de relatórios */}
-        <Typography variant="h5" sx={{ mt: 4, mb: 2, textAlign: "left" }}>
-          Aqui estão os relatórios
-        </Typography>
+        {/* Gráfico de relatórios por cliente */}
         <Box
-          sx={(theme) => ({
-            borderRadius: 3,
-            p: 3,
-            mt: 5,
+          sx={{
+            mt: 6,
+            mb: 2,
             width: "100%",
+            maxWidth: 500,
             mx: "auto",
-            transition: "background 0.3s, border 0.3s, box-shadow 0.3s",
-            background: theme.palette.mode === "dark" ? "#23272b" : "#fafbfc",
-            boxShadow: theme.palette.mode === "dark" ? 3 : 1,
-          })}
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            textAlign: "center",
+          }}
         >
-          <Grid container spacing={2}>
-            {loading ? (
-              Array.from({ length: 3 }).map((_, idx) => (
-                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={idx}>
-                  <Card sx={{ p: 2 }}>
-                    <Skeleton variant="text" width="60%" height={32} />
-                    <Skeleton variant="text" width="80%" />
-                    <Skeleton variant="rectangular" height={40} sx={{ mt: 1 }} />
-                  </Card>
-                </Grid>
-              ))
-            ) : reports.length === 0 ? (
-              <Grid size={{ xs: 12 }}>
-                <Typography color="text.secondary">Ainda não criou nenhum relatório.</Typography>
-              </Grid>
-            ) : (
-              reports.slice(0, 6).map((report) => (
-                <Grid size={{ xs: 12, sm: 6, md: 4 }} key={report.id}>
-                  <Card sx={{ p: 2, minHeight: 120, display: "flex", flexDirection: "column", gap: 1 }}>
-                    <Typography variant="subtitle1" fontWeight="bold">
-                      Relatório #{report.id}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Cliente: {report.clienteId}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Data: {new Date(report.createdAt).toLocaleDateString("pt-PT")}
-                    </Typography>
-                  </Card>
-                </Grid>
-              ))
-            )}
-          </Grid>
-        </Box>
+          <Typography variant="h2" sx={{ mb: 8 }}>
+            Relatórios por Cliente
+          </Typography>
+          {loading ? (
+            <Skeleton variant="rectangular" height={chartSize} width={chartSize} />
+          ) : pieData.length === 0 ? (
+            <Typography color="text.secondary">Sem dados para mostrar.</Typography>
+          ) : (
+            <PieChart
+              series={[{ data: pieData }]}
+              width={chartSize}
+              height={chartSize}
+              slotProps={{
+                tooltip: {
+                  sx: {
+                    maxWidth: 250,
+                    whiteSpace: "pre-line",
+                  },
+                },
+              }}
+            />
+          )}
+        </Box>        
       </Paper>
     </Container>
   );

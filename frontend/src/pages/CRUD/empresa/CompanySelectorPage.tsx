@@ -11,12 +11,12 @@ import {
 } from "@mui/material";
 import { Search } from "@mui/icons-material";
 import { useQuery, useLazyQuery } from "@apollo/client";
-import { GET_EMPRESAS } from "../graphql/empresasqueries";
-import { useAuth } from "../hooks/AuthContext";
+import { GET_EMPRESAS } from "../../../graphql/empresasqueries";
+import { useAuth } from "../../../hooks/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
-import LoadingAnimation from "../components/LoadingAnimation";
-import StyledBreadcrumb from "../components/StyledBreadCrumbs";
+import LoadingAnimation from "../../../components/LoadingAnimation";
+import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
 import HomeIcon from "@mui/icons-material/Home";
 
 interface Empresa {

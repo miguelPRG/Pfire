@@ -17,3 +17,13 @@ export const GET_REPORTS_BY_COMPANY = gql`
     }
   }
 `;
+
+export const GET_RELATORIES_COUNT_BY_CLIENTES = gql`
+  query GetRelatoriosCountByClientes($empresaId: String!) {
+    reports: getRelatoriosCountByClientes(empresaId: $empresaId) {
+      clienteId
+      clienteName
+      count
+    }
+  }
+`;
