@@ -22,6 +22,7 @@ class RelatorioList:
     relatorios: list[Relatorio]
     totalRelatorios: int
 
+
 @strawberry.type
 class RelatorioCountByCliente:
     cliente_id: str

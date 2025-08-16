@@ -182,20 +182,19 @@ export default function AddNewClientPage() {
 
   // Renderização do componente
   return (
-      <Box sx={{ width: "100%", display: "flex", flexDirection: "column", padding: 2 }}>
-
-         <Breadcrumbs
-    aria-label="breadcrumb"
-    sx={{
-      mr: "auto",               // EMPURRA para a direita
-      backgroundColor: "background.paper",
-      borderRadius: 5,
-      p: 0.5,
-      boxShadow: 1,
-      // opcional: mantém largura máxima da “pílula”
-      maxWidth: 320,
-    }}
-  >
+    <Box sx={{ width: "100%", display: "flex", flexDirection: "column", padding: 2 }}>
+      <Breadcrumbs
+        aria-label="breadcrumb"
+        sx={{
+          mr: "auto", // EMPURRA para a direita
+          backgroundColor: "background.paper",
+          borderRadius: 5,
+          p: 0.5,
+          boxShadow: 1,
+          // opcional: mantém largura máxima da “pílula”
+          maxWidth: 320,
+        }}
+      >
         <StyledBreadcrumb
           component="a"
           sx={{ cursor: "pointer" }}
@@ -214,119 +213,119 @@ export default function AddNewClientPage() {
           label={cliente ? "Editar Cliente" : "Novo Cliente"}
         />
       </Breadcrumbs>
-    <Paper sx={{ maxWidth: 600, mx: "auto", mt: 5, p: 4 }}>
-      {errorMessage && (
-        <Box mb={2}>
-          <Alert severity="error" variant="filled" onClose={() => setErrorMessage(null)}>
-            {errorMessage}
-          </Alert>
-        </Box>
-      )}
-      <Typography
-        variant="h5"
-        sx={{
-          fontWeight: "bold",
-          fontSize: 30,
-          textAlign: "center",
-        }}
-      >
-        {cliente ? "Editar Cliente" : "Adicionar novo Cliente"} {/* Título dinâmico */}
-      </Typography>
-
-      <Box
-        component="form"
-        onSubmit={handleSubmit(onSubmit)} // Lida com submit do formulário
-        sx={{
-          display: "flex",
-          flexDirection: "column",
-          gap: 2,
-        }}
-      >
-        <TextField
-          {...register("nome")} // Campo nome
-          label="Nome"
-          error={!!errors.nome}
-          helperText={errors.nome?.message}
-          fullWidth
-        />
-        <TextField
-          {...register("email")} // Campo email
-          label="Email"
-          type="email"
-          error={!!errors.email}
-          helperText={errors.email?.message}
-          fullWidth
-        />
-        <GlobalPhone fieldName="telefone" control={control} errors={errors} />
-        <TextField {...register("nif")} label="NIF" error={!!errors.nif} helperText={errors.nif?.message} fullWidth />
-        <TextField
-          {...register("localidade")} // Campo localidade
-          label="Localidade"
-          error={!!errors.localidade}
-          helperText={errors.localidade?.message}
-          fullWidth
-        />
-        <TextField
-          {...register("morada")} // Campo morada
-          label="Morada"
-          error={!!errors.morada}
-          helperText={errors.morada?.message}
-          fullWidth
-        />
-        <TextField
-          {...register("codigo_postal")} // Campo código postal
-          label="Código Postal"
-          error={!!errors.codigo_postal}
-          helperText={errors.codigo_postal?.message}
-          fullWidth
-        />
-        <Box
+      <Paper sx={{ maxWidth: 600, mx: "auto", mt: 5, p: 4 }}>
+        {errorMessage && (
+          <Box mb={2}>
+            <Alert severity="error" variant="filled" onClose={() => setErrorMessage(null)}>
+              {errorMessage}
+            </Alert>
+          </Box>
+        )}
+        <Typography
+          variant="h5"
           sx={{
-            display: "flex",
-            justifyContent: "flex-end",
-            gap: 2,
-            mt: 2,
-            width: "100%",
+            fontWeight: "bold",
+            fontSize: 30,
+            textAlign: "center",
           }}
         >
-          <Button
-            variant="outlined"
-            onClick={handleCancel} // Botão cancelar
-            sx={{
-              flex: 1,
+          {cliente ? "Editar Cliente" : "Adicionar novo Cliente"} {/* Título dinâmico */}
+        </Typography>
 
-              "&:hover": {
-                bgcolor: "grey.300",
-              },
-            }}
-          >
-            Cancelar
-          </Button>
-          <Button
-            type="submit"
-            variant="contained"
+        <Box
+          component="form"
+          onSubmit={handleSubmit(onSubmit)} // Lida com submit do formulário
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+          }}
+        >
+          <TextField
+            {...register("nome")} // Campo nome
+            label="Nome"
+            error={!!errors.nome}
+            helperText={errors.nome?.message}
+            fullWidth
+          />
+          <TextField
+            {...register("email")} // Campo email
+            label="Email"
+            type="email"
+            error={!!errors.email}
+            helperText={errors.email?.message}
+            fullWidth
+          />
+          <GlobalPhone fieldName="telefone" control={control} errors={errors} />
+          <TextField {...register("nif")} label="NIF" error={!!errors.nif} helperText={errors.nif?.message} fullWidth />
+          <TextField
+            {...register("localidade")} // Campo localidade
+            label="Localidade"
+            error={!!errors.localidade}
+            helperText={errors.localidade?.message}
+            fullWidth
+          />
+          <TextField
+            {...register("morada")} // Campo morada
+            label="Morada"
+            error={!!errors.morada}
+            helperText={errors.morada?.message}
+            fullWidth
+          />
+          <TextField
+            {...register("codigo_postal")} // Campo código postal
+            label="Código Postal"
+            error={!!errors.codigo_postal}
+            helperText={errors.codigo_postal?.message}
+            fullWidth
+          />
+          <Box
             sx={{
-              flex: 1,
-              backgroundColor: theme.palette.success.main,
-              color: "white",
-              "&:hover": {
-                backgroundColor: theme.palette.success.dark,
-              },
-              minWidth: 0,
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 2,
+              mt: 2,
+              width: "100%",
             }}
-            disabled={isSubmitting} // Desabilita enquanto está enviando
           >
-            {isSubmitting
-              ? cliente
-                ? "Atualizando..."
-                : "A adicionar..."
-              : cliente
-                ? "Atualizar dados do cliente"
-                : "Salvar"}
-          </Button>
+            <Button
+              variant="outlined"
+              onClick={handleCancel} // Botão cancelar
+              sx={{
+                flex: 1,
+
+                "&:hover": {
+                  bgcolor: "grey.300",
+                },
+              }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              variant="contained"
+              sx={{
+                flex: 1,
+                backgroundColor: theme.palette.success.main,
+                color: "white",
+                "&:hover": {
+                  backgroundColor: theme.palette.success.dark,
+                },
+                minWidth: 0,
+              }}
+              disabled={isSubmitting} // Desabilita enquanto está enviando
+            >
+              {isSubmitting
+                ? cliente
+                  ? "Atualizando..."
+                  : "A adicionar..."
+                : cliente
+                  ? "Atualizar dados do cliente"
+                  : "Salvar"}
+            </Button>
+          </Box>
         </Box>
-      </Box>
-    </Paper>
+      </Paper>
     </Box>
   );
 }

@@ -54,7 +54,6 @@ const ProtectedRoute = ({ element }: { element: ReactElement }) => {
   return element;
 };
 
-
 // Rotas públicas, acessível sem autenticação
 const PublicRoute = ({ element }: { element: ReactElement }) => {
   const { user } = useAuth();

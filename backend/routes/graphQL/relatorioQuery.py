@@ -11,12 +11,7 @@ from bson import ObjectId
 class RelatorioQuery:
     @strawberry.field
     async def getRelatorios(
-        self,
-        info: Info,
-        empresa_id: str,
-        id: str = None,
-        start: int = 0,
-        relatorio_name: str = None  # Novo parâmetro
+        self, info: Info, empresa_id: str, id: str = None, start: int = 0, relatorio_name: str = None  # Novo parâmetro
     ) -> RelatorioList:
 
         empresa_id = ObjectId(empresa_id)
@@ -77,7 +72,7 @@ class RelatorioQuery:
 
         total_relatorios = await relatorios_collection.count_documents(filtro)
         return RelatorioList(relatorios=relatorios, totalRelatorios=total_relatorios)
-    
+
     @strawberry.field
     async def getRelatoriosCountByClientes(self, info: Info, empresa_id: str) -> list[RelatorioCountByCliente]:
 
@@ -98,22 +93,15 @@ class RelatorioQuery:
         # Pipeline sempre definido
         pipeline = [
             {"$match": {"empresa_id": empresa_id}},
-            {
-                "$lookup": {
-                    "from": "clientes",
-                    "localField": "cliente_id",
-                    "foreignField": "_id",
-                    "as": "cliente_info"
-                }
-            },
+            {"$lookup": {"from": "clientes", "localField": "cliente_id", "foreignField": "_id", "as": "cliente_info"}},
             {"$unwind": "$cliente_info"},
             {
                 "$group": {
                     "_id": "$cliente_id",
                     "cliente_name": {"$first": "$cliente_info.nome"},
-                    "totalRelatorios": {"$sum": 1}
+                    "totalRelatorios": {"$sum": 1},
                 }
-            }
+            },
         ]
 
         consulta_cursor = relatorios_collection.aggregate(pipeline)
@@ -121,9 +109,7 @@ class RelatorioQuery:
         async for doc in consulta_cursor:
             consulta.append(
                 RelatorioCountByCliente(
-                    cliente_id=str(doc["_id"]),
-                    cliente_name=doc["cliente_name"],
-                    count=doc["totalRelatorios"]
+                    cliente_id=str(doc["_id"]), cliente_name=doc["cliente_name"], count=doc["totalRelatorios"]
                 )
             )
 

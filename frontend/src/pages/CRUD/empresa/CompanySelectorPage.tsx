@@ -1,14 +1,5 @@
 import { useEffect, useLayoutEffect, useState, useRef } from "react";
-import {
-  Button,
-  Paper,
-  Typography,
-  Box,
-  Pagination,
-  TextField,
-  InputAdornment,
-  Breadcrumbs,
-} from "@mui/material";
+import { Button, Paper, Typography, Box, Pagination, TextField, InputAdornment, Breadcrumbs } from "@mui/material";
 import { Search } from "@mui/icons-material";
 import { useQuery, useLazyQuery } from "@apollo/client";
 import { GET_EMPRESAS } from "../../../graphql/empresasqueries";
@@ -54,9 +45,7 @@ export default function CompanySelectorPage() {
     if (search) fetchEmpresas({ variables: { name: search } });
   }, [search]);
 
-  const empresas: Empresa[] = search
-    ? searchData?.getEmpresas?.empresas || []
-    : data?.getEmpresas?.empresas || [];
+  const empresas: Empresa[] = search ? searchData?.getEmpresas?.empresas || [] : data?.getEmpresas?.empresas || [];
 
   const totalEmpresas: number = search
     ? searchData?.getEmpresas?.totalEmpresas || 0
@@ -98,30 +87,18 @@ export default function CompanySelectorPage() {
           height: 380,
           width: 260,
           borderRadius: 4,
-          background:
-            theme.palette.mode === "dark"
-              ? theme.palette.background.paper
-              : "#fff",
+          background: theme.palette.mode === "dark" ? theme.palette.background.paper : "#fff",
           border: `1.5px solid ${
-            isSelected
-              ? theme.palette.success.main
-              : theme.palette.mode === "dark"
-              ? theme.palette.divider
-              : "#e0e0e0"
+            isSelected ? theme.palette.success.main : theme.palette.mode === "dark" ? theme.palette.divider : "#e0e0e0"
           }`,
           p: 3,
-          boxShadow:
-            theme.palette.mode === "dark"
-              ? "0 6px 18px rgba(0,0,0,0.35)"
-              : "0px 6px 18px 0px #0e185522",
+          boxShadow: theme.palette.mode === "dark" ? "0 6px 18px rgba(0,0,0,0.35)" : "0px 6px 18px 0px #0e185522",
           transition: "transform .16s, border-color .16s, box-shadow .16s",
           "&:hover": {
             transform: "scale(1.025)",
-            borderColor: isSelected? theme.palette.success.main : theme.palette.primary.main,
+            borderColor: isSelected ? theme.palette.success.main : theme.palette.primary.main,
             boxShadow:
-              theme.palette.mode === "dark"
-                ? "0 10px 24px rgba(0,0,0,0.45)"
-                : "0 10px 24px rgba(14,24,85,0.22)",
+              theme.palette.mode === "dark" ? "0 10px 24px rgba(0,0,0,0.45)" : "0 10px 24px rgba(14,24,85,0.22)",
           },
         }}
       >
@@ -130,16 +107,13 @@ export default function CompanySelectorPage() {
             width: 110,
             height: 110,
             borderRadius: "50%",
-            background:
-              theme.palette.mode === "dark" ? "#1f2530" : "#f4f7fb",
+            background: theme.palette.mode === "dark" ? "#1f2530" : "#f4f7fb",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             overflow: "hidden",
             mb: 2,
-            border: `1.5px solid ${
-              theme.palette.mode === "dark" ? theme.palette.divider : "#e0e0e0"
-            }`,
+            border: `1.5px solid ${theme.palette.mode === "dark" ? theme.palette.divider : "#e0e0e0"}`,
           }}
         >
           {emp.logo ? (
@@ -179,10 +153,7 @@ export default function CompanySelectorPage() {
           variant="body1"
           align="center"
           sx={{
-            color:
-              theme.palette.mode === "dark"
-                ? theme.palette.text.secondary
-                : "#31343c",
+            color: theme.palette.mode === "dark" ? theme.palette.text.secondary : "#31343c",
             minHeight: 48,
             mb: 2,
             fontSize: "1.06rem",
@@ -208,10 +179,7 @@ export default function CompanySelectorPage() {
             fontSize: "1.06rem",
             letterSpacing: 0.25,
             textTransform: "none",
-            boxShadow:
-              theme.palette.mode === "dark"
-                ? "0 4px 10px rgba(0,0,0,0.5)"
-                : "0px 3px 10px 0px #0e185514",
+            boxShadow: theme.palette.mode === "dark" ? "0 4px 10px rgba(0,0,0,0.5)" : "0px 3px 10px 0px #0e185514",
             py: 1.2,
           }}
           onClick={() => handleSelect(emp)}
@@ -229,10 +197,7 @@ export default function CompanySelectorPage() {
           p: 4,
           maxWidth: "1500px",
           mx: "auto",
-          bgcolor:
-            theme.palette.mode === "dark"
-              ? theme.palette.background.default
-              : "transparent",
+          bgcolor: theme.palette.mode === "dark" ? theme.palette.background.default : "transparent",
           transition: "background-color .2s",
         }}
       >
@@ -241,38 +206,27 @@ export default function CompanySelectorPage() {
           sx={{
             p: 4,
             borderRadius: 4,
-            background:
-              theme.palette.mode === "dark"
-                ? "linear-gradient(180deg, #0f1420 0%, #111827 100%)"
-                : "#fcfdff",
-            border: `1px solid ${
-              theme.palette.mode === "dark" ? "#1f2a37" : "#e9eef6"
-            }`,
+            background: theme.palette.mode === "dark" ? "linear-gradient(180deg, #0f1420 0%, #111827 100%)" : "#fcfdff",
+            border: `1px solid ${theme.palette.mode === "dark" ? "#1f2a37" : "#e9eef6"}`,
           }}
         >
           {/* Breadcrumbs */}
-          <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 3, backgroundColor: "background.paper", maxWidth: "200px", borderRadius: 5, padding: 0.5 }}>
+          <Breadcrumbs
+            aria-label="breadcrumb"
+            sx={{ mb: 3, backgroundColor: "background.paper", maxWidth: "200px", borderRadius: 5, padding: 0.5 }}
+          >
             <StyledBreadcrumb
               component="a"
               sx={{ cursor: "pointer" }}
               onClick={() => navigate("/")}
               icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
             />
-            <StyledBreadcrumb
-              sx={{ fontSize: "0.9rem" }}
-              component="span"
-              label="Empresas"
-            />
+            <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} component="span" label="Empresas" />
           </Breadcrumbs>
 
           {/* Título */}
           <Box sx={{ width: "100%", mb: 4, textAlign: "center" }}>
-            <Typography
-              variant="h4"
-              fontWeight="bold"
-              letterSpacing={1.5}
-              sx={{ color: theme.palette.text.primary }}
-            >
+            <Typography variant="h4" fontWeight="bold" letterSpacing={1.5} sx={{ color: theme.palette.text.primary }}>
               Selecionar Empresa
             </Typography>
           </Box>
@@ -296,9 +250,7 @@ export default function CompanySelectorPage() {
                       <Search
                         sx={{
                           color:
-                            theme.palette.mode === "dark"
-                              ? theme.palette.primary.light
-                              : theme.palette.primary.main,
+                            theme.palette.mode === "dark" ? theme.palette.primary.light : theme.palette.primary.main,
                         }}
                       />
                     </InputAdornment>
@@ -309,17 +261,11 @@ export default function CompanySelectorPage() {
                 width: { xs: "100%", sm: "75%" },
                 maxWidth: 600,
                 "& .MuiOutlinedInput-root": {
-                  bgcolor:
-                    theme.palette.mode === "dark"
-                      ? "#0b1220"
-                      : "#ffffff",
+                  bgcolor: theme.palette.mode === "dark" ? "#0b1220" : "#ffffff",
                   color: theme.palette.text.primary,
                   borderRadius: 2,
                   "& fieldset": {
-                    borderColor:
-                      theme.palette.mode === "dark"
-                        ? "#1f2a37"
-                        : "#d7ddea",
+                    borderColor: theme.palette.mode === "dark" ? "#1f2a37" : "#d7ddea",
                   },
                   "&:hover fieldset": {
                     borderColor: theme.palette.primary.main,
@@ -330,10 +276,7 @@ export default function CompanySelectorPage() {
                   },
                 },
                 "& .MuiInputBase-input::placeholder": {
-                  color:
-                    theme.palette.mode === "dark"
-                      ? theme.palette.text.disabled
-                      : undefined,
+                  color: theme.palette.mode === "dark" ? theme.palette.text.disabled : undefined,
                   opacity: 1,
                 },
               }}
@@ -345,11 +288,7 @@ export default function CompanySelectorPage() {
             <Paper
               elevation={theme.palette.mode === "dark" ? 1 : 4}
               sx={{
-                border: `2px dashed ${
-                  theme.palette.mode === "dark"
-                    ? theme.palette.primary.dark
-                    : "#2196f3"
-                }`,
+                border: `2px dashed ${theme.palette.mode === "dark" ? theme.palette.primary.dark : "#2196f3"}`,
                 display: "flex",
                 flexDirection: "column",
                 alignItems: "center",
@@ -359,16 +298,12 @@ export default function CompanySelectorPage() {
                 minHeight: 220,
                 borderRadius: 3,
                 transition: "transform .2s, background .2s, box-shadow .2s",
-                background:
-                  theme.palette.mode === "dark" ? "#0b1220" : "#f8fbff",
+                background: theme.palette.mode === "dark" ? "#0b1220" : "#f8fbff",
                 "&:hover": {
-                  backgroundColor:
-                    theme.palette.mode === "dark" ? "#0e1730" : "#e3f2fd",
+                  backgroundColor: theme.palette.mode === "dark" ? "#0e1730" : "#e3f2fd",
                   transform: "scale(1.012)",
                   boxShadow:
-                    theme.palette.mode === "dark"
-                      ? "0 8px 18px rgba(0,0,0,0.5)"
-                      : "0 8px 18px rgba(14,24,85,0.18)",
+                    theme.palette.mode === "dark" ? "0 8px 18px rgba(0,0,0,0.5)" : "0 8px 18px rgba(14,24,85,0.18)",
                 },
                 py: 5,
               }}
@@ -388,19 +323,12 @@ export default function CompanySelectorPage() {
                   justifyContent: "center",
                   mb: 2,
                   boxShadow:
-                    theme.palette.mode === "dark"
-                      ? "0 6px 16px rgba(0,0,0,0.6)"
-                      : "0 6px 16px rgba(0,0,0,0.12)",
+                    theme.palette.mode === "dark" ? "0 6px 16px rgba(0,0,0,0.6)" : "0 6px 16px rgba(0,0,0,0.12)",
                 }}
               >
                 +
               </Box>
-              <Typography
-                variant="h5"
-                fontWeight="bold"
-                align="center"
-                sx={{ color: theme.palette.text.primary }}
-              >
+              <Typography variant="h5" fontWeight="bold" align="center" sx={{ color: theme.palette.text.primary }}>
                 Criar nova empresa
               </Typography>
               <Typography
@@ -465,19 +393,13 @@ export default function CompanySelectorPage() {
                   },
                   "& .MuiPaginationItem-root.Mui-selected": {
                     backgroundColor:
-                      theme.palette.mode === "dark"
-                        ? theme.palette.primary.dark
-                        : theme.palette.primary.main,
+                      theme.palette.mode === "dark" ? theme.palette.primary.dark : theme.palette.primary.main,
                     color: theme.palette.getContrastText(
-                      theme.palette.mode === "dark"
-                        ? theme.palette.primary.dark
-                        : theme.palette.primary.main
+                      theme.palette.mode === "dark" ? theme.palette.primary.dark : theme.palette.primary.main
                     ),
                     "&:hover": {
                       backgroundColor:
-                        theme.palette.mode === "dark"
-                          ? theme.palette.primary.main
-                          : theme.palette.primary.dark,
+                        theme.palette.mode === "dark" ? theme.palette.primary.main : theme.palette.primary.dark,
                     },
                   },
                 }}

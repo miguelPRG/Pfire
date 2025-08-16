@@ -56,7 +56,7 @@ function AddNewReportPage() {
   // Estado para mensagem de erro geral
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const theme = useTheme();
-  
+
   // Executa a query GraphQL para buscar clientes da empresa
   const { data, loading, error } = useQuery(GET_CLIENTES_BY_EMPRESA, {
     variables: { empresaId: empresa?.id },
@@ -313,19 +313,19 @@ function AddNewReportPage() {
   return (
     <>
       {/* Breadcrumbs */}
-       <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 2 , padding: 2 }}>
-       <Breadcrumbs
-    aria-label="breadcrumb"
-    sx={{
-      mr: "auto",               // EMPURRA para a direita
-      backgroundColor: "background.paper",
-      borderRadius: 5,
-      p: 0.5,
-      boxShadow: 1,
-      // opcional: mantém largura máxima da “pílula”
-     maxWidth: "450px"
-    }}
-  >
+      <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 2, padding: 2 }}>
+        <Breadcrumbs
+          aria-label="breadcrumb"
+          sx={{
+            mr: "auto", // EMPURRA para a direita
+            backgroundColor: "background.paper",
+            borderRadius: 5,
+            p: 0.5,
+            boxShadow: 1,
+            // opcional: mantém largura máxima da “pílula”
+            maxWidth: "450px",
+          }}
+        >
           <StyledBreadcrumb
             component="a"
             sx={{ cursor: "pointer" }}
@@ -346,296 +346,299 @@ function AddNewReportPage() {
           />
           <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} component="span" label="Novo Relatório" />
         </Breadcrumbs>
-      
-   
-      
 
-      {/* Formulário principal */}
-      <Paper sx={{ maxWidth: 600, mx: "auto", mt: 4, p: 4 }}>
-        {/* Exibe alerta de erro geral, se houver */}
-        {errorMessage && (
-          <Box mb={2}>
-            <Alert severity="error" variant="filled" onClose={() => setErrorMessage(null)}>
-              {errorMessage}
-            </Alert>
+        {/* Formulário principal */}
+        <Paper sx={{ maxWidth: 600, mx: "auto", mt: 4, p: 4 }}>
+          {/* Exibe alerta de erro geral, se houver */}
+          {errorMessage && (
+            <Box mb={2}>
+              <Alert severity="error" variant="filled" onClose={() => setErrorMessage(null)}>
+                {errorMessage}
+              </Alert>
+            </Box>
+          )}
+
+          {/* Título e nome do modelo */}
+          <Box sx={{ mb: 3, display: "flex", alignItems: "center", flexDirection: "column" }}>
+            <Typography variant="h4" gutterBottom>
+              Adicionar Novo Relatório
+            </Typography>
+            <Typography variant="h6" gutterBottom>
+              Modelo: {selectedModel.modelName}
+            </Typography>
           </Box>
-        )}
 
-        {/* Título e nome do modelo */}
-        <Box sx={{ mb: 3, display: "flex", alignItems: "center", flexDirection: "column" }}>
-          <Typography variant="h4" gutterBottom>
-            Adicionar Novo Relatório
-          </Typography>
-          <Typography variant="h6" gutterBottom>
-            Modelo: {selectedModel.modelName}
-          </Typography>
-        </Box>
+          {/* Formulário */}
+          <form onSubmit={handleSubmit} noValidate>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              {/* Campo para nome do relatório */}
+              <Box sx={{ width: "100%", flexDirection: "column" }}>
+                <Typography>Nome do Relatório</Typography>
+                <TextField
+                  value={reportName}
+                  onChange={(e) => setReportName(e.target.value)}
+                  error={!!errors.relatorio_name}
+                  helperText={errors.relatorio_name}
+                />
+              </Box>
 
-        {/* Formulário */}
-        <form onSubmit={handleSubmit} noValidate>
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            {/* Campo para nome do relatório */}
-            <Box sx={{ width: "100%", flexDirection: "column" }}>
-              <Typography>Nome do Relatório</Typography>
-              <TextField
-                value={reportName}
-                onChange={(e) => setReportName(e.target.value)}
-                error={!!errors.relatorio_name}
-                helperText={errors.relatorio_name}
-              />
-            </Box>
-
-            {/* Separador visual com estilo para os campos personalizados */}
-            <Paper
-              elevation={1}
-              sx={{
-                p: 3,
-                mt: 2,
-                mb: 2,
-                borderRadius: 2,
-                backgroundColor: theme.palette.background.paper,
-                color: theme.palette.text.primary,
-                border: `1px solid ${theme.palette.divider}`,
-                boxShadow: theme.shadows[1],
-              }}
-            >
-              <Typography gutterBottom sx={{ mb: 2 }}>
-                Campos Personalizados
-              </Typography>
-
-              {selectedModel.customFields.map((field: any) => {
-                const value = field.value;
-                const baseKey = field.key;
-                const label = value.label || displayName(baseKey);
-
-                // Se for um campo composto (object)
-                if (value.datatype === "object") {
-                  return (
-                    <Fragment key={baseKey}>
-                      <Box>
-                        <Typography variant="subtitle1" sx={{ fontWeight: "bold", mt: 2 }}>
-                          {displayName(baseKey)}
-                        </Typography>
-                      </Box>
-                      {Object.entries(value).map(([subKey, subValue]: [string, any]) => {
-                        if (["datatype", "required", "label"].includes(subKey)) return null;
-
-                        const sanitizedSubKey = subKey.replace(/\s+/g, "_");
-                        const fullSubKey = sanitizedSubKey.startsWith("custom_")
-                          ? sanitizedSubKey
-                          : `custom_${sanitizedSubKey}`;
-
-                        const subLabel = displayName(subKey);
-
-                        return (
-                          <Box key={fullSubKey} sx={{ width: "100%", mt: 1 }}>
-                            <TextField
-                              fullWidth
-                              label={subLabel}
-                              type={
-                                subValue.datatype === "number" ? "number" : subValue.datatype === "date" ? "date" : "text"
-                              }
-                              InputLabelProps={subValue.datatype === "date" ? { shrink: true } : undefined}
-                              value={formData[fullSubKey] ?? ""}
-                              onChange={(e) => handleInputChange(fullSubKey, e.target.value)}
-                              error={!!errors[fullSubKey]}
-                              helperText={errors[fullSubKey]}
-                            />
-                          </Box>
-                        );
-                      })}
-                    </Fragment>
-                  );
-                }
-
-                // Campo simples
-                return (
-                  <Box key={baseKey} sx={{ width: "100%", mt: 1 }}>
-                    {value.datatype === "bool" ? (
-                      (() => {
-                        const fullKey = baseKey.startsWith("custom_") ? baseKey : `custom_${baseKey}`;
-                        return (
-                          <FormControl fullWidth error={!!errors[fullKey]}>
-                            <Box sx={{ display: "flex", alignItems: "center" }}>
-                              <Checkbox
-                                checked={!!formData[fullKey]}
-                                onChange={(e) => handleInputChange(fullKey, e.target.checked)}
-                              />
-                              <Typography>{label}</Typography>
-                            </Box>
-                            {errors[fullKey] && (
-                              <Typography variant="caption" color="error">
-                                {errors[fullKey]}
-                              </Typography>
-                            )}
-                          </FormControl>
-                        );
-                      })()
-                    ) : value.datatype === "array" && Array.isArray(value.items) ? (
-                      <FormControl fullWidth sx={{ mt: 2 }}>
-                        <InputLabel
-                          sx={{
-                            "&.Mui-focused": {
-                              transform: "translate(6px, -18px) scale(0.75)",
-                            },
-                          }}
-                        >
-                          {label}
-                        </InputLabel>
-                        <Select
-                          value={formData[baseKey] ?? ""}
-                          onChange={(e) => handleInputChange(baseKey, e.target.value)}
-                          renderValue={(selected) => selected}
-                          MenuProps={{
-                            PaperProps: {
-                              sx: {
-                                border: `1px solid ${theme.palette.divider}`,
-                                borderRadius: 2,
-                                boxShadow: 2,
-                                backgroundColor: theme.palette.background.paper,
-                                color: theme.palette.text.primary,
-                                width: "20%",
-                              },
-                            },
-                          }}
-                          sx={{
-                            backgroundColor: theme.palette.background.paper,
-                            color: theme.palette.text.primary,
-                            "& .MuiSelect-icon": {
-                              color: theme.palette.text.primary,
-                            },
-                            "& .MuiOutlinedInput-notchedOutline": {
-                              borderColor: theme.palette.divider,
-                            },
-                            "&:hover .MuiOutlinedInput-notchedOutline": {
-                              borderColor: theme.palette.primary.main,
-                            },
-                            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                              borderColor: theme.palette.primary.main,
-                            },
-                          }}
-                        >
-                          {value.items.map((option: string) => (
-                            <MenuItem
-                              key={option}
-                              value={option}
-                              sx={{
-                                backgroundColor: theme.palette.background.paper,
-                                color: theme.palette.text.primary,
-                                "&.Mui-selected": {
-                                  backgroundColor: theme.palette.action.selected,
-                                },
-                                "&:hover": {
-                                  backgroundColor: theme.palette.action.hover,
-                                },
-                              }}
-                            >
-                              {option}
-                            </MenuItem>
-                          ))}
-                        </Select>
-
-                        {errors[baseKey] && (
-                          <Typography variant="caption" color="error">
-                            {errors[baseKey]}
-                          </Typography>
-                        )}
-                      </FormControl>
-                    ) : (
-                      <TextField
-                        fullWidth
-                        label={value.datatype === "date" ? undefined : label}
-                        type={value.datatype === "number" ? "number" : value.datatype === "date" ? "date" : "text"}
-                        InputLabelProps={value.datatype === "date" ? { shrink: true } : undefined}
-                        value={formData[baseKey] ?? ""}
-                        onChange={(e) => handleInputChange(baseKey, e.target.value)}
-                        error={!!errors[baseKey]}
-                        helperText={errors[baseKey]}
-                      />
-                    )}
-                  </Box>
-                );
-              })}
-            </Paper>
-
-            {/* Campo de seleção de cliente */}
-            <Box sx={{ width: "100%" }}>
-              <Autocomplete
-                fullWidth
-                options={
-                  formData.clienteInput && formData.clienteInput.length > 0
-                    ? data?.getClientes?.clientes.filter((c: any) =>
-                        c.nome.toLowerCase().includes(formData.clienteInput.toLowerCase())
-                      )
-                    : []
-                }
-                getOptionLabel={(option) => option.nome}
-                value={
-                  selectedCliente ? data?.getClientes?.clientes.find((c: any) => c.id === selectedCliente) || null : null
-                }
-                onChange={(_, newValue) => {
-                  setSelectedCliente(newValue?.id || "");
-                }}
-                isOptionEqualToValue={(option, value) => option.id === value.id}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Selecione um Cliente"
-                    error={!!errors.cliente_id}
-                    helperText={errors.cliente_id}
-                    fullWidth
-                    onChange={(e) => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        clienteInput: e.target.value,
-                      }));
-                    }}
-                    value={formData.clienteInput || ""}
-                    slotProps={{
-                      input: {
-                        ...params.InputProps,
-                        endAdornment: null,
-                      },
-                    }}
-                  />
-                )}
-                loading={loading}
-                disabled={!!error}
-                openOnFocus
-                autoHighlight
-                inputValue={formData.clienteInput || ""}
-                onInputChange={(_, newInputValue) => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    clienteInput: newInputValue,
-                  }));
-                }}
-              />
-            </Box>
-
-            {/* Botões de ação */}
-            <Box sx={{ display: "flex", justifyContent: "flex-start", gap: 2, mt: 4, width: "100%" }}>
-              <Button variant="outlined" onClick={() => navigate("/report-models")}>
-                Cancelar
-              </Button>
-              <Button
-                type="submit"
-                variant="contained"
-                color="primary"
+              {/* Separador visual com estilo para os campos personalizados */}
+              <Paper
+                elevation={1}
                 sx={{
-                  backgroundColor: theme.palette.success.main,
-                  color: "white",
-                  "&:hover": {
-                    backgroundColor: theme.palette.success.dark,
-                  },
+                  p: 3,
+                  mt: 2,
+                  mb: 2,
+                  borderRadius: 2,
+                  backgroundColor: theme.palette.background.paper,
+                  color: theme.palette.text.primary,
+                  border: `1px solid ${theme.palette.divider}`,
+                  boxShadow: theme.shadows[1],
                 }}
               >
-                Salvar Relatório
-              </Button>
+                <Typography gutterBottom sx={{ mb: 2 }}>
+                  Campos Personalizados
+                </Typography>
+
+                {selectedModel.customFields.map((field: any) => {
+                  const value = field.value;
+                  const baseKey = field.key;
+                  const label = value.label || displayName(baseKey);
+
+                  // Se for um campo composto (object)
+                  if (value.datatype === "object") {
+                    return (
+                      <Fragment key={baseKey}>
+                        <Box>
+                          <Typography variant="subtitle1" sx={{ fontWeight: "bold", mt: 2 }}>
+                            {displayName(baseKey)}
+                          </Typography>
+                        </Box>
+                        {Object.entries(value).map(([subKey, subValue]: [string, any]) => {
+                          if (["datatype", "required", "label"].includes(subKey)) return null;
+
+                          const sanitizedSubKey = subKey.replace(/\s+/g, "_");
+                          const fullSubKey = sanitizedSubKey.startsWith("custom_")
+                            ? sanitizedSubKey
+                            : `custom_${sanitizedSubKey}`;
+
+                          const subLabel = displayName(subKey);
+
+                          return (
+                            <Box key={fullSubKey} sx={{ width: "100%", mt: 1 }}>
+                              <TextField
+                                fullWidth
+                                label={subLabel}
+                                type={
+                                  subValue.datatype === "number"
+                                    ? "number"
+                                    : subValue.datatype === "date"
+                                      ? "date"
+                                      : "text"
+                                }
+                                InputLabelProps={subValue.datatype === "date" ? { shrink: true } : undefined}
+                                value={formData[fullSubKey] ?? ""}
+                                onChange={(e) => handleInputChange(fullSubKey, e.target.value)}
+                                error={!!errors[fullSubKey]}
+                                helperText={errors[fullSubKey]}
+                              />
+                            </Box>
+                          );
+                        })}
+                      </Fragment>
+                    );
+                  }
+
+                  // Campo simples
+                  return (
+                    <Box key={baseKey} sx={{ width: "100%", mt: 1 }}>
+                      {value.datatype === "bool" ? (
+                        (() => {
+                          const fullKey = baseKey.startsWith("custom_") ? baseKey : `custom_${baseKey}`;
+                          return (
+                            <FormControl fullWidth error={!!errors[fullKey]}>
+                              <Box sx={{ display: "flex", alignItems: "center" }}>
+                                <Checkbox
+                                  checked={!!formData[fullKey]}
+                                  onChange={(e) => handleInputChange(fullKey, e.target.checked)}
+                                />
+                                <Typography>{label}</Typography>
+                              </Box>
+                              {errors[fullKey] && (
+                                <Typography variant="caption" color="error">
+                                  {errors[fullKey]}
+                                </Typography>
+                              )}
+                            </FormControl>
+                          );
+                        })()
+                      ) : value.datatype === "array" && Array.isArray(value.items) ? (
+                        <FormControl fullWidth sx={{ mt: 2 }}>
+                          <InputLabel
+                            sx={{
+                              "&.Mui-focused": {
+                                transform: "translate(6px, -18px) scale(0.75)",
+                              },
+                            }}
+                          >
+                            {label}
+                          </InputLabel>
+                          <Select
+                            value={formData[baseKey] ?? ""}
+                            onChange={(e) => handleInputChange(baseKey, e.target.value)}
+                            renderValue={(selected) => selected}
+                            MenuProps={{
+                              PaperProps: {
+                                sx: {
+                                  border: `1px solid ${theme.palette.divider}`,
+                                  borderRadius: 2,
+                                  boxShadow: 2,
+                                  backgroundColor: theme.palette.background.paper,
+                                  color: theme.palette.text.primary,
+                                  width: "20%",
+                                },
+                              },
+                            }}
+                            sx={{
+                              backgroundColor: theme.palette.background.paper,
+                              color: theme.palette.text.primary,
+                              "& .MuiSelect-icon": {
+                                color: theme.palette.text.primary,
+                              },
+                              "& .MuiOutlinedInput-notchedOutline": {
+                                borderColor: theme.palette.divider,
+                              },
+                              "&:hover .MuiOutlinedInput-notchedOutline": {
+                                borderColor: theme.palette.primary.main,
+                              },
+                              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                                borderColor: theme.palette.primary.main,
+                              },
+                            }}
+                          >
+                            {value.items.map((option: string) => (
+                              <MenuItem
+                                key={option}
+                                value={option}
+                                sx={{
+                                  backgroundColor: theme.palette.background.paper,
+                                  color: theme.palette.text.primary,
+                                  "&.Mui-selected": {
+                                    backgroundColor: theme.palette.action.selected,
+                                  },
+                                  "&:hover": {
+                                    backgroundColor: theme.palette.action.hover,
+                                  },
+                                }}
+                              >
+                                {option}
+                              </MenuItem>
+                            ))}
+                          </Select>
+
+                          {errors[baseKey] && (
+                            <Typography variant="caption" color="error">
+                              {errors[baseKey]}
+                            </Typography>
+                          )}
+                        </FormControl>
+                      ) : (
+                        <TextField
+                          fullWidth
+                          label={value.datatype === "date" ? undefined : label}
+                          type={value.datatype === "number" ? "number" : value.datatype === "date" ? "date" : "text"}
+                          InputLabelProps={value.datatype === "date" ? { shrink: true } : undefined}
+                          value={formData[baseKey] ?? ""}
+                          onChange={(e) => handleInputChange(baseKey, e.target.value)}
+                          error={!!errors[baseKey]}
+                          helperText={errors[baseKey]}
+                        />
+                      )}
+                    </Box>
+                  );
+                })}
+              </Paper>
+
+              {/* Campo de seleção de cliente */}
+              <Box sx={{ width: "100%" }}>
+                <Autocomplete
+                  fullWidth
+                  options={
+                    formData.clienteInput && formData.clienteInput.length > 0
+                      ? data?.getClientes?.clientes.filter((c: any) =>
+                          c.nome.toLowerCase().includes(formData.clienteInput.toLowerCase())
+                        )
+                      : []
+                  }
+                  getOptionLabel={(option) => option.nome}
+                  value={
+                    selectedCliente
+                      ? data?.getClientes?.clientes.find((c: any) => c.id === selectedCliente) || null
+                      : null
+                  }
+                  onChange={(_, newValue) => {
+                    setSelectedCliente(newValue?.id || "");
+                  }}
+                  isOptionEqualToValue={(option, value) => option.id === value.id}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Selecione um Cliente"
+                      error={!!errors.cliente_id}
+                      helperText={errors.cliente_id}
+                      fullWidth
+                      onChange={(e) => {
+                        setFormData((prev) => ({
+                          ...prev,
+                          clienteInput: e.target.value,
+                        }));
+                      }}
+                      value={formData.clienteInput || ""}
+                      slotProps={{
+                        input: {
+                          ...params.InputProps,
+                          endAdornment: null,
+                        },
+                      }}
+                    />
+                  )}
+                  loading={loading}
+                  disabled={!!error}
+                  openOnFocus
+                  autoHighlight
+                  inputValue={formData.clienteInput || ""}
+                  onInputChange={(_, newInputValue) => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      clienteInput: newInputValue,
+                    }));
+                  }}
+                />
+              </Box>
+
+              {/* Botões de ação */}
+              <Box sx={{ display: "flex", justifyContent: "flex-start", gap: 2, mt: 4, width: "100%" }}>
+                <Button variant="outlined" onClick={() => navigate("/report-models")}>
+                  Cancelar
+                </Button>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  color="primary"
+                  sx={{
+                    backgroundColor: theme.palette.success.main,
+                    color: "white",
+                    "&:hover": {
+                      backgroundColor: theme.palette.success.dark,
+                    },
+                  }}
+                >
+                  Salvar Relatório
+                </Button>
+              </Box>
             </Box>
-          </Box>
-        </form>
-      </Paper>
+          </form>
+        </Paper>
       </Box>
     </>
   );

@@ -2,7 +2,7 @@ import { useAuth } from "../hooks/AuthContext";
 import { Paper, Typography, Container, Box, Skeleton, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useQuery } from "@apollo/client";
-import { PieChart } from '@mui/x-charts/PieChart';
+import { PieChart } from "@mui/x-charts/PieChart";
 import { GET_RELATORIES_COUNT_BY_CLIENTES } from "../graphql/reportsQueries";
 
 function HomePage() {
@@ -12,18 +12,19 @@ function HomePage() {
   const isSm = useMediaQuery(theme.breakpoints.between("sm", "md"));
 
   // Query para o gráfico
-  const { data: chartData, loading } = useQuery(GET_RELATORIES_COUNT_BY_CLIENTES , {
+  const { data: chartData, loading } = useQuery(GET_RELATORIES_COUNT_BY_CLIENTES, {
     variables: { empresaId: empresa?.id },
     skip: !empresa?.id,
   });
 
   console.log("Dados do graphql:", chartData);
 
-  const pieData = chartData?.reports?.map((r: { clienteId: string; count: number; clienteName: string }) => ({
-    id: r.clienteId,
-    value: r.count,
-    label: r.clienteName,
-  })) || [];
+  const pieData =
+    chartData?.reports?.map((r: { clienteId: string; count: number; clienteName: string }) => ({
+      id: r.clienteId,
+      value: r.count,
+      label: r.clienteName,
+    })) || [];
 
   // Responsividade do gráfico
   let chartSize = 250;
@@ -164,7 +165,7 @@ function HomePage() {
               }}
             />
           )}
-        </Box>        
+        </Box>
       </Paper>
     </Container>
   );

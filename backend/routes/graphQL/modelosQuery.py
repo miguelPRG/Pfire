@@ -7,7 +7,6 @@ from strawberry.types import Info
 from bson import ObjectId
 
 
-
 @strawberry.type
 class ModeloQuery:
     @strawberry.field

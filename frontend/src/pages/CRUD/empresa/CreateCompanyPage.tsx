@@ -1,15 +1,5 @@
 import { useState } from "react";
-import {
-  Box,
-  Button,
-  Paper,
-  TextField,
-  Typography,
-  Snackbar,
-  Alert,
-  CircularProgress,
-  useTheme,
-} from "@mui/material";
+import { Box, Button, Paper, TextField, Typography, Snackbar, Alert, CircularProgress, useTheme } from "@mui/material";
 import BusinessIcon from "@mui/icons-material/Business";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -21,11 +11,7 @@ import GlobalPhone from "../../../components/GlobalPhone";
 // 📌 Esquema de validação
 const empresaSchema = z.object({
   nome: z.string().nonempty("O nome da empresa é obrigatório").trim(),
-  nif: z
-    .string()
-    .nonempty("O NIF é obrigatório")
-    .trim()
-    .refine(isValidNIF, { message: "O NIF é inválido" }),
+  nif: z.string().nonempty("O NIF é obrigatório").trim().refine(isValidNIF, { message: "O NIF é inválido" }),
   localidade: z.string().nonempty("A localidade é obrigatória").trim(),
   morada: z.string().nonempty("A morada é obrigatória").trim(),
   codigo_postal: z
@@ -63,9 +49,7 @@ export default function CreateCompanyPage() {
   const onSubmit = async (data: EmpresaFormInputs) => {
     setLoading(true);
     try {
-      const SITE_KEY =
-        (import.meta as any).env?.VITE_RECAPTCHA_SITE_KEY ||
-        "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4";
+      const SITE_KEY = (import.meta as any).env?.VITE_RECAPTCHA_SITE_KEY || "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4";
 
       const grecaptcha = (window as any).grecaptcha;
 
@@ -124,10 +108,7 @@ export default function CreateCompanyPage() {
     <Box
       sx={{
         minHeight: "100vh",
-        bgcolor:
-          theme.palette.mode === "dark"
-            ? theme.palette.background.default
-            : "#f4f6fa",
+        bgcolor: theme.palette.mode === "dark" ? theme.palette.background.default : "#f4f6fa",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -144,14 +125,9 @@ export default function CreateCompanyPage() {
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          bgcolor:
-            theme.palette.mode === "dark"
-              ? theme.palette.background.paper
-              : "#fff",
+          bgcolor: theme.palette.mode === "dark" ? theme.palette.background.paper : "#fff",
           boxShadow:
-            theme.palette.mode === "dark"
-              ? "0 0 15px rgba(255,255,255,0.08)"
-              : "0 8px 32px 0 rgba(0,55,139,0.11)",
+            theme.palette.mode === "dark" ? "0 0 15px rgba(255,255,255,0.08)" : "0 8px 32px 0 rgba(0,55,139,0.11)",
         }}
       >
         {/* Encabezado */}
@@ -160,12 +136,7 @@ export default function CreateCompanyPage() {
           <Typography variant="h5" fontWeight="bold" sx={{ mb: 1 }}>
             Criar Nova Empresa
           </Typography>
-          <Typography
-            color="text.secondary"
-            fontSize={15}
-            mb={2}
-            align="center"
-          >
+          <Typography color="text.secondary" fontSize={15} mb={2} align="center">
             Preencha os campos abaixo para cadastrar uma nova empresa.
           </Typography>
         </Box>
@@ -189,13 +160,7 @@ export default function CreateCompanyPage() {
             helperText={errors.nome?.message}
             fullWidth
           />
-          <TextField
-            label="NIF"
-            {...register("nif")}
-            error={!!errors.nif}
-            helperText={errors.nif?.message}
-            fullWidth
-          />
+          <TextField label="NIF" {...register("nif")} error={!!errors.nif} helperText={errors.nif?.message} fullWidth />
 
           <GlobalPhone fieldName="telefone" control={control} errors={errors} />
 
@@ -258,9 +223,7 @@ export default function CreateCompanyPage() {
               disabled={isSubmitting || loading}
               startIcon={loading ? <CircularProgress size={20} /> : null}
             >
-              {isSubmitting || loading
-                ? "A criar..."
-                : "Salvar"}
+              {isSubmitting || loading ? "A criar..." : "Salvar"}
             </Button>
           </Box>
         </Box>

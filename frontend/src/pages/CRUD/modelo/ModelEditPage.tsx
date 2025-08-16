@@ -18,14 +18,14 @@ import {
   FormControl,
   FormHelperText,
   Tooltip,
-  Breadcrumbs,              // <--- adicionado
+  Breadcrumbs, // <--- adicionado
 } from "@mui/material"; // Componentes de UI do Material UI
 import DeleteIcon from "@mui/icons-material/Delete"; // Ícone de deletar
 import { useState, useEffect } from "react"; // Hooks do React
 import { useAuth } from "../../../hooks/AuthContext"; // Contexto de autenticação
 import { useTheme } from "@mui/material/styles"; // Tema do Material UI
 import ArrowCircleUpIcon from "@mui/icons-material/ArrowCircleUp"; // Ícone de scroll para o topo
-import HomeIcon from "@mui/icons-material/Home";            // <--- adicionado
+import HomeIcon from "@mui/icons-material/Home"; // <--- adicionado
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs"; // <--- adicionado
 
 // Esquema de validação para um subcampo personalizado
@@ -336,7 +336,7 @@ export default function ReportTemplatePage() {
   return (
     <>
       {/* Breadcrumbs */}
-       <Box sx={{ width: "100%", display: "flex", flexDirection: "column", padding: 2 }}>
+      <Box sx={{ width: "100%", display: "flex", flexDirection: "column", padding: 2 }}>
         <Breadcrumbs
           aria-label="breadcrumb"
           sx={{
@@ -355,523 +355,522 @@ export default function ReportTemplatePage() {
             onClick={() => navigate("/")}
             icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
           />
-            <StyledBreadcrumb
-              component="a"
-              sx={{ cursor: "pointer", fontSize: "0.9rem" }}
-              label="Modelos"
-              onClick={() => navigate("/report-models")}
-            />
+          <StyledBreadcrumb
+            component="a"
+            sx={{ cursor: "pointer", fontSize: "0.9rem" }}
+            label="Modelos"
+            onClick={() => navigate("/report-models")}
+          />
           <StyledBreadcrumb
             component="span"
             sx={{ fontSize: "0.9rem" }}
             label={isEditing ? "Editar Modelo" : "Novo Modelo"}
           />
         </Breadcrumbs>
-      
 
-      {/* Card principal do formulário */}
-      <Paper elevation={3} sx={{ maxWidth: 700, mx: "auto", mt: 4, p: 3, mb: 10 }}>
-        <Box
-          component="form"
-          onSubmit={handleSubmit(onSubmit)}
-          sx={{ display: "flex", flexDirection: "column", gap: 2 }}
-        >
-          {/* Título do formulário */}
-          <Typography variant="h6">{isEditing ? "Editar Modelo" : "Criar Modelo"}</Typography>
+        {/* Card principal do formulário */}
+        <Paper elevation={3} sx={{ maxWidth: 700, mx: "auto", mt: 4, p: 3, mb: 10 }}>
+          <Box
+            component="form"
+            onSubmit={handleSubmit(onSubmit)}
+            sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+          >
+            {/* Título do formulário */}
+            <Typography variant="h6">{isEditing ? "Editar Modelo" : "Criar Modelo"}</Typography>
 
-          {/* Campo para nome do modelo */}
-          <TextField
-            label="Nome do Modelo"
-            {...register("modelName")}
-            error={!!errors.modelName}
-            helperText={errors.modelName?.message}
-          />
-
-          {/* Título dos campos personalizados */}
-          <Typography variant="h6">Campos Personalizados</Typography>
-
-          {/* Adição de novo campo personalizado */}
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1, width: "100%" }}>
+            {/* Campo para nome do modelo */}
             <TextField
-              label="Nome do novo campo"
-              value={newFieldName}
-              onChange={(e) => {
-                setNewFieldName(e.target.value);
-                if (newFieldError) setNewFieldError(null); // Limpa erro ao digitar
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault(); // Previne o submit do formulário
-                  addField(); // Chama a função de adicionar campo
-                }
-              }}
-              error={!!newFieldError}
-              helperText={newFieldError}
-              fullWidth
+              label="Nome do Modelo"
+              {...register("modelName")}
+              error={!!errors.modelName}
+              helperText={errors.modelName?.message}
             />
-            <Button variant="contained" onClick={addField} type="button" fullWidth>
-              Adicionar
-            </Button>
-          </Box>
 
-          {/* Renderização dos campos personalizados adicionados */}
-          <Box sx={{ width: "100%" }}>
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
-              {fields
-                .map((field, index) => ({ field, index }))
-                .filter(
-                  ({ field }) => field && typeof field === "object" && field.name !== undefined && field.name !== null
-                )
-                .map(({ field, index }) => (
-                  <Box
-                    key={field.id}
-                    sx={{
-                      border: "1px solid #ccc",
-                      p: 2,
-                      borderRadius: 2,
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 1,
-                      width: "100%",
-                      mb: 2,
-                      minWidth: 250,
-                      boxSizing: "border-box",
-                    }}
-                  >
-                    {/* Campo para nome do campo personalizado */}
-                    <TextField
-                      label="Nome do Campo"
-                      {...register(`fields.${index}.name`)}
-                      error={!!errors.fields?.[index]?.name}
-                      helperText={errors.fields?.[index]?.name?.message}
-                      fullWidth
-                    />
+            {/* Título dos campos personalizados */}
+            <Typography variant="h6">Campos Personalizados</Typography>
 
-                    {/* Select para tipo de dado */}
-                    <FormControl fullWidth error={!!errors.fields?.[index]?.datatype}>
-                      <InputLabel>Tipo de Dados</InputLabel>
-                      <Controller
-                        control={control}
-                        name={`fields.${index}.datatype`}
-                        render={({ field: controllerField }) => (
-                          <Select
-                            {...controllerField}
-                            label="Tipo de Dados"
-                            sx={{
-                              width: "100%",
-                              color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
-                              bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
-                            }}
-                            MenuProps={{
-                              PaperProps: {
-                                sx: {
-                                  width: "35%",
-                                  bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
-                                  color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
-                                },
-                              },
-                            }}
-                            onChange={(e) => {
-                              controllerField.onChange(e);
-                              const value = e.target.value;
-                              if (value === "object") {
-                                update(index, {
-                                  ...fields[index],
-                                  datatype: "object",
-                                  subfields: [{ name: "", datatype: "", required: false }],
-                                  items: undefined, // limpa items se existia
-                                });
-                              } else if (value === "array") {
-                                update(index, {
-                                  ...fields[index],
-                                  datatype: "array",
-                                  items: [],
-                                  subfields: undefined, // limpa subfields se existia
-                                });
-                              } else {
-                                // Limpa subfields e items se existiam
-                                const { subfields, items, ...rest } = fields[index] as Field;
-                                update(index, { ...rest, datatype: value });
-                              }
-                            }}
-                          >
-                            <MenuItem value="string">Texto</MenuItem>
-                            <MenuItem value="number">Número</MenuItem>
-                            <MenuItem value="bool">Sim/Não</MenuItem>
-                            <MenuItem value="date">Data</MenuItem>
-                            <MenuItem value="object">Multicampo</MenuItem>
-                            <MenuItem value="array">Lista</MenuItem>
-                          </Select>
-                        )}
+            {/* Adição de novo campo personalizado */}
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1, width: "100%" }}>
+              <TextField
+                label="Nome do novo campo"
+                value={newFieldName}
+                onChange={(e) => {
+                  setNewFieldName(e.target.value);
+                  if (newFieldError) setNewFieldError(null); // Limpa erro ao digitar
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault(); // Previne o submit do formulário
+                    addField(); // Chama a função de adicionar campo
+                  }
+                }}
+                error={!!newFieldError}
+                helperText={newFieldError}
+                fullWidth
+              />
+              <Button variant="contained" onClick={addField} type="button" fullWidth>
+                Adicionar
+              </Button>
+            </Box>
+
+            {/* Renderização dos campos personalizados adicionados */}
+            <Box sx={{ width: "100%" }}>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
+                {fields
+                  .map((field, index) => ({ field, index }))
+                  .filter(
+                    ({ field }) => field && typeof field === "object" && field.name !== undefined && field.name !== null
+                  )
+                  .map(({ field, index }) => (
+                    <Box
+                      key={field.id}
+                      sx={{
+                        border: "1px solid #ccc",
+                        p: 2,
+                        borderRadius: 2,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 1,
+                        width: "100%",
+                        mb: 2,
+                        minWidth: 250,
+                        boxSizing: "border-box",
+                      }}
+                    >
+                      {/* Campo para nome do campo personalizado */}
+                      <TextField
+                        label="Nome do Campo"
+                        {...register(`fields.${index}.name`)}
+                        error={!!errors.fields?.[index]?.name}
+                        helperText={errors.fields?.[index]?.name?.message}
+                        fullWidth
                       />
-                      {errors.fields?.[index]?.datatype && (
-                        <FormHelperText>{errors.fields?.[index]?.datatype?.message}</FormHelperText>
-                      )}
-                    </FormControl>
-                    {(fields[index] as Field)?.datatype !== "object" && (
-                      <FormControlLabel
-                        control={
-                          <Controller
-                            control={control}
-                            name={`fields.${index}.required`}
-                            render={({ field }) => (
-                              <Checkbox
-                                checked={field.value || false} // Garante que o valor inicial seja booleano
-                                onChange={(e) => field.onChange(e.target.checked)} // Atualiza o estado corretamente
-                              />
-                            )}
-                          />
-                        }
-                        label="Campo Obrigatório"
-                      />
-                    )}
-                    {/* Renderiza UI para inserir opções do campo array */}
-                    {(fields[index] as Field)?.datatype === "array" && (
-                      <Box
-                        sx={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 2,
-                          width: "100%",
-                          mt: 2,
-                          border: "2px solid #ccc",
-                          borderRadius: 1,
-                          p: 2,
-                          boxShadow: 2,
-                        }}
-                      >
-                        <Typography
-                          variant="h6"
-                          sx={{
-                            textAlign: "center",
-                            fontWeight: "bold",
-                            color: "primary.main",
-                            letterSpacing: 1,
-                            mb: 1,
-                          }}
-                        >
-                          Opções de <strong>{watchedFields?.[index]?.name || ""}</strong>
-                        </Typography>
+
+                      {/* Select para tipo de dado */}
+                      <FormControl fullWidth error={!!errors.fields?.[index]?.datatype}>
+                        <InputLabel>Tipo de Dados</InputLabel>
                         <Controller
                           control={control}
-                          name={`fields.${index}.items`}
-                          render={({ field }) => {
-                            const items: string[] = Array.isArray(field.value) ? field.value : [];
-                            const [inputValue, setInputValue] = useState("");
-
-                            const addItem = () => {
-                              const trimmed = inputValue.trim();
-                              if (trimmed && !items.includes(trimmed)) {
-                                field.onChange([...items, trimmed]);
-                                setInputValue("");
-                              }
-                            };
-
-                            const removeItem = (removeIdx: number) => {
-                              field.onChange(items.filter((_, idx) => idx !== removeIdx));
-                            };
-
-                            return (
-                              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, alignItems: "center" }}>
-                                  <TextField
-                                    label="Nova opção"
-                                    value={inputValue}
-                                    onChange={(e) => setInputValue(e.target.value)}
-                                    size="small"
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter") {
-                                        e.preventDefault();
-                                        addItem();
-                                      }
-                                    }}
-                                    fullWidth
-                                    sx={{
-                                      bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
-                                      color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
-                                      "& .MuiInputBase-input": {
-                                        color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
-                                      },
-                                    }}
-                                  />
-                                  <Button
-                                    variant="contained"
-                                    onClick={addItem}
-                                    type="button"
-                                    sx={{
-                                      height: 40,
-                                      fontWeight: "bold",
-                                      bgcolor: "primary.main",
-                                      color: "white",
-                                      "&:hover": { bgcolor: "primary.dark" },
-                                    }}
-                                  >
-                                    Adicionar
-                                  </Button>
-                                </Box>
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    width: "100%",
-                                    gap: 1,
-                                    mt: 1,
-                                  }}
-                                >
-                                  {items.length === 0 && (
-                                    <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center" }}>
-                                      Nenhuma opção adicionada ainda.
-                                    </Typography>
-                                  )}
-                                  {items.map((item, idx) => (
-                                    <Box
-                                      key={item + idx}
-                                      sx={{
-                                        display: "flex",
-                                        flexDirection: "row",
-                                        alignItems: "center",
-                                        width: "100%",
-                                        justifyContent: "space-between",
-                                        bgcolor: theme.palette.mode === "dark" ? "grey.800" : "grey.200",
-                                        borderRadius: 1,
-                                        px: 2,
-                                        py: 1,
-                                        boxShadow: 1,
-                                      }}
-                                    >
-                                      <Typography
-                                        variant="body1"
-                                        sx={{
-                                          fontWeight: 500,
-                                          color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
-                                        }}
-                                      >
-                                        {idx + 1}- {item}
-                                      </Typography>
-                                      <IconButton
-                                        size="small"
-                                        onClick={() => removeItem(idx)}
-                                        sx={{
-                                          backgroundColor: "error.main",
-                                          color: "white",
-                                          "&:hover": { bgcolor: "error.dark" },
-                                          alignSelf: "center",
-                                        }}
-                                      >
-                                        <DeleteIcon fontSize="small" />
-                                      </IconButton>
-                                    </Box>
-                                  ))}
-                                </Box>
-                              </Box>
-                            );
-                          }}
+                          name={`fields.${index}.datatype`}
+                          render={({ field: controllerField }) => (
+                            <Select
+                              {...controllerField}
+                              label="Tipo de Dados"
+                              sx={{
+                                width: "100%",
+                                color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
+                                bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
+                              }}
+                              MenuProps={{
+                                PaperProps: {
+                                  sx: {
+                                    width: "35%",
+                                    bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
+                                    color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
+                                  },
+                                },
+                              }}
+                              onChange={(e) => {
+                                controllerField.onChange(e);
+                                const value = e.target.value;
+                                if (value === "object") {
+                                  update(index, {
+                                    ...fields[index],
+                                    datatype: "object",
+                                    subfields: [{ name: "", datatype: "", required: false }],
+                                    items: undefined, // limpa items se existia
+                                  });
+                                } else if (value === "array") {
+                                  update(index, {
+                                    ...fields[index],
+                                    datatype: "array",
+                                    items: [],
+                                    subfields: undefined, // limpa subfields se existia
+                                  });
+                                } else {
+                                  // Limpa subfields e items se existiam
+                                  const { subfields, items, ...rest } = fields[index] as Field;
+                                  update(index, { ...rest, datatype: value });
+                                }
+                              }}
+                            >
+                              <MenuItem value="string">Texto</MenuItem>
+                              <MenuItem value="number">Número</MenuItem>
+                              <MenuItem value="bool">Sim/Não</MenuItem>
+                              <MenuItem value="date">Data</MenuItem>
+                              <MenuItem value="object">Multicampo</MenuItem>
+                              <MenuItem value="array">Lista</MenuItem>
+                            </Select>
+                          )}
                         />
-                      </Box>
-                    )}
-                    {/* Renderiza UI para campos do tipo objeto */}
-                    {(fields[index] as Field)?.datatype === "object" && (
-                      <Box
-                        sx={{
-                          mt: 2,
-                          pl: 2,
-                          border: "1px solid #ccc",
-                          borderRadius: 1,
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: 2,
-                          width: "100%",
-                        }}
-                      >
-                        <Typography variant="h6" sx={{ mt: 1 }}>
-                          Subcampos de <strong>{watchedFields?.[index]?.name || ""}</strong>
-                        </Typography>
-                        {/* Renderiza todos os subfields */}
-                        {(fields[index] as Field).subfields?.map((subfield, subIdx) => (
-                          <Box
-                            key={subIdx}
-                            sx={{
-                              mb: 2,
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              width: "100%",
-                            }}
-                          >
+                        {errors.fields?.[index]?.datatype && (
+                          <FormHelperText>{errors.fields?.[index]?.datatype?.message}</FormHelperText>
+                        )}
+                      </FormControl>
+                      {(fields[index] as Field)?.datatype !== "object" && (
+                        <FormControlLabel
+                          control={
                             <Controller
                               control={control}
-                              name={`fields.${index}.subfields.${subIdx}.name`}
+                              name={`fields.${index}.required`}
                               render={({ field }) => (
-                                <TextField
-                                  label={`Nome do Subcampo ${subIdx + 1}`}
-                                  {...register(`fields.${index}.subfields.${subIdx}.name`)}
-                                  size="small"
-                                  fullWidth
-                                  sx={{ mb: 1 }}
-                                  error={!!errors.fields?.[index]?.subfields?.[subIdx]?.name}
-                                  helperText={errors.fields?.[index]?.subfields?.[subIdx]?.name?.message}
+                                <Checkbox
+                                  checked={field.value || false} // Garante que o valor inicial seja booleano
+                                  onChange={(e) => field.onChange(e.target.checked)} // Atualiza o estado corretamente
                                 />
                               )}
                             />
-                            <FormControl
-                              size="small"
-                              fullWidth
-                              sx={{ mb: 1 }}
-                              error={!!errors.fields?.[index]?.subfields?.[subIdx]?.datatype}
+                          }
+                          label="Campo Obrigatório"
+                        />
+                      )}
+                      {/* Renderiza UI para inserir opções do campo array */}
+                      {(fields[index] as Field)?.datatype === "array" && (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 2,
+                            width: "100%",
+                            mt: 2,
+                            border: "2px solid #ccc",
+                            borderRadius: 1,
+                            p: 2,
+                            boxShadow: 2,
+                          }}
+                        >
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              textAlign: "center",
+                              fontWeight: "bold",
+                              color: "primary.main",
+                              letterSpacing: 1,
+                              mb: 1,
+                            }}
+                          >
+                            Opções de <strong>{watchedFields?.[index]?.name || ""}</strong>
+                          </Typography>
+                          <Controller
+                            control={control}
+                            name={`fields.${index}.items`}
+                            render={({ field }) => {
+                              const items: string[] = Array.isArray(field.value) ? field.value : [];
+                              const [inputValue, setInputValue] = useState("");
+
+                              const addItem = () => {
+                                const trimmed = inputValue.trim();
+                                if (trimmed && !items.includes(trimmed)) {
+                                  field.onChange([...items, trimmed]);
+                                  setInputValue("");
+                                }
+                              };
+
+                              const removeItem = (removeIdx: number) => {
+                                field.onChange(items.filter((_, idx) => idx !== removeIdx));
+                              };
+
+                              return (
+                                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, alignItems: "center" }}>
+                                    <TextField
+                                      label="Nova opção"
+                                      value={inputValue}
+                                      onChange={(e) => setInputValue(e.target.value)}
+                                      size="small"
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                          e.preventDefault();
+                                          addItem();
+                                        }
+                                      }}
+                                      fullWidth
+                                      sx={{
+                                        bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
+                                        color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
+                                        "& .MuiInputBase-input": {
+                                          color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
+                                        },
+                                      }}
+                                    />
+                                    <Button
+                                      variant="contained"
+                                      onClick={addItem}
+                                      type="button"
+                                      sx={{
+                                        height: 40,
+                                        fontWeight: "bold",
+                                        bgcolor: "primary.main",
+                                        color: "white",
+                                        "&:hover": { bgcolor: "primary.dark" },
+                                      }}
+                                    >
+                                      Adicionar
+                                    </Button>
+                                  </Box>
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      width: "100%",
+                                      gap: 1,
+                                      mt: 1,
+                                    }}
+                                  >
+                                    {items.length === 0 && (
+                                      <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center" }}>
+                                        Nenhuma opção adicionada ainda.
+                                      </Typography>
+                                    )}
+                                    {items.map((item, idx) => (
+                                      <Box
+                                        key={item + idx}
+                                        sx={{
+                                          display: "flex",
+                                          flexDirection: "row",
+                                          alignItems: "center",
+                                          width: "100%",
+                                          justifyContent: "space-between",
+                                          bgcolor: theme.palette.mode === "dark" ? "grey.800" : "grey.200",
+                                          borderRadius: 1,
+                                          px: 2,
+                                          py: 1,
+                                          boxShadow: 1,
+                                        }}
+                                      >
+                                        <Typography
+                                          variant="body1"
+                                          sx={{
+                                            fontWeight: 500,
+                                            color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
+                                          }}
+                                        >
+                                          {idx + 1}- {item}
+                                        </Typography>
+                                        <IconButton
+                                          size="small"
+                                          onClick={() => removeItem(idx)}
+                                          sx={{
+                                            backgroundColor: "error.main",
+                                            color: "white",
+                                            "&:hover": { bgcolor: "error.dark" },
+                                            alignSelf: "center",
+                                          }}
+                                        >
+                                          <DeleteIcon fontSize="small" />
+                                        </IconButton>
+                                      </Box>
+                                    ))}
+                                  </Box>
+                                </Box>
+                              );
+                            }}
+                          />
+                        </Box>
+                      )}
+                      {/* Renderiza UI para campos do tipo objeto */}
+                      {(fields[index] as Field)?.datatype === "object" && (
+                        <Box
+                          sx={{
+                            mt: 2,
+                            pl: 2,
+                            border: "1px solid #ccc",
+                            borderRadius: 1,
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 2,
+                            width: "100%",
+                          }}
+                        >
+                          <Typography variant="h6" sx={{ mt: 1 }}>
+                            Subcampos de <strong>{watchedFields?.[index]?.name || ""}</strong>
+                          </Typography>
+                          {/* Renderiza todos os subfields */}
+                          {(fields[index] as Field).subfields?.map((subfield, subIdx) => (
+                            <Box
+                              key={subIdx}
+                              sx={{
+                                mb: 2,
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                width: "100%",
+                              }}
                             >
-                              <InputLabel>Tipo do Subcampo</InputLabel>
-                              <Select
-                                label="Tipo do Subcampo"
-                                value={subfield.datatype || ""}
-                                onChange={(e) => {
+                              <Controller
+                                control={control}
+                                name={`fields.${index}.subfields.${subIdx}.name`}
+                                render={({ field }) => (
+                                  <TextField
+                                    label={`Nome do Subcampo ${subIdx + 1}`}
+                                    {...register(`fields.${index}.subfields.${subIdx}.name`)}
+                                    size="small"
+                                    fullWidth
+                                    sx={{ mb: 1 }}
+                                    error={!!errors.fields?.[index]?.subfields?.[subIdx]?.name}
+                                    helperText={errors.fields?.[index]?.subfields?.[subIdx]?.name?.message}
+                                  />
+                                )}
+                              />
+                              <FormControl
+                                size="small"
+                                fullWidth
+                                sx={{ mb: 1 }}
+                                error={!!errors.fields?.[index]?.subfields?.[subIdx]?.datatype}
+                              >
+                                <InputLabel>Tipo do Subcampo</InputLabel>
+                                <Select
+                                  label="Tipo do Subcampo"
+                                  value={subfield.datatype || ""}
+                                  onChange={(e) => {
+                                    const currentSubfields = (fields[index] as Field).subfields || [];
+                                    const updatedSubfield = {
+                                      ...(currentSubfields[subIdx] || { name: "", datatype: "", required: false }),
+                                      datatype: e.target.value,
+                                    };
+                                    const updatedSubfields = [...currentSubfields];
+                                    updatedSubfields[subIdx] = updatedSubfield;
+                                    update(index, {
+                                      ...(fields[index] as Field),
+                                      subfields: updatedSubfields,
+                                    });
+                                    // Limpa erro se preenchido
+                                    if (e.target.value.trim()) {
+                                      clearErrors(`fields.${index}.subfields.${subIdx}.datatype`);
+                                    }
+                                  }}
+                                  sx={{
+                                    color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
+                                    bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
+                                  }}
+                                  MenuProps={{
+                                    PaperProps: {
+                                      sx: {
+                                        width: "35%",
+                                      },
+                                    },
+                                  }}
+                                >
+                                  <MenuItem value="string">Texto</MenuItem>
+                                  <MenuItem value="number">Número</MenuItem>
+                                  <MenuItem value="bool">Sim/Não</MenuItem>
+                                  <MenuItem value="date">Data</MenuItem>
+                                </Select>
+                                {errors.fields?.[index]?.subfields?.[subIdx]?.datatype && (
+                                  <FormHelperText>
+                                    {errors.fields?.[index]?.subfields?.[subIdx]?.datatype?.message}
+                                  </FormHelperText>
+                                )}
+                              </FormControl>
+                              <Controller
+                                control={control}
+                                name={`fields.${index}.subfields.${subIdx}.required`}
+                                render={({ field }) => (
+                                  <FormControlLabel
+                                    control={
+                                      <Checkbox
+                                        checked={!!field.value}
+                                        onChange={(e) => field.onChange(e.target.checked)}
+                                      />
+                                    }
+                                    label="Subcampo Obrigatório"
+                                  />
+                                )}
+                              />
+                              {/* Botão para remover subfield */}
+                              <IconButton
+                                size="small"
+                                onClick={() => {
                                   const currentSubfields = (fields[index] as Field).subfields || [];
-                                  const updatedSubfield = {
-                                    ...(currentSubfields[subIdx] || { name: "", datatype: "", required: false }),
-                                    datatype: e.target.value,
-                                  };
-                                  const updatedSubfields = [...currentSubfields];
-                                  updatedSubfields[subIdx] = updatedSubfield;
+                                  const updatedSubfields = currentSubfields.filter((_, i) => i !== subIdx);
                                   update(index, {
                                     ...(fields[index] as Field),
                                     subfields: updatedSubfields,
                                   });
-                                  // Limpa erro se preenchido
-                                  if (e.target.value.trim()) {
-                                    clearErrors(`fields.${index}.subfields.${subIdx}.datatype`);
-                                  }
                                 }}
                                 sx={{
-                                  color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
-                                  bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
-                                }}
-                                MenuProps={{
-                                  PaperProps: {
-                                    sx: {
-                                      width: "35%",
-                                    },
-                                  },
+                                  backgroundColor: "error.main",
+                                  color: "white",
+                                  "&:hover": { bgcolor: "error.dark" },
+                                  alignSelf: "center",
+                                  mt: 1,
                                 }}
                               >
-                                <MenuItem value="string">Texto</MenuItem>
-                                <MenuItem value="number">Número</MenuItem>
-                                <MenuItem value="bool">Sim/Não</MenuItem>
-                                <MenuItem value="date">Data</MenuItem>
-                              </Select>
-                              {errors.fields?.[index]?.subfields?.[subIdx]?.datatype && (
-                                <FormHelperText>
-                                  {errors.fields?.[index]?.subfields?.[subIdx]?.datatype?.message}
-                                </FormHelperText>
-                              )}
-                            </FormControl>
-                            <Controller
-                              control={control}
-                              name={`fields.${index}.subfields.${subIdx}.required`}
-                              render={({ field }) => (
-                                <FormControlLabel
-                                  control={
-                                    <Checkbox
-                                      checked={!!field.value}
-                                      onChange={(e) => field.onChange(e.target.checked)}
-                                    />
-                                  }
-                                  label="Subcampo Obrigatório"
-                                />
-                              )}
-                            />
-                            {/* Botão para remover subfield */}
-                            <IconButton
-                              size="small"
-                              onClick={() => {
-                                const currentSubfields = (fields[index] as Field).subfields || [];
-                                const updatedSubfields = currentSubfields.filter((_, i) => i !== subIdx);
-                                update(index, {
-                                  ...(fields[index] as Field),
-                                  subfields: updatedSubfields,
+                                <DeleteIcon fontSize="small" />
+                              </IconButton>
+                            </Box>
+                          ))}
+                          {/* Botão para adicionar novo subfield */}
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={() => {
+                              const currentSubfields = (fields[index] as Field).subfields || [];
+                              if (
+                                currentSubfields.length > 0 &&
+                                (!currentSubfields[currentSubfields.length - 1].name.trim() ||
+                                  !currentSubfields[currentSubfields.length - 1].datatype.trim())
+                              ) {
+                                setError(`fields.${index}.subfields.${currentSubfields.length - 1}.name`, {
+                                  type: "manual",
+                                  message: "Preencha o nome do subcampo.",
                                 });
-                              }}
-                              sx={{
-                                backgroundColor: "error.main",
-                                color: "white",
-                                "&:hover": { bgcolor: "error.dark" },
-                                alignSelf: "center",
-                                mt: 1,
-                              }}
-                            >
-                              <DeleteIcon fontSize="small" />
-                            </IconButton>
-                          </Box>
-                        ))}
-                        {/* Botão para adicionar novo subfield */}
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          onClick={() => {
-                            const currentSubfields = (fields[index] as Field).subfields || [];
-                            if (
-                              currentSubfields.length > 0 &&
-                              (!currentSubfields[currentSubfields.length - 1].name.trim() ||
-                                !currentSubfields[currentSubfields.length - 1].datatype.trim())
-                            ) {
-                              setError(`fields.${index}.subfields.${currentSubfields.length - 1}.name`, {
-                                type: "manual",
-                                message: "Preencha o nome do subcampo.",
+                                setError(`fields.${index}.subfields.${currentSubfields.length - 1}.datatype`, {
+                                  type: "manual",
+                                  message: "Preencha o tipo do subcampo.",
+                                });
+                                return;
+                              }
+                              update(index, {
+                                ...(fields[index] as Field),
+                                subfields: [...currentSubfields, { name: "", datatype: "", required: false }],
                               });
-                              setError(`fields.${index}.subfields.${currentSubfields.length - 1}.datatype`, {
-                                type: "manual",
-                                message: "Preencha o tipo do subcampo.",
-                              });
-                              return;
-                            }
-                            update(index, {
-                              ...(fields[index] as Field),
-                              subfields: [...currentSubfields, { name: "", datatype: "", required: false }],
-                            });
-                          }}
-                          sx={{ mt: 1, alignSelf: "flex-start" }}
-                        >
-                          Adicionar Subcampo
-                        </Button>
-                      </Box>
-                    )}
-                    {/* Botão para remover campo */}
-                    <IconButton
-                      onClick={() => {
-                        if (isEditing) {
-                          setRemovedFields((prev) => [...prev, fields[index].name]);
-                        }
-                        remove(index); // Remove do formulário sempre
-                      }}
-                      type="button"
-                      sx={{
-                        backgroundColor: "error.main",
-                        color: "white",
-                        "&:hover": { bgcolor: "error.dark" },
-                        alignSelf: "center",
-                      }}
-                    >
-                      <DeleteIcon />
-                    </IconButton>
-                  </Box>
-                ))}
+                            }}
+                            sx={{ mt: 1, alignSelf: "flex-start" }}
+                          >
+                            Adicionar Subcampo
+                          </Button>
+                        </Box>
+                      )}
+                      {/* Botão para remover campo */}
+                      <IconButton
+                        onClick={() => {
+                          if (isEditing) {
+                            setRemovedFields((prev) => [...prev, fields[index].name]);
+                          }
+                          remove(index); // Remove do formulário sempre
+                        }}
+                        type="button"
+                        sx={{
+                          backgroundColor: "error.main",
+                          color: "white",
+                          "&:hover": { bgcolor: "error.dark" },
+                          alignSelf: "center",
+                        }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                  ))}
+              </Box>
+            </Box>
+
+            {/* Botões de ação do formulário */}
+            <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
+              <Button
+                variant="outlined"
+                onClick={() => navigate("/report-models")}
+                sx={{ flex: 1, height: 48, "&:hover": { bgcolor: "grey.300" } }}
+              >
+                Cancelar
+              </Button>
+              <Button variant="contained" type="submit" color="success" sx={{ flex: 1, height: 48 }}>
+                {isEditing ? "Atualizar Modelo" : "Salvar Modelo"}
+              </Button>
             </Box>
           </Box>
-
-          {/* Botões de ação do formulário */}
-          <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
-            <Button
-              variant="outlined"
-              onClick={() => navigate("/report-models")}
-              sx={{ flex: 1, height: 48, "&:hover": { bgcolor: "grey.300" } }}
-            >
-              Cancelar
-            </Button>
-            <Button variant="contained" type="submit" color="success" sx={{ flex: 1, height: 48 }}>
-              {isEditing ? "Atualizar Modelo" : "Salvar Modelo"}
-            </Button>
-          </Box>
-        </Box>
-      </Paper>
+        </Paper>
       </Box>
 
       {/* Botão flutuante para rolar para o topo */}

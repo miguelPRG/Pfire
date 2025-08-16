@@ -196,10 +196,7 @@ export default function ClientManagementTable() {
 
   return (
     <>
-
-
-    
-      <Paper sx={{ width: "100%", p: 2, boxShadow: "none" , backgroundColor: theme.palette.background.default}}>
+      <Paper sx={{ width: "100%", p: 2, boxShadow: "none", backgroundColor: theme.palette.background.default }}>
         <Breadcrumbs
           aria-label="breadcrumb"
           sx={{ mb: 3, backgroundColor: "background.paper", maxWidth: "200px", borderRadius: 5, padding: 0.5 }}
