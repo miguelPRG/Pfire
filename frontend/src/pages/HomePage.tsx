@@ -2,8 +2,9 @@ import { useAuth } from "../hooks/AuthContext";
 import { Paper, Typography, Container, Box, Skeleton, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useQuery } from "@apollo/client";
-import { PieChart } from "@mui/x-charts/PieChart";
-import { GET_RELATORIES_COUNT_BY_CLIENTES } from "../graphql/reportsQueries";
+import { PieChart, BarChart } from '@mui/x-charts';
+import { GET_RELATORIES_COUNT_BY_CLIENTES, GET_RELATORIES_COUNT_BY_MODELO } from "../graphql/reportsQueries";
+
 
 function HomePage() {
   const { user, empresa } = useAuth();
@@ -11,20 +12,33 @@ function HomePage() {
   const isXs = useMediaQuery(theme.breakpoints.down("sm"));
   const isSm = useMediaQuery(theme.breakpoints.between("sm", "md"));
 
-  // Query para o gráfico
-  const { data: chartData, loading } = useQuery(GET_RELATORIES_COUNT_BY_CLIENTES, {
+  // Query para o PieChart
+  const { data: chart1Data, loading: pieLoading } = useQuery(GET_RELATORIES_COUNT_BY_CLIENTES, {
     variables: { empresaId: empresa?.id },
     skip: !empresa?.id,
+    fetchPolicy: "network-only", // Garante que busca sempre do servidor
   });
 
-  console.log("Dados do graphql:", chartData);
+  // Query para o BarChart
+  const { data: chart2Data, loading: barLoading } = useQuery(GET_RELATORIES_COUNT_BY_MODELO, {
+    variables: { empresaId: empresa?.id },
+    skip: !empresa?.id,
+    fetchPolicy: "network-only", // Garante que busca sempre do servidor
+  });
 
-  const pieData =
-    chartData?.reports?.map((r: { clienteId: string; count: number; clienteName: string }) => ({
-      id: r.clienteId,
-      value: r.count,
-      label: r.clienteName,
-    })) || [];
+  const pieData = chart1Data?.reports?.map((r: { clienteId: string; count: number; clienteName: string }) => ({
+    id: r.clienteId,
+    value: r.count,
+    label: r.clienteName,
+  })) || [];
+
+  const barData = chart2Data?.reports?.map((r: { modeloId: string; count: number; modeloName: string }) => ({
+    id: r.modeloId,
+    value: r.count,
+    label: r.modeloName,
+  })) || [];
+
+  console.log("Bar Data:", barData);
 
   // Responsividade do gráfico
   let chartSize = 250;
@@ -94,7 +108,7 @@ function HomePage() {
             borderRadius: 2,
             p: 2,
             border: theme.palette.mode === "dark" ? "1px solid #444" : "1px solid #ccc",
-            width: { xs: "90%", sm: "70%" },
+            width: "100%",
             mx: "auto",
             background: theme.palette.mode === "dark" ? "#23272b" : "#fafbfc",
             boxShadow: theme.palette.mode === "dark" ? 3 : 1,
@@ -129,42 +143,123 @@ function HomePage() {
           </Typography>
         </Box>
         {/* Gráfico de relatórios por cliente */}
+        <Typography variant="h2" sx={{ mt: 8, mb: 2 }}>
+          Relatórios de {empresa?.nome}
+        </Typography>
         <Box
           sx={{
             mt: 6,
             mb: 2,
             width: "100%",
-            maxWidth: 500,
+            maxWidth: 900,
             mx: "auto",
             display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
+            flexDirection: { xs: "column", md: "row" },
+            gap: { xs: 2},
+            alignItems: "stretch",
             justifyContent: "center",
             textAlign: "center",
           }}
         >
-          <Typography variant="h2" sx={{ mb: 8 }}>
-            Relatórios por Cliente
-          </Typography>
-          {loading ? (
-            <Skeleton variant="rectangular" height={chartSize} width={chartSize} />
-          ) : pieData.length === 0 ? (
-            <Typography color="text.secondary">Sem dados para mostrar.</Typography>
-          ) : (
-            <PieChart
-              series={[{ data: pieData }]}
-              width={chartSize}
-              height={chartSize}
-              slotProps={{
-                tooltip: {
-                  sx: {
-                    maxWidth: 250,
-                    whiteSpace: "pre-line",
-                  },
+          {/* Box PieChart */}
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              p: { xs: 2, md: 4 },
+              mb: { xs: 2, md: 0 },
+              background: theme.palette.mode === "dark" ? "#23272b" : "#fafbfc",
+              boxShadow: theme.palette.mode === "dark" ? 3 : 1,
+              border: theme.palette.mode === "dark" ? "1px solid #444" : "1px solid #ccc",
+              borderRadius: 3,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "flex-start",
+              minHeight: chartSize + 120,
+              height: chartSize + 120,
+              transition: "background 0.3s, border 0.3s",
+            }}>
+            <Typography variant="h4" sx={{ mb: 1 }}>
+              Relatórios por Cliente
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, px: 1 }}>
+              Distribuição dos relatórios criados por cada cliente da empresa. Cada fatia representa um cliente.
+            </Typography>
+            <Box sx={{ width: chartSize, height: chartSize, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {pieLoading ? (
+          <Skeleton variant="rectangular" height={chartSize} width={chartSize} />
+              ) : pieData.length === 0 ? (
+          <Typography color="text.secondary">Sem dados para mostrar.</Typography>
+              ) : (
+          <PieChart
+            series={[{ data: pieData }]}
+            width={chartSize}
+            height={chartSize}
+            slotProps={{
+              tooltip: {
+                sx: {
+            maxWidth: 250,
+            whiteSpace: "pre-line",
                 },
-              }}
-            />
-          )}
+              },
+            }}
+          />
+              )}
+            </Box>
+          </Box>
+          {/* Box BarChart */}
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              p: { xs: 2, md: 4 },
+              background: theme.palette.mode === "dark" ? "#23272b" : "#fafbfc",
+              boxShadow: theme.palette.mode === "dark" ? 3 : 1,
+              border: theme.palette.mode === "dark" ? "1px solid #444" : "1px solid #ccc",
+              borderRadius: 3,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "flex-start",
+              minHeight: chartSize + 120,
+              height: chartSize + 120,
+              transition: "background 0.3s, border 0.3s",
+            }}>
+            <Typography variant="h4" sx={{ mb: 1 }}>
+              Relatórios por Modelo
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, px: 1 }}>
+              Distribuição dos relatórios criados por modelo de relatório. Cada barra representa um modelo.
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, px: 1 }}></Typography>
+            <Box sx={{ width: chartSize, height: chartSize, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {barLoading ? (
+          <Skeleton variant="rectangular" height={chartSize} width={chartSize} />
+              ) : barData.length === 0 ? (
+          <Typography color="text.secondary">Sem dados para mostrar.</Typography>
+              ) : (
+          <BarChart
+            xAxis={[
+              {
+                data: barData.map((d) => d.label),
+              }
+            ]}
+            series={[{ data: barData.map((d) => d.value), label: "Relatórios" }]}
+            width={chartSize}
+            height={chartSize}
+            slotProps={{
+              tooltip: {
+                sx: {
+            maxWidth: 250,
+            whiteSpace: "pre-line",
+                },
+              },
+            }}
+          />
+              )}
+            </Box>
+          </Box>
         </Box>
       </Paper>
     </Container>

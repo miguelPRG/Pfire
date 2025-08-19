@@ -55,7 +55,6 @@ interface Report {
 export default function ReportListPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
-  const [updatingReports, setUpdatingReports] = useState<Set<string>>(new Set());
   const [alert, setAlert] = useState<{ message: string; isError: boolean } | null>(null);
   const rowsPerPage = 3;
   const navigate = useNavigate();
