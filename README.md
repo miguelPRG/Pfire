@@ -20,11 +20,11 @@ A primeira coisa a fazer é clonar o repositório, utilizando estes comandos no 
 
 #### Python
 
-Deverá ser instalado o python, de preferência a versão mais recente
+Deverá ser instalado o python, na versão 3.12 (até a data, versão estável mais recente)
 
 #### Nodejs
 
-Deverá ser insta
+Deverá ser instalado o node, na versão 22 (até a data, a versão estável mais recente)
 
 **ATENÇÃO!** De modo que o programa consiga rodar sem problemas, é necessária a criação de um ficheiro `.env` na raiz do projeto. Este ficheiro será responsável por guardar dados sensíveis, como por exemplo a URL de acesso à base de dados **MongoDB** e chaves de criptografia que poderão vir a ser necessárias.
 
@@ -39,8 +39,6 @@ Crie o ficheiro `.env` no diretório raiz do projeto, exatamente com este nome. 
 - `BREVO_API_KEY= chave`
 
 Os dados aqui indicados deverão ser substituidos pelos respetivos dados verdadeiros de cada desenvolvedor
-
-**AVISO**: Para fins de desenvolvimento, será necessário criar a sua própria base de dados em MongoDB. A base de dados utilizada em produção encontra-se sob o mais restrito acesso.
 
 ### Diagrama de Base de Dados
 
@@ -58,6 +56,8 @@ Este projeto utiliza um sistema de autenticação baseado em JWT no `backend`, t
 4. `openssl genpkey -algorithm RSA -aes-256-cbc -out privada.pem`
 5. Crie uma password para proteger a chave privada(deverá ser **EXATAMENTE** igual a **PRIVATE_KEY_PASSWORD** que foi definido no ficheiro `.env`)
 6. `openssl rsa -in privada.pem -pubout -out publica.pem`
+
+Depois de terminados estes passos, será necessário incluir a chave de conta de serviço do firebase na pasta **chaves** com o seguinte nome: `serviceAccountKey.json` 
 
 ### Como Executar Servidores para Desenvolvimento
 
