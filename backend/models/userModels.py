@@ -146,9 +146,7 @@ class UserForgotPassword(BaseModel):
 # classe para trocar password depois do email de recuperação ser enviado
 class UserChangePassword(BaseModel):
     password: str = Field(..., min_length=9, max_length=100, description="A senha deve ter pelo menos 9 caracteres.")
-    confirmPassword: str = Field(
-        ..., min_length=9, max_length=100, description="A confirmação da senha deve ter pelo menos 9 caracteres."
-    )
+    confirmPassword: str = Field(..., min_length=9, max_length=100, description="A confirmação da senha deve ter pelo menos 9 caracteres.")
     global_id: str = Field(
         ...,
         min_length=36,

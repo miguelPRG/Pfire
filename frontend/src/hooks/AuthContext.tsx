@@ -1,7 +1,7 @@
 import { createContext, useState, useContext, ReactNode, useEffect, useCallback } from "react";
 import { FirebaseLogin } from "../firebase";
 import { GET_EMPRESAS } from "../graphql/empresasqueries";
-import { useQuery } from "@apollo/client";
+import { useQuery } from "@apollo/client/react";
 
 declare global {
   interface Window {
@@ -168,7 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (data && !empresa) {
-      const empresaData = data.getEmpresas.empresas[0];
+      const empresaData = data?.getEmpresas.empresas[0];
       setEmpresa({
         id: empresaData.id,
         nome: empresaData.nome,

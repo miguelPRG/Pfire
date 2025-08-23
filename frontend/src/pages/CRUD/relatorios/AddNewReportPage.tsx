@@ -22,7 +22,7 @@ import HomeIcon from "@mui/icons-material/Home";
 // Importa o hook de autenticação personalizado
 import { useAuth } from "../../../hooks/AuthContext";
 // Importa o hook useQuery do Apollo Client para consultas GraphQL
-import { useQuery } from "@apollo/client";
+import { useLazyQuery } from "@apollo/client/react";
 // Importa a query GraphQL para buscar clientes por empresa
 import { GET_CLIENTES_BY_EMPRESA } from "../../../graphql/clientesqueries";
 // Importa a biblioteca zod para validação de dados
@@ -33,6 +33,13 @@ import StyledBreadcrumb from "../../../components/StyledBreadCrumbs"; // Compone
 
 // Declaração global para o objeto grecaptcha (Google reCAPTCHA)
 declare var grecaptcha: any;
+
+interface returnData {
+  getClientes: {
+    clientes: any;
+    totalClientes: number;
+  };
+}
 
 // Define o componente funcional AddNewReportPage
 function AddNewReportPage() {
@@ -58,7 +65,7 @@ function AddNewReportPage() {
   const theme = useTheme();
 
   // Executa a query GraphQL para buscar clientes da empresa
-  const { data, loading, error } = useQuery(GET_CLIENTES_BY_EMPRESA, {
+  const [getClientes, { data, loading, error }] = useLazyQuery<returnData>(GET_CLIENTES_BY_EMPRESA, {
     variables: { empresaId: empresa?.id },
     skip: !empresa?.id, // Só executa se houver empresa
   });
@@ -563,13 +570,7 @@ function AddNewReportPage() {
               <Box sx={{ width: "100%" }}>
                 <Autocomplete
                   fullWidth
-                  options={
-                    formData.clienteInput && formData.clienteInput.length > 0
-                      ? data?.getClientes?.clientes.filter((c: any) =>
-                          c.nome.toLowerCase().includes(formData.clienteInput.toLowerCase())
-                        )
-                      : []
-                  }
+                  options={data?.getClientes?.clientes || []}
                   getOptionLabel={(option) => option.nome}
                   value={
                     selectedCliente
@@ -588,10 +589,13 @@ function AddNewReportPage() {
                       helperText={errors.cliente_id}
                       fullWidth
                       onChange={(e) => {
+                        const inputValue = e.target.value;
                         setFormData((prev) => ({
                           ...prev,
-                          clienteInput: e.target.value,
+                          clienteInput: inputValue,
                         }));
+                        // Chama a query para buscar clientes conforme o input
+                        getClientes({ variables: { empresaId: empresa?.id, nome: inputValue } });
                       }}
                       value={formData.clienteInput || ""}
                       slotProps={{
@@ -612,6 +616,8 @@ function AddNewReportPage() {
                       ...prev,
                       clienteInput: newInputValue,
                     }));
+                    // Chama a query para buscar clientes conforme o input
+                    getClientes({ variables: { empresaId: empresa?.id, nome: newInputValue } });
                   }}
                 />
               </Box>

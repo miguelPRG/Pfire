@@ -89,9 +89,7 @@ def validate_field(key, value):
     # Só considera chaves cujo valor NÃO é None
     extra_keys = {k for k in value.keys() if value[k] is not None} - allowed_keys
     if extra_keys:
-        raise HTTPException(
-            status_code=400, detail=f"O campo que está a tentar criar: {key} contém chaves inválidas: {extra_keys}."
-        )
+        raise HTTPException(status_code=400, detail=f"O campo que está a tentar criar: {key} contém chaves inválidas: {extra_keys}.")
 
     # Validação do formato do campo
     datatype = value.get("datatype")
@@ -110,9 +108,7 @@ def validate_field(key, value):
         value["required"] = False  # Define como False se não estiver presente
 
     elif not isinstance(required, bool):
-        raise HTTPException(
-            status_code=400, detail=f"O campo 'required' de {key} deve ser um booleano (true ou false)."
-        )
+        raise HTTPException(status_code=400, detail=f"O campo 'required' de {key} deve ser um booleano (true ou false).")
 
 
 # Classe ModelosCamposCreate

@@ -24,7 +24,7 @@ import { Search } from "@mui/icons-material";
 import HomeIcon from "@mui/icons-material/Home";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
-import { useQuery, useLazyQuery } from "@apollo/client";
+import { useQuery, useLazyQuery } from "@apollo/client/react";
 import { useAuth } from "../../../hooks/AuthContext";
 import { GET_REPORTS_BY_COMPANY } from "../../../graphql/reportsQueries";
 import Notification from "../../../components/Notification";
@@ -36,21 +36,19 @@ interface Report {
   id: string;
   modeloCamposId: string;
   clienteId: string;
-  clienteName: string; // Nome do cliente, opcional
+  clienteName: string;
   createdAt: string;
   customFields: { [key: string]: any }[];
   relatorioName: string;
   isActive: boolean;
 }
 
-/*const map: Record<string, string> = {
-    string: "Texto",
-    number: "Número",
-    bool: "Sim/Não",
-    date: "Data",
-    object: "Grupo de Campos",
-    array: "Lista",
-  };*/
+interface returnedData {
+  reports: {
+    relatorios: Report[];
+    totalRelatorios: number;
+  };
+}
 
 export default function ReportListPage() {
   const [search, setSearch] = useState("");
@@ -60,39 +58,33 @@ export default function ReportListPage() {
   const navigate = useNavigate();
   const theme = useTheme();
   const { empresa } = useAuth();
-
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [updatingReports, setUpdatingReports] = useState<Set<string>>(new Set());
+  const [localReports, setLocalReports] = useState<Report[]>([]);
 
-  // Consulta inicial (cache)
-  const { data, loading, error, refetch } = useQuery(GET_REPORTS_BY_COMPANY, {
+  const { data, loading, error, refetch } = useQuery<returnedData>(GET_REPORTS_BY_COMPANY, {
     variables: { empresaId: empresa?.id, start: page * rowsPerPage },
     fetchPolicy: "cache-first",
   });
 
-  // Consulta remota para pesquisa
-  const [getReportsByName, { data: searchData, loading: searchLoading }] = useLazyQuery(GET_REPORTS_BY_COMPANY, {
+  const [getReportsByName, { data: searchData }] = useLazyQuery<returnedData>(GET_REPORTS_BY_COMPANY, {
     fetchPolicy: "cache-first",
   });
 
-  // Relatórios do cache inicial
   const cachedReports: Report[] = data?.reports?.relatorios || [];
-
-  // Relatórios do resultado da pesquisa remota
   const remoteReports: Report[] = searchData?.reports?.relatorios || [];
 
-  // Decide qual lista mostrar
   let reports: Report[] = cachedReports.filter((report: Report) =>
     report.relatorioName?.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Se não encontrou localmente e search não está vazio, faz consulta remota
   useEffect(() => {
     if (search && reports.length === 0) {
       getReportsByName({
         variables: {
           empresaId: empresa?.id,
-          nome: search, // Assumindo que a query aceita um parâmetro 'nome'
+          nome: search,
           start: 0,
         },
       });
@@ -100,28 +92,22 @@ export default function ReportListPage() {
     // eslint-disable-next-line
   }, [search]);
 
-  // Se houver resultado remoto, filtra também pelo texto pesquisado
   if (search && reports.length === 0 && remoteReports.length > 0) {
     reports = remoteReports.filter((report: Report) =>
       report.relatorioName?.toLowerCase().includes(search.toLowerCase())
     );
   }
 
-  // Decide o total de relatórios para paginação
   const totalReports =
     search && reports.length > 3 && data?.reports?.totalRelatorios
       ? data.reports.totalRelatorios
       : data?.reports?.totalRelatorios || 0;
 
-  // Calcula o número de páginas para a paginação
   const pageCount = Math.ceil(totalReports / rowsPerPage);
-
-  const filteredReports = reports.filter((report) => report.relatorioName.toLowerCase().includes(search.toLowerCase()));
 
   const zebraColor = (index: number) =>
     theme.palette.mode === "dark" ? (index % 2 === 0 ? "#252525" : "#1d1d1d") : index % 2 === 0 ? "#f5f5f5" : "#e0e0e0";
 
-  // Função para renderizar os campos personalizados
   const renderField = (field: any): React.ReactNode => {
     const value = field.value;
     const clean = (s: string) => String(s).replace(/^custom_/, "");
@@ -136,7 +122,6 @@ export default function ReportListPage() {
       return String(val);
     };
 
-    // Array → "label: a, b, c"
     if (Array.isArray(value)) {
       return (
         <Box key={field.key} sx={{ minWidth: 250, mb: 1 }}>
@@ -149,7 +134,6 @@ export default function ReportListPage() {
       );
     }
 
-    // Objeto → cada subcampo em uma linha "sub: valor"
     if (value && typeof value === "object") {
       return (
         <Box key={field.key} sx={{ minWidth: 250, mb: 1 }}>
@@ -167,7 +151,6 @@ export default function ReportListPage() {
       );
     }
 
-    // Simples → "label: valor"
     return (
       <Box key={field.key} sx={{ minWidth: 250, mb: 1 }}>
         <Paper elevation={1} sx={{ p: 1, backgroundColor: theme.palette.mode === "dark" ? "#1e1e1e" : "#fafafa" }}>
@@ -179,19 +162,32 @@ export default function ReportListPage() {
     );
   };
 
-  // Função para ativar/desativar relatório
+  useEffect(() => {
+    if (localReports.length === 0 && reports.length > 0) {
+      setLocalReports(reports);
+    }
+    // eslint-disable-next-line
+  }, [reports]);
+
   const toggleReportStatus = async (reportId: string, currentStatus: boolean) => {
     setUpdatingReports((prev) => new Set(prev).add(reportId));
-
     try {
-      // Define endpoint e action baseado no status atual
-      const endpoint = currentStatus ? "/backend/relatorio" : "/backend/relatorio/activate";
-      const method = currentStatus ? "DELETE" : "PUT";
-      const action = currentStatus ? "delete" : "activate";
+      let endpoint = "";
+      let method: "PUT" | "DELETE";
+      let action = "";
 
-      // Gera o token reCAPTCHA
+      if (currentStatus) {
+        endpoint = "/backend/relatorio/";
+        method = "DELETE";
+        action = "delete";
+      } else {
+        endpoint = "/backend/relatorio/activate";
+        method = "PUT";
+        action = "activate";
+      }
+
       const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-        action: action,
+        action,
       });
 
       const response = await fetch(endpoint, {
@@ -203,7 +199,7 @@ export default function ReportListPage() {
         body: JSON.stringify({
           id: reportId,
           empresa_id: empresa?.id,
-          recaptchaToken: recaptchaToken,
+          recaptchaToken,
         }),
       });
 
@@ -213,16 +209,15 @@ export default function ReportListPage() {
         throw new Error(json.detail || `Erro ao ${currentStatus ? "desativar" : "ativar"} relatório.`);
       }
 
-      // Mostra notificação de sucesso
       setAlert({
         message: json.message || `Relatório ${currentStatus ? "desativado" : "ativado"} com sucesso!`,
         isError: false,
       });
 
-      // Refetch os dados para atualizar a lista
-      await refetch();
+      setLocalReports((prevReports) =>
+        prevReports.map((r) => (r.id === reportId ? { ...r, isActive: !currentStatus } : r))
+      );
     } catch (error: any) {
-      // Mostra notificação de erro
       setAlert({
         message: error.message || `Erro ao ${currentStatus ? "desativar" : "ativar"} relatório.`,
         isError: true,
@@ -263,16 +258,12 @@ export default function ReportListPage() {
 
   useEffect(() => {
     const msg = location.state?.message as { text: string; error: boolean } | undefined;
-
     if (msg) {
       setAlert({ message: msg.text, isError: msg.error });
     }
-
     if (location.state?.reload) {
       refetch?.();
     }
-
-    // limpa o state para não repetir notificação
     if (msg || location.state?.reload) {
       window.history.replaceState({}, document.title);
     }
@@ -394,58 +385,60 @@ export default function ReportListPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredReports.map((report, index) => (
-                  <TableRow key={report.id} sx={{ backgroundColor: zebraColor(index) }}>
-                    <TableCell>{report.relatorioName}</TableCell>
-                    <TableCell>{new Date(report.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell>{report.clienteName || "N/A"}</TableCell>
-                    <TableCell>{report.customFields.map((field, idx) => renderField(field))}</TableCell>
-                    <TableCell align="center">
-                      <Button
-                        variant="contained"
-                        size="small"
-                        sx={{
-                          width: 55,
-                          height: 55,
-                          borderRadius: "50%",
-                          backgroundColor: report.isActive ? theme.palette.success.main : theme.palette.error.main,
-                          color: "#fff",
-                          fontWeight: "bold",
-                          fontSize: 15,
-                          minWidth: 0,
-                          px: 0,
-                        }}
-                        onClick={async () => {
-                          await toggleReportStatus(report.id, report.isActive);
-                        }}
-                      >
-                        {report.isActive ? "Ativo" : "Inativo"}
-                      </Button>
-
-                      {!report.isActive && (
+                {localReports
+                  .filter((report) => report.relatorioName.toLowerCase().includes(search.toLowerCase()))
+                  .map((report, index) => (
+                    <TableRow key={report.id} sx={{ backgroundColor: zebraColor(index) }}>
+                      <TableCell>{report.relatorioName}</TableCell>
+                      <TableCell>{new Date(report.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell>{report.clienteName || "N/A"}</TableCell>
+                      <TableCell>{report.customFields.map((field, idx) => renderField(field))}</TableCell>
+                      <TableCell align="center">
                         <Button
                           variant="contained"
-                          color="error"
                           size="small"
                           sx={{
-                            borderRadius: "20px",
+                            width: 55,
+                            height: 55,
+                            borderRadius: "50%",
+                            backgroundColor: report.isActive ? theme.palette.success.main : theme.palette.error.main,
+                            color: "#fff",
+                            fontWeight: "bold",
+                            fontSize: 15,
                             minWidth: 0,
-                            px: 1.5,
-                            width: "auto",
-                            textTransform: "none",
-                            ml: 2,
+                            px: 0,
                           }}
-                          onClick={() => {
-                            setSelectedReport(report);
-                            setDeleteDialogOpen(true);
+                          onClick={async () => {
+                            await toggleReportStatus(report.id, report.isActive);
                           }}
                         >
-                          Apagar permanentemente
+                          {report.isActive ? "Ativo" : "Inativo"}
                         </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
+
+                        {!report.isActive && (
+                          <Button
+                            variant="contained"
+                            color="error"
+                            size="small"
+                            sx={{
+                              borderRadius: "20px",
+                              minWidth: 0,
+                              px: 1.5,
+                              width: "auto",
+                              textTransform: "none",
+                              ml: 2,
+                            }}
+                            onClick={() => {
+                              setSelectedReport(report);
+                              setDeleteDialogOpen(true);
+                            }}
+                          >
+                            Apagar permanentemente
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
               </TableBody>
             </Table>
           </TableContainer>
@@ -456,7 +449,7 @@ export default function ReportListPage() {
           <Box
             sx={{
               display: "flex",
-              justifyContent: "center", // Centralize como na página de clientes
+              justifyContent: "center",
               mt: 2,
               alignItems: "center",
             }}
@@ -473,7 +466,6 @@ export default function ReportListPage() {
           </Box>
         )}
       </Paper>
-      {/* Dialog de confirmação */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <DialogTitle sx={{ fontWeight: "bold" }}>Eliminar relatório permanentemente!</DialogTitle>
         <DialogContent>
@@ -501,8 +493,6 @@ export default function ReportListPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* Componente de notificação */}
       <Notification alert={alert} setAlert={setAlert} />
     </>
   );

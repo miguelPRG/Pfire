@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useState, useRef } from "react";
 import { Button, Paper, Typography, Box, Pagination, TextField, InputAdornment, Breadcrumbs } from "@mui/material";
 import { Search } from "@mui/icons-material";
-import { useQuery, useLazyQuery } from "@apollo/client";
+import { useQuery, useLazyQuery } from "@apollo/client/react";
 import { GET_EMPRESAS } from "../../../graphql/empresasqueries";
 import { useAuth } from "../../../hooks/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -22,17 +22,25 @@ interface Empresa {
   isAdmin: boolean;
 }
 
+interface returnedData {
+  getEmpresas: {
+    empresas: Empresa[];
+    totalEmpresas: number;
+  };
+  totalEmpresas: number;
+}
+
 export default function CompanySelectorPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
   const rowsPerPage = 6;
 
-  const { data, error, loading } = useQuery(GET_EMPRESAS, {
+  const { data, error, loading } = useQuery<returnedData>(GET_EMPRESAS, {
     fetchPolicy: "cache-first",
     variables: { start: page * rowsPerPage },
   });
 
-  const [fetchEmpresas, { data: searchData }] = useLazyQuery(GET_EMPRESAS, {
+  const [fetchEmpresas, { data: searchData }] = useLazyQuery<returnedData>(GET_EMPRESAS, {
     fetchPolicy: "cache-first",
   });
 

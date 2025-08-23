@@ -50,13 +50,9 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
     if not jwt.get("isSuperAdmin"):
 
         # Verificar se o usuário tem permissão para criar relatórios para a empresa
-        user_empresa = await users_empresas_collection.find_one(
-            {"user_id": jwt["user_id"], "empresa_id": modelo["empresa_id"]}
-        )
+        user_empresa = await users_empresas_collection.find_one({"user_id": jwt["user_id"], "empresa_id": modelo["empresa_id"]})
         if not user_empresa:
-            raise HTTPException(
-                status_code=403, detail="Usuário não tem permissão para criar relatórios para esta empresa"
-            )
+            raise HTTPException(status_code=403, detail="Usuário não tem permissão para criar relatórios para esta empresa")
 
     """ Criar o relatório"""
 
@@ -94,9 +90,7 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
             # Verificar se o campo está presente no relatório
             if key not in relatorio_fields:
                 if value.get("required", False):
-                    raise HTTPException(
-                        status_code=400, detail=f"O campo {full_key} é obrigatório e não foi fornecido."
-                    )
+                    raise HTTPException(status_code=400, detail=f"O campo {full_key} é obrigatório e não foi fornecido.")
                 continue
 
             # Verificar o tipo de dado do campo
@@ -117,9 +111,7 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
             if value["datatype"] == "date":
                 date_regex = compile(r"^\d{2}/\d{2}/\d{4}$")
                 if not date_regex.match(relatorio_fields[key]):
-                    raise HTTPException(
-                        status_code=400, detail=f"O campo {full_key} deve ser uma data no formato DD/MM/YYYY."
-                    )
+                    raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser uma data no formato DD/MM/YYYY.")
 
             # Verificar recursivamente objetos
             if value["datatype"] == "object":
@@ -145,9 +137,7 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
 
                 for subkey in custom_fields.keys():
                     if subkey not in subcampos_modelo:
-                        raise HTTPException(
-                            status_code=400, detail=f"O subcampo {full_key}.{subkey} não está listado no modelo."
-                        )
+                        raise HTTPException(status_code=400, detail=f"O subcampo {full_key}.{subkey} não está listado no modelo.")
 
                 # Chamada recursiva
                 verificar_campos_recursivamente(subcampos_modelo, custom_fields, full_key)
@@ -178,13 +168,9 @@ async def delete_relatorio(relatorio: RelatorioActivation, request: Request):
     if not jwt.get("isSuperAdmin"):
         # Verificar se o usuário tem permissão para apagar relatórios para a empresa
 
-        user_empresa = await users_empresas_collection.find_one(
-            {"user_id": jwt["user_id"], "empresa_id": ObjectId(relatorio.empresa_id)}
-        )
+        user_empresa = await users_empresas_collection.find_one({"user_id": jwt["user_id"], "empresa_id": ObjectId(relatorio.empresa_id)})
         if not user_empresa:
-            raise HTTPException(
-                status_code=403, detail="Usuário não tem permissão para apagar relatórios para esta empresa"
-            )
+            raise HTTPException(status_code=403, detail="Usuário não tem permissão para apagar relatórios para esta empresa")
 
     relatio_update = await relatorios_collection.update_one(
         {"_id": ObjectId(relatorio.id), "isActive": True},
@@ -211,13 +197,9 @@ async def activate_relatorio(relatorio: RelatorioActivation, request: Request):
     if not jwt.get("isSuperAdmin", False):
         # Verificar se o usuário tem permissão para apagar relatórios para a empresa
 
-        user_empresa = await users_empresas_collection.find_one(
-            {"user_id": jwt["user_id"], "empresa_id": ObjectId(relatorio.empresa_id)}
-        )
+        user_empresa = await users_empresas_collection.find_one({"user_id": jwt["user_id"], "empresa_id": ObjectId(relatorio.empresa_id)})
         if not user_empresa:
-            raise HTTPException(
-                status_code=403, detail="Usuário não tem permissão para apagar relatórios para esta empresa"
-            )
+            raise HTTPException(status_code=403, detail="Usuário não tem permissão para apagar relatórios para esta empresa")
 
     relatio_update = await relatorios_collection.update_one(
         {"_id": ObjectId(relatorio.id), "isActive": False},
@@ -242,18 +224,12 @@ async def hard_delete_relatorio(relatorio: RelatorioActivation, request: Request
 
     # Permissões iguais ao soft delete
     if not jwt.get("isSuperAdmin"):
-        user_empresa = await users_empresas_collection.find_one(
-            {"user_id": jwt["user_id"], "empresa_id": ObjectId(relatorio.empresa_id)}
-        )
+        user_empresa = await users_empresas_collection.find_one({"user_id": jwt["user_id"], "empresa_id": ObjectId(relatorio.empresa_id)})
         if not user_empresa:
-            raise HTTPException(
-                status_code=403, detail="Usuário não tem permissão para apagar relatórios para esta empresa"
-            )
+            raise HTTPException(status_code=403, detail="Usuário não tem permissão para apagar relatórios para esta empresa")
 
     # Só apaga se já estiver inativo
-    result = await relatorios_collection.delete_one(
-        {"_id": ObjectId(relatorio.id), "empresa_id": ObjectId(relatorio.empresa_id), "isActive": False}
-    )
+    result = await relatorios_collection.delete_one({"_id": ObjectId(relatorio.id), "empresa_id": ObjectId(relatorio.empresa_id), "isActive": False})
 
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Relatório não encontrado ou ainda está ativo.")

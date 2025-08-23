@@ -12,12 +12,8 @@ MAIN_FIELDS = {
 
 
 class RelatorioCreate(BaseModel):
-    relatorio_name: str = Field(
-        ..., max_length=100, description="Nome do relatório. Deve ter no máximo 100 caracteres."
-    )
-    modelo_campos_id: str = Field(
-        ..., min_length=24, max_length=24, description="ID do modelo de campos associado ao relatório."
-    )
+    relatorio_name: str = Field(..., max_length=100, description="Nome do relatório. Deve ter no máximo 100 caracteres.")
+    modelo_campos_id: str = Field(..., min_length=24, max_length=24, description="ID do modelo de campos associado ao relatório.")
     cliente_id: str = Field(..., min_length=24, max_length=24, description="ID do cliente associado ao relatório.")
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao relatório.")
     recaptchaToken: str

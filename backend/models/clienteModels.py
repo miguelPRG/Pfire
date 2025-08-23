@@ -10,9 +10,7 @@ class ClienteCreate(BaseModel):
     email: EmailStr = Field(..., max_length=254, description="O email deve ser um endereço de email válido.")
     telefone: str = Field(..., pattern=r"^\+?[0-9\s\-()]{7,15}$")
     nif: str = Field(..., pattern=r"^[1235689]\d{8}$")
-    localidade: str = Field(
-        ..., max_length=100, description="Localidade do cliente. Deve ter no máximo 100 caracteres."
-    )
+    localidade: str = Field(..., max_length=100, description="Localidade do cliente. Deve ter no máximo 100 caracteres.")
     morada: str = Field(..., max_length=255, description="Morada do cliente. Deve ter no máximo 255 caracteres.")
     codigo_postal: str = Field(..., pattern=r"^\d{4}-\d{3}$")
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao cliente.")
@@ -35,9 +33,7 @@ class ClienteCreate(BaseModel):
     @classmethod
     def validar_empresa_id(cls, v):
         if not ObjectId.is_valid(v):
-            raise HTTPException(
-                status_code=422, detail=f"ID inválido: {v}. Deve ser um ObjectId válido com 24 caracteres hexadecimais."
-            )
+            raise HTTPException(status_code=422, detail=f"ID inválido: {v}. Deve ser um ObjectId válido com 24 caracteres hexadecimais.")
         return v
 
 
@@ -47,12 +43,8 @@ class ClienteUpdate(BaseModel):
     email: Optional[EmailStr] = Field(None, max_length=254, description="O email deve ser um endereço de email válido.")
     telefone: Optional[str] = Field(None, pattern=r"^\+?[0-9\s\-()]{7,15}$")
     nif: Optional[str] = Field(None, pattern=r"^[1235689]\d{8}$")
-    localidade: Optional[str] = Field(
-        None, max_length=100, description="Cidade do cliente. Deve ter no máximo 100 caracteres."
-    )
-    morada: Optional[str] = Field(
-        None, max_length=255, description="Morada do cliente. Deve ter no máximo 255 caracteres."
-    )
+    localidade: Optional[str] = Field(None, max_length=100, description="Cidade do cliente. Deve ter no máximo 100 caracteres.")
+    morada: Optional[str] = Field(None, max_length=255, description="Morada do cliente. Deve ter no máximo 255 caracteres.")
     codigo_postal: Optional[str] = Field(None, pattern=r"^\d{4}-\d{3}$")
     recaptchaToken: str
 
@@ -63,9 +55,7 @@ class ClienteUpdate(BaseModel):
     @classmethod
     def validar_empresa_id(cls, v):
         if not ObjectId.is_valid(v):
-            raise HTTPException(
-                status_code=422, detail=f"ID inválido: {v}. Deve ser um ObjectId válido com 24 caracteres hexadecimais."
-            )
+            raise HTTPException(status_code=422, detail=f"ID inválido: {v}. Deve ser um ObjectId válido com 24 caracteres hexadecimais.")
         return v
 
     @field_validator("nif")

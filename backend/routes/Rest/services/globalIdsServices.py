@@ -38,9 +38,7 @@ async def get_global_id(global_id: str, request: Request):
     # Converte ObjectIds para strings
     global_id_data["_id"] = str(global_id_data["_id"])
     global_id_data["host_user_id"] = str(global_id_data["host_user_id"]) if "host_user_id" in global_id_data else None
-    global_id_data["guest_user_id"] = (
-        str(global_id_data["guest_user_id"]) if "guest_user_id" in global_id_data else None
-    )
+    global_id_data["guest_user_id"] = str(global_id_data["guest_user_id"]) if "guest_user_id" in global_id_data else None
     global_id_data["empresa_id"] = str(global_id_data["empresa_id"]) if "empresa_id" in global_id_data else None
     global_id_data["user_id"] = str(global_id_data["user_id"]) if "user_id" in global_id_data else None
     global_id_data["created_by"] = str(global_id_data["created_by"]) if "created_by" in global_id_data else None
@@ -90,9 +88,7 @@ async def confirm_user(global_id: str, request: Request):
 async def reset_password(request: Request, user: UserChangePassword):
 
     # Encontrar o global_id na base de dados
-    global_id_data = await global_ids_collection.find_one(
-        {"global_id": user.global_id, "operation": "recuperarPassword"}
-    )
+    global_id_data = await global_ids_collection.find_one({"global_id": user.global_id, "operation": "recuperarPassword"})
     if not global_id_data or global_id_data["operation"] != "recuperarPassword":
         raise HTTPException(status_code=404, detail="Global ID não encontrado.")
 
@@ -104,9 +100,7 @@ async def reset_password(request: Request, user: UserChangePassword):
 
     # Atualizar a password do utilizador
     new_password_hashed = pwd_context.hash(user.password)
-    user_update = users_collection.update_one(
-        {"_id": user_id}, {"$set": {"password": new_password_hashed, "updated_at": datetime.now()}}
-    )
+    user_update = users_collection.update_one({"_id": user_id}, {"$set": {"password": new_password_hashed, "updated_at": datetime.now()}})
 
     global_id_deelete = global_ids_collection.delete_one({"global_id": user.global_id})
 

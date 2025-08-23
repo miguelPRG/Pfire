@@ -115,9 +115,7 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
             )
 
             if user_empresa:
-                raise HTTPException(
-                    status_code=409, detail="O utilizador com esta conta já está associado a esta empresa."
-                )
+                raise HTTPException(status_code=409, detail="O utilizador com esta conta já está associado a esta empresa.")
 
         # Criamos um novo user_empresa
         user_empresa = UserEmpresaCreate(
@@ -190,9 +188,7 @@ async def login(user: UserLogin, request: Request):
     if not atualizar_user.modified_count:
         raise HTTPException(status_code=500, detail="Erro ao atualizar o último login.")
 
-    token = generate_jwt(
-        str(db_user["_id"]), db_user["nome"], db_user["email"], db_user["isSuperAdmin"], db_user.get("telefone")
-    )
+    token = generate_jwt(str(db_user["_id"]), db_user["nome"], db_user["email"], db_user["isSuperAdmin"], db_user.get("telefone"))
 
     response = JSONResponse(
         {
@@ -470,31 +466,23 @@ async def invite_user_to_empresa(request: Request, user: UserInvitation):
 
     # Se não for super administrador, verificar se o utilizador tem permissão para convidar
     if not jwt.get("isSuperAdmin", False):
-        user_empresa = await users_empresas_collection.find_one(
-            {"user_id": user_id, "empresa_id": empresa_id, "isAdmin": True}
-        )
+        user_empresa = await users_empresas_collection.find_one({"user_id": user_id, "empresa_id": empresa_id, "isAdmin": True})
 
         if not user_empresa:
-            raise HTTPException(
-                status_code=403, detail="Você não tem permissão para convidar utilizadores para esta empresa."
-            )
+            raise HTTPException(status_code=403, detail="Você não tem permissão para convidar utilizadores para esta empresa.")
 
     # Verificar se o utilizador já existe
     existing_user = await users_collection.find_one({"email": user.email})
 
     if existing_user:
 
-        user_in_empresa = await users_empresas_collection.find_one(
-            {"user_id": existing_user["_id"], "empresa_id": empresa_id}
-        )
+        user_in_empresa = await users_empresas_collection.find_one({"user_id": existing_user["_id"], "empresa_id": empresa_id})
 
         if user_in_empresa:
             raise HTTPException(status_code=409, detail="O utilizador já está associado a esta empresa.")
 
         elif existing_user.get("isSuperAdmin", False):
-            raise HTTPException(
-                status_code=403, detail="O utilizador é um super administrador. Logo não precisa de convite."
-            )
+            raise HTTPException(status_code=403, detail="O utilizador é um super administrador. Logo não precisa de convite.")
 
     # Criar o convite
     global_id = str(uuid4())
@@ -522,8 +510,6 @@ async def invite_user_to_empresa(request: Request, user: UserInvitation):
         raise HTTPException(status_code=500, detail="Erro na criação do ID global.")
 
     # Enviar o convite por email
-    enviar_email(
-        user.email, existing_user.get("nome") if existing_user else "", global_id, 6, "convite", user.empresa_nome
-    )
+    enviar_email(user.email, existing_user.get("nome") if existing_user else "", global_id, 6, "convite", user.empresa_nome)
 
     return {"message": "Convite enviado com sucesso!"}

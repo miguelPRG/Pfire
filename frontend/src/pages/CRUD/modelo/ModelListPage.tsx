@@ -1,5 +1,5 @@
 // Importa hooks e componentes do Apollo Client e Material UI
-import { useQuery, useLazyQuery } from "@apollo/client";
+import { useQuery, useLazyQuery } from "@apollo/client/react";
 import {
   Box,
   Button,
@@ -45,6 +45,14 @@ const formatType = (type: string) => {
   return map[type] || type;
 };
 
+interface returnedData {
+  getModelos: {
+    modelos: any[];
+    totalModelos: number;
+  };
+  totalModelos: number;
+}
+
 // Componente principal da página de listagem de modelos de relatórios
 export default function ReportModelListPage() {
   // Recupera informações da empresa autenticada
@@ -67,14 +75,14 @@ export default function ReportModelListPage() {
   const rowsPerPage = 3;
 
   // Consulta inicial (cache/página)
-  const { data, loading, error, refetch } = useQuery(GET_MODELOS_RELATORIOS, {
+  const { data, loading, error, refetch } = useQuery<returnedData>(GET_MODELOS_RELATORIOS, {
     variables: { empresaId: empresa?.id, start: page * rowsPerPage },
     skip: !empresa,
     fetchPolicy: "cache-first",
   });
 
   // Pesquisa remota por nome
-  const [getModelosByName, { data: searchData }] = useLazyQuery(GET_MODELOS_RELATORIOS, {
+  const [getModelosByName, { data: searchData }] = useLazyQuery<returnedData>(GET_MODELOS_RELATORIOS, {
     fetchPolicy: "cache-first",
   });
 

@@ -1,10 +1,21 @@
 import { useAuth } from "../hooks/AuthContext";
 import { Paper, Typography, Container, Box, Skeleton, useMediaQuery } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { useQuery } from "@apollo/client";
-import { PieChart, BarChart } from '@mui/x-charts';
+import { useQuery } from "@apollo/client/react";
+import { PieChart, BarChart } from "@mui/x-charts";
 import { GET_RELATORIES_COUNT_BY_CLIENTES, GET_RELATORIES_COUNT_BY_MODELO } from "../graphql/reportsQueries";
 
+interface ReportCliente {
+  clienteId: string;
+  count: number;
+  clienteName: string;
+}
+
+interface ReportModelo {
+  modeloId: string;
+  count: number;
+  modeloName: string;
+}
 
 function HomePage() {
   const { user, empresa } = useAuth();
@@ -13,30 +24,38 @@ function HomePage() {
   const isSm = useMediaQuery(theme.breakpoints.between("sm", "md"));
 
   // Query para o PieChart
-  const { data: chart1Data, loading: pieLoading } = useQuery(GET_RELATORIES_COUNT_BY_CLIENTES, {
-    variables: { empresaId: empresa?.id },
-    skip: !empresa?.id,
-    fetchPolicy: "network-only", // Garante que busca sempre do servidor
-  });
+  const { data: chart1Data, loading: pieLoading } = useQuery<{ reports: ReportCliente[] }>(
+    GET_RELATORIES_COUNT_BY_CLIENTES,
+    {
+      variables: { empresaId: empresa?.id },
+      skip: !empresa?.id,
+      fetchPolicy: "network-only",
+    }
+  );
 
   // Query para o BarChart
-  const { data: chart2Data, loading: barLoading } = useQuery(GET_RELATORIES_COUNT_BY_MODELO, {
-    variables: { empresaId: empresa?.id },
-    skip: !empresa?.id,
-    fetchPolicy: "network-only", // Garante que busca sempre do servidor
-  });
+  const { data: chart2Data, loading: barLoading } = useQuery<{ reports: ReportModelo[] }>(
+    GET_RELATORIES_COUNT_BY_MODELO,
+    {
+      variables: { empresaId: empresa?.id },
+      skip: !empresa?.id,
+      fetchPolicy: "network-only",
+    }
+  );
 
-  const pieData = chart1Data?.reports?.map((r: { clienteId: string; count: number; clienteName: string }) => ({
-    id: r.clienteId,
-    value: r.count,
-    label: r.clienteName,
-  })) || [];
+  const pieData =
+    chart1Data?.reports?.map((r) => ({
+      id: r.clienteId,
+      value: r.count,
+      label: r.clienteName,
+    })) || [];
 
-  const barData = chart2Data?.reports?.map((r: { modeloId: string; count: number; modeloName: string }) => ({
-    id: r.modeloId,
-    value: r.count,
-    label: r.modeloName,
-  })) || [];
+  const barData =
+    chart2Data?.reports?.map((r) => ({
+      id: r.modeloId,
+      value: r.count,
+      label: r.modeloName,
+    })) || [];
 
   console.log("Bar Data:", barData);
 
@@ -155,7 +174,7 @@ function HomePage() {
             mx: "auto",
             display: "flex",
             flexDirection: { xs: "column", md: "row" },
-            gap: { xs: 2},
+            gap: { xs: 2 },
             alignItems: "stretch",
             justifyContent: "center",
             textAlign: "center",
@@ -179,32 +198,41 @@ function HomePage() {
               minHeight: chartSize + 120,
               height: chartSize + 120,
               transition: "background 0.3s, border 0.3s",
-            }}>
+            }}
+          >
             <Typography variant="h4" sx={{ mb: 1 }}>
               Relatórios por Cliente
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2, px: 1 }}>
               Distribuição dos relatórios criados por cada cliente da empresa. Cada fatia representa um cliente.
             </Typography>
-            <Box sx={{ width: chartSize, height: chartSize, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Box
+              sx={{
+                width: chartSize,
+                height: chartSize,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
               {pieLoading ? (
-          <Skeleton variant="rectangular" height={chartSize} width={chartSize} />
+                <Skeleton variant="rectangular" height={chartSize} width={chartSize} />
               ) : pieData.length === 0 ? (
-          <Typography color="text.secondary">Sem dados para mostrar.</Typography>
+                <Typography color="text.secondary">Sem dados para mostrar.</Typography>
               ) : (
-          <PieChart
-            series={[{ data: pieData }]}
-            width={chartSize}
-            height={chartSize}
-            slotProps={{
-              tooltip: {
-                sx: {
-            maxWidth: 250,
-            whiteSpace: "pre-line",
-                },
-              },
-            }}
-          />
+                <PieChart
+                  series={[{ data: pieData }]}
+                  width={chartSize}
+                  height={chartSize}
+                  slotProps={{
+                    tooltip: {
+                      sx: {
+                        maxWidth: 250,
+                        whiteSpace: "pre-line",
+                      },
+                    },
+                  }}
+                />
               )}
             </Box>
           </Box>
@@ -225,7 +253,8 @@ function HomePage() {
               minHeight: chartSize + 120,
               height: chartSize + 120,
               transition: "background 0.3s, border 0.3s",
-            }}>
+            }}
+          >
             <Typography variant="h4" sx={{ mb: 1 }}>
               Relatórios por Modelo
             </Typography>
@@ -233,30 +262,38 @@ function HomePage() {
               Distribuição dos relatórios criados por modelo de relatório. Cada barra representa um modelo.
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 2, px: 1 }}></Typography>
-            <Box sx={{ width: chartSize, height: chartSize, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Box
+              sx={{
+                width: chartSize,
+                height: chartSize,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
               {barLoading ? (
-          <Skeleton variant="rectangular" height={chartSize} width={chartSize} />
+                <Skeleton variant="rectangular" height={chartSize} width={chartSize} />
               ) : barData.length === 0 ? (
-          <Typography color="text.secondary">Sem dados para mostrar.</Typography>
+                <Typography color="text.secondary">Sem dados para mostrar.</Typography>
               ) : (
-          <BarChart
-            xAxis={[
-              {
-                data: barData.map((d) => d.label),
-              }
-            ]}
-            series={[{ data: barData.map((d) => d.value), label: "Relatórios" }]}
-            width={chartSize}
-            height={chartSize}
-            slotProps={{
-              tooltip: {
-                sx: {
-            maxWidth: 250,
-            whiteSpace: "pre-line",
-                },
-              },
-            }}
-          />
+                <BarChart
+                  xAxis={[
+                    {
+                      data: barData.map((d) => d.label),
+                    },
+                  ]}
+                  series={[{ data: barData.map((d) => d.value), label: "Relatórios" }]}
+                  width={chartSize}
+                  height={chartSize}
+                  slotProps={{
+                    tooltip: {
+                      sx: {
+                        maxWidth: 250,
+                        whiteSpace: "pre-line",
+                      },
+                    },
+                  }}
+                />
               )}
             </Box>
           </Box>

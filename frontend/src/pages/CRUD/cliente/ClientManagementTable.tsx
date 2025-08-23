@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery, useLazyQuery } from "@apollo/client";
+import { useQuery, useLazyQuery } from "@apollo/client/react";
 import {
   Table,
   TableBody,
@@ -46,6 +46,15 @@ interface Cliente {
   createdAt?: string; // novo campo
 }
 
+interface returnedData {
+  getClientes: {
+    clientes: Cliente[];
+    totalClientes: number;
+  };
+
+  totalClientes: number;
+}
+
 export default function ClientManagementTable() {
   // Todos os hooks no topo!
   const [page, setPage] = useState(0);
@@ -63,15 +72,18 @@ export default function ClientManagementTable() {
   const { empresa } = useAuth();
 
   // Consulta inicial (cache)
-  const { data, loading, error, refetch } = useQuery(GET_CLIENTES_BY_EMPRESA, {
+  const { data, loading, error, refetch } = useQuery<returnedData>(GET_CLIENTES_BY_EMPRESA, {
     variables: { empresaId: empresa?.id, start: page * rowsPerPage },
     fetchPolicy: "cache-first",
   });
 
   // Consulta remota para pesquisa
-  const [getClientesByName, { data: searchData, loading: searchLoading }] = useLazyQuery(GET_CLIENTES_BY_EMPRESA, {
-    fetchPolicy: "cache-first",
-  });
+  const [getClientesByName, { data: searchData, loading: searchLoading }] = useLazyQuery<returnedData>(
+    GET_CLIENTES_BY_EMPRESA,
+    {
+      fetchPolicy: "cache-first",
+    }
+  );
 
   useEffect(() => {
     if (location.state?.message) {

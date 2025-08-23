@@ -10,9 +10,7 @@ from bson import ObjectId
 @strawberry.type
 class ClienteQuery:
     @strawberry.field
-    async def getClientes(
-        self, info: Info, empresa_id: str, start: int = 0, name: str = "", nif: str = ""
-    ) -> ClienteList:
+    async def getClientes(self, info: Info, empresa_id: str, start: int = 0, name: str = "", nif: str = "") -> ClienteList:
 
         lmt = 10  # Limite padrão de resultados por página
 
@@ -33,9 +31,7 @@ class ClienteQuery:
             user_empresa = await users_empresas_collection.find_one({"empresa_id": empresa_id, "user_id": user_id})
 
             if not user_empresa:
-                raise HTTPException(
-                    status_code=403, detail="Acesso negado! Não tens permissão para ver clientes nesta empresa."
-                )
+                raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para ver clientes nesta empresa.")
 
         filtro = {"empresa_id": empresa_id}
 
@@ -67,11 +63,7 @@ class ClienteQuery:
 
             if not jwt.get("isSuperAdmin", False):
 
-                cliente_data = {
-                    k: v
-                    for k, v in cliente_data.items()
-                    if k not in ["isActive", "created_by", "updated_by", "updated_at"]
-                }
+                cliente_data = {k: v for k, v in cliente_data.items() if k not in ["isActive", "created_by", "updated_by", "updated_at"]}
 
             clientes.append(Cliente(**filter_null_fields(cliente_data)))
 

@@ -10,9 +10,7 @@ from strawberry.types import Info
 @strawberry.type
 class UserQuery:
     @strawberry.field
-    async def getUsers(
-        self, info: Info, empresa_id: str, start: int = 0, name: str = None, email: str = None
-    ) -> UserList:
+    async def getUsers(self, info: Info, empresa_id: str, start: int = 0, name: str = None, email: str = None) -> UserList:
 
         lmt = 10  # Limite padrão de resultados por página
 
@@ -30,13 +28,9 @@ class UserQuery:
             raise HTTPException(status_code=404, detail="Empresa não encontrada.")
 
         if not jwt.get("isSuperAdmin", False):
-            user_empresa = await users_empresas_collection.find_one(
-                {"user_id": ObjectId(jwt["user_id"]), "empresa_id": empresa_id, "isAdmin": True}
-            )
+            user_empresa = await users_empresas_collection.find_one({"user_id": ObjectId(jwt["user_id"]), "empresa_id": empresa_id, "isAdmin": True})
             if not user_empresa:
-                raise HTTPException(
-                    status_code=403, detail="Acesso negado. Apenas administradores podem visualizar os utilizadores."
-                )
+                raise HTTPException(status_code=403, detail="Acesso negado. Apenas administradores podem visualizar os utilizadores.")
         filtro = {"empresa_id": empresa_id}
 
         if name:

@@ -11,9 +11,7 @@ from base64 import b64encode  # Importa o módulo base64 para conversão
 @strawberry.type
 class EmpresaQuery:
     @strawberry.field
-    async def getEmpresas(
-        self, info: Info, id: str = None, start: int = 0, name: str = None, nif: str = None
-    ) -> EmpresaList:
+    async def getEmpresas(self, info: Info, id: str = None, start: int = 0, name: str = None, nif: str = None) -> EmpresaList:
         request = info.context["request"]
         jwt = getattr(request.state, "jwt", None)
         lmt = 6
@@ -33,13 +31,9 @@ class EmpresaQuery:
             if jwt.get("isSuperAdmin", False):
                 is_admin = True
             else:
-                user_empresa = await users_empresas_collection.find_one(
-                    {"user_id": ObjectId(jwt["user_id"]), "empresa_id": empresa["_id"]}
-                )
+                user_empresa = await users_empresas_collection.find_one({"user_id": ObjectId(jwt["user_id"]), "empresa_id": empresa["_id"]})
                 if not user_empresa or not user_empresa.get("isAdmin", False):
-                    raise HTTPException(
-                        status_code=403, detail="Acesso negado! Não tens permissão para ver esta empresa."
-                    )
+                    raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para ver esta empresa.")
                 is_admin = user_empresa.get("isAdmin", False)
 
             empresa_data = {
@@ -77,9 +71,7 @@ class EmpresaQuery:
                 if jwt.get("isSuperAdmin", False):
                     is_admin = True
                 else:
-                    user_empresa = await users_empresas_collection.find_one(
-                        {"user_id": ObjectId(jwt["user_id"]), "empresa_id": empresa["_id"]}
-                    )
+                    user_empresa = await users_empresas_collection.find_one({"user_id": ObjectId(jwt["user_id"]), "empresa_id": empresa["_id"]})
                     if not user_empresa or not user_empresa.get("isAdmin", False):
                         continue  # Ignora empresas sem permissão
                     is_admin = user_empresa.get("isAdmin", False)
@@ -138,8 +130,7 @@ class EmpresaQuery:
                 empresa_data["isAdmin"] = True
             else:
                 empresa_data["isAdmin"] = any(
-                    user_empresa["empresa_id"] == empresa["_id"] and user_empresa.get("isAdmin", False)
-                    for user_empresa in user_empresas
+                    user_empresa["empresa_id"] == empresa["_id"] and user_empresa.get("isAdmin", False) for user_empresa in user_empresas
                 )
 
             empresas.append(Empresa(**filter_null_fields(empresa_data)))

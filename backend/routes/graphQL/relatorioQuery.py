@@ -11,12 +11,7 @@ from bson import ObjectId
 class RelatorioQuery:
     @strawberry.field
     async def getRelatorios(
-        self,
-        info: Info,
-        empresa_id: str,
-        id: str = None,
-        start: int = 0,
-        relatorio_name: str = None  # Novo parâmetro
+        self, info: Info, empresa_id: str, id: str = None, start: int = 0, relatorio_name: str = None  # Novo parâmetro
     ) -> RelatorioList:
 
         empresa_id = ObjectId(empresa_id)
@@ -41,13 +36,9 @@ class RelatorioQuery:
 
         # Verificar permissões
         if not jwt["isSuperAdmin"]:
-            user_empresa = await users_empresas_collection.find_one(
-                {"user_id": jwt["user_id"], "empresa_id": empresa_id}
-            )
+            user_empresa = await users_empresas_collection.find_one({"user_id": jwt["user_id"], "empresa_id": empresa_id})
             if not user_empresa:
-                raise HTTPException(
-                    status_code=403, detail="Acesso negado! Não tens permissão para ver relatórios nesta empresa."
-                )
+                raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para ver relatórios nesta empresa.")
 
         # Buscar relatórios no banco de dados
         async for relatorio in relatorios_collection.find(filtro).skip(start).limit(lmt):
@@ -79,7 +70,7 @@ class RelatorioQuery:
 
         total_relatorios = await relatorios_collection.count_documents(filtro)
         return RelatorioList(relatorios=relatorios, totalRelatorios=total_relatorios)
-    
+
     @strawberry.field
     async def getRelatoriosCountByClientes(self, info: Info, empresa_id: str) -> list[RelatorioCountByCliente]:
 
@@ -87,48 +78,25 @@ class RelatorioQuery:
         empresa_id = ObjectId(empresa_id)
         request = info.context["request"]
         jwt = getattr(request.state, "jwt", None)
-        
+
         # Verificar permissões
         if not jwt["isSuperAdmin"]:
-            user_empresa = await users_empresas_collection.find_one(
-                {"user_id": jwt["user_id"], "empresa_id": empresa_id}
-            )
+            user_empresa = await users_empresas_collection.find_one({"user_id": jwt["user_id"], "empresa_id": empresa_id})
             if not user_empresa:
-                raise HTTPException(
-                    status_code=403, detail="Acesso negado! Não tens permissão para ver relatórios nesta empresa."
-                )
+                raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para ver relatórios nesta empresa.")
 
         # Pipeline sempre definido
         pipeline = [
             {"$match": {"empresa_id": empresa_id}},
-            {
-                "$lookup": {
-                    "from": "clientes",
-                    "localField": "cliente_id",
-                    "foreignField": "_id",
-                    "as": "cliente_info"
-                }
-            },
+            {"$lookup": {"from": "clientes", "localField": "cliente_id", "foreignField": "_id", "as": "cliente_info"}},
             {"$unwind": "$cliente_info"},
-            {
-                "$group": {
-                    "_id": "$cliente_id",
-                    "cliente_name": {"$first": "$cliente_info.nome"},
-                    "totalRelatorios": {"$sum": 1}
-                }
-            }
+            {"$group": {"_id": "$cliente_id", "cliente_name": {"$first": "$cliente_info.nome"}, "totalRelatorios": {"$sum": 1}}},
         ]
 
         consulta_cursor = relatorios_collection.aggregate(pipeline)
         consulta = []
         async for doc in consulta_cursor:
-            consulta.append(
-                RelatorioCountByCliente(
-                    cliente_id=str(doc["_id"]),
-                    cliente_name=doc["cliente_name"],
-                    count=doc["totalRelatorios"]
-                )
-            )
+            consulta.append(RelatorioCountByCliente(cliente_id=str(doc["_id"]), cliente_name=doc["cliente_name"], count=doc["totalRelatorios"]))
 
         return consulta
 
@@ -141,46 +109,22 @@ class RelatorioQuery:
 
         # Verificar permissões
         if not jwt["isSuperAdmin"]:
-            user_empresa = await users_empresas_collection.find_one(
-                {"user_id": jwt["user_id"], "empresa_id": empresa_id}
-            )
+            user_empresa = await users_empresas_collection.find_one({"user_id": jwt["user_id"], "empresa_id": empresa_id})
 
             if not user_empresa:
-                raise HTTPException(
-                    status_code=403, detail="Acesso negado! Não tens permissão para ver relatórios nesta empresa."
-                )
-        
+                raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para ver relatórios nesta empresa.")
+
         # Pipeline para contar relatórios por modelo
         pipeline = [
             {"$match": {"empresa_id": empresa_id}},
-            {
-            "$lookup": {
-                "from": "modelos",
-                "localField": "modelo_campos_id",
-                "foreignField": "_id",
-                "as": "modelo_info"
-            }
-            },
+            {"$lookup": {"from": "modelos", "localField": "modelo_campos_id", "foreignField": "_id", "as": "modelo_info"}},
             {"$unwind": "$modelo_info"},
-            {
-            "$group": {
-                "_id": "$modelo_campos_id",
-                "modelo_name": {"$first": "$modelo_info.model_name"},
-                "totalRelatorios": {"$sum": 1}
-            }
-            }
+            {"$group": {"_id": "$modelo_campos_id", "modelo_name": {"$first": "$modelo_info.model_name"}, "totalRelatorios": {"$sum": 1}}},
         ]
 
         consulta_cursor = relatorios_collection.aggregate(pipeline)
         consulta = []
         async for doc in consulta_cursor:
-            consulta.append(
-            RelatorioCountByModelo(
-                modelo_id=str(doc["_id"]),
-                modelo_name=doc["modelo_name"],
-                count=doc["totalRelatorios"]
-            )
-            )
-        
-        return consulta
+            consulta.append(RelatorioCountByModelo(modelo_id=str(doc["_id"]), modelo_name=doc["modelo_name"], count=doc["totalRelatorios"]))
 
+        return consulta

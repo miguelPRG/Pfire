@@ -23,7 +23,7 @@ import {
 } from "@mui/material";
 import { Search, Delete } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
-import { useQuery, useLazyQuery } from "@apollo/client";
+import { useQuery, useLazyQuery } from "@apollo/client/react";
 import { GET_USERS } from "../../../graphql/usersqueries";
 import { useAuth } from "../../../hooks/AuthContext";
 import { z } from "zod";
@@ -70,6 +70,13 @@ export default function UserManagementTable() {
   const rowsPerPage = 10;
   const navigate = useNavigate();
 
+  interface returnedData {
+    getUsers: {
+      users: User[];
+      totalUsers: number;
+    };
+  }
+
   // React Hook Form para o convite
   const {
     register,
@@ -82,13 +89,13 @@ export default function UserManagementTable() {
   });
 
   // Consulta inicial (cache/página)
-  const { data, refetch, loading } = useQuery(GET_USERS, {
+  const { data, refetch, loading } = useQuery<returnedData>(GET_USERS, {
     variables: { empresaId: empresa?.id, start: page * rowsPerPage, name: search || undefined },
     fetchPolicy: "cache-first",
   });
 
   // Pesquisa remota por nome
-  const [getUsersByName, { data: searchData }] = useLazyQuery(GET_USERS, {
+  const [getUsersByName, { data: searchData }] = useLazyQuery<returnedData>(GET_USERS, {
     fetchPolicy: "cache-first",
   });
 

@@ -37,9 +37,7 @@ async def update_user(user: UserUpdate, request: Request):
     result = await users_collection.update_one({"_id": user_id, "isActive": True}, {"$set": update_data})
 
     if not result.modified_count:
-        raise HTTPException(
-            status_code=400, detail="Erro ao atualizar. O utilizador não foi encontrado ou não está ativo."
-        )
+        raise HTTPException(status_code=400, detail="Erro ao atualizar. O utilizador não foi encontrado ou não está ativo.")
 
     result = await users_collection.find_one({"_id": user_id})
 
@@ -104,8 +102,6 @@ async def activate_user(request: Request, user: UserActivation):
     result = await users_collection.update_one({"_id": ObjectId(user.id)}, {"$set": updated_fields})
 
     if not result.modified_count:
-        raise HTTPException(
-            status_code=409, detail="Erro ao ativar utilizador. Verifica se o utilizador existe ou se já foi ativado."
-        )
+        raise HTTPException(status_code=409, detail="Erro ao ativar utilizador. Verifica se o utilizador existe ou se já foi ativado.")
 
     return {"message": "Utilizador ativado com sucesso!"}

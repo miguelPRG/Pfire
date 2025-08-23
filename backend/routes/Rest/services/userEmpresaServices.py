@@ -20,16 +20,12 @@ async def set_admin(user: UserRole, request: Request):
 
     # ✅ Se não for superadmin, verificar se é admin da empresa
     if not jwt["isSuperAdmin"]:
-        permissao = await users_empresas_collection.find_one(
-            {"user_id": ObjectId(jwt["user_id"]), "empresa_id": user.empresa_id, "isAdmin": True}
-        )
+        permissao = await users_empresas_collection.find_one({"user_id": ObjectId(jwt["user_id"]), "empresa_id": user.empresa_id, "isAdmin": True})
         if not permissao:
             raise HTTPException(status_code=403, detail="Sem permissão para alterar este utilizador.")
 
     # ✅ Verifica se existe relação entre user e empresa (obrigatório para todos)
-    relacao_existente = await users_empresas_collection.find_one(
-        {"user_id": user.user_id, "empresa_id": user.empresa_id}
-    )
+    relacao_existente = await users_empresas_collection.find_one({"user_id": user.user_id, "empresa_id": user.empresa_id})
     if not relacao_existente:
         raise HTTPException(status_code=404, detail="Relação entre utilizador e empresa não encontrada.")
 
@@ -55,16 +51,12 @@ async def remoke_admin(user: UserRole, request: Request):
 
     # ✅ Se não for superadmin, verificar se é admin da empresa
     if not jwt["isSuperAdmin"]:
-        permissao = await users_empresas_collection.find_one(
-            {"user_id": ObjectId(jwt["user_id"]), "empresa_id": user.empresa_id, "isAdmin": True}
-        )
+        permissao = await users_empresas_collection.find_one({"user_id": ObjectId(jwt["user_id"]), "empresa_id": user.empresa_id, "isAdmin": True})
         if not permissao:
             raise HTTPException(status_code=403, detail="Sem permissão para alterar este utilizador.")
 
     # ✅ Verificar se a relação existe (necessário para evitar erro de update)
-    relacao_existente = await users_empresas_collection.find_one(
-        {"user_id": user.user_id, "empresa_id": user.empresa_id}
-    )
+    relacao_existente = await users_empresas_collection.find_one({"user_id": user.user_id, "empresa_id": user.empresa_id})
     if not relacao_existente:
         raise HTTPException(status_code=404, detail="Relação entre utilizador e empresa não encontrada.")
 
@@ -117,9 +109,7 @@ async def expel_user(user: UserExpel, request: Request):
     user.user_id = ObjectId(user.user_id)
     user.empresa_id = ObjectId(user.empresa_id)
 
-    user_empresa_found = await users_empresas_collection.find_one(
-        {"user_id": user.user_id, "empresa_id": user.empresa_id}
-    )
+    user_empresa_found = await users_empresas_collection.find_one({"user_id": user.user_id, "empresa_id": user.empresa_id})
 
     if not user_empresa_found:
         raise HTTPException(status_code=404, detail="Relação entre utilizador e empresa não encontrada.")

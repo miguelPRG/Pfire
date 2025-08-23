@@ -22,14 +22,10 @@ async def criar_cliente(cliente: ClienteCreate, request: Request):
     empresa_id = ObjectId(cliente.empresa_id)
 
     if not jwt.get("isSuperAdmin", False):
-        user_empresa = await users_empresas_collection.find_one(
-            {"empresa_id": empresa_id, "user_id": user_id, "isAdmin": True}
-        )
+        user_empresa = await users_empresas_collection.find_one({"empresa_id": empresa_id, "user_id": user_id, "isAdmin": True})
 
         if not user_empresa:
-            raise HTTPException(
-                status_code=403, detail="Acesso negado! Não tens permissão para criar clientes nesta empresa."
-            )
+            raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para criar clientes nesta empresa.")
 
     # 3) Preparar dados
     cliente_data = cliente.model_dump(by_alias=True)
@@ -77,9 +73,7 @@ async def atualizar_cliente(cliente: ClienteUpdate, request: Request, id: str):
     await validar_recaptcha_token(cliente.recaptchaToken, "register")
 
     if not jwt.get("isSuperAdmin", None):
-        user_empresa = await users_empresas_collection.find_one(
-            {"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True}
-        )
+        user_empresa = await users_empresas_collection.find_one({"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True})
         if not user_empresa:
             raise HTTPException(403, detail="Acesso negado! Não tens permissão para atualizar clientes nesta empresa.")
 
@@ -108,9 +102,7 @@ async def apagar_cliente(cliente: ClienteActivion, request: Request):
     await validar_recaptcha_token(cliente.recaptchaToken, "register")
 
     if not jwt.get("isSuperAdmin", None):
-        user_empresa = await users_empresas_collection.find_one(
-            {"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True}
-        )
+        user_empresa = await users_empresas_collection.find_one({"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True})
         if not user_empresa:
             raise HTTPException(403, detail="Acesso negado! Não tens permissão para apagar clientes nesta empresa.")
 
@@ -141,9 +133,7 @@ async def hard_delete_cliente(cliente: ClienteActivion, request: Request):
         raise HTTPException(400, detail="ID inválido.")
 
     if not jwt.get("isSuperAdmin", None):
-        user_empresa = await users_empresas_collection.find_one(
-            {"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True}
-        )
+        user_empresa = await users_empresas_collection.find_one({"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True})
         if not user_empresa:
             raise HTTPException(403, detail="Acesso negado! Não tens permissão para apagar clientes nesta empresa.")
 
@@ -171,9 +161,7 @@ async def reativar_cliente(cliente: ClienteActivion, request: Request):
     await validar_recaptcha_token(cliente.recaptchaToken, "register")
 
     if not jwt.get("isSuperAdmin", None):
-        user_empresa = await users_empresas_collection.find_one(
-            {"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True}
-        )
+        user_empresa = await users_empresas_collection.find_one({"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True})
         if not user_empresa:
             raise HTTPException(403, detail="Acesso negado! Não tens permissão para ativar clientes nesta empresa.")
 
