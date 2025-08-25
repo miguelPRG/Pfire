@@ -78,7 +78,7 @@ const commonComponents: Components = {
       slotProps: {
         inputLabel: {
           style: {
-            fontSize: "0.95rem", // Aumenta o tamanho da fonte do label
+            fontSize: "1.1rem", // Aumenta o tamanho da fonte do label
           },
         },
       },

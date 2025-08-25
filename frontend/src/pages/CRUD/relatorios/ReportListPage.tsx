@@ -170,7 +170,7 @@ export default function ReportListPage() {
   }, [reports]);
 
   const toggleReportStatus = async (reportId: string, currentStatus: boolean) => {
-    setUpdatingReports((prev) => new Set(prev).add(reportId));
+
     try {
       let endpoint = "";
       let method: "PUT" | "DELETE";
@@ -221,12 +221,6 @@ export default function ReportListPage() {
       setAlert({
         message: error.message || `Erro ao ${currentStatus ? "desativar" : "ativar"} relatório.`,
         isError: true,
-      });
-    } finally {
-      setUpdatingReports((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(reportId);
-        return newSet;
       });
     }
   };

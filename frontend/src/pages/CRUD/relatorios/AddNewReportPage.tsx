@@ -1,5 +1,5 @@
 // Importa o React e o hook useState para gerenciar estados locais do componente
-import { useState, Fragment } from "react";
+import { useState, Fragment, useEffect } from "react";
 // Importa hooks do React Router para navegação e acesso à localização
 import { useLocation, useNavigate } from "react-router-dom";
 // Importa componentes de UI do Material-UI
@@ -30,6 +30,7 @@ import { z } from "zod";
 
 import { useTheme } from "@mui/material/styles"; // Tema do Material UI
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs"; // Componente de breadcrumb estilizado
+
 
 // Declaração global para o objeto grecaptcha (Google reCAPTCHA)
 declare var grecaptcha: any;
@@ -65,10 +66,16 @@ function AddNewReportPage() {
   const theme = useTheme();
 
   // Executa a query GraphQL para buscar clientes da empresa
-  const [getClientes, { data, loading, error }] = useLazyQuery<returnData>(GET_CLIENTES_BY_EMPRESA, {
+  const [getClientes, { data, loading }] = useLazyQuery<returnData>(GET_CLIENTES_BY_EMPRESA, {
     variables: { empresaId: empresa?.id },
-    skip: !empresa?.id, // Só executa se houver empresa
+    fetchPolicy: "cache-first",
   });
+
+  useEffect(() => {
+  if (empresa?.id) {
+    getClientes();
+  }
+}, [empresa?.id, getClientes]);
 
   // Função para exibir o nome do campo removendo o prefixo "custom_"
   const displayName = (key: string) => key.replace(/^custom_/, "");
@@ -98,22 +105,24 @@ function AddNewReportPage() {
       const makeSchemaByType = (type: string, required: boolean) => {
         switch (type) {
           case "number":
-            return z.number().refine((val) => !required || val !== null, {
-              message: "Campo obrigatório",
-            });
+            return required
+              ? z.preprocess((val) => Number(val), z.number().refine((val) => !isNaN(val), { message: "Campo obrigatório" }))
+              : z.preprocess((val) => Number(val), z.number().optional());
           case "date":
-            return z.string().refine((val) => !required || /^\d{2}\/\d{2}\/\d{4}$/.test(val), {
-              message: "Formato de data inválido (DD/MM/AAAA)",
-            });
+            return required
+              ? z.string().min(1, "Campo obrigatório").refine((val) => /^\d{2}\/\d{2}\/\d{4}$/.test(val), {
+                  message: "Formato de data inválido (DD/MM/AAAA)",
+                })
+              : z.string().optional();
           case "array":
-            return z.array(z.string().min(1, "Campo obrigatório")).refine((val) => val.length > 0, {
-              message: "Campo obrigatório",
-            });
+            return required
+              ? z.string().min(1, "Selecione pelo menos uma opção")
+              : z.string().optional();
           case "string":
           default:
-            return z.string().refine((val) => !required || val.trim() !== "", {
-              message: "Campo obrigatório",
-            });
+            return required
+              ? z.string().min(1, "Campo obrigatório")
+              : z.string().optional();
         }
       };
 
@@ -142,8 +151,7 @@ function AddNewReportPage() {
 
   // Função para tratar e validar os valores dos campos customizados
   const handleCustomField = (key: string, value: any, formData: any) => {
-    const sanitizedKey = key.replace(/\s+/g, "_");
-    const fullKey = sanitizedKey.startsWith("custom_") ? sanitizedKey : `custom_${sanitizedKey}`;
+    const fullKey = key.startsWith("custom_") ? key : `custom_${key}`;
 
     if (formData[fullKey] !== undefined) {
       const rawValue = formData[fullKey];
@@ -167,18 +175,6 @@ function AddNewReportPage() {
 
         case "bool":
           return !!rawValue; // Converte para booleano
-
-        case "array":
-          if (!Array.isArray(rawValue)) {
-            // Converte strings separadas por vírgulas em um array
-            const arrayValue = String(rawValue)
-              .split(",")
-              .map((item) => item.trim()); // Remove espaços extras
-            return arrayValue;
-          }
-          return rawValue;
-
-        case "string":
         default:
           return String(rawValue);
       }
@@ -186,6 +182,38 @@ function AddNewReportPage() {
 
     return ""; // Evita undefined
   };
+
+  // Função utilitária para limpar o payload
+  // Limpa nulls e arrays vazios recursivamente
+const cleanPayload = (obj: any): any => {
+  if (Array.isArray(obj)) {
+    const arr = obj
+      .map((item) => cleanPayload(item))
+      .filter((item) => item !== undefined && item !== null && !(Array.isArray(item) && item.length === 0));
+    return arr.length > 0 ? arr : undefined;
+  }
+
+  if (obj !== null && typeof obj === "object") {
+    const cleaned: Record<string, any> = {};
+    Object.entries(obj).forEach(([key, value]) => {
+      const cleanedValue = cleanPayload(value);
+      if (
+        cleanedValue !== undefined &&
+        cleanedValue !== null &&
+        !(Array.isArray(cleanedValue) && cleanedValue.length === 0)
+      ) {
+        cleaned[key] = cleanedValue;
+      }
+    });
+    return Object.keys(cleaned).length > 0 ? cleaned : undefined;
+  }
+
+  if (obj === null || obj === undefined) {
+    return undefined;
+  }
+
+  return obj;
+};
 
   // Função para tratar o envio do formulário
   const handleSubmit = async (event: React.FormEvent) => {
@@ -216,15 +244,16 @@ function AddNewReportPage() {
           // Trata cada subcampo
           Object.entries(value).forEach(([subKey, subValue]: [string, any]) => {
             if (!["datatype", "required", "label"].includes(subKey)) {
-              const sanitizedSubKey = subKey.replace(/\s+/g, "_");
-              const fullKey = sanitizedSubKey.startsWith("custom_") ? sanitizedSubKey : `custom_${sanitizedSubKey}`;
+              const fullSubKey = subKey.startsWith("custom_")
+                ? subKey
+                : `custom_${subKey}`;
 
               if (subValue.datatype === "bool") {
                 // se marcado -> true, se não -> false
-                payload[fullKey] = formData[fullKey] === true;
+                payload[fullSubKey] = formData[fullSubKey] === true;
               } else {
-                const processedValue = handleCustomField(sanitizedSubKey, subValue, formData);
-                payload[fullKey] = processedValue !== undefined ? processedValue : null;
+                const processedValue = handleCustomField(fullSubKey, subValue, formData);
+                payload[fullSubKey] = processedValue !== undefined ? processedValue : null;
               }
             }
           });
@@ -235,17 +264,11 @@ function AddNewReportPage() {
           if (value.datatype === "bool") {
             // se marcado -> true, se não -> false
             payload[fullKey] = formData[fullKey] === true;
+          } else if (value.datatype === "array") {
+            // Salva como string simples
+            payload[fullKey] = formData[fullKey] ?? "";
           } else {
             let processedValue = handleCustomField(fullKey, value, formData);
-
-            if (value.datatype === "array" && !Array.isArray(processedValue)) {
-              processedValue = processedValue
-                ? String(processedValue)
-                    .split(",")
-                    .map((item) => item.trim())
-                : [];
-            }
-
             payload[fullKey] = processedValue !== undefined ? processedValue : null;
           }
         }
@@ -257,40 +280,39 @@ function AddNewReportPage() {
         }
       });
 
-      // Valida os dados usando o schema dinâmico
+      /// Limpa payload de valores nulos e arrays vazios
+      const cleanedPayload = cleanPayload(payload);
+
+      // Valida com schema usando o payload já limpo
       const schema = buildSchema();
       schema.parse({
-        relatorio_name: payload.relatorio_name,
-        modelo_campos_id: payload.modelo_campos_id,
-        cliente_id: payload.cliente_id,
-        empresa_id: payload.empresa_id,
-        recaptchaToken: payload.recaptchaToken,
-        ...payload, // usa os dados já tratados com tipo certo
+        relatorio_name: cleanedPayload.relatorio_name,
+        modelo_campos_id: cleanedPayload.modelo_campos_id,
+        cliente_id: cleanedPayload.cliente_id,
+        empresa_id: cleanedPayload.empresa_id,
+        recaptchaToken: cleanedPayload.recaptchaToken,
+        ...cleanedPayload,
       });
 
       // Verifica se ao menos um campo personalizado foi incluído
-      const hasCustomField = Object.keys(payload).some((key) => key.startsWith("custom_"));
+      const hasCustomField = Object.keys(cleanedPayload).some((key) => key.startsWith("custom_"));
       if (!hasCustomField) {
         throw new Error("Modelo deve conter pelo menos um campo personalizado.");
       }
-
-      Object.entries(payload).forEach(([key, value]) => {
-        console.log(`${key}: ${typeof value}`);
-      });
-
+      
       const response = await fetch("/backend/relatorio", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(cleanedPayload),
       });
-
+      
       // Se houver erro na resposta, lança exceção
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || "Erro ao adicionar o relatório.");
       }
-
+      
       // Navega para página de relatórios com sucesso
       navigate("/reports-list", {
         state: {
@@ -306,7 +328,11 @@ function AddNewReportPage() {
       if (err instanceof z.ZodError) {
         const fieldErrors: { [key: string]: string } = {};
         err.issues.forEach((e) => {
-          if (e.path[0]) fieldErrors[e.path[0] as string] = e.message;
+          let msg = e.message;
+          if (msg === "Invalid input: expected array, received undefined") {
+            msg = "Selecione pelo menos uma opção";
+          }
+          if (e.path[0]) fieldErrors[e.path[0] as string] = msg;
         });
         setErrors(fieldErrors);
       } else {
@@ -380,9 +406,9 @@ function AddNewReportPage() {
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               {/* Campo para nome do relatório */}
               <Box sx={{ width: "100%", flexDirection: "column" }}>
-                <Typography>Nome do Relatório</Typography>
                 <TextField
                   value={reportName}
+                  label="Nome do Relatório *"
                   onChange={(e) => setReportName(e.target.value)}
                   error={!!errors.relatorio_name}
                   helperText={errors.relatorio_name}
@@ -410,7 +436,8 @@ function AddNewReportPage() {
                 {selectedModel.customFields.map((field: any) => {
                   const value = field.value;
                   const baseKey = field.key;
-                  const label = value.label || displayName(baseKey);
+                  // Função para adicionar ' *' se o campo for obrigatório
+                  const addRequiredMark = (label: string, required: boolean) => required && value.datatype!= "bool" ? `${label} *` : label;
 
                   // Se for um campo composto (object)
                   if (value.datatype === "object") {
@@ -429,7 +456,7 @@ function AddNewReportPage() {
                             ? sanitizedSubKey
                             : `custom_${sanitizedSubKey}`;
 
-                          const subLabel = displayName(subKey);
+                          const subLabel = addRequiredMark(displayName(subKey), subValue.required ?? false);
 
                           return (
                             <Box key={fullSubKey} sx={{ width: "100%", mt: 1 }}>
@@ -443,7 +470,11 @@ function AddNewReportPage() {
                                       ? "date"
                                       : "text"
                                 }
-                                InputLabelProps={subValue.datatype === "date" ? { shrink: true } : undefined}
+                                slotProps={{
+                                  inputLabel: {
+                                    shrink: subValue.datatype === "date" ? true : undefined,
+                                  }
+                                }}
                                 value={formData[fullSubKey] ?? ""}
                                 onChange={(e) => handleInputChange(fullSubKey, e.target.value)}
                                 error={!!errors[fullSubKey]}
@@ -457,6 +488,7 @@ function AddNewReportPage() {
                   }
 
                   // Campo simples
+                  const label = addRequiredMark(value.label || displayName(baseKey), value.required ?? false);
                   return (
                     <Box key={baseKey} sx={{ width: "100%", mt: 1 }}>
                       {value.datatype === "bool" ? (
@@ -552,9 +584,13 @@ function AddNewReportPage() {
                       ) : (
                         <TextField
                           fullWidth
-                          label={value.datatype === "date" ? undefined : label}
+                          label={label} // Sempre usa o label, já com asterisco se obrigatório
                           type={value.datatype === "number" ? "number" : value.datatype === "date" ? "date" : "text"}
-                          InputLabelProps={value.datatype === "date" ? { shrink: true } : undefined}
+                          slotProps={{
+                            inputLabel: {
+                              shrink: value.datatype === "date" ? true : undefined,
+                            },
+                          }}
                           value={formData[baseKey] ?? ""}
                           onChange={(e) => handleInputChange(baseKey, e.target.value)}
                           error={!!errors[baseKey]}
@@ -570,7 +606,13 @@ function AddNewReportPage() {
               <Box sx={{ width: "100%" }}>
                 <Autocomplete
                   fullWidth
-                  options={data?.getClientes?.clientes || []}
+                  options={
+                    formData.clienteInput && formData.clienteInput.length > 0 && data?.getClientes?.clientes
+                      ? data.getClientes.clientes.filter((c: any) =>
+                          c.nome.toLowerCase().includes(formData.clienteInput.toLowerCase())
+                        )
+                      : []
+                  }
                   getOptionLabel={(option) => option.nome}
                   value={
                     selectedCliente
@@ -584,7 +626,7 @@ function AddNewReportPage() {
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Selecione um Cliente"
+                      label="Selecione um Cliente *"
                       error={!!errors.cliente_id}
                       helperText={errors.cliente_id}
                       fullWidth
@@ -607,7 +649,6 @@ function AddNewReportPage() {
                     />
                   )}
                   loading={loading}
-                  disabled={!!error}
                   openOnFocus
                   autoHighlight
                   inputValue={formData.clienteInput || ""}

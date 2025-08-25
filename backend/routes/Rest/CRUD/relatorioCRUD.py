@@ -108,13 +108,21 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
                 raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser um objeto ou dicionário.")
 
             # Verificar formato de data se for string do tipo "date"
-            if value["datatype"] == "date":
+            elif value["datatype"] == "date":
                 date_regex = compile(r"^\d{2}/\d{2}/\d{4}$")
                 if not date_regex.match(relatorio_fields[key]):
                     raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser uma data no formato DD/MM/YYYY.")
 
+            # Se for do tipo array, verificar se o valor no relatório está contido no array do modelo
+            elif value["datatype"] == "array":
+                items = value.get("items") or getattr(value, "items", None)
+                if not items or not isinstance(items, list):
+                    raise HTTPException(status_code=500, detail=f"Configuração inválida para o campo {full_key} (items não encontrado).")
+                if relatorio_fields[key] not in items:
+                    raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser um dos seguintes: {items}.")
+
             # Verificar recursivamente objetos
-            if value["datatype"] == "object":
+            elif value["datatype"] == "object":
                 custom_fields = {}
 
                 for k in relatorio_fields[key].keys():

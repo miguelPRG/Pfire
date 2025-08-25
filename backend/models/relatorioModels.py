@@ -10,6 +10,26 @@ MAIN_FIELDS = {
     "recaptchaToken",
 }
 
+def clean_payload(data):
+    if isinstance(data, dict):
+        cleaned = {}
+        for k, v in data.items():
+            val = clean_payload(v)
+            if val is None:
+                continue
+            if isinstance(val, list) and len(val) == 0:
+                continue
+            if isinstance(val, dict) and len(val) == 0:
+                continue
+            cleaned[k] = val
+        return cleaned
+    elif isinstance(data, list):
+        cleaned_list = [clean_payload(v) for v in data]
+        cleaned_list = [v for v in cleaned_list if v is not None and not (isinstance(v, (list, dict)) and len(v) == 0)]
+        return cleaned_list if cleaned_list else None
+    else:
+        return data if data is not None else None
+
 
 class RelatorioCreate(BaseModel):
     relatorio_name: str = Field(..., max_length=100, description="Nome do relatório. Deve ter no máximo 100 caracteres.")
@@ -21,7 +41,7 @@ class RelatorioCreate(BaseModel):
 
     @field_validator("relatorio_name", mode="before")
     def strip_relatorio_name(cls, v):
-        return v.strip()  # Aqui ainda é str
+        return v.strip()
 
     @field_validator("modelo_campos_id", "cliente_id", "empresa_id", mode="before")
     def validate_object_id(cls, v):
@@ -34,7 +54,9 @@ class RelatorioCreate(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def validate_custom_fields(cls, values):
+    def validate_and_clean(cls, values):
+        # aplica a faxina recursiva
+        values = clean_payload(values) or {}
 
         if len(values.keys()) < 3:
             raise HTTPException(status_code=400, detail="Modelo deve contar pele menos um campo personalizado.")
@@ -42,7 +64,6 @@ class RelatorioCreate(BaseModel):
         for key in values.keys():
             if key in MAIN_FIELDS:
                 continue
-
             if not key.startswith("custom_"):
                 raise HTTPException(
                     status_code=400,
@@ -50,8 +71,6 @@ class RelatorioCreate(BaseModel):
                 )
 
         return values
-
-
 class RelatorioActivation(BaseModel):
     id: str = Field(..., min_length=24, max_length=24, description="ID do relatório a ser ativado/desativado.")
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao relatório.")
