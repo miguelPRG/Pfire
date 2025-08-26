@@ -92,6 +92,10 @@ export default function AddNewClientPage() {
 
       if (!response.ok) {
         alert(data.detail || "Erro ao criar cliente"); // Mostra erro se houver
+      } else{
+        navigate("/clients-list", {
+          state: { message: { error: false, text: "Novo cliente adicionado com sucesso!" } },
+        });
       }
     } catch (error) {
       throw error; // Propaga erro para tratamento externo
@@ -113,7 +117,6 @@ export default function AddNewClientPage() {
         empresa_id: empresa.id,
         recaptchaToken,
       });
-      console.log("Dados enviados para o backend:", body); // Log para debug
 
       // O backend espera recaptchaToken e empresa_id no corpo
       const response = await fetch(`/backend/cliente/update/${dados.id}`, {
@@ -122,19 +125,17 @@ export default function AddNewClientPage() {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify({
-          ...dados,
-          empresa_id: empresa.id,
-          recaptchaToken,
-        }),
+        body
       });
 
       const data = await response.json(); // Lê resposta do backend
 
-      console.log("Resposta do backend:", data); // Log para debug
-
       if (!response.ok) {
         alert(data.detail || "Erro ao atualizar cliente"); // Mostra erro se houver
+      } else {
+        navigate("/clients-list", {
+          state: { message: { error: false, text: "Cliente atualizado com sucesso!" } },
+        });
       }
     } catch (error) {
       throw error; // Propaga erro para tratamento externo
@@ -158,15 +159,9 @@ export default function AddNewClientPage() {
       if (cliente) {
         // Se for edição, atualiza cliente
         await atualizarCliente({ ...formData, id: cliente.id }, recaptchaToken);
-        navigate("/clients-list", {
-          state: { message: { error: false, text: "Cliente atualizado com sucesso!" } },
-        });
       } else {
         // Se for novo, envia novo cliente
         await enviarNovoCliente(formData, recaptchaToken);
-        navigate("/clients-list", {
-          state: { message: { error: false, text: "Novo cliente adicionado com sucesso!" } },
-        });
       }
     } catch (error: any) {
       setErrorMessage(

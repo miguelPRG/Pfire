@@ -35,7 +35,7 @@ export default function CompanySelectorPage() {
   const [page, setPage] = useState(0);
   const rowsPerPage = 6;
 
-  const { data, error, loading } = useQuery<returnedData>(GET_EMPRESAS, {
+  const { data, error, loading, refetch } = useQuery<returnedData>(GET_EMPRESAS, {
     fetchPolicy: "cache-first",
     variables: { start: page * rowsPerPage },
   });
@@ -48,6 +48,16 @@ export default function CompanySelectorPage() {
   const navigate = useNavigate();
   const theme = useTheme();
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // este efeito irá carregar de novo o useQuery, caso tenha sido criada uma nova empresa e esta esteja na primeira página
+
+  /* ATENÇÃO: Futuramente será necessário lidar com notificações, cujo as mensagens deverão ser passadas
+  pela página CreateCompany. Verifica as páginas da pasta CRUD/cliente como exemplo*/
+  useEffect(() => {
+    if(data){
+      refetch();
+    }
+  }, []);
 
   useEffect(() => {
     if (search) fetchEmpresas({ variables: { name: search } });

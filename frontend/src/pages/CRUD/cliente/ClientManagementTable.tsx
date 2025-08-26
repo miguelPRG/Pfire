@@ -86,14 +86,29 @@ export default function ClientManagementTable() {
   );
 
   useEffect(() => {
+    // Será true após a criação ou atualização de um cliente
     if (location.state?.message) {
       setAlert({
         message: location.state.message.text,
         isError: location.state.message.error,
       });
+      // Remove o estado da localização
       window.history.replaceState({}, document.title);
     }
-  }, [location.state]);
+
+    if(data){
+      refetch();
+    }
+
+  },[])
+
+  // Se não encontrou localmente e search não está vazio, faz consulta remota
+  useEffect(() => {
+    if (search && clientes.length === 0) {
+      getClientesByName({ variables: { empresaId: empresa?.id, nome: search, start: 0 } });
+    }
+    // eslint-disable-next-line
+  }, [search]);
 
   // Clientes do cache inicial
   const cachedClientes: Cliente[] = data?.getClientes?.clientes || [];
@@ -105,14 +120,6 @@ export default function ClientManagementTable() {
   let clientes: Cliente[] = cachedClientes.filter((row: Cliente) =>
     row.nome?.toLowerCase().includes(search.toLowerCase())
   );
-
-  // Se não encontrou localmente e search não está vazio, faz consulta remota
-  useEffect(() => {
-    if (search && clientes.length === 0) {
-      getClientesByName({ variables: { empresaId: empresa?.id, nome: search, start: 0 } });
-    }
-    // eslint-disable-next-line
-  }, [search]);
 
   // Se houver resultado remoto, filtra também pelo texto pesquisado
   if (search && clientes.length === 0 && remoteClientes.length > 0) {
@@ -152,7 +159,6 @@ export default function ClientManagementTable() {
       // Chama tua API REST para apagar cliente
       // Exemplo:
 
-      console.log("Apagando cliente:", cliente);
 
       const url = hardDelete ? "/backend/cliente/hard-delete" : "/backend/cliente/";
 

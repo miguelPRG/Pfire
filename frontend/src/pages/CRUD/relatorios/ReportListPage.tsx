@@ -60,7 +60,6 @@ export default function ReportListPage() {
   const { empresa } = useAuth();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-  const [updatingReports, setUpdatingReports] = useState<Set<string>>(new Set());
   const [localReports, setLocalReports] = useState<Report[]>([]);
 
   const { data, loading, error, refetch } = useQuery<returnedData>(GET_REPORTS_BY_COMPANY, {

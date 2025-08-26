@@ -86,6 +86,22 @@ export default function ReportModelListPage() {
     fetchPolicy: "cache-first",
   });
 
+  useEffect(() => {
+    // Será true após a criação ou atualização de um modelo
+    if (location.state?.message || location.state?.reload) {
+      setAlert({
+        message: location.state.message.text,
+        isError: location.state.message.error,
+      });
+      // Remove o estado da localização
+      window.history.replaceState({}, document.title);
+    }
+    
+    if(data){
+      refetch();
+    }
+  }, []);
+
   // Dispara busca remota se search não está vazio
   useEffect(() => {
     if (search) {
@@ -100,18 +116,6 @@ export default function ReportModelListPage() {
   const totalModelos: number = search ? searchData?.getModelos?.totalModelos || 0 : data?.getModelos?.totalModelos || 0;
 
   const pageCount = Math.max(1, Math.ceil(totalModelos / rowsPerPage));
-
-  // useEffect para lidar com mensagens de estado
-  useEffect(() => {
-    if (location.state?.message || location.state?.reload) {
-      setAlert({
-        message: location.state.message.text,
-        isError: location.state.message.error,
-      });
-      window.history.replaceState({}, document.title);
-      refetch(); // Recarregar os dados após adicionar/editar modelo
-    }
-  }, [location.state, refetch]);
 
   // Função para deletar um modelo de relatório
   const handleDelete = async (id: string) => {
