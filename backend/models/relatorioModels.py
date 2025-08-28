@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from bson import ObjectId
 
 MAIN_FIELDS = {
-    "relatorio_name",
+    "relatorio_nome",
     "modelo_campos_id",
     "cliente_id",
     "empresa_id",
@@ -32,15 +32,15 @@ def clean_payload(data):
 
 
 class RelatorioCreate(BaseModel):
-    relatorio_name: str = Field(..., max_length=100, description="Nome do relatório. Deve ter no máximo 100 caracteres.")
+    relatorio_nome: str = Field(..., max_length=100, description="Nome do relatório. Deve ter no máximo 100 caracteres.")
     modelo_campos_id: str = Field(..., min_length=24, max_length=24, description="ID do modelo de campos associado ao relatório.")
     cliente_id: str = Field(..., min_length=24, max_length=24, description="ID do cliente associado ao relatório.")
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao relatório.")
     recaptchaToken: str
     model_config = ConfigDict(extra="allow")  # Permite campos extras
 
-    @field_validator("relatorio_name", mode="before")
-    def strip_relatorio_name(cls, v):
+    @field_validator("relatorio_nome", mode="before")
+    def strip_relatorio_nome(cls, v):
         return v.strip()
 
     @field_validator("modelo_campos_id", "cliente_id", "empresa_id", mode="before")

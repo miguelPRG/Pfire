@@ -32,7 +32,7 @@ class ModeloQuery:
         filtro = {"empresa_id": empresa_id}
 
         if name:
-            filtro["model_name"] = {"$regex": f"^{name}", "$options": "i"}
+            filtro["modelo_nome"] = {"$regex": f"^{name}", "$options": "i"}
 
         modelos = []
 
@@ -45,7 +45,7 @@ class ModeloQuery:
             # Mapeia os dados do modelo
             modelo_data = {
                 "id": str(modelo.get("_id")),
-                "model_name": modelo.get("model_name"),
+                "modelo_nome": modelo.get("modelo_nome"),
                 "created_by": str(modelo.get("created_by")),
                 "created_at": modelo.get("created_at"),
                 "updated_by": str(modelo.get("updated_by")),

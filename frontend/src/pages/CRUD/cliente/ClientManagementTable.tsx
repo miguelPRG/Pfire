@@ -20,6 +20,7 @@ import {
   DialogContent,
   DialogActions,
   Breadcrumbs,
+  CircularProgress,
 } from "@mui/material";
 import { Search } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -64,6 +65,8 @@ export default function ClientManagementTable() {
   const [alert, setAlert] = useState<null | { message: string; isError: boolean }>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
+  const [localClientes, setLocalClientes] = useState<Cliente[]>([]);
+  const [loadingClienteId, setLoadingClienteId] = useState<string | null>(null);
 
   const rowsPerPage = 10;
   const theme = useTheme();
@@ -104,33 +107,22 @@ export default function ClientManagementTable() {
 
   // Se não encontrou localmente e search não está vazio, faz consulta remota
   useEffect(() => {
-    if (search && clientes.length === 0) {
+    if (search) {
       getClientesByName({ variables: { empresaId: empresa?.id, nome: search, start: 0 } });
     }
-    // eslint-disable-next-line
-  }, [search]);
 
-  // Clientes do cache inicial
-  const cachedClientes: Cliente[] = data?.getClientes?.clientes || [];
+    // Atualiza a lista local conforme o resultado da pesquisa ou dados gerais
+    setLocalClientes(
+      search ? (searchData?.getClientes?.clientes || []) : (data?.getClientes?.clientes || [])
+    );
+  }, [search, searchData, data]);
 
-  // Clientes do resultado da pesquisa remota
-  const remoteClientes: Cliente[] = searchData?.getClientes?.clientes || [];
+  const clientes: Cliente[] = localClientes;
 
-  // Decide qual lista mostrar
-  let clientes: Cliente[] = cachedClientes.filter((row: Cliente) =>
-    row.nome?.toLowerCase().includes(search.toLowerCase())
-  );
-
-  // Se houver resultado remoto, filtra também pelo texto pesquisado
-  if (search && clientes.length === 0 && remoteClientes.length > 0) {
-    clientes = remoteClientes.filter((row: Cliente) => row.nome?.toLowerCase().includes(search.toLowerCase()));
-  }
-
-  // Decide o total de clientes para paginação
-  const totalClientes =
-    search && clientes.length === 0 && searchData?.getClientes?.totalClientes
-      ? searchData.getClientes.totalClientes
-      : data?.getClientes?.totalClientes || 0;
+// Decide o total de clientes para paginação
+const totalClientes = search
+  ? searchData?.getClientes?.totalClientes || 0
+  : data?.getClientes?.totalClientes || 0;
 
   const pageCount = Math.ceil(totalClientes / rowsPerPage);
 
@@ -154,13 +146,10 @@ export default function ClientManagementTable() {
     });
 
   // Função para apagar cliente
-  const apagarCliente = async (cliente: Cliente, hardDelete: boolean) => {
+  const apagarCliente = async (cliente: Cliente) => {
     try {
-      // Chama tua API REST para apagar cliente
-      // Exemplo:
 
-
-      const url = hardDelete ? "/backend/cliente/hard-delete" : "/backend/cliente/";
+      const url = "/backend/cliente/hard-delete";
 
       const res = await fetch(url, {
         method: "DELETE",
@@ -183,29 +172,60 @@ export default function ClientManagementTable() {
     }
   };
 
-  // Função para ativar cliente
-  const ativarCliente = async (cliente: Cliente) => {
-    console.log("Ativando cliente:", cliente);
-
+  // Função para ativar/desativar cliente (sem refresh)
+  const toggleClienteStatus = async (clienteId: string, currentStatus: boolean | undefined) => {
     try {
-      const res = await fetch("/backend/cliente/activate", {
-        method: "PUT",
+      let endpoint = "";
+      let method: "PUT" | "DELETE";
+      let action = "";
+
+      if (currentStatus) {
+        endpoint = "/backend/cliente/";
+        method = "DELETE";
+        action = "delete";
+      } else {
+        endpoint = "/backend/cliente/activate";
+        method = "PUT";
+        action = "activate";
+      }
+
+      const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
+        action,
+      });
+
+      const response = await fetch(endpoint, {
+        method,
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          id: cliente.id,
+          id: clienteId,
           empresa_id: empresa?.id,
-          recaptchaToken: await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-            action: "activate",
-          }),
+          recaptchaToken,
         }),
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.detail || "Erro ao ativar cliente.");
-      setAlert({ message: json.message || "Cliente ativado com sucesso!", isError: false });
-      await refetch();
-    } catch (err: any) {
-      setAlert({ message: err.message || "Erro ao ativar cliente.", isError: true });
+
+      const json = await response.json();
+
+      if (!response.ok) {
+        throw new Error(json.detail || `Erro ao ${currentStatus ? "desativar" : "ativar"} cliente.`);
+      }
+
+      setAlert({
+        message: json.message || `Cliente ${currentStatus ? "desativado" : "ativado"} com sucesso!`,
+        isError: false,
+      });
+
+      // Atualiza o estado local do cliente
+      setLocalClientes((prev) =>
+        prev.map((c) =>
+          c.id === clienteId ? { ...c, isActive: !currentStatus } : c
+        )
+      );
+    } catch (error: any) {
+      setAlert({
+        message: error.message || `Erro ao ${currentStatus ? "desativar" : "ativar"} cliente.`,
+        isError: true,
+      });
     }
   };
 
@@ -220,12 +240,11 @@ export default function ClientManagementTable() {
           sx={{ mb: 3, backgroundColor: "background.paper", maxWidth: "200px", borderRadius: 5, padding: 0.5 }}
         >
           <StyledBreadcrumb
-            component="a"
             sx={{ cursor: "pointer" }}
             onClick={() => navigate("/")}
             icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
           />
-          <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} component="span" label="Clientes" />
+          <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} label="Clientes" />
         </Breadcrumbs>
         <Box
           sx={{
@@ -431,16 +450,20 @@ export default function ClientManagementTable() {
                                 fontSize: 15,
                                 minWidth: 0,
                                 px: 0,
+                                position: "relative",
                               }}
+                              disabled={loadingClienteId === cliente.id}
                               onClick={async () => {
-                                if (cliente.isActive) {
-                                  await apagarCliente(cliente, false);
-                                } else {
-                                  await ativarCliente(cliente);
-                                }
+                                setLoadingClienteId(cliente.id);
+                                await toggleClienteStatus(cliente.id, cliente.isActive);
+                                setLoadingClienteId(null);
                               }}
                             >
-                              {cliente.isActive ? "Ativo" : "Inativo"}
+                              {loadingClienteId === cliente.id ? (
+                                <CircularProgress size={28} sx={{ color: "#fff" }} />
+                              ) : (
+                                cliente.isActive ? "Ativo" : "Inativo"
+                              )}
                             </Button>
                           </TableCell>
                           <TableCell>
@@ -507,7 +530,7 @@ export default function ClientManagementTable() {
             onClick={async () => {
               if (selectedCliente) {
                 // Aqui chama a API para apagar permanentemente (hard delete)
-                await apagarCliente(selectedCliente, true);
+                await apagarCliente(selectedCliente);
                 setDeleteDialogOpen(false);
                 setSelectedCliente(null);
               }

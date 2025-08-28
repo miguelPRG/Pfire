@@ -35,7 +35,7 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
         raise HTTPException(status_code=400, detail="A empresa do cliente e do modelo não corresponde.")
 
     relatorio_found = await relatorios_collection.find_one(
-        {"empresa_id": modelo["empresa_id"], "relatorio_name": relatorio.relatorio_name, "isActive": True}
+        {"empresa_id": modelo["empresa_id"], "relatorio_nome": relatorio.relatorio_nome, "isActive": True}
     )
 
     if relatorio_found:
@@ -62,11 +62,11 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
     # Converter o relatório para um dicionário e os campos ObjectId
     # para ObjectId
     relatorio_data = relatorio.model_dump(by_alias=True)
-    relatorio_data["created_by"] = ObjectId(jwt["user_id"])
-    relatorio_data["created_at"] = datetime.now()
-    relatorio_data["modelo_campos_id"] = ObjectId(relatorio.modelo_campos_id)
+    relatorio_data["modelo_id"] = ObjectId(relatorio.modelo_campos_id)
     relatorio_data["empresa_id"] = modelo["empresa_id"]
     relatorio_data["cliente_id"] = ObjectId(relatorio.cliente_id)
+    relatorio_data["created_by"] = ObjectId(jwt["user_id"])
+    relatorio_data["created_at"] = datetime.now()
     relatorio_data["isActive"] = True
     del relatorio_data["recaptchaToken"]
     # Sacar todas as chaves do relatório que começam com "custom_"

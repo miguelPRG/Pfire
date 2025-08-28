@@ -7,7 +7,7 @@ from typing import Optional
 @strawberry.type
 class Modelo:
     id: str
-    model_name: str
+    modelo_nome: str
     created_by: Optional[str] = None
     created_at: datetime
     updated_by: Optional[str] = None

@@ -5,12 +5,12 @@ export const GET_REPORTS_BY_COMPANY = gql`
     reports: getRelatorios(empresaId: $empresaId, start: $start) {
       relatorios {
         id
-        modeloCamposId
-        clienteId
-        clienteName
+        modeloNome
+        clienteNome
         createdAt
+        createdBy
         customFields
-        relatorioName
+        relatorioNome
         isActive
       }
       totalRelatorios
@@ -22,7 +22,7 @@ export const GET_RELATORIES_COUNT_BY_CLIENTES = gql`
   query GetRelatoriosCountByClientes($empresaId: String!) {
     reports: getRelatoriosCountByClientes(empresaId: $empresaId) {
       clienteId
-      clienteName
+      clienteNome
       count
     }
   }
@@ -32,7 +32,7 @@ export const GET_RELATORIES_COUNT_BY_MODELO = gql`
   query GetRelatoriosCountByModelo($empresaId: String!) {
     reports: getRelatoriosCountByModelo(empresaId: $empresaId) {
       modeloId
-      modeloName
+      modeloNome
       count
     }
   }

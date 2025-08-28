@@ -7,13 +7,12 @@ from typing import Optional
 @strawberry.type
 class Relatorio:
     id: str
-    modelo_campos_id: str
-    cliente_id: str
+    modelo_nome: str
+    cliente_nome: Optional[str] = None
     created_at: datetime
     created_by: Optional[str] = None
     custom_fields: list[JSON]
-    relatorio_name: str
-    cliente_name: Optional[str] = None
+    relatorio_nome: str
     isActive: Optional[bool] = None
 
 
@@ -26,12 +25,12 @@ class RelatorioList:
 @strawberry.type
 class RelatorioCountByCliente:
     cliente_id: str
-    cliente_name: str
+    cliente_nome: str
     count: int
 
 
 @strawberry.type
 class RelatorioCountByModelo:
     modelo_id: str
-    modelo_name: str
+    modelo_nome: str
     count: int

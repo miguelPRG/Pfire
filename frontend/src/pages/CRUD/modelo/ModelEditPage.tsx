@@ -46,7 +46,7 @@ const fieldSchema = z.object({
 
 // Esquema de validação do formulário principal
 const formSchema = z.object({
-  modelName: z.string().min(1, "Nome do modelo é obrigatório").trim(), // Nome do modelo obrigatório
+  modeloNome: z.string().min(1, "Nome do modelo é obrigatório").trim(), // Nome do modelo obrigatório
   fields: z.array(fieldSchema), // Array de campos personalizados
 });
 
@@ -148,11 +148,11 @@ export default function ReportTemplatePage() {
     resolver: zodResolver(formSchema),
     defaultValues: isEditing
       ? {
-          modelName: editingModel.modelName,
+          modeloNome: editingModel.modeloNome,
           fields: convertCustomFieldsToFormFields(editingModel.customFields),
         }
       : {
-          modelName: "",
+          modeloNome: "",
           fields: [],
         },
   });
@@ -175,7 +175,7 @@ export default function ReportTemplatePage() {
     if (isEditing) {
       const formattedFields = convertCustomFieldsToFormFields(editingModel.customFields);
       reset({
-        modelName: editingModel.modelName,
+        modeloNome: editingModel.modeloNome,
         fields: formattedFields,
       });
       // Salva nomes originais dos campos e subcampos
@@ -296,7 +296,7 @@ export default function ReportTemplatePage() {
 
       // Monta o payload completo
       const payload = {
-        model_name: data.modelName,
+        modelo_nome: data.modeloNome,
         empresa_id: typeof empresa === "object" ? empresa?.id : empresa,
         recaptchaToken,
         ...customFields,
@@ -381,9 +381,9 @@ export default function ReportTemplatePage() {
             {/* Campo para nome do modelo */}
             <TextField
               label="Nome do Modelo"
-              {...register("modelName")}
-              error={!!errors.modelName}
-              helperText={errors.modelName?.message}
+              {...register("modeloNome")}
+              error={!!errors.modeloNome}
+              helperText={errors.modeloNome?.message}
             />
 
             {/* Título dos campos personalizados */}

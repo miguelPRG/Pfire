@@ -141,7 +141,7 @@ function AddNewReportPage() {
     });
 
     return z.object({
-      relatorio_name: z.string().min(1, "O nome do relatório é obrigatório"),
+      relatorio_nome: z.string().min(1, "O nome do relatório é obrigatório"),
       modelo_campos_id: z.string(),
       cliente_id: z.string().min(1, "Selecione um cliente"),
       empresa_id: z.string(),
@@ -229,7 +229,7 @@ const cleanPayload = (obj: any): any => {
 
       // Monta o payload inicial com campos fixos
       const payload: any = {
-        relatorio_name: reportName,
+        relatorio_nome: reportName,
         modelo_campos_id: selectedModel.id,
         cliente_id: selectedCliente,
         empresa_id: empresa?.id,
@@ -286,7 +286,7 @@ const cleanPayload = (obj: any): any => {
       // Valida com schema usando o payload já limpo
       const schema = buildSchema();
       schema.parse({
-        relatorio_name: cleanedPayload.relatorio_name,
+        relatorio_nome: cleanedPayload.relatorio_nome,
         modelo_campos_id: cleanedPayload.modelo_campos_id,
         cliente_id: cleanedPayload.cliente_id,
         empresa_id: cleanedPayload.empresa_id,
@@ -410,8 +410,8 @@ const cleanPayload = (obj: any): any => {
                   value={reportName}
                   label="Nome do Relatório *"
                   onChange={(e) => setReportName(e.target.value)}
-                  error={!!errors.relatorio_name}
-                  helperText={errors.relatorio_name}
+                  error={!!errors.relatorio_nome}
+                  helperText={errors.relatorio_nome}
                 />
               </Box>
 

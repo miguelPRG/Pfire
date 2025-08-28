@@ -24,7 +24,7 @@ import { ExpandLess, ExpandMore, Search, Delete, ContentCopy as ContentCopyIcon 
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
-import { GET_MODELOS_RELATORIOS } from "../../../graphql/reportmodelsqueries";
+import { GET_MODELOS_RELATORIOS } from "../../../graphql/modelosqueries";
 import { useAuth } from "../../../hooks/AuthContext";
 import Notification from "../../../components/Notification";
 import LoadingAnimation from "../../../components/LoadingAnimation";
@@ -81,10 +81,29 @@ export default function ReportModelListPage() {
     fetchPolicy: "cache-first",
   });
 
-  // Pesquisa remota por nome
   const [getModelosByName, { data: searchData }] = useLazyQuery<returnedData>(GET_MODELOS_RELATORIOS, {
     fetchPolicy: "cache-first",
   });
+
+  // Decide qual lista mostrar
+  const modelos: any[] = search
+    ? searchData?.getModelos?.modelos || []
+    : data?.getModelos?.modelos || [];
+
+// Decide o total de modelos para paginação
+const totalModelos: number = search
+  ? searchData?.getModelos?.totalModelos || 0
+  : data?.getModelos?.totalModelos || 0;
+
+const pageCount = Math.max(1, Math.ceil(totalModelos / rowsPerPage));
+
+// Pesquisa remota
+useEffect(() => {
+  if (search) {
+    getModelosByName({ variables: { empresaId: empresa?.id, name: search, start: page * rowsPerPage } });
+  }
+  // eslint-disable-next-line
+}, [search, page, empresa]);
 
   useEffect(() => {
     // Será true após a criação ou atualização de um modelo
@@ -101,21 +120,6 @@ export default function ReportModelListPage() {
       refetch();
     }
   }, []);
-
-  // Dispara busca remota se search não está vazio
-  useEffect(() => {
-    if (search) {
-      getModelosByName({ variables: { empresaId: empresa?.id, name: search, start: page * rowsPerPage } });
-    }
-    // eslint-disable-next-line
-  }, [search, page, empresa]);
-
-  // Decide qual fonte de dados usar
-  const modelos: any[] = search ? searchData?.getModelos?.modelos || [] : data?.getModelos?.modelos || [];
-
-  const totalModelos: number = search ? searchData?.getModelos?.totalModelos || 0 : data?.getModelos?.totalModelos || 0;
-
-  const pageCount = Math.max(1, Math.ceil(totalModelos / rowsPerPage));
 
   // Função para deletar um modelo de relatório
   const handleDelete = async (id: string) => {
@@ -407,7 +411,7 @@ export default function ReportModelListPage() {
                           state: {
                             modelo: {
                               id: modelo.id,
-                              modelName: modelo.modelName,
+                              modeloNome: modelo.modeloNome,
                               customFields: modelo.customFields,
                               createdAt: modelo.createdAt,
                             },
@@ -416,7 +420,7 @@ export default function ReportModelListPage() {
                       }
                       sx={{ cursor: "pointer", textDecoration: "none" }}
                     >
-                      {modelo.modelName}
+                      {modelo.modeloNome}
                     </Link>
                   </TableCell>
                   <TableCell>{new Date(modelo.createdAt).toLocaleDateString()}</TableCell>

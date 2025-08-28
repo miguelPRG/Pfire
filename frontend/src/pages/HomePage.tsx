@@ -8,13 +8,13 @@ import { GET_RELATORIES_COUNT_BY_CLIENTES, GET_RELATORIES_COUNT_BY_MODELO } from
 interface ReportCliente {
   clienteId: string;
   count: number;
-  clienteName: string;
+  clienteNome: string;
 }
 
 interface ReportModelo {
   modeloId: string;
   count: number;
-  modeloName: string;
+  modeloNome: string;
 }
 
 function HomePage() {
@@ -47,17 +47,15 @@ function HomePage() {
     chart1Data?.reports?.map((r) => ({
       id: r.clienteId,
       value: r.count,
-      label: r.clienteName,
+      label: r.clienteNome,
     })) || [];
 
   const barData =
     chart2Data?.reports?.map((r) => ({
       id: r.modeloId,
       value: r.count,
-      label: r.modeloName,
+      label: r.modeloNome,
     })) || [];
-
-  console.log("Bar Data:", barData);
 
   // Responsividade do gráfico
   let chartSize = 250;

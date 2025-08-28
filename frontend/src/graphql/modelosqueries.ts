@@ -5,7 +5,7 @@ export const GET_MODELOS_RELATORIOS = gql`
     getModelos(empresaId: $empresaId, start: $start, name: $name) {
       modelos {
         id
-        modelName
+        modeloNome
         createdAt
         customFields
       }

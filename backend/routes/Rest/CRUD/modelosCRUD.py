@@ -41,7 +41,7 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
     if not empresa_found:
         raise HTTPException(status_code=400, detail="Empresa não encontrada.")
 
-    modelo_existente = await modelos_collection.find_one({"empresa_id": modelo.empresa_id, "model_name": modelo.model_name})
+    modelo_existente = await modelos_collection.find_one({"empresa_id": modelo.empresa_id, "modelo_nome": modelo.modelo_nome})
 
     if modelo_existente:
         raise HTTPException(status_code=400, detail="Modelo com esse nome nesta empresa já existe.")
@@ -113,7 +113,7 @@ async def update_modelo(request: Request, modelo: ModelosCamposUpdate, id: str):
             update_fields[prefix] = value
 
     for key, value in data.items():
-        if key in ["model_name", "empresa_id"]:
+        if key in ["modelo_nome", "empresa_id"]:
             continue
         process_field(key, value)
 

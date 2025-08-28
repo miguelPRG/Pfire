@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from bson import ObjectId
 
 MAIN_FIELDS = {
-    "model_name",
+    "modelo_nome",
     "empresa_id",
     "recaptchaToken",
 }
@@ -113,7 +113,7 @@ def validate_field(key, value):
 
 # Classe ModelosCamposCreate
 class ModelosCamposCreate(BaseModel):
-    model_name: str = Field(..., max_length=100, description="Nome do modelo. Deve ter no máximo 100 caracteres.")
+    modelo_nome: str = Field(..., max_length=100, description="Nome do modelo. Deve ter no máximo 100 caracteres.")
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
     # recaptchaToken: str
     model_config = ConfigDict(extra="allow")  # Permite campos extras
@@ -130,8 +130,8 @@ class ModelosCamposCreate(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def validate_fields(cls, values):
-        if "model_name" in values and isinstance(values["model_name"], str):
-            values["model_name"] = values["model_name"].strip()
+        if "modelo_nome" in values and isinstance(values["modelo_nome"], str):
+            values["modelo_nome"] = values["modelo_nome"].strip()
 
         if len(values.keys()) < 4:
             raise HTTPException(
@@ -150,7 +150,7 @@ class ModelosCamposCreate(BaseModel):
 
 # Classe ModelosCamposUpdate
 class ModelosCamposUpdate(BaseModel):
-    model_name: Optional[str] = Field(
+    modelo_nome: Optional[str] = Field(
         None, max_length=100, description="Nome do modelo. Deve ter no máximo 100 caracteres."
     )  # Ex: "extintores", "para-raios", "bocas de incêndio"
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
@@ -169,8 +169,8 @@ class ModelosCamposUpdate(BaseModel):
     @model_validator(mode="before")
     @classmethod
     def validate_fields(cls, values):
-        if "model_name" in values and isinstance(values["model_name"], str):
-            values["model_name"] = values["model_name"].strip()
+        if "modelo_nome" in values and isinstance(values["modelo_nome"], str):
+            values["modelo_nome"] = values["modelo_nome"].strip()
 
         # Valida todos os campos personalizados no nível principal
         for key, value in values.items():

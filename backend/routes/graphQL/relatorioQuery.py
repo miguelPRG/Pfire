@@ -1,18 +1,17 @@
 from .types.relatorioType import Relatorio, RelatorioList, RelatorioCountByCliente, RelatorioCountByModelo
-from database import relatorios_collection, users_empresas_collection, clientes_collection
+from database import relatorios_collection, users_empresas_collection, clientes_collection, modelos_collection
 from .utils.limpar import filter_null_fields
 from fastapi import HTTPException
 import strawberry
 from strawberry.types import Info
 from bson import ObjectId
-
+from asyncio import gather
 
 @strawberry.type
 class RelatorioQuery:
     @strawberry.field
     async def getRelatorios(
-        self, info: Info, empresa_id: str, id: str = None, start: int = 0, relatorio_name: str = None  # Novo parâmetro
-    ) -> RelatorioList:
+        self, info: Info, empresa_id: str, start: int = 0, relatorio_nome: str = None ) -> RelatorioList:
 
         empresa_id = ObjectId(empresa_id)
         lmt = 3  # Limite padrão de resultados por página
@@ -27,12 +26,9 @@ class RelatorioQuery:
 
         # Filtro inicial
         filtro = {"empresa_id": empresa_id}
-        if id:
-            filtro["_id"] = ObjectId(id)
-        if relatorio_name:
-            filtro["relatorio_name"] = {"$regex": f"^{relatorio_name}", "$options": "i"}
-        if relatorio_name:
-            filtro["relatorio_name"] = {"$regex": f"^{relatorio_name}", "$options": "i"}
+
+        if relatorio_nome:
+            filtro["relatorio_nome"] = {"$regex": f"^{relatorio_nome}", "$options": "i"}
 
         # Verificar permissões
         if not jwt["isSuperAdmin"]:
@@ -43,8 +39,15 @@ class RelatorioQuery:
         # Buscar relatórios no banco de dados
         async for relatorio in relatorios_collection.find(filtro).skip(start).limit(lmt):
             # Buscar o nome do cliente com base no cliente_id
-            cliente = await clientes_collection.find_one({"_id": ObjectId(relatorio.get("cliente_id"))})
-            cliente_name = cliente.get("nome") if cliente else None
+            cliente_task = clientes_collection.find_one({"_id": ObjectId(relatorio.get("cliente_id"))})
+            # Buscar o nome do modelo com base no modelo_campos_id
+            modelo_task = modelos_collection.find_one({"_id": ObjectId(relatorio.get("modelo_campos_id"))})
+
+            # Buscar os nomes do cliente e do modelo em paralelo
+            cliente, modelo = await gather(cliente_task, modelo_task)
+
+            cliente_nome = cliente.get("nome") if cliente else None
+            modelo_nome = modelo.get("modelo_nome") if modelo else None
 
             # Extraia os campos personalizados (chaves que começam com "custom_")
             custom_fields = [{"key": k, "value": v} for k, v in relatorio.items() if k.startswith("custom_")]
@@ -52,13 +55,12 @@ class RelatorioQuery:
             # Mapeia os dados do relatório
             relatorio_data = {
                 "id": str(relatorio.get("_id")),
-                "modelo_campos_id": str(relatorio.get("modelo_campos_id")),
-                "cliente_id": str(relatorio.get("cliente_id")),
-                "cliente_name": cliente_name,  # Adiciona o nome do cliente
+                "modelo_nome": modelo_nome,
+                "cliente_nome": cliente_nome,  # Adiciona o nome do cliente
                 "created_by": str(relatorio.get("created_by")),
                 "created_at": relatorio.get("created_at"),
                 "custom_fields": custom_fields,
-                "relatorio_name": relatorio.get("relatorio_name"),
+                "relatorio_nome": relatorio.get("relatorio_nome"),
                 "isActive": relatorio.get("isActive"),
             }
 
@@ -90,13 +92,13 @@ class RelatorioQuery:
             {"$match": {"empresa_id": empresa_id}},
             {"$lookup": {"from": "clientes", "localField": "cliente_id", "foreignField": "_id", "as": "cliente_info"}},
             {"$unwind": "$cliente_info"},
-            {"$group": {"_id": "$cliente_id", "cliente_name": {"$first": "$cliente_info.nome"}, "totalRelatorios": {"$sum": 1}}},
+            {"$group": {"_id": "$cliente_id", "cliente_nome": {"$first": "$cliente_info.nome"}, "totalRelatorios": {"$sum": 1}}},
         ]
 
         consulta_cursor = relatorios_collection.aggregate(pipeline)
         consulta = []
         async for doc in consulta_cursor:
-            consulta.append(RelatorioCountByCliente(cliente_id=str(doc["_id"]), cliente_name=doc["cliente_name"], count=doc["totalRelatorios"]))
+            consulta.append(RelatorioCountByCliente(cliente_id=str(doc["_id"]), cliente_nome=doc["cliente_nome"], count=doc["totalRelatorios"]))
 
         return consulta
 
@@ -117,14 +119,14 @@ class RelatorioQuery:
         # Pipeline para contar relatórios por modelo
         pipeline = [
             {"$match": {"empresa_id": empresa_id}},
-            {"$lookup": {"from": "modelos", "localField": "modelo_campos_id", "foreignField": "_id", "as": "modelo_info"}},
+            {"$lookup": {"from": "modelos", "localField": "modelo_id", "foreignField": "_id", "as": "modelo_info"}},
             {"$unwind": "$modelo_info"},
-            {"$group": {"_id": "$modelo_campos_id", "modelo_name": {"$first": "$modelo_info.model_name"}, "totalRelatorios": {"$sum": 1}}},
+            {"$group": {"_id": "$modelo_id", "modelo_nome": {"$first": "$modelo_info.modelo_nome"}, "totalRelatorios": {"$sum": 1}}},
         ]
 
         consulta_cursor = relatorios_collection.aggregate(pipeline)
         consulta = []
         async for doc in consulta_cursor:
-            consulta.append(RelatorioCountByModelo(modelo_id=str(doc["_id"]), modelo_name=doc["modelo_name"], count=doc["totalRelatorios"]))
+            consulta.append(RelatorioCountByModelo(modelo_id=str(doc["_id"]), modelo_nome=doc["modelo_nome"], count=doc["totalRelatorios"]))
 
         return consulta
