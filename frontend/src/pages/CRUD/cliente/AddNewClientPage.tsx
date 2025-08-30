@@ -92,7 +92,7 @@ export default function AddNewClientPage() {
 
       if (!response.ok) {
         alert(data.detail || "Erro ao criar cliente"); // Mostra erro se houver
-      } else{
+      } else {
         navigate("/clients-list", {
           state: { message: { error: false, text: "Novo cliente adicionado com sucesso!" } },
         });
@@ -125,7 +125,7 @@ export default function AddNewClientPage() {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body
+        body,
       });
 
       const data = await response.json(); // Lê resposta do backend

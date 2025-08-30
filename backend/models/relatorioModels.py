@@ -10,6 +10,7 @@ MAIN_FIELDS = {
     "recaptchaToken",
 }
 
+
 def clean_payload(data):
     if isinstance(data, dict):
         cleaned = {}
@@ -71,6 +72,8 @@ class RelatorioCreate(BaseModel):
                 )
 
         return values
+
+
 class RelatorioActivation(BaseModel):
     id: str = Field(..., min_length=24, max_length=24, description="ID do relatório a ser ativado/desativado.")
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao relatório.")

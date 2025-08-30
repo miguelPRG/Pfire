@@ -99,11 +99,10 @@ export default function ClientManagementTable() {
       window.history.replaceState({}, document.title);
     }
 
-    if(data){
+    if (data) {
       refetch();
     }
-
-  },[])
+  }, []);
 
   // Se não encontrou localmente e search não está vazio, faz consulta remota
   useEffect(() => {
@@ -112,17 +111,13 @@ export default function ClientManagementTable() {
     }
 
     // Atualiza a lista local conforme o resultado da pesquisa ou dados gerais
-    setLocalClientes(
-      search ? (searchData?.getClientes?.clientes || []) : (data?.getClientes?.clientes || [])
-    );
+    setLocalClientes(search ? searchData?.getClientes?.clientes || [] : data?.getClientes?.clientes || []);
   }, [search, searchData, data]);
 
   const clientes: Cliente[] = localClientes;
 
-// Decide o total de clientes para paginação
-const totalClientes = search
-  ? searchData?.getClientes?.totalClientes || 0
-  : data?.getClientes?.totalClientes || 0;
+  // Decide o total de clientes para paginação
+  const totalClientes = search ? searchData?.getClientes?.totalClientes || 0 : data?.getClientes?.totalClientes || 0;
 
   const pageCount = Math.ceil(totalClientes / rowsPerPage);
 
@@ -148,7 +143,6 @@ const totalClientes = search
   // Função para apagar cliente
   const apagarCliente = async (cliente: Cliente) => {
     try {
-
       const url = "/backend/cliente/hard-delete";
 
       const res = await fetch(url, {
@@ -216,11 +210,7 @@ const totalClientes = search
       });
 
       // Atualiza o estado local do cliente
-      setLocalClientes((prev) =>
-        prev.map((c) =>
-          c.id === clienteId ? { ...c, isActive: !currentStatus } : c
-        )
-      );
+      setLocalClientes((prev) => prev.map((c) => (c.id === clienteId ? { ...c, isActive: !currentStatus } : c)));
     } catch (error: any) {
       setAlert({
         message: error.message || `Erro ao ${currentStatus ? "desativar" : "ativar"} cliente.`,
@@ -461,8 +451,10 @@ const totalClientes = search
                             >
                               {loadingClienteId === cliente.id ? (
                                 <CircularProgress size={28} sx={{ color: "#fff" }} />
+                              ) : cliente.isActive ? (
+                                "Ativo"
                               ) : (
-                                cliente.isActive ? "Ativo" : "Inativo"
+                                "Inativo"
                               )}
                             </Button>
                           </TableCell>

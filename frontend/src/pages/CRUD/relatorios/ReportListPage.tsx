@@ -88,27 +88,19 @@ export default function ReportListPage() {
 
   // Sincronize localReports com reports sempre que reports mudar
   useEffect(() => {
-    setLocalReports(
-      search
-        ? searchData?.reports?.relatorios || []
-        : data?.reports?.relatorios || []
-    );
+    setLocalReports(search ? searchData?.reports?.relatorios || [] : data?.reports?.relatorios || []);
   }, [searchData, data, search]);
 
   // Altere a fonte dos relatórios na tabela
   const reports: Report[] = localReports;
 
   // Decide o total de relatórios para paginação
-  const totalReports: number = search
-    ? searchData?.reports?.totalRelatorios || 0
-    : data?.reports?.totalRelatorios || 0;
+  const totalReports: number = search ? searchData?.reports?.totalRelatorios || 0 : data?.reports?.totalRelatorios || 0;
 
   const pageCount = Math.max(1, Math.ceil(totalReports / rowsPerPage));
 
   const zebraColor = (index: number) =>
     theme.palette.mode === "dark" ? (index % 2 === 0 ? "#252525" : "#1d1d1d") : index % 2 === 0 ? "#f5f5f5" : "#e0e0e0";
-
-
 
   const renderFieldChip = (field: any): React.ReactNode => {
     const clean = (s: string) => String(s).replace(/^custom_/, "");
@@ -146,7 +138,7 @@ export default function ReportListPage() {
     return (
       <Chip
         key={field.key}
-        label = {
+        label={
           <span>
             <strong>{label}</strong>: {formatFieldValue(field.value)}
           </span>
@@ -209,11 +201,7 @@ export default function ReportListPage() {
         isError: false,
       });
 
-      setLocalReports((prev) =>
-        prev.map((r) =>
-          r.id === reportId ? { ...r, isActive: !currentStatus } : r
-        )
-      );
+      setLocalReports((prev) => prev.map((r) => (r.id === reportId ? { ...r, isActive: !currentStatus } : r)));
     } catch (error: any) {
       setAlert({
         message: error.message || `Erro ao ${currentStatus ? "desativar" : "ativar"} relatório.`,
@@ -305,7 +293,7 @@ export default function ReportListPage() {
             onClick={() => navigate("/")}
             icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
           />
-          <StyledBreadcrumb sx={{ fontSize: "0.9rem" }}  label="Relatórios" />
+          <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} label="Relatórios" />
         </Breadcrumbs>
 
         {/* Header with title and add button */}
@@ -351,7 +339,7 @@ export default function ReportListPage() {
                     <Search sx={{ color: theme.palette.primary.main }} />
                   </InputAdornment>
                 ),
-              }
+              },
             }}
             sx={{
               width: "75%",
@@ -449,8 +437,10 @@ export default function ReportListPage() {
                       >
                         {loadingReportId === report.id ? (
                           <CircularProgress size={28} sx={{ color: "#fff" }} />
+                        ) : report.isActive ? (
+                          "Ativo"
                         ) : (
-                          report.isActive ? "Ativo" : "Inativo"
+                          "Inativo"
                         )}
                       </Button>
                     </TableCell>

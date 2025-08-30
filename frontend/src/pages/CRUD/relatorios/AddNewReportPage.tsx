@@ -31,7 +31,6 @@ import { z } from "zod";
 import { useTheme } from "@mui/material/styles"; // Tema do Material UI
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs"; // Componente de breadcrumb estilizado
 
-
 // Declaração global para o objeto grecaptcha (Google reCAPTCHA)
 declare var grecaptcha: any;
 
@@ -72,10 +71,10 @@ function AddNewReportPage() {
   });
 
   useEffect(() => {
-  if (empresa?.id) {
-    getClientes();
-  }
-}, [empresa?.id, getClientes]);
+    if (empresa?.id) {
+      getClientes();
+    }
+  }, [empresa?.id, getClientes]);
 
   // Função para exibir o nome do campo removendo o prefixo "custom_"
   const displayName = (key: string) => key.replace(/^custom_/, "");
@@ -106,23 +105,25 @@ function AddNewReportPage() {
         switch (type) {
           case "number":
             return required
-              ? z.preprocess((val) => Number(val), z.number().refine((val) => !isNaN(val), { message: "Campo obrigatório" }))
+              ? z.preprocess(
+                  (val) => Number(val),
+                  z.number().refine((val) => !isNaN(val), { message: "Campo obrigatório" })
+                )
               : z.preprocess((val) => Number(val), z.number().optional());
           case "date":
             return required
-              ? z.string().min(1, "Campo obrigatório").refine((val) => /^\d{2}\/\d{2}\/\d{4}$/.test(val), {
-                  message: "Formato de data inválido (DD/MM/AAAA)",
-                })
+              ? z
+                  .string()
+                  .min(1, "Campo obrigatório")
+                  .refine((val) => /^\d{2}\/\d{2}\/\d{4}$/.test(val), {
+                    message: "Formato de data inválido (DD/MM/AAAA)",
+                  })
               : z.string().optional();
           case "array":
-            return required
-              ? z.string().min(1, "Selecione pelo menos uma opção")
-              : z.string().optional();
+            return required ? z.string().min(1, "Selecione pelo menos uma opção") : z.string().optional();
           case "string":
           default:
-            return required
-              ? z.string().min(1, "Campo obrigatório")
-              : z.string().optional();
+            return required ? z.string().min(1, "Campo obrigatório") : z.string().optional();
         }
       };
 
@@ -185,35 +186,35 @@ function AddNewReportPage() {
 
   // Função utilitária para limpar o payload
   // Limpa nulls e arrays vazios recursivamente
-const cleanPayload = (obj: any): any => {
-  if (Array.isArray(obj)) {
-    const arr = obj
-      .map((item) => cleanPayload(item))
-      .filter((item) => item !== undefined && item !== null && !(Array.isArray(item) && item.length === 0));
-    return arr.length > 0 ? arr : undefined;
-  }
+  const cleanPayload = (obj: any): any => {
+    if (Array.isArray(obj)) {
+      const arr = obj
+        .map((item) => cleanPayload(item))
+        .filter((item) => item !== undefined && item !== null && !(Array.isArray(item) && item.length === 0));
+      return arr.length > 0 ? arr : undefined;
+    }
 
-  if (obj !== null && typeof obj === "object") {
-    const cleaned: Record<string, any> = {};
-    Object.entries(obj).forEach(([key, value]) => {
-      const cleanedValue = cleanPayload(value);
-      if (
-        cleanedValue !== undefined &&
-        cleanedValue !== null &&
-        !(Array.isArray(cleanedValue) && cleanedValue.length === 0)
-      ) {
-        cleaned[key] = cleanedValue;
-      }
-    });
-    return Object.keys(cleaned).length > 0 ? cleaned : undefined;
-  }
+    if (obj !== null && typeof obj === "object") {
+      const cleaned: Record<string, any> = {};
+      Object.entries(obj).forEach(([key, value]) => {
+        const cleanedValue = cleanPayload(value);
+        if (
+          cleanedValue !== undefined &&
+          cleanedValue !== null &&
+          !(Array.isArray(cleanedValue) && cleanedValue.length === 0)
+        ) {
+          cleaned[key] = cleanedValue;
+        }
+      });
+      return Object.keys(cleaned).length > 0 ? cleaned : undefined;
+    }
 
-  if (obj === null || obj === undefined) {
-    return undefined;
-  }
+    if (obj === null || obj === undefined) {
+      return undefined;
+    }
 
-  return obj;
-};
+    return obj;
+  };
 
   // Função para tratar o envio do formulário
   const handleSubmit = async (event: React.FormEvent) => {
@@ -244,9 +245,7 @@ const cleanPayload = (obj: any): any => {
           // Trata cada subcampo
           Object.entries(value).forEach(([subKey, subValue]: [string, any]) => {
             if (!["datatype", "required", "label"].includes(subKey)) {
-              const fullSubKey = subKey.startsWith("custom_")
-                ? subKey
-                : `custom_${subKey}`;
+              const fullSubKey = subKey.startsWith("custom_") ? subKey : `custom_${subKey}`;
 
               if (subValue.datatype === "bool") {
                 // se marcado -> true, se não -> false
@@ -299,20 +298,20 @@ const cleanPayload = (obj: any): any => {
       if (!hasCustomField) {
         throw new Error("Modelo deve conter pelo menos um campo personalizado.");
       }
-      
+
       const response = await fetch("/backend/relatorio", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(cleanedPayload),
       });
-      
+
       // Se houver erro na resposta, lança exceção
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.detail || "Erro ao adicionar o relatório.");
       }
-      
+
       // Navega para página de relatórios com sucesso
       navigate("/reports-list", {
         state: {
@@ -437,7 +436,8 @@ const cleanPayload = (obj: any): any => {
                   const value = field.value;
                   const baseKey = field.key;
                   // Função para adicionar ' *' se o campo for obrigatório
-                  const addRequiredMark = (label: string, required: boolean) => required && value.datatype!= "bool" ? `${label} *` : label;
+                  const addRequiredMark = (label: string, required: boolean) =>
+                    required && value.datatype != "bool" ? `${label} *` : label;
 
                   // Se for um campo composto (object)
                   if (value.datatype === "object") {
@@ -473,7 +473,7 @@ const cleanPayload = (obj: any): any => {
                                 slotProps={{
                                   inputLabel: {
                                     shrink: subValue.datatype === "date" ? true : undefined,
-                                  }
+                                  },
                                 }}
                                 value={formData[fullSubKey] ?? ""}
                                 onChange={(e) => handleInputChange(fullSubKey, e.target.value)}

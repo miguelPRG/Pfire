@@ -9,7 +9,6 @@ from dotenv import load_dotenv
 
 # Carregar variáveis de ambiente do arquivo .env
 load_dotenv()
-
 # Caminhos para as chaves RSA
 PUBLIC_KEY = Path(__file__).parent / "../chaves/publica.pem"
 PRIVATE_KEY = Path(__file__).parent / "../chaves/privada.pem"

@@ -3,7 +3,6 @@ import os
 from asyncio import gather, to_thread
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
-from datetime import datetime, timedelta
 from firebase_admin import auth
 
 # Obter a URI do MongoDB do arquivo .env

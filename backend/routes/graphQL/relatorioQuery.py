@@ -7,11 +7,11 @@ from strawberry.types import Info
 from bson import ObjectId
 from asyncio import gather
 
+
 @strawberry.type
 class RelatorioQuery:
     @strawberry.field
-    async def getRelatorios(
-        self, info: Info, empresa_id: str, start: int = 0, relatorio_nome: str = None ) -> RelatorioList:
+    async def getRelatorios(self, info: Info, empresa_id: str, start: int = 0, relatorio_nome: str = None) -> RelatorioList:
 
         empresa_id = ObjectId(empresa_id)
         lmt = 3  # Limite padrão de resultados por página

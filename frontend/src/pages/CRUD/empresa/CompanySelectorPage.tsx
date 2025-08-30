@@ -54,7 +54,7 @@ export default function CompanySelectorPage() {
   /* ATENÇÃO: Futuramente será necessário lidar com notificações, cujo as mensagens deverão ser passadas
   pela página CreateCompany. Verifica as páginas da pasta CRUD/cliente como exemplo*/
   useEffect(() => {
-    if(data){
+    if (data) {
       refetch();
     }
   }, []);

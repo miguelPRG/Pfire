@@ -86,24 +86,20 @@ export default function ReportModelListPage() {
   });
 
   // Decide qual lista mostrar
-  const modelos: any[] = search
-    ? searchData?.getModelos?.modelos || []
-    : data?.getModelos?.modelos || [];
+  const modelos: any[] = search ? searchData?.getModelos?.modelos || [] : data?.getModelos?.modelos || [];
 
-// Decide o total de modelos para paginação
-const totalModelos: number = search
-  ? searchData?.getModelos?.totalModelos || 0
-  : data?.getModelos?.totalModelos || 0;
+  // Decide o total de modelos para paginação
+  const totalModelos: number = search ? searchData?.getModelos?.totalModelos || 0 : data?.getModelos?.totalModelos || 0;
 
-const pageCount = Math.max(1, Math.ceil(totalModelos / rowsPerPage));
+  const pageCount = Math.max(1, Math.ceil(totalModelos / rowsPerPage));
 
-// Pesquisa remota
-useEffect(() => {
-  if (search) {
-    getModelosByName({ variables: { empresaId: empresa?.id, name: search, start: page * rowsPerPage } });
-  }
-  // eslint-disable-next-line
-}, [search, page, empresa]);
+  // Pesquisa remota
+  useEffect(() => {
+    if (search) {
+      getModelosByName({ variables: { empresaId: empresa?.id, name: search, start: page * rowsPerPage } });
+    }
+    // eslint-disable-next-line
+  }, [search, page, empresa]);
 
   useEffect(() => {
     // Será true após a criação ou atualização de um modelo
@@ -115,8 +111,8 @@ useEffect(() => {
       // Remove o estado da localização
       window.history.replaceState({}, document.title);
     }
-    
-    if(data){
+
+    if (data) {
       refetch();
     }
   }, []);
