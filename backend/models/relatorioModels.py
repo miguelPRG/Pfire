@@ -4,7 +4,7 @@ from bson import ObjectId
 
 MAIN_FIELDS = {
     "relatorio_nome",
-    "modelo_campos_id",
+    "modelo_id",
     "cliente_id",
     "empresa_id",
     "recaptchaToken",
@@ -34,7 +34,7 @@ def clean_payload(data):
 
 class RelatorioCreate(BaseModel):
     relatorio_nome: str = Field(..., max_length=100, description="Nome do relatório. Deve ter no máximo 100 caracteres.")
-    modelo_campos_id: str = Field(..., min_length=24, max_length=24, description="ID do modelo de campos associado ao relatório.")
+    modelo_id: str = Field(..., min_length=24, max_length=24, description="ID do modelo de campos associado ao relatório.")
     cliente_id: str = Field(..., min_length=24, max_length=24, description="ID do cliente associado ao relatório.")
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao relatório.")
     recaptchaToken: str
@@ -44,7 +44,7 @@ class RelatorioCreate(BaseModel):
     def strip_relatorio_nome(cls, v):
         return v.strip()
 
-    @field_validator("modelo_campos_id", "cliente_id", "empresa_id", mode="before")
+    @field_validator("modelo_id", "cliente_id", "empresa_id", mode="before")
     def validate_object_id(cls, v):
         if not ObjectId.is_valid(v):
             raise HTTPException(

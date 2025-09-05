@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException, Request
 from apis.recaptchaValidation import validar_recaptcha_token
 from models.relatorioModels import RelatorioCreate, RelatorioActivation
-from database import relatorios_collection, modelos_collection, clientes_collection, users_empresas_collection
+from database import relatorios_collection, modelos_collection, clientes_collection, users_empresas_collection, empresas_collection
 from datetime import datetime
 from asyncio import gather
-from re import compile
+from pymongo.errors import DuplicateKeyError
 from bson import ObjectId
 
 routerRelatorio = APIRouter(prefix="/relatorio")
@@ -16,14 +16,22 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
     # Validar o reCAPTCHA token
     await validar_recaptcha_token(relatorio.recaptchaToken, "register")
 
-    # Verificar se o cliente existe
-    cliente = clientes_collection.find_one({"_id": ObjectId(relatorio.cliente_id), "isActive": True})
+    jwt = getattr(request.state, "jwt", None)
 
+    relatorio.cliente_id = ObjectId(relatorio.cliente_id)
+    relatorio.modelo_id = ObjectId(relatorio.modelo_id)
+    relatorio.empresa_id = ObjectId(relatorio.empresa_id)
+    user_id = ObjectId(jwt["user_id"])
+
+    # Verificar se o cliente existe
+    cliente = clientes_collection.find_one({"_id": relatorio.cliente_id, "isActive": True})
     # Verificar se o modelo existe
-    modelo = modelos_collection.find_one({"_id": ObjectId(relatorio.modelo_campos_id)})
+    modelo = modelos_collection.find_one({"_id": relatorio.modelo_id})
+    # Verificar se a empresa existe
+    empresa = empresas_collection.find_one({"_id": relatorio.empresa_id})
 
     # Executar as tarefas em paralelo e aguardar os resultados
-    cliente, modelo = await gather(cliente, modelo)
+    cliente, modelo, empresa = await gather(cliente, modelo, empresa)
 
     if not cliente:
         raise HTTPException(status_code=404, detail="Cliente não encontrado")
@@ -31,20 +39,12 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
     if not modelo:
         raise HTTPException(status_code=404, detail="Modelo não encontrado")
 
-    if modelo["empresa_id"] != cliente["empresa_id"]:
+    if not empresa:
+        raise HTTPException(status_code=404, detail="Empresa não encontrada")
+
+    if modelo["empresa_id"] != cliente["empresa_id"] != empresa["empresa_id"]:
         raise HTTPException(status_code=400, detail="A empresa do cliente e do modelo não corresponde.")
 
-    relatorio_found = await relatorios_collection.find_one(
-        {"empresa_id": modelo["empresa_id"], "relatorio_nome": relatorio.relatorio_nome, "isActive": True}
-    )
-
-    if relatorio_found:
-        raise HTTPException(
-            status_code=400,
-            detail="Já existe um relatório com este nome para esta empresa. Por favor insira outro nome",
-        )
-
-    # Sacar jwt
     jwt = getattr(request.state, "jwt", None)
 
     if not jwt.get("isSuperAdmin"):
@@ -62,21 +62,23 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
     # Converter o relatório para um dicionário e os campos ObjectId
     # para ObjectId
     relatorio_data = relatorio.model_dump(by_alias=True)
-    relatorio_data["modelo_id"] = ObjectId(relatorio.modelo_campos_id)
+    del relatorio_data["recaptchaToken"]
     relatorio_data["empresa_id"] = modelo["empresa_id"]
-    relatorio_data["cliente_id"] = ObjectId(relatorio.cliente_id)
-    relatorio_data["created_by"] = ObjectId(jwt["user_id"])
+    relatorio_data["modelo_nome"] = modelo["modelo_nome"]
+    relatorio_data["cliente_nome"] = cliente["nome"]
+    relatorio_data["cliente_nif"] = cliente["nif"]
+    relatorio_data["created_by"] = user_id
     relatorio_data["created_at"] = datetime.now()
     relatorio_data["isActive"] = True
-    del relatorio_data["recaptchaToken"]
     # Sacar todas as chaves do relatório que começam com "custom_"
     relatorio_fields = {key: relatorio_data[key] for key in relatorio_data if key.startswith("custom_")}
+
 
     if len(relatorio_fields) <= 0:
         raise HTTPException(status_code=400, detail="Modelo deve contar pelo menos um campo personalizado.")
 
-    if len(relatorio_fields) > len(modelo_fields):
-        raise HTTPException(status_code=400, detail="Foram inseridos campos que não estão listados no modelo.")
+    print(set(modelo_fields.keys()))
+    print(set(relatorio_fields.keys()))
 
     # Sacar as chaves do relatorio que não estão no modelo
     for key in relatorio_fields.keys():
@@ -109,9 +111,10 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
 
             # Verificar formato de data se for string do tipo "date"
             elif value["datatype"] == "date":
-                date_regex = compile(r"^\d{2}/\d{2}/\d{4}$")
-                if not date_regex.match(relatorio_fields[key]):
-                    raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser uma data no formato DD/MM/YYYY.")
+                try:
+                    datetime.fromisoformat(relatorio_fields[key])
+                except ValueError:
+                    raise HTTPException(status_code=400, detail=f"O campo {full_key} deve estar no formato ISO 8601 (YYYY-MM-DD).")
 
             # Se for do tipo array, verificar se o valor no relatório está contido no array do modelo
             elif value["datatype"] == "array":
@@ -153,12 +156,16 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
     # Verificar os campos do relatório em relação ao modelo
     verificar_campos_recursivamente(modelo_fields, relatorio_fields)
 
-    # Inserir o relatório na base de dados
-    relatorio = await relatorios_collection.insert_one(relatorio_data)
+    try:
+        # Inserir o relatório na base de dados
+        relatorio = await relatorios_collection.insert_one(relatorio_data)
+        
+        if not relatorio:
+            raise HTTPException(status_code=500, detail="Erro ao criar o relatório!")
 
-    if not relatorio:
-        raise HTTPException(status_code=500, detail="Erro ao criar o relatório!")
-
+    except DuplicateKeyError as e:
+        raise HTTPException(status_code=409, detail=f"Já existe um relatório com o nome {relatorio.relatorio_nome} na empresa {empresa['nome']}.")
+    
     return {"message": "Relatório criado com sucesso!"}
 
 

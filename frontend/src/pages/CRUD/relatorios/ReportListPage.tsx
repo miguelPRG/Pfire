@@ -28,20 +28,24 @@ import { useTheme } from "@mui/material/styles";
 import { useQuery, useLazyQuery } from "@apollo/client/react";
 import { useAuth } from "../../../hooks/AuthContext";
 import { GET_REPORTS_BY_COMPANY } from "../../../graphql/reportsQueries";
+import { GET_CLIENTES_BY_EMPRESA } from "../../../graphql/clientesQueries";
 import Notification from "../../../components/Notification";
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
-import { jsPDF } from "jspdf";
-import CircularProgress from "@mui/material/CircularProgress";
+import LoadingAnimation from "../../../components/LoadingAnimation";
+import { Cliente } from "../cliente/ClientManagementTable";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 declare var grecaptcha: any;
 
-interface Report {
+export interface Report {
   id: string;
+  relatorioNome: string;
   modeloNome: string;
   clienteNome: string;
+  clienteNif: string;
   createdAt: string;
   customFields: { [key: string]: any }[];
-  relatorioNome: string;
   isActive: boolean;
 }
 
@@ -70,9 +74,16 @@ export default function ReportListPage() {
     fetchPolicy: "cache-first",
   });
 
+  // Lazy query para procurar relatório pelo nome
   const [getReportsByName, { data: searchData }] = useLazyQuery<returnedData>(GET_REPORTS_BY_COMPANY, {
     fetchPolicy: "cache-first",
   });
+
+  // Lazy query para buscar cliente pelo nome
+  const [getClienteByName, { data: clienteData }] = useLazyQuery<{ getClientes: { clientes: Cliente[] } }>(
+    GET_CLIENTES_BY_EMPRESA,
+    { fetchPolicy: "network-only" }
+  );
 
   useEffect(() => {
     if (data) {
@@ -235,37 +246,188 @@ export default function ReportListPage() {
     }
   };
 
-  const exportReportToPDF = (report: Report) => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text(`Relatório: ${report.relatorioNome}`, 10, 20);
-    doc.setFontSize(12);
-    doc.text(`Data de Criação: ${new Date(report.createdAt).toLocaleDateString()}`, 10, 30);
-    doc.text(`Cliente: ${report.clienteNome || "N/A"}`, 10, 40);
+  // Função para exportar PDF
+  const handleExportPDF = async (report: Report) => {
+    try {
+      const { data } = await getClienteByName({
+        variables: { empresaId: empresa?.id, nif: report.clienteNif }
+      });
 
-    let y = 50;
-    doc.text("Campos Personalizados:", 10, y);
-    y += 10;
-    report.customFields.forEach((field: any) => {
-      const key = String(field.key).replace(/^custom_/, "");
-      let value = field.value;
-      if (typeof value === "boolean") value = value ? "Sim" : "Não";
-      if (Array.isArray(value)) value = value.join(", ");
-      if (value === null || value === undefined) value = "N/A";
-      if (typeof value === "object" && value !== null) {
-        Object.entries(value).forEach(([subKey, subVal]) => {
-          if (["datatype", "required", "label"].includes(subKey)) return;
-          doc.text(`- ${subKey}: ${String(subVal)}`, 15, y);
-          y += 8;
-        });
-      } else {
-        doc.text(`- ${key}: ${String(value)}`, 15, y);
-        y += 8;
+      const cliente = data?.getClientes?.clientes[0];
+      if (!cliente) {
+        setAlert({ message: "Cliente não encontrado.", isError: true });
+        return;
       }
-    });
 
-    doc.save(`${report.relatorioNome}.pdf`);
+      const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      //Primeira definição de fonte
+      doc.setFont("helvetica", "bold");
+
+      // LOGO + TÍTULO CENTRAL
+      if (empresa?.logo) {
+        doc.addImage(empresa.logo, "PNG", 10, 0, 50, 50);
+      } else {
+        doc.setFontSize(12);
+        doc.text(empresa?.nome || "", 10, 20);
+      }
+      
+      // TÍTULO DO RELATÓRIO
+      doc.setFontSize(18);
+      // "RELATÓRIO TÉCNICO" centralizado, "relatorioNome" ao lado (direita), fonte normal
+      doc.setFontSize(18);
+      doc.setFont("helvetica", "bold");
+      doc.text("RELATÓRIO TÉCNICO", pageWidth / 2 - 20, 25, { align: "center" });
+      doc.setFontSize(15);
+      doc.setFont("helvetica", "normal");
+      doc.text(`(${report.modeloNome})`, pageWidth / 2 + 25, 25, { align: "center" });
+
+      let y = 65;
+
+      // BLOCO: IDENTIFICAÇÃO DO CLIENTE
+      doc.setFillColor(60, 60, 60); // fundo escuro para o título
+      doc.roundedRect(10, y, pageWidth - 20, 8, 3, 3, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.text("IDENTIFICAÇÃO DO CLIENTE:", pageWidth / 2, y + 6, { align: "center" });
+
+      // Retângulo cinza claro com borda preta para os dados do cliente
+      const rectWidth = pageWidth - 20;
+      const rectHeight = 45;
+      const rectX = 10;
+      const rectY = y + 10;
+
+      doc.setDrawColor(120, 120, 120);
+      doc.setFillColor(245, 245, 245); // fundo cinza claro
+      doc.roundedRect(rectX, rectY, rectWidth, rectHeight, 5, 5, "FD");
+
+      // Dados do cliente em duas colunas (3 pares à esquerda, 3 à direita)
+      const leftX = rectX + 12;
+      const rightX = rectX + rectWidth / 2 + 12;
+      let rowY = rectY + 10;
+      const rowGap = 9;
+
+      // Esquerda
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(60, 60, 60);
+      doc.text("Cliente:", leftX, rowY);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(30, 30, 30);
+      doc.text(cliente?.nome || report.clienteNome || "", leftX + 38, rowY);
+
+      rowY += rowGap;
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(60, 60, 60);
+      doc.text("Email:", leftX, rowY);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(30, 30, 30);
+      doc.text(cliente?.email || "", leftX + 38, rowY);
+
+      rowY += rowGap;
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(60, 60, 60);
+      doc.text("NIF:", leftX, rowY);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(30, 30, 30);
+      doc.text(cliente?.nif || report.clienteNif || "", leftX + 38, rowY);
+
+      // Direita
+      rowY = rectY + 10;
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(60, 60, 60);
+      doc.text("Localidade:", rightX, rowY);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(30, 30, 30);
+      doc.text(cliente?.localidade || "", rightX + 38, rowY);
+
+      rowY += rowGap;
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(60, 60, 60);
+      doc.text("Morada:", rightX, rowY);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(30, 30, 30);
+      doc.text(cliente?.morada || "", rightX + 38, rowY);
+
+      rowY += rowGap;
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(60, 60, 60);
+      doc.text("Contacto:", rightX, rowY);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(30, 30, 30);
+      doc.text(cliente?.telefone || "", rightX + 38, rowY);
+
+      y += rectHeight + 20;
+
+      // BLOCO: DADOS DO RELATÓRIO
+      doc.setFillColor(60, 60, 60); // fundo escuro para o título
+      doc.roundedRect(10, y, pageWidth - 20, 8, 3, 3, "F");
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(12);
+      doc.setFont("helvetica", "bold");
+      doc.text("DADOS DO RELATÓRIO", pageWidth / 2, y + 6, { align: "center" });
+
+      y += 12;
+      doc.setTextColor(0, 0, 0);
+
+      // Preciso sacar o array report.customFields mas com a key de cada elemento do array removido o prefixo custom_
+      const customFieldKeys = report.customFields.map((f) => f.key.replace(/^custom_/, ""));
+
+      const tableColumns = [
+        "Nome do Relatório",
+        "Data de Criação",
+        "Nome do Modelo",
+        ...customFieldKeys
+      ];
+
+      console.log("Campos da tabela: ", tableColumns)
+
+      const formatPDFValue = (val: any) => {
+        if (typeof val === "boolean") return val ? "X" : "";
+        return String(val);
+      };
+
+      const tableRows = reports.map((r) => [
+        r.relatorioNome,
+        r.createdAt,
+        r.modeloNome,
+        ...r.customFields.map((f) => formatPDFValue(f.value))
+      ]);
+
+      const colCount = tableColumns.length;
+      const colWidth = (pageWidth - 20) / colCount; // 20 = margem esquerda + direita
+
+      autoTable(doc, {
+        startY: y,
+        head: [tableColumns],
+        body: tableRows,
+        styles: {
+          fontSize: 10,
+          valign: "middle",
+          cellPadding: 3,
+          lineWidth: 0.2, // Adiciona linhas verticais finas
+          lineColor: [180, 180, 180], // Cinza claro para divisores
+        },
+        headStyles: {
+          fillColor: [0, 0, 0],
+          textColor: [255, 255, 255],
+          halign: "center",
+          fontStyle: "bold",
+        },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        columnStyles: Object.fromEntries(
+          tableColumns.map((_, idx) => [idx, { halign: "center", cellWidth: colWidth }])
+        ),
+        margin: { left: 10, right: 10 }
+      });
+
+      doc.save(`${report.relatorioNome}.pdf`);
+    } catch (err) {
+      setAlert({ message: "Erro ao exportar PDF.", isError: true });
+    }
   };
+
 
   return (
     <>
@@ -358,7 +520,7 @@ export default function ReportListPage() {
 
         {/* Table or loading/error */}
         {loading ? (
-          <CircularProgress />
+          <LoadingAnimation />
         ) : error ? (
           <Typography color="error">Erro ao carregar relatórios.</Typography>
         ) : (
@@ -366,27 +528,14 @@ export default function ReportListPage() {
             <Table>
               <TableHead>
                 <TableRow sx={{ backgroundColor: theme.palette.background.paper }}>
-                  <TableCell>
-                    <strong>Nome</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>Data de Criação</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>Cliente</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>Modelo</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>Campos Personalizados</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>Status</strong>
-                  </TableCell>
-                  <TableCell sx={{ textAlign: "center" }}>
-                    <strong>Ações</strong>
-                  </TableCell>
+                  <TableCell><strong>Nome</strong></TableCell>
+                  <TableCell><strong>Data de Criação</strong></TableCell>
+                  <TableCell><strong>Cliente</strong></TableCell>
+                  <TableCell><strong>NIF Cliente</strong></TableCell>
+                  <TableCell><strong>Modelo</strong></TableCell>
+                  <TableCell><strong>Campos Personalizados</strong></TableCell>
+                  <TableCell><strong>Status</strong></TableCell>
+                  <TableCell sx={{ textAlign: "center" }}><strong>Ações</strong></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -395,14 +544,9 @@ export default function ReportListPage() {
                     <TableCell>{report.relatorioNome}</TableCell>
                     <TableCell>{new Date(report.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell>{report.clienteNome || "N/A"}</TableCell>
+                    <TableCell>{report.clienteNif || "N/A"}</TableCell>
                     <TableCell>{report.modeloNome || "N/A"}</TableCell>
-                    <TableCell
-                      sx={{
-                        width: "20%",
-                        p: 1,
-                        verticalAlign: "top",
-                      }}
-                    >
+                    <TableCell sx={{ width: "20%", p: 1, verticalAlign: "top" }}>
                       {report.customFields.length === 0 ? (
                         "—"
                       ) : (
@@ -436,7 +580,7 @@ export default function ReportListPage() {
                         }}
                       >
                         {loadingReportId === report.id ? (
-                          <CircularProgress size={28} sx={{ color: "#fff" }} />
+                          <LoadingAnimation />
                         ) : report.isActive ? (
                           "Ativo"
                         ) : (
@@ -444,12 +588,7 @@ export default function ReportListPage() {
                         )}
                       </Button>
                     </TableCell>
-                    <TableCell
-                      sx={{
-                        verticalAlign: "middle",
-                        height: 80, // altura mínima para alinhar com status
-                      }}
-                    >
+                    <TableCell sx={{ verticalAlign: "middle", height: 80 }}>
                       <Stack direction="row" spacing={2} alignItems="center" justifyContent="center">
                         {!report.isActive && (
                           <Button
@@ -481,7 +620,7 @@ export default function ReportListPage() {
                             width: "auto",
                             textTransform: "none",
                           }}
-                          onClick={() => exportReportToPDF(report)}
+                          onClick={() => handleExportPDF(report)}
                         >
                           Exportar PDF
                         </Button>

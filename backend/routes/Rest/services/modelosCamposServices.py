@@ -29,8 +29,8 @@ async def clone_report_template(request: Request, data: ModelosCamposClone):
     # Converter o modelo found para o dicionario
 
     modelo_dict = modelo_found.copy()
-    nome = modelo_dict["model_name"]
-    modelo_dict["model_name"] = f"{nome}_clone"
+    nome = modelo_dict["modelo_nome"]
+    modelo_dict["modelo_nome"] = f"{nome}_clone"
     modelo_dict["created_at"] = date
     modelo_dict["updated_at"] = date
     modelo_dict["created_by"] = user_id
@@ -39,11 +39,11 @@ async def clone_report_template(request: Request, data: ModelosCamposClone):
     # Inserir na base de dados un novo modelo clonado
 
     # Temos de verificar se já exite pelo menos um clone deste modelo. E se já existir então o nome do novo clone deverá ser nome_clone_1, nome_clone_2, etc.
-    existing_clones = await modelos_collection.find({"model_name": {"$regex": f"^{nome}_clone"}}).to_list(length=None)
+    existing_clones = await modelos_collection.find({"modelo_nome": {"$regex": f"^{nome}_clone"}}).to_list(length=None)
 
     if existing_clones:
         clone_count = len(existing_clones)
-        modelo_dict["model_name"] = f"{nome}_clone_{clone_count + 1}"
+        modelo_dict["modelo_nome"] = f"{nome}_clone_{clone_count + 1}"
 
     result = await modelos_collection.insert_one(modelo_dict)
 

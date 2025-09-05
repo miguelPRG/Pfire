@@ -1,12 +1,10 @@
 from .types.relatorioType import Relatorio, RelatorioList, RelatorioCountByCliente, RelatorioCountByModelo
-from database import relatorios_collection, users_empresas_collection, clientes_collection, modelos_collection
+from database import relatorios_collection, users_empresas_collection
 from .utils.limpar import filter_null_fields
 from fastapi import HTTPException
 import strawberry
 from strawberry.types import Info
 from bson import ObjectId
-from asyncio import gather
-
 
 @strawberry.type
 class RelatorioQuery:
@@ -38,29 +36,20 @@ class RelatorioQuery:
 
         # Buscar relatórios no banco de dados
         async for relatorio in relatorios_collection.find(filtro).skip(start).limit(lmt):
-            # Buscar o nome do cliente com base no cliente_id
-            cliente_task = clientes_collection.find_one({"_id": ObjectId(relatorio.get("cliente_id"))})
-            # Buscar o nome do modelo com base no modelo_campos_id
-            modelo_task = modelos_collection.find_one({"_id": ObjectId(relatorio.get("modelo_campos_id"))})
-
-            # Buscar os nomes do cliente e do modelo em paralelo
-            cliente, modelo = await gather(cliente_task, modelo_task)
-
-            cliente_nome = cliente.get("nome") if cliente else None
-            modelo_nome = modelo.get("modelo_nome") if modelo else None
-
+          
             # Extraia os campos personalizados (chaves que começam com "custom_")
             custom_fields = [{"key": k, "value": v} for k, v in relatorio.items() if k.startswith("custom_")]
 
             # Mapeia os dados do relatório
             relatorio_data = {
                 "id": str(relatorio.get("_id")),
-                "modelo_nome": modelo_nome,
-                "cliente_nome": cliente_nome,  # Adiciona o nome do cliente
+                "relatorio_nome": relatorio.get("relatorio_nome"),
+                "modelo_nome": relatorio.get("modelo_nome"),
+                "cliente_nome": relatorio.get("cliente_nome"),
+                "cliente_nif": relatorio.get("cliente_nif"),
                 "created_by": str(relatorio.get("created_by")),
                 "created_at": relatorio.get("created_at"),
                 "custom_fields": custom_fields,
-                "relatorio_nome": relatorio.get("relatorio_nome"),
                 "isActive": relatorio.get("isActive"),
             }
 
@@ -76,7 +65,6 @@ class RelatorioQuery:
     @strawberry.field
     async def getRelatoriosCountByClientes(self, info: Info, empresa_id: str) -> list[RelatorioCountByCliente]:
 
-        empresa_id = ObjectId(empresa_id)
         empresa_id = ObjectId(empresa_id)
         request = info.context["request"]
         jwt = getattr(request.state, "jwt", None)

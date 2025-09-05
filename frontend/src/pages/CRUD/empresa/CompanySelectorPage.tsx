@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useState, useRef } from "react";
 import { Button, Paper, Typography, Box, Pagination, TextField, InputAdornment, Breadcrumbs } from "@mui/material";
 import { Search } from "@mui/icons-material";
 import { useQuery, useLazyQuery } from "@apollo/client/react";
-import { GET_EMPRESAS } from "../../../graphql/empresasqueries";
+import { GET_EMPRESAS } from "../../../graphql/empresasQueries";
 import { useAuth } from "../../../hooks/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";

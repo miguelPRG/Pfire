@@ -1,5 +1,5 @@
 // Importa o React e o hook useState para gerenciar estados locais do componente
-import { useState, Fragment, useEffect } from "react";
+import { useState, useEffect, Fragment, useRef } from "react";
 // Importa hooks do React Router para navegação e acesso à localização
 import { useLocation, useNavigate } from "react-router-dom";
 // Importa componentes de UI do Material-UI
@@ -10,13 +10,13 @@ import {
   Typography,
   Paper,
   Alert,
+  Checkbox,
+  Autocomplete,
+  FormControl,
   MenuItem,
   Select,
-  FormControl,
-  InputLabel,
-  Autocomplete,
-  Checkbox,
   Breadcrumbs,
+  InputLabel,
 } from "@mui/material";
 import HomeIcon from "@mui/icons-material/Home";
 // Importa o hook de autenticação personalizado
@@ -24,21 +24,78 @@ import { useAuth } from "../../../hooks/AuthContext";
 // Importa o hook useQuery do Apollo Client para consultas GraphQL
 import { useLazyQuery } from "@apollo/client/react";
 // Importa a query GraphQL para buscar clientes por empresa
-import { GET_CLIENTES_BY_EMPRESA } from "../../../graphql/clientesqueries";
+import { GET_CLIENTES_BY_EMPRESA } from "../../../graphql/clientesQueries";
 // Importa a biblioteca zod para validação de dados
 import { z } from "zod";
-
 import { useTheme } from "@mui/material/styles"; // Tema do Material UI
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs"; // Componente de breadcrumb estilizado
 
 // Declaração global para o objeto grecaptcha (Google reCAPTCHA)
 declare var grecaptcha: any;
 
-interface returnData {
-  getClientes: {
-    clientes: any;
-    totalClientes: number;
+function buildZodSchema(model: any) {
+  const shape: Record<string, any> = {
+    relatorio_nome: z.string("Campo obrigatório"),
+    modelo_id: z.string("ID inválido").min(24).max(24),
+    cliente_id: z.string("Selecione um cliente").min(1),
+    empresa_id: z.string("ID inválido").min(24),
+    recaptchaToken: z.string("Token obrigatório").min(1),
   };
+
+  if (Array.isArray(model.customFields)) {
+    model.customFields.forEach((field: any) => {
+      const key = field.key.startsWith("custom_") ? field.key : `custom_${field.key}`;
+      const value = field.value;
+
+      if (value.datatype === "object") {
+        const subShape: Record<string, any> = {};
+        Object.entries(value).forEach(([subKey, subValue]: [string, any]) => {
+          if (["datatype", "required", "label"].includes(subKey)) return;
+          const sanitizedSubKey = subKey.replace(/\s+/g, "_");
+          const fullSubKey = sanitizedSubKey.startsWith("custom_")
+            ? sanitizedSubKey
+            : `custom_${sanitizedSubKey}`;
+
+          if (subValue.datatype === "bool") {
+            subShape[fullSubKey] = z.boolean().optional();
+          } else if (subValue.datatype === "number") {
+            subShape[fullSubKey] = subValue.required
+              ? z.preprocess(
+                  (val) => (val === "" ? undefined : Number(val)),
+                  z.number("Preencha este campo com um número válido")
+                )
+              : z.preprocess(
+                  (val) => (val === "" ? undefined : Number(val)),
+                  z.number().optional()
+                );
+          } else {
+            subShape[fullSubKey] = subValue.required
+              ? z.string("Campo obrigatório")
+              : z.string().optional();
+          }
+        });
+        shape[key] = z.object(subShape);
+      } else if (value.datatype === "bool") {
+        shape[key] = z.boolean().optional();
+      } else if (value.datatype === "number") {
+        shape[key] = value.required
+          ? z.preprocess(
+              (val) => (val === "" ? undefined : Number(val)),
+              z.number("Preencha este campo com um número válido")
+            )
+          : z.preprocess(
+              (val) => (val === "" ? undefined : Number(val)),
+              z.number().optional()
+            );
+      } else {
+        shape[key] = value.required
+          ? z.string("Campo obrigatório")
+          : z.string().optional();
+      }
+    });
+  }
+
+  return z.object(shape);
 }
 
 // Define o componente funcional AddNewReportPage
@@ -51,33 +108,25 @@ function AddNewReportPage() {
   const { empresa } = useAuth();
   // Obtém o modelo selecionado passado via navegação
   const selectedModel = location.state?.selectedModel;
-
   // Estado para armazenar os dados do formulário
   const [formData, setFormData] = useState<{ [key: string]: any }>({});
   // Estado para armazenar erros de validação dos campos
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
-  // Estado para o nome do relatório
-  const [reportName, setReportName] = useState("");
-  // Estado para o cliente selecionado
-  const [selectedCliente, setSelectedCliente] = useState("");
   // Estado para mensagem de erro geral
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [clienteInputValue, setClienteInputValue] = useState(""); // <-- Adicione esta linha
+  const formTopRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
 
   // Executa a query GraphQL para buscar clientes da empresa
-  const [getClientes, { data, loading }] = useLazyQuery<returnData>(GET_CLIENTES_BY_EMPRESA, {
+  const [getClientes, { data, loading }] = useLazyQuery(GET_CLIENTES_BY_EMPRESA, {
     variables: { empresaId: empresa?.id },
     fetchPolicy: "cache-first",
   });
 
   useEffect(() => {
-    if (empresa?.id) {
-      getClientes();
-    }
-  }, [empresa?.id, getClientes]);
-
-  // Função para exibir o nome do campo removendo o prefixo "custom_"
-  const displayName = (key: string) => key.replace(/^custom_/, "");
+    if (empresa?.id) getClientes({ variables: { empresaId: empresa.id } });
+  }, [empresa, getClientes]);
 
   // Se não houver modelo selecionado, exibe mensagem de erro
   if (!selectedModel) {
@@ -88,222 +137,136 @@ function AddNewReportPage() {
     );
   }
 
+  const schema = buildZodSchema(selectedModel);
+
   // Função para atualizar o estado dos campos do formulário
   const handleInputChange = (fieldId: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [fieldId]: value }));
-  };
-
-  // Função para construir o schema de validação dinâmico usando zod
-  const buildSchema = () => {
-    const dynamicFields: Record<string, any> = {};
-
-    selectedModel.customFields.forEach((field: any) => {
-      const value = field.value;
-      const key = field.key;
-
-      const makeSchemaByType = (type: string, required: boolean) => {
-        switch (type) {
-          case "number":
-            return required
-              ? z.preprocess(
-                  (val) => Number(val),
-                  z.number().refine((val) => !isNaN(val), { message: "Campo obrigatório" })
-                )
-              : z.preprocess((val) => Number(val), z.number().optional());
-          case "date":
-            return required
-              ? z
-                  .string()
-                  .min(1, "Campo obrigatório")
-                  .refine((val) => /^\d{2}\/\d{2}\/\d{4}$/.test(val), {
-                    message: "Formato de data inválido (DD/MM/AAAA)",
-                  })
-              : z.string().optional();
-          case "array":
-            return required ? z.string().min(1, "Selecione pelo menos uma opção") : z.string().optional();
-          case "string":
-          default:
-            return required ? z.string().min(1, "Campo obrigatório") : z.string().optional();
-        }
-      };
-
-      if (value.datatype === "object") {
-        Object.entries(value).forEach(([subKey, subValue]: [string, any]) => {
-          if (!["datatype", "required", "label"].includes(subKey)) {
-            const fullSubKey = subKey.startsWith("custom_") ? subKey : `custom_${subKey}`;
-            dynamicFields[fullSubKey] = makeSchemaByType(subValue.datatype, subValue.required ?? false);
-          }
-        });
-      } else if (value.datatype !== "bool") {
-        // Ignora validação para campos booleanos
-        const fullKey = key.startsWith("custom_") ? key : `custom_${key}`;
-        dynamicFields[fullKey] = makeSchemaByType(value.datatype, value.required ?? false);
-      }
-    });
-
-    return z.object({
-      relatorio_nome: z.string().min(1, "O nome do relatório é obrigatório"),
-      modelo_campos_id: z.string(),
-      cliente_id: z.string().min(1, "Selecione um cliente"),
-      empresa_id: z.string(),
-      ...dynamicFields,
-    });
-  };
-
-  // Função para tratar e validar os valores dos campos customizados
-  const handleCustomField = (key: string, value: any, formData: any) => {
-    const fullKey = key.startsWith("custom_") ? key : `custom_${key}`;
-
-    if (formData[fullKey] !== undefined) {
-      const rawValue = formData[fullKey];
-
-      switch (value.datatype) {
-        case "date":
-          const dateValue = new Date(rawValue);
-          if (isNaN(dateValue.getTime())) {
-            throw new Error(`O campo ${fullKey} deve ser uma data válida.`);
-          }
-          return `${dateValue.getDate().toString().padStart(2, "0")}/${(dateValue.getMonth() + 1)
-            .toString()
-            .padStart(2, "0")}/${dateValue.getFullYear()}`; // DD/MM/YYYY
-
-        case "number":
-          const numberValue = parseFloat(rawValue);
-          if (isNaN(numberValue)) {
-            throw new Error(`O campo ${fullKey} deve ser um número válido.`);
-          }
-          return numberValue;
-
-        case "bool":
-          return !!rawValue; // Converte para booleano
-        default:
-          return String(rawValue);
-      }
-    }
-
-    return ""; // Evita undefined
-  };
-
-  // Função utilitária para limpar o payload
-  // Limpa nulls e arrays vazios recursivamente
-  const cleanPayload = (obj: any): any => {
-    if (Array.isArray(obj)) {
-      const arr = obj
-        .map((item) => cleanPayload(item))
-        .filter((item) => item !== undefined && item !== null && !(Array.isArray(item) && item.length === 0));
-      return arr.length > 0 ? arr : undefined;
-    }
-
-    if (obj !== null && typeof obj === "object") {
-      const cleaned: Record<string, any> = {};
-      Object.entries(obj).forEach(([key, value]) => {
-        const cleanedValue = cleanPayload(value);
-        if (
-          cleanedValue !== undefined &&
-          cleanedValue !== null &&
-          !(Array.isArray(cleanedValue) && cleanedValue.length === 0)
-        ) {
-          cleaned[key] = cleanedValue;
+    // Detecta se o campo é do tipo number no modelo
+    let isNumberField = false;
+    if (selectedModel) {
+      // Verifica campos simples
+      const field = selectedModel.customFields.find((f: any) => f.key === fieldId);
+      if (field && field.value.datatype === "number") isNumberField = true;
+      // Verifica campos compostos (object)
+      selectedModel.customFields.forEach((f: any) => {
+        if (f.value.datatype === "object") {
+          Object.entries(f.value).forEach(([subKey, subValue]: [string, any]) => {
+            const sanitizedSubKey = subKey.replace(/\s+/g, "_");
+            const fullSubKey = sanitizedSubKey.startsWith("custom_")
+              ? sanitizedSubKey
+              : `custom_${sanitizedSubKey}`;
+            if (fieldId === fullSubKey && subValue.datatype === "number") isNumberField = true;
+          });
         }
       });
-      return Object.keys(cleaned).length > 0 ? cleaned : undefined;
     }
-
-    if (obj === null || obj === undefined) {
-      return undefined;
-    }
-
-    return obj;
+    // Converte para número se necessário
+    const finalValue = isNumberField ? (value === "" ? undefined : Number(value)) : value;
+    setFormData((prev) => ({ ...prev, [fieldId]: finalValue }));
   };
 
   // Função para tratar o envio do formulário
   const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault(); // Previne o comportamento padrão do formulário
-    setErrors({}); // Limpa erros anteriores
-    setErrorMessage(null); // Limpa mensagem de erro anterior
+    event.preventDefault();
+    setErrors({});
+    setErrorMessage(null);
 
     try {
-      // Executa o reCAPTCHA e obtém o token
       const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
         action: "register",
       });
 
-      // Monta o payload inicial com campos fixos
-      const payload: any = {
-        relatorio_nome: reportName,
-        modelo_campos_id: selectedModel.id,
-        cliente_id: selectedCliente,
-        empresa_id: empresa?.id,
-        recaptchaToken,
-      };
-
+      // Garante que todos os campos booleanos estejam presentes no payload
+      const booleanKeys: string[] = [];
       selectedModel.customFields.forEach((field: any) => {
-        const value = field.value;
-        const baseKey = field.key;
-
-        if (value.datatype === "object") {
-          // Trata cada subcampo
-          Object.entries(value).forEach(([subKey, subValue]: [string, any]) => {
-            if (!["datatype", "required", "label"].includes(subKey)) {
-              const fullSubKey = subKey.startsWith("custom_") ? subKey : `custom_${subKey}`;
-
+        if (field.value.datatype === "bool") {
+          booleanKeys.push(field.key);
+        }
+        if (field.value.datatype === "object") {
+          Object.entries(field.value).forEach(([subKey, subValue]: [string, any]) => {
+            if (
+              !["datatype", "required", "label"].includes(subKey)
+            ) {
+              const sanitizedSubKey = subKey.replace(/\s+/g, "_");
+              const fullSubKey = sanitizedSubKey.startsWith("custom_")
+                ? sanitizedSubKey
+                : `custom_${sanitizedSubKey}`;
               if (subValue.datatype === "bool") {
-                // se marcado -> true, se não -> false
-                payload[fullSubKey] = formData[fullSubKey] === true;
-              } else {
-                const processedValue = handleCustomField(fullSubKey, subValue, formData);
-                payload[fullSubKey] = processedValue !== undefined ? processedValue : null;
+                booleanKeys.push(fullSubKey);
               }
             }
           });
-        } else {
-          // Campo simples
-          const fullKey = baseKey.startsWith("custom_") ? baseKey : `custom_${baseKey}`;
-
-          if (value.datatype === "bool") {
-            // se marcado -> true, se não -> false
-            payload[fullKey] = formData[fullKey] === true;
-          } else if (value.datatype === "array") {
-            // Salva como string simples
-            payload[fullKey] = formData[fullKey] ?? "";
-          } else {
-            let processedValue = handleCustomField(fullKey, value, formData);
-            payload[fullKey] = processedValue !== undefined ? processedValue : null;
-          }
         }
       });
 
-      Object.entries(payload).forEach(([key, value]) => {
-        if (key.startsWith("custom_")) {
-          console.log(`${key}:`, value, " | Tipo:", Array.isArray(value) ? "array" : typeof value);
+      // Preenche booleanos ausentes com false
+      const formDataWithBooleans = { ...formData };
+      booleanKeys.forEach((key) => {
+        if (formDataWithBooleans[key] === undefined) {
+          formDataWithBooleans[key] = false;
         }
       });
 
-      /// Limpa payload de valores nulos e arrays vazios
-      const cleanedPayload = cleanPayload(payload);
+      // NÃO agrupe subcampos de objetos!
+      // Object.entries(objectFields).forEach(([objectKey, subKeys]) => {
+      //   const obj: Record<string, any> = {};
+      //   subKeys.forEach((subKey) => {
+      //     obj[subKey] = formDataWithBooleans[subKey];
+      //     delete formDataWithBooleans[subKey];
+      //   });
+      //   formDataWithBooleans[objectKey] = obj;
+      // });
 
-      // Valida com schema usando o payload já limpo
-      const schema = buildSchema();
-      schema.parse({
-        relatorio_nome: cleanedPayload.relatorio_nome,
-        modelo_campos_id: cleanedPayload.modelo_campos_id,
-        cliente_id: cleanedPayload.cliente_id,
-        empresa_id: cleanedPayload.empresa_id,
-        recaptchaToken: cleanedPayload.recaptchaToken,
-        ...cleanedPayload,
+      // Monta o payload inicial
+      const allowedKeys = [
+        "relatorio_nome",
+        "modelo_id",
+        "cliente_id",
+        "empresa_id",
+        "recaptchaToken",
+        // ...todos os custom_...
+      ];
+
+      // Agrupa subcampos de objetos dentro do campo pai
+      const groupedFormData = { ...formDataWithBooleans };
+      selectedModel.customFields.forEach((field: any) => {
+        if (field.value.datatype === "object") {
+          const objectKey = field.key.startsWith("custom_") ? field.key : `custom_${field.key}`;
+          const obj: Record<string, any> = {};
+          Object.entries(field.value).forEach(([subKey, subValue]: [string, any]) => {
+            if (!["datatype", "required", "label"].includes(subKey)) {
+              const sanitizedSubKey = subKey.replace(/\s+/g, "_");
+              const fullSubKey = sanitizedSubKey.startsWith("custom_")
+                ? sanitizedSubKey
+                : `custom_${sanitizedSubKey}`;
+              if (groupedFormData[fullSubKey] !== undefined) {
+                obj[fullSubKey] = groupedFormData[fullSubKey];
+                delete groupedFormData[fullSubKey];
+              }
+            }
+          });
+          groupedFormData[objectKey] = obj;
+        }
       });
 
-      // Verifica se ao menos um campo personalizado foi incluído
-      const hasCustomField = Object.keys(cleanedPayload).some((key) => key.startsWith("custom_"));
-      if (!hasCustomField) {
-        throw new Error("Modelo deve conter pelo menos um campo personalizado.");
-      }
+      const payload = Object.fromEntries(
+        Object.entries({
+          ...groupedFormData,
+          empresa_id: empresa?.id,
+          modelo_id: selectedModel._id?.$oid || selectedModel.id,
+          recaptchaToken,
+        }).filter(([key]) => allowedKeys.includes(key) || key.startsWith("custom_"))
+      );
+
+      schema.parse(payload);
+
+      console.log(payload);
 
       const response = await fetch("/backend/relatorio", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(cleanedPayload),
+        body: JSON.stringify(payload),
       });
 
       // Se houver erro na resposta, lança exceção
@@ -325,18 +288,36 @@ function AddNewReportPage() {
     } catch (err: any) {
       // Se o erro for de validação zod, exibe os erros nos campos
       if (err instanceof z.ZodError) {
+        console.log("Erros de validação:", err.issues);
+
         const fieldErrors: { [key: string]: string } = {};
         err.issues.forEach((e) => {
           let msg = e.message;
-          if (msg === "Invalid input: expected array, received undefined") {
-            msg = "Selecione pelo menos uma opção";
+          // Trata erro de tipo number undefined
+          if (
+            e.code === "invalid_type" &&
+            e.expected === "number" &&
+            msg === "Invalid input: expected number, received undefined"
+          ) {
+            msg = "Preencha este campo com um número válido";
           }
-          if (e.path[0]) fieldErrors[e.path[0] as string] = msg;
+          if (msg === "Invalid input: expected array, received undefined") {
+            msg = "Selecione uma opção";
+          }
+
+          // Junta o path para subcampos de objetos. Isto vai permitir exibir o erro corretamente em subcampos.
+          const fieldPath = e.path.join(".");
+          if (fieldPath) fieldErrors[fieldPath] = msg;
         });
         setErrors(fieldErrors);
+
       } else {
         // Para outros erros, exibe mensagem geral
         setErrorMessage(err.message || "Erro ao adicionar o relatório.");
+         
+        if (formTopRef.current) {
+          formTopRef.current.scrollIntoView({ behavior: "smooth", block: "start" });// Scroll suave até o topo do formulário
+        }
       }
     }
   };
@@ -345,7 +326,7 @@ function AddNewReportPage() {
   return (
     <>
       {/* Breadcrumbs */}
-      <Box sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 2, padding: 2 }}>
+      <Box ref={formTopRef} sx={{ width: "100%", display: "flex", flexDirection: "column", gap: 2, padding: 2 }}>
         <Breadcrumbs
           aria-label="breadcrumb"
           sx={{
@@ -396,24 +377,22 @@ function AddNewReportPage() {
               Adicionar Novo Relatório
             </Typography>
             <Typography variant="h6" gutterBottom>
-              Modelo: {selectedModel.modelName}
+              Modelo: {selectedModel.modeloNome}
             </Typography>
           </Box>
-
           {/* Formulário */}
           <form onSubmit={handleSubmit} noValidate>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
               {/* Campo para nome do relatório */}
               <Box sx={{ width: "100%", flexDirection: "column" }}>
                 <TextField
-                  value={reportName}
+                  value={formData.relatorio_nome || ""}
                   label="Nome do Relatório *"
-                  onChange={(e) => setReportName(e.target.value)}
+                  onChange={(e) => handleInputChange("relatorio_nome", e.target.value)}
                   error={!!errors.relatorio_nome}
                   helperText={errors.relatorio_nome}
                 />
               </Box>
-
               {/* Separador visual com estilo para os campos personalizados */}
               <Paper
                 elevation={1}
@@ -443,50 +422,55 @@ function AddNewReportPage() {
                   if (value.datatype === "object") {
                     return (
                       <Fragment key={baseKey}>
-                        <Box>
-                          <Typography variant="subtitle1" sx={{ fontWeight: "bold", mt: 2 }}>
+                        <Paper
+                          elevation={2}
+                          sx={{
+                            p: 2,
+                            mt: 2,
+                            mb: 2,
+                            borderRadius: 2,
+                            backgroundColor: theme.palette.action.hover,
+                            border: `1.5px solid ${theme.palette.primary.light}`,
+                            boxShadow: theme.shadows[2],
+                          }}
+                        >
+                          <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 2 }}>
                             {displayName(baseKey)}
                           </Typography>
-                        </Box>
-                        {Object.entries(value).map(([subKey, subValue]: [string, any]) => {
-                          if (["datatype", "required", "label"].includes(subKey)) return null;
+                          {Object.entries(value).map(([subKey, subValue]: [string, any]) => {
+                            if (["datatype", "required", "label"].includes(subKey)) return null;
 
-                          const sanitizedSubKey = subKey.replace(/\s+/g, "_");
-                          const fullSubKey = sanitizedSubKey.startsWith("custom_")
-                            ? sanitizedSubKey
-                            : `custom_${sanitizedSubKey}`;
+                            const sanitizedSubKey = subKey.replace(/\s+/g, "_");
+                            const fullSubKey = sanitizedSubKey.startsWith("custom_")
+                              ? sanitizedSubKey
+                              : `custom_${sanitizedSubKey}`;
 
-                          const subLabel = addRequiredMark(displayName(subKey), subValue.required ?? false);
+                            const subLabel = addRequiredMark(displayName(subKey), subValue.required ?? false);
 
-                          return (
-                            <Box key={fullSubKey} sx={{ width: "100%", mt: 1 }}>
-                              <TextField
-                                fullWidth
-                                label={subLabel}
-                                type={
-                                  subValue.datatype === "number"
-                                    ? "number"
-                                    : subValue.datatype === "date"
-                                      ? "date"
-                                      : "text"
-                                }
-                                slotProps={{
-                                  inputLabel: {
-                                    shrink: subValue.datatype === "date" ? true : undefined,
-                                  },
-                                }}
-                                value={formData[fullSubKey] ?? ""}
-                                onChange={(e) => handleInputChange(fullSubKey, e.target.value)}
-                                error={!!errors[fullSubKey]}
-                                helperText={errors[fullSubKey]}
-                              />
-                            </Box>
-                          );
-                        })}
+                            return (
+                              <Box key={fullSubKey} sx={{ width: "100%", mt: 1 }}>
+                                <TextField
+                                  fullWidth
+                                  label={subLabel}
+                                  type={
+                                    subValue.datatype === "number"
+                                      ? "number"
+                                      : subValue.datatype === "date"
+                                        ? "date"
+                                        : "text"
+                                  }
+                                  value={formData[fullSubKey] ?? ""}
+                                  onChange={(e) => handleInputChange(fullSubKey, e.target.value)}
+                                  error={!!errors[`${baseKey}.${fullSubKey}`]}
+                                  helperText={errors[`${baseKey}.${fullSubKey}`] ? `${subLabel}: ${errors[`${baseKey}.${fullSubKey}`]}` : ""}
+                                />
+                              </Box>
+                            );
+                          })}
+                        </Paper>
                       </Fragment>
                     );
                   }
-
                   // Campo simples
                   const label = addRequiredMark(value.label || displayName(baseKey), value.required ?? false);
                   return (
@@ -584,17 +568,12 @@ function AddNewReportPage() {
                       ) : (
                         <TextField
                           fullWidth
-                          label={label} // Sempre usa o label, já com asterisco se obrigatório
+                          label={label}
                           type={value.datatype === "number" ? "number" : value.datatype === "date" ? "date" : "text"}
-                          slotProps={{
-                            inputLabel: {
-                              shrink: value.datatype === "date" ? true : undefined,
-                            },
-                          }}
                           value={formData[baseKey] ?? ""}
                           onChange={(e) => handleInputChange(baseKey, e.target.value)}
                           error={!!errors[baseKey]}
-                          helperText={errors[baseKey]}
+                          helperText={errors[baseKey] ? `${label}: ${errors[baseKey]}` : ""}
                         />
                       )}
                     </Box>
@@ -606,21 +585,12 @@ function AddNewReportPage() {
               <Box sx={{ width: "100%" }}>
                 <Autocomplete
                   fullWidth
-                  options={
-                    formData.clienteInput && formData.clienteInput.length > 0 && data?.getClientes?.clientes
-                      ? data.getClientes.clientes.filter((c: any) =>
-                          c.nome.toLowerCase().includes(formData.clienteInput.toLowerCase())
-                        )
-                      : []
-                  }
+                  options={data?.getClientes?.clientes || []}
                   getOptionLabel={(option) => option.nome}
-                  value={
-                    selectedCliente
-                      ? data?.getClientes?.clientes.find((c: any) => c.id === selectedCliente) || null
-                      : null
-                  }
+                  value={data?.getClientes?.clientes.find((c: any) => c.id === formData.cliente_id) || null}
                   onChange={(_, newValue) => {
-                    setSelectedCliente(newValue?.id || "");
+                    handleInputChange("cliente_id", newValue ? newValue.id : "");
+                    setClienteInputValue(newValue ? newValue.nome : "");
                   }}
                   isOptionEqualToValue={(option, value) => option.id === value.id}
                   renderInput={(params) => (
@@ -630,35 +600,43 @@ function AddNewReportPage() {
                       error={!!errors.cliente_id}
                       helperText={errors.cliente_id}
                       fullWidth
-                      onChange={(e) => {
-                        const inputValue = e.target.value;
-                        setFormData((prev) => ({
-                          ...prev,
-                          clienteInput: inputValue,
-                        }));
-                        // Chama a query para buscar clientes conforme o input
-                        getClientes({ variables: { empresaId: empresa?.id, nome: inputValue } });
-                      }}
-                      value={formData.clienteInput || ""}
-                      slotProps={{
-                        input: {
-                          ...params.InputProps,
-                          endAdornment: null,
-                        },
-                      }}
                     />
                   )}
                   loading={loading}
                   openOnFocus
                   autoHighlight
-                  inputValue={formData.clienteInput || ""}
-                  onInputChange={(_, newInputValue) => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      clienteInput: newInputValue,
-                    }));
-                    // Chama a query para buscar clientes conforme o input
-                    getClientes({ variables: { empresaId: empresa?.id, nome: newInputValue } });
+                  inputValue={clienteInputValue}
+                  onInputChange={(_, newInputValue, reason) => {
+                    setClienteInputValue(newInputValue);
+                    if (reason === "input") {
+                      getClientes({ variables: { empresaId: empresa?.id, nome: newInputValue } });
+                    }
+                  }}
+                  onOpen={() => {
+                    // Busca os primeiros 3 clientes ao abrir (sem filtro de nome)
+                    getClientes({ variables: { empresaId: empresa?.id, limit: 3 } });
+                  }}
+                  slotProps={{
+                    clearIndicator: {
+                      sx: {
+                        background: "none",
+                        color: "inherit",
+                        boxShadow: "none",
+                        "&:hover": {
+                          background: "none",
+                        },
+                      },
+                    },
+                    popupIndicator: {
+                      sx: {
+                        background: "none",
+                        color: "inherit",
+                        boxShadow: "none",
+                        "&:hover": {
+                          background: "none",
+                        },
+                      },
+                    },
                   }}
                 />
               </Box>
@@ -689,6 +667,11 @@ function AddNewReportPage() {
       </Box>
     </>
   );
+}
+
+function displayName(key: string) {
+  // Remove "custom_" e coloca a primeira letra maiúscula
+  return key.replace(/^custom_/, "").replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
 }
 
 // Exporta o componente como padrão

@@ -24,7 +24,7 @@ import {
 import { Search, Delete } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import { useQuery, useLazyQuery } from "@apollo/client/react";
-import { GET_USERS } from "../../../graphql/usersqueries";
+import { GET_USERS } from "../../../graphql/usersQueries";
 import { useAuth } from "../../../hooks/AuthContext";
 import { z } from "zod";
 import { useForm } from "react-hook-form";

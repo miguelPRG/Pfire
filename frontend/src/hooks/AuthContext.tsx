@@ -1,6 +1,6 @@
 import { createContext, useState, useContext, ReactNode, useEffect, useCallback } from "react";
 import { FirebaseLogin } from "../firebase";
-import { GET_EMPRESAS } from "../graphql/empresasqueries";
+import { GET_EMPRESAS } from "../graphql/empresasQueries";
 import { useQuery } from "@apollo/client/react";
 
 declare global {

@@ -24,7 +24,7 @@ import {
 } from "@mui/material";
 import { Search } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
-import { GET_CLIENTES_BY_EMPRESA } from "../../../graphql/clientesqueries";
+import { GET_CLIENTES_BY_EMPRESA } from "../../../graphql/clientesQueries";
 import { useTheme } from "@mui/material/styles";
 import { useAuth } from "../../../hooks/AuthContext";
 import Notification from "../../../components/Notification";
@@ -34,7 +34,7 @@ import HomeIcon from "@mui/icons-material/Home";
 
 declare var grecaptcha: any;
 
-interface Cliente {
+export interface Cliente {
   id: string;
   nome?: string;
   email?: string;

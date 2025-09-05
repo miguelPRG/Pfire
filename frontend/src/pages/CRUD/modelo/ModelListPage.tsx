@@ -24,7 +24,7 @@ import { ExpandLess, ExpandMore, Search, Delete, ContentCopy as ContentCopyIcon 
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
-import { GET_MODELOS_RELATORIOS } from "../../../graphql/modelosqueries";
+import { GET_MODELOS_RELATORIOS } from "../../../graphql/modelosQueries";
 import { useAuth } from "../../../hooks/AuthContext";
 import Notification from "../../../components/Notification";
 import LoadingAnimation from "../../../components/LoadingAnimation";
