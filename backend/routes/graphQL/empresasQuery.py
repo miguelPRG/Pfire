@@ -1,4 +1,4 @@
-from .types.empresaType import Empresa, EmpresaList
+from .types.empresaType import Empresa, EmpresaList, EmpresaFilter
 from database import empresas_collection, users_empresas_collection
 from .utils.limpar import filter_null_fields
 import strawberry
@@ -11,7 +11,7 @@ from base64 import b64encode  # Importa o módulo base64 para conversão
 @strawberry.type
 class EmpresaQuery:
     @strawberry.field
-    async def getEmpresas(self, info: Info, id: str = None, start: int = 0, name: str = None, nif: str = None) -> EmpresaList:
+    async def getEmpresas(self, info: Info, id: str = None, start: int = 0, filter: EmpresaFilter = None) -> EmpresaList:
         request = info.context["request"]
         jwt = getattr(request.state, "jwt", None)
         lmt = 6
@@ -58,12 +58,20 @@ class EmpresaQuery:
             total_empresas = 1
 
             return EmpresaList(empresas=empresas, totalEmpresas=total_empresas)
-        elif name or nif:
+        elif filter:
             filtro_emp = {}
-            if name:
-                filtro_emp["nome"] = {"$regex": f"^{name}", "$options": "i"}
-            if nif:
-                filtro_emp["nif"] = {"$regex": f"^{nif}", "$options": "i"}
+            if filter.nome:
+                filtro_emp["nome"] = {"$regex": f"^{filter.nome}", "$options": "i"}
+            if filter.nif:
+                filtro_emp["nif"] = {"$regex": f"^{filter.nif}", "$options": "i"}
+            if filter.localidade:
+                filtro_emp["localidade"] = {"$regex": f"^{filter.localidade}", "$options": "i"}
+            if filter.morada:
+                filtro_emp["morada"] = {"$regex": f"^{filter.morada}", "$options": "i"}
+            if filter.codigo_postal:
+                filtro_emp["codigo_postal"] = {"$regex": f"^{filter.codigo_postal}", "$options": "i"}
+            if filter.telefone:
+                filtro_emp["telefone"] = {"$regex": f"^{filter.telefone}", "$options": "i"}
 
             total_empresas = await empresas_collection.count_documents(filtro_emp)
             async for empresa in empresas_collection.find(filtro_emp).skip(start).limit(lmt):

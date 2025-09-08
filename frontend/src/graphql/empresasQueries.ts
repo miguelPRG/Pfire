@@ -1,8 +1,8 @@
 import { gql } from "@apollo/client";
 
 export const GET_EMPRESAS = gql`
-  query GetEmpresas($id: String, $start: Int, $name: String, $nif: String) {
-    getEmpresas(id: $id, start: $start, name: $name, nif: $nif) {
+  query GetEmpresas($id: String, $start: Int, $filter: EmpresaFilter) {
+    getEmpresas(id: $id, start: $start, filter: $filter) {
       empresas {
         id
         nome

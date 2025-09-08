@@ -6,6 +6,7 @@ import strawberry
 from strawberry.types import Info
 from bson import ObjectId
 
+
 @strawberry.type
 class RelatorioQuery:
     @strawberry.field
@@ -36,7 +37,7 @@ class RelatorioQuery:
 
         # Buscar relatórios no banco de dados
         async for relatorio in relatorios_collection.find(filtro).skip(start).limit(lmt):
-          
+
             # Extraia os campos personalizados (chaves que começam com "custom_")
             custom_fields = [{"key": k, "value": v} for k, v in relatorio.items() if k.startswith("custom_")]
 

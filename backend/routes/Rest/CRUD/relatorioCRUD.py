@@ -73,7 +73,6 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
     # Sacar todas as chaves do relatório que começam com "custom_"
     relatorio_fields = {key: relatorio_data[key] for key in relatorio_data if key.startswith("custom_")}
 
-
     if len(relatorio_fields) <= 0:
         raise HTTPException(status_code=400, detail="Modelo deve contar pelo menos um campo personalizado.")
 
@@ -159,13 +158,13 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
     try:
         # Inserir o relatório na base de dados
         relatorio = await relatorios_collection.insert_one(relatorio_data)
-        
+
         if not relatorio:
             raise HTTPException(status_code=500, detail="Erro ao criar o relatório!")
 
     except DuplicateKeyError as e:
         raise HTTPException(status_code=409, detail=f"Já existe um relatório com o nome {relatorio.relatorio_nome} na empresa {empresa['nome']}.")
-    
+
     return {"message": "Relatório criado com sucesso!"}
 
 
