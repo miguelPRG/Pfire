@@ -47,13 +47,22 @@ export default function CompanySelectorPage() {
   const mounted = useRef(false);
 
   // carga "normal" (sin filtros) para el estado inicial
-  const { data, error, loading, refetch } = useQuery<ReturnedData>(GET_EMPRESAS, {
+  const { data, error, loading } = useQuery<ReturnedData>(GET_EMPRESAS, {
     fetchPolicy: "cache-first",
     variables: {
       start: page * rowsPerPage,
       filter: {}, // <-- Corrigido para 'filter'
     },
   });
+
+    // Estado para largura da tela
+  const [larguraTela, setLarguraTela] = useState(window.innerWidth);
+
+  useEffect(() => {
+    const handleResize = () => setLarguraTela(window.innerWidth);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // lazy para avanzada
   const [fetchEmpresas, { data: searchData }] = useLazyQuery<ReturnedData>(GET_EMPRESAS, {
@@ -208,15 +217,6 @@ export default function CompanySelectorPage() {
     );
   }
 
-  // Estado para largura da tela
-  const [larguraTela, setLarguraTela] = useState(window.innerWidth);
-
-  useEffect(() => {
-    const handleResize = () => setLarguraTela(window.innerWidth);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
   return (
     <>
       <Box sx={{ p: 4, maxWidth: "1500px", mx: "auto", bgcolor: theme.palette.mode === "dark" ? theme.palette.background.default : "transparent", transition: "background-color .2s" }}>
@@ -336,9 +336,7 @@ export default function CompanySelectorPage() {
                           : {},
                       },
                     });
-                  } else {
-                    refetch({ start: nextPage * rowsPerPage, filter: {} });
-                  }
+                  } 
                 }}
                 color="primary"
                 showFirstButton
