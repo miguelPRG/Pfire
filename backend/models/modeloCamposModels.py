@@ -115,7 +115,7 @@ def validate_field(key, value):
 class ModelosCamposCreate(BaseModel):
     modelo_nome: str = Field(..., max_length=100, description="Nome do modelo. Deve ter no máximo 100 caracteres.")
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
-    # recaptchaToken: str
+    recaptchaToken: str
     model_config = ConfigDict(extra="allow")  # Permite campos extras
 
     @field_validator("empresa_id", mode="before")

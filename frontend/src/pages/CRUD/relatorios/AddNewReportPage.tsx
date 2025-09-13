@@ -52,9 +52,7 @@ function buildZodSchema(model: any) {
         Object.entries(value).forEach(([subKey, subValue]: [string, any]) => {
           if (["datatype", "required", "label"].includes(subKey)) return;
           const sanitizedSubKey = subKey.replace(/\s+/g, "_");
-          const fullSubKey = sanitizedSubKey.startsWith("custom_")
-            ? sanitizedSubKey
-            : `custom_${sanitizedSubKey}`;
+          const fullSubKey = sanitizedSubKey.startsWith("custom_") ? sanitizedSubKey : `custom_${sanitizedSubKey}`;
 
           if (subValue.datatype === "bool") {
             subShape[fullSubKey] = z.boolean().optional();
@@ -64,14 +62,9 @@ function buildZodSchema(model: any) {
                   (val) => (val === "" ? undefined : Number(val)),
                   z.number("Preencha este campo com um número válido")
                 )
-              : z.preprocess(
-                  (val) => (val === "" ? undefined : Number(val)),
-                  z.number().optional()
-                );
+              : z.preprocess((val) => (val === "" ? undefined : Number(val)), z.number().optional());
           } else {
-            subShape[fullSubKey] = subValue.required
-              ? z.string("Campo obrigatório")
-              : z.string().optional();
+            subShape[fullSubKey] = subValue.required ? z.string("Campo obrigatório") : z.string().optional();
           }
         });
         shape[key] = z.object(subShape);
@@ -83,14 +76,9 @@ function buildZodSchema(model: any) {
               (val) => (val === "" ? undefined : Number(val)),
               z.number("Preencha este campo com um número válido")
             )
-          : z.preprocess(
-              (val) => (val === "" ? undefined : Number(val)),
-              z.number().optional()
-            );
+          : z.preprocess((val) => (val === "" ? undefined : Number(val)), z.number().optional());
       } else {
-        shape[key] = value.required
-          ? z.string("Campo obrigatório")
-          : z.string().optional();
+        shape[key] = value.required ? z.string("Campo obrigatório") : z.string().optional();
       }
     });
   }
@@ -152,9 +140,7 @@ function AddNewReportPage() {
         if (f.value.datatype === "object") {
           Object.entries(f.value).forEach(([subKey, subValue]: [string, any]) => {
             const sanitizedSubKey = subKey.replace(/\s+/g, "_");
-            const fullSubKey = sanitizedSubKey.startsWith("custom_")
-              ? sanitizedSubKey
-              : `custom_${sanitizedSubKey}`;
+            const fullSubKey = sanitizedSubKey.startsWith("custom_") ? sanitizedSubKey : `custom_${sanitizedSubKey}`;
             if (fieldId === fullSubKey && subValue.datatype === "number") isNumberField = true;
           });
         }
@@ -184,13 +170,9 @@ function AddNewReportPage() {
         }
         if (field.value.datatype === "object") {
           Object.entries(field.value).forEach(([subKey, subValue]: [string, any]) => {
-            if (
-              !["datatype", "required", "label"].includes(subKey)
-            ) {
+            if (!["datatype", "required", "label"].includes(subKey)) {
               const sanitizedSubKey = subKey.replace(/\s+/g, "_");
-              const fullSubKey = sanitizedSubKey.startsWith("custom_")
-                ? sanitizedSubKey
-                : `custom_${sanitizedSubKey}`;
+              const fullSubKey = sanitizedSubKey.startsWith("custom_") ? sanitizedSubKey : `custom_${sanitizedSubKey}`;
               if (subValue.datatype === "bool") {
                 booleanKeys.push(fullSubKey);
               }
@@ -236,9 +218,7 @@ function AddNewReportPage() {
           Object.entries(field.value).forEach(([subKey, subValue]: [string, any]) => {
             if (!["datatype", "required", "label"].includes(subKey)) {
               const sanitizedSubKey = subKey.replace(/\s+/g, "_");
-              const fullSubKey = sanitizedSubKey.startsWith("custom_")
-                ? sanitizedSubKey
-                : `custom_${sanitizedSubKey}`;
+              const fullSubKey = sanitizedSubKey.startsWith("custom_") ? sanitizedSubKey : `custom_${sanitizedSubKey}`;
               if (groupedFormData[fullSubKey] !== undefined) {
                 obj[fullSubKey] = groupedFormData[fullSubKey];
                 delete groupedFormData[fullSubKey];
@@ -310,13 +290,12 @@ function AddNewReportPage() {
           if (fieldPath) fieldErrors[fieldPath] = msg;
         });
         setErrors(fieldErrors);
-
       } else {
         // Para outros erros, exibe mensagem geral
         setErrorMessage(err.message || "Erro ao adicionar o relatório.");
-         
+
         if (formTopRef.current) {
-          formTopRef.current.scrollIntoView({ behavior: "smooth", block: "start" });// Scroll suave até o topo do formulário
+          formTopRef.current.scrollIntoView({ behavior: "smooth", block: "start" }); // Scroll suave até o topo do formulário
         }
       }
     }
@@ -462,7 +441,11 @@ function AddNewReportPage() {
                                   value={formData[fullSubKey] ?? ""}
                                   onChange={(e) => handleInputChange(fullSubKey, e.target.value)}
                                   error={!!errors[`${baseKey}.${fullSubKey}`]}
-                                  helperText={errors[`${baseKey}.${fullSubKey}`] ? `${subLabel}: ${errors[`${baseKey}.${fullSubKey}`]}` : ""}
+                                  helperText={
+                                    errors[`${baseKey}.${fullSubKey}`]
+                                      ? `${subLabel}: ${errors[`${baseKey}.${fullSubKey}`]}`
+                                      : ""
+                                  }
                                 />
                               </Box>
                             );
@@ -671,7 +654,10 @@ function AddNewReportPage() {
 
 function displayName(key: string) {
   // Remove "custom_" e coloca a primeira letra maiúscula
-  return key.replace(/^custom_/, "").replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
+  return key
+    .replace(/^custom_/, "")
+    .replace(/_/g, " ")
+    .replace(/^./, (c) => c.toUpperCase());
 }
 
 // Exporta o componente como padrão

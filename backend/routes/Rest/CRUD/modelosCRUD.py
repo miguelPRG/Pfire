@@ -18,7 +18,7 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
     - Insere documento em `modelos_collection`
     """
     # 1) Validar token reCAPTCHA
-    # await validar_recaptcha_token(modelo.recaptchaToken, "register")
+    await validar_recaptcha_token(modelo.recaptchaToken, "register")
 
     # Verificar se o user tem permissão para criar modelos nesta empresa
     jwt = getattr(request.state, "jwt", None)

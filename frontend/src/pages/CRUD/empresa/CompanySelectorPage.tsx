@@ -55,7 +55,7 @@ export default function CompanySelectorPage() {
     },
   });
 
-    // Estado para largura da tela
+  // Estado para largura da tela
   const [larguraTela, setLarguraTela] = useState(window.innerWidth);
 
   useEffect(() => {
@@ -82,7 +82,10 @@ export default function CompanySelectorPage() {
 
   // seleccionar empresa recordada
   useLayoutEffect(() => {
-    if (!mounted.current) { mounted.current = true; return; }
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
     const empresaId = localStorage.getItem("empresaId");
     if (!empresaId) return;
     const found = empresas.find((e) => e.id === empresaId);
@@ -102,9 +105,7 @@ export default function CompanySelectorPage() {
     fetchEmpresas({
       variables: {
         start: 0,
-        filter: adv.text.trim()
-          ? { [adv.field]: adv.text.trim() }
-          : {},
+        filter: adv.text.trim() ? { [adv.field]: adv.text.trim() } : {},
       },
     });
   };
@@ -164,7 +165,19 @@ export default function CompanySelectorPage() {
           )}
         </Box>
 
-        <Typography variant="h6" fontWeight="bold" align="center" sx={{ mb: 1.5, fontSize: "1.23rem", lineHeight: 1.12, minHeight: 44, color: theme.palette.text.primary , maxWidth: 220 }}>
+        <Typography
+          variant="h6"
+          fontWeight="bold"
+          align="center"
+          sx={{
+            mb: 1.5,
+            fontSize: "1.23rem",
+            lineHeight: 1.12,
+            minHeight: 44,
+            color: theme.palette.text.primary,
+            maxWidth: 220,
+          }}
+        >
           {emp.nome}
         </Typography>
 
@@ -181,10 +194,10 @@ export default function CompanySelectorPage() {
           <Typography variant="body2">
             <strong>Localidade:</strong> {emp.localidade}
           </Typography>
-          <Typography variant="body2" >
+          <Typography variant="body2">
             <strong>NIF:</strong> {emp.nif}
           </Typography>
-          <Typography variant="body2" >
+          <Typography variant="body2">
             <strong>Telefone:</strong> {emp.telefone}
           </Typography>
           <Typography variant="body2">
@@ -219,11 +232,35 @@ export default function CompanySelectorPage() {
 
   return (
     <>
-      <Box sx={{ p: 4, maxWidth: "1500px", mx: "auto", bgcolor: theme.palette.mode === "dark" ? theme.palette.background.default : "transparent", transition: "background-color .2s" }}>
-        <Paper elevation={theme.palette.mode === "dark" ? 2 : 3} sx={{ p: 4, borderRadius: 4, background: theme.palette.mode === "dark" ? "linear-gradient(180deg, #0f1420 0%, #111827 100%)" : "#fcfdff", border: `1px solid ${theme.palette.mode === "dark" ? "#1f2a37" : "#e9eef6"}` }}>
+      <Box
+        sx={{
+          p: 4,
+          maxWidth: "1500px",
+          mx: "auto",
+          bgcolor: theme.palette.mode === "dark" ? theme.palette.background.default : "transparent",
+          transition: "background-color .2s",
+        }}
+      >
+        <Paper
+          elevation={theme.palette.mode === "dark" ? 2 : 3}
+          sx={{
+            p: 4,
+            borderRadius: 4,
+            background: theme.palette.mode === "dark" ? "linear-gradient(180deg, #0f1420 0%, #111827 100%)" : "#fcfdff",
+            border: `1px solid ${theme.palette.mode === "dark" ? "#1f2a37" : "#e9eef6"}`,
+          }}
+        >
           {/* Breadcrumbs */}
-          <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 3, backgroundColor: "background.paper", maxWidth: "200px", borderRadius: 5, padding: 0.5 }}>
-            <StyledBreadcrumb component="a" sx={{ cursor: "pointer" }} onClick={() => navigate("/")} icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />} />
+          <Breadcrumbs
+            aria-label="breadcrumb"
+            sx={{ mb: 3, backgroundColor: "background.paper", maxWidth: "200px", borderRadius: 5, padding: 0.5 }}
+          >
+            <StyledBreadcrumb
+              component="a"
+              sx={{ cursor: "pointer" }}
+              onClick={() => navigate("/")}
+              icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
+            />
             <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} component="span" label="Empresas" />
           </Breadcrumbs>
 
@@ -268,19 +305,40 @@ export default function CompanySelectorPage() {
                 "&:hover": {
                   backgroundColor: theme.palette.mode === "dark" ? "#0e1730" : "#e3f2fd",
                   transform: "scale(1.012)",
-                  boxShadow: theme.palette.mode === "dark" ? "0 8px 18px rgba(0,0,0,0.5)" : "0 8px 18px rgba(0,0,0,0.12)",
+                  boxShadow:
+                    theme.palette.mode === "dark" ? "0 8px 18px rgba(0,0,0,0.5)" : "0 8px 18px rgba(0,0,0,0.12)",
                 },
                 py: 5,
               }}
               onClick={() => navigate("/criar-empresa")}
             >
-              <Box sx={{ width: 72, height: 72, background: theme.palette.primary.main, borderRadius: "50%", color: theme.palette.getContrastText(theme.palette.primary.main), fontWeight: "bold", fontSize: 42, display: "flex", alignItems: "center", justifyContent: "center", mb: 2, boxShadow: theme.palette.mode === "dark" ? "0 6px 16px rgba(0,0,0,0.6)" : "0 6px 16px rgba(0,0,0,0.12)" }}>
+              <Box
+                sx={{
+                  width: 72,
+                  height: 72,
+                  background: theme.palette.primary.main,
+                  borderRadius: "50%",
+                  color: theme.palette.getContrastText(theme.palette.primary.main),
+                  fontWeight: "bold",
+                  fontSize: 42,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  mb: 2,
+                  boxShadow:
+                    theme.palette.mode === "dark" ? "0 6px 16px rgba(0,0,0,0.6)" : "0 6px 16px rgba(0,0,0,0.12)",
+                }}
+              >
                 +
               </Box>
               <Typography variant="h5" fontWeight="bold" align="center" sx={{ color: theme.palette.text.primary }}>
                 Criar nova empresa
               </Typography>
-              <Typography variant="body1" align="center" sx={{ mt: 1, maxWidth: 500, color: theme.palette.text.secondary }}>
+              <Typography
+                variant="body1"
+                align="center"
+                sx={{ mt: 1, maxWidth: 500, color: theme.palette.text.secondary }}
+              >
                 Clique aqui para criar uma nova empresa
               </Typography>
             </Paper>
@@ -291,8 +349,8 @@ export default function CompanySelectorPage() {
             <Box sx={{ textAlign: "center", py: 8, color: theme.palette.text.secondary }}>
               <Typography variant="h6">Nenhuma empresa encontrada.</Typography>
             </Box>
-          ) : [0, 3].map((start) => {
-
+          ) : (
+            [0, 3].map((start) => {
               const empresasPorLinha = larguraTela < 600 ? 1 : larguraTela < 900 ? 2 : 3;
               const empresasSlice = empresas.slice(start, start + empresasPorLinha);
               if (empresasSlice.length === 0) return null;
@@ -316,7 +374,8 @@ export default function CompanySelectorPage() {
                   ))}
                 </Box>
               );
-            })}
+            })
+          )}
 
           {/* Paginación */}
           {pageCount > 1 && (
@@ -331,12 +390,10 @@ export default function CompanySelectorPage() {
                     fetchEmpresas({
                       variables: {
                         start: nextPage * rowsPerPage,
-                        filter: adv.text.trim()
-                          ? { [adv.field]: adv.text.trim() }
-                          : {},
+                        filter: adv.text.trim() ? { [adv.field]: adv.text.trim() } : {},
                       },
                     });
-                  } 
+                  }
                 }}
                 color="primary"
                 showFirstButton
@@ -344,12 +401,14 @@ export default function CompanySelectorPage() {
                 sx={{
                   "& .MuiPaginationItem-root": { color: theme.palette.text.primary },
                   "& .MuiPaginationItem-root.Mui-selected": {
-                    backgroundColor: theme.palette.mode === "dark" ? theme.palette.primary.dark : theme.palette.primary.main,
+                    backgroundColor:
+                      theme.palette.mode === "dark" ? theme.palette.primary.dark : theme.palette.primary.main,
                     color: theme.palette.getContrastText(
                       theme.palette.mode === "dark" ? theme.palette.primary.dark : theme.palette.primary.main
                     ),
                     "&:hover": {
-                      backgroundColor: theme.palette.mode === "dark" ? theme.palette.primary.main : theme.palette.primary.dark,
+                      backgroundColor:
+                        theme.palette.mode === "dark" ? theme.palette.primary.main : theme.palette.primary.dark,
                     },
                   },
                 }}

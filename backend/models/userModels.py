@@ -87,7 +87,7 @@ class UserUpdateEmail(BaseModel):
 
 
 class UserActivation(BaseModel):
-    # recaptchaToken: str
+    recaptchaToken: str
     id: str = Field(None, min_length=24, max_length=24, description="O ID do utilizador a ser ativado/desativado.")
 
     @field_validator("id", mode="before")

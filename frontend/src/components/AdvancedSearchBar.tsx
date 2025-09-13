@@ -1,14 +1,4 @@
-import {
-  Box,
-  Stack,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  TextField,
-  Button,
-  useTheme,
-} from "@mui/material";
+import { Box, Stack, FormControl, InputLabel, Select, MenuItem, TextField, Button, useTheme } from "@mui/material";
 
 type FieldOption = { value: string; label: string };
 type AdvState = { field: string; text: string };
@@ -40,9 +30,7 @@ export default function AdvancedSearchBar({
         sx={{
           p: 2,
           borderRadius: 2,
-          border: `1px solid ${
-            theme.palette.mode === "dark" ? theme.palette.divider : "#e7eaf3"
-          }`,
+          border: `1px solid ${theme.palette.mode === "dark" ? theme.palette.divider : "#e7eaf3"}`,
           bgcolor: theme.palette.mode === "dark" ? "#0b1220" : "#fff",
           width: "100%",
           maxWidth: 920,
@@ -54,9 +42,7 @@ export default function AdvancedSearchBar({
             labelId="adv-field-label"
             label="Campo"
             value={value.field}
-            onChange={(e) =>
-              onChange({ field: e.target.value as string, text: value.text })
-            }
+            onChange={(e) => onChange({ field: e.target.value as string, text: value.text })}
           >
             {fields.map((f) => (
               <MenuItem key={f.value} value={f.value}>
@@ -74,8 +60,8 @@ export default function AdvancedSearchBar({
           sx={{ width: controlWidth }}
         />
 
-        <Stack direction="row" spacing={1} justifyContent="flex-end">      
-         <Button variant="contained" onClick={handleApply} sx={{ minWidth: 112 }}>
+        <Stack direction="row" spacing={1} justifyContent="flex-end">
+          <Button variant="contained" onClick={handleApply} sx={{ minWidth: 112 }}>
             Aplicar
           </Button>
         </Stack>

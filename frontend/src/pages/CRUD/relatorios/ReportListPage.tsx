@@ -250,7 +250,7 @@ export default function ReportListPage() {
   const handleExportPDF = async (report: Report) => {
     try {
       const { data } = await getClienteByName({
-        variables: { empresaId: empresa?.id, nif: report.clienteNif }
+        variables: { empresaId: empresa?.id, nif: report.clienteNif },
       });
 
       const cliente = data?.getClientes?.clientes[0];
@@ -272,7 +272,7 @@ export default function ReportListPage() {
         doc.setFontSize(12);
         doc.text(empresa?.nome || "", 10, 20);
       }
-      
+
       // TÍTULO DO RELATÓRIO
       doc.setFontSize(18);
       // "RELATÓRIO TÉCNICO" centralizado, "relatorioNome" ao lado (direita), fonte normal
@@ -374,14 +374,9 @@ export default function ReportListPage() {
       // Preciso sacar o array report.customFields mas com a key de cada elemento do array removido o prefixo custom_
       const customFieldKeys = report.customFields.map((f) => f.key.replace(/^custom_/, ""));
 
-      const tableColumns = [
-        "Nome do Relatório",
-        "Data de Criação",
-        "Nome do Modelo",
-        ...customFieldKeys
-      ];
+      const tableColumns = ["Nome do Relatório", "Data de Criação", "Nome do Modelo", ...customFieldKeys];
 
-      console.log("Campos da tabela: ", tableColumns)
+      console.log("Campos da tabela: ", tableColumns);
 
       const formatPDFValue = (val: any) => {
         if (typeof val === "boolean") return val ? "X" : "";
@@ -392,7 +387,7 @@ export default function ReportListPage() {
         r.relatorioNome,
         r.createdAt,
         r.modeloNome,
-        ...r.customFields.map((f) => formatPDFValue(f.value))
+        ...r.customFields.map((f) => formatPDFValue(f.value)),
       ]);
 
       const colCount = tableColumns.length;
@@ -419,7 +414,7 @@ export default function ReportListPage() {
         columnStyles: Object.fromEntries(
           tableColumns.map((_, idx) => [idx, { halign: "center", cellWidth: colWidth }])
         ),
-        margin: { left: 10, right: 10 }
+        margin: { left: 10, right: 10 },
       });
 
       doc.save(`${report.relatorioNome}.pdf`);
@@ -427,7 +422,6 @@ export default function ReportListPage() {
       setAlert({ message: "Erro ao exportar PDF.", isError: true });
     }
   };
-
 
   return (
     <>
@@ -528,14 +522,30 @@ export default function ReportListPage() {
             <Table>
               <TableHead>
                 <TableRow sx={{ backgroundColor: theme.palette.background.paper }}>
-                  <TableCell><strong>Nome</strong></TableCell>
-                  <TableCell><strong>Data de Criação</strong></TableCell>
-                  <TableCell><strong>Cliente</strong></TableCell>
-                  <TableCell><strong>NIF Cliente</strong></TableCell>
-                  <TableCell><strong>Modelo</strong></TableCell>
-                  <TableCell><strong>Campos Personalizados</strong></TableCell>
-                  <TableCell><strong>Status</strong></TableCell>
-                  <TableCell sx={{ textAlign: "center" }}><strong>Ações</strong></TableCell>
+                  <TableCell>
+                    <strong>Nome</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Data de Criação</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Cliente</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>NIF Cliente</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Modelo</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Campos Personalizados</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Status</strong>
+                  </TableCell>
+                  <TableCell sx={{ textAlign: "center" }}>
+                    <strong>Ações</strong>
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -579,13 +589,7 @@ export default function ReportListPage() {
                           await toggleReportStatus(report.id, report.isActive);
                         }}
                       >
-                        {loadingReportId === report.id ? (
-                          <LoadingAnimation />
-                        ) : report.isActive ? (
-                          "Ativo"
-                        ) : (
-                          "Inativo"
-                        )}
+                        {loadingReportId === report.id ? <LoadingAnimation /> : report.isActive ? "Ativo" : "Inativo"}
                       </Button>
                     </TableCell>
                     <TableCell sx={{ verticalAlign: "middle", height: 80 }}>
