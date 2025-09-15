@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from routes.Rest.services import usersServices, userEmpresaServices, modelosCamposServices, globalIdsServices
-from routes.Rest.CRUD import userCRUD, empresaCRUD, clienteCRUD, modelosCRUD, relatorioCRUD
+from routes.Rest.CRUD import userCRUD, empresaCRUD, clienteCRUD, modelosCRUD, relatorioCRUD, criteriosCRUD
 from routes.graphQL.schema import graphql_router
 from controller.jwtValidation import verify_jwt  # Função para verificar o JWT
 from fastapi.responses import JSONResponse  # Import necessário
@@ -90,25 +90,27 @@ async def fast_api_http_middleware(request: Request, call_next):
 # Limpar base de dados
 database_cleaner_scheduler()
 
-# Rotas do usuário (REST)
+# Rotas de serviços do usuário (REST)
 app.include_router(usersServices.routerUser)
-app.include_router(userCRUD.routerUser)
 app.include_router(globalIdsServices.routerUser)
-# Rotas de serviços do usuário-empresa (REST)
+app.include_router(modelosCamposServices.routerModelo)
 app.include_router(userEmpresaServices.routerUserEmpresa)
+
+#Rotas de CRUD
+app.include_router(userCRUD.routerUser)
 # Rotas da empresa (REST)
 app.include_router(empresaCRUD.routerEmpresa)
 # Rotas do cliente (REST)
 app.include_router(clienteCRUD.routerCliente)
 # Rotas dis modelos (REST)
 app.include_router(modelosCRUD.routerModelo)
-# Rotas de templates de relatórios (REST)
-app.include_router(modelosCamposServices.routerModelo)
 # Rotas de relatórios (REST)
 app.include_router(relatorioCRUD.routerRelatorio)
-# Rotas GraphQL
-app.include_router(graphql_router, prefix="/graphql")
+# Rotas de critérios (REST)
+app.include_router(criteriosCRUD.routerCriterio)
 
+# Rota GraphQL
+app.include_router(graphql_router, prefix="/graphql")
 
 @app.get("/")
 async def root(request: Request):

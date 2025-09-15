@@ -20,7 +20,7 @@ import {
   Tooltip,
   Breadcrumbs,
 } from "@mui/material";
-import { ExpandLess, ExpandMore, Search, Delete, ContentCopy as ContentCopyIcon } from "@mui/icons-material";
+import { ExpandLess, ExpandMore, Search, Delete, ContentCopy as ContentCopyIcon, PlaylistAddCheck } from "@mui/icons-material";
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
@@ -31,6 +31,10 @@ import LoadingAnimation from "../../../components/LoadingAnimation";
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
 import HomeIcon from "@mui/icons-material/Home";
 import { Controller, useForm } from "react-hook-form";
+import Dialog from "@mui/material/Dialog";
+import DialogTitle from "@mui/material/DialogTitle";
+import DialogContent from "@mui/material/DialogContent";
+import DialogActions from "@mui/material/DialogActions";
 
 // Função utilitária para formatar tipos de campos
 const formatType = (type: string) => {
@@ -41,6 +45,7 @@ const formatType = (type: string) => {
     date: "Data",
     object: "Grupo de Campos",
     array: "Lista",
+    critério: "Critério",
   };
   return map[type] || type;
 };
@@ -67,8 +72,10 @@ export default function ReportModelListPage() {
   // Estado para pesquisa, paginação e campos expandidos
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
-  const [alert, setAlert] = useState<{ message: string; isError: boolean } | null>(null);
+  const [alert, setAlert] = useState<{ message: string; isError: boolean; onConfirm?: () => void } | null>(null);
   const [cloningId, setCloningId] = useState<string | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
 
   const { control } = useForm();
 
@@ -117,17 +124,19 @@ export default function ReportModelListPage() {
     }
   }, []);
 
+  // Função para pedir confirmação antes de deletar
+  const requestDelete = (id: string) => {
+    setSelectedModelId(id);
+    setDeleteDialogOpen(true);
+  };
+
   // Função para deletar um modelo de relatório
   const handleDelete = async (id: string) => {
-    if (!window.confirm("Tens certeza que desejas apagar este modelo?")) return;
-
     try {
-      // Executa reCAPTCHA antes de deletar
       const recaptchaToken = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
         action: "register",
       });
 
-      // Requisição para deletar modelo
       const res = await fetch(`/backend/modelo`, {
         method: "DELETE",
         credentials: "include",
@@ -473,9 +482,28 @@ export default function ReportModelListPage() {
                               <ContentCopyIcon />
                             </IconButton>
                           </Tooltip>
+                          <Tooltip title="Criar Critérios" placement="top">
+                            <IconButton
+                              onClick={() => navigate("/edit-criteria", { state: { modeloId: modelo.id } })}
+                              sx={{
+                                color: "#fff",
+                                backgroundColor: "primary.main",
+                                border: "1px solid",
+                                borderColor: "primary.main",
+                                "&:hover": {
+                                  backgroundColor: "primary.dark",
+                                  color: "#fff",
+                                },
+                                width: 40,
+                                height: 40,
+                              }}
+                            >
+                              <PlaylistAddCheck />
+                            </IconButton>
+                          </Tooltip>
                           <Tooltip title="Excluir modelo" placement="top">
                             <IconButton
-                              onClick={() => handleDelete(modelo.id)}
+                              onClick={() => requestDelete(modelo.id)}
                               sx={{
                                 backgroundColor: "error.main",
                                 color: "#fff",
@@ -512,8 +540,39 @@ export default function ReportModelListPage() {
         )}
       </Paper>
 
+      {/* Dialog de confirmação para apagar permanentemente */}
+      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+        <DialogTitle sx={{ fontWeight: "bold" }}>Eliminar modelo permanentemente!</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Tem certeza que deseja eliminar este modelo <strong>de forma permanente?</strong> Esta ação não pode ser desfeita!
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)} variant="outlined">
+            Cancelar
+          </Button>
+          <Button
+            onClick={async () => {
+              if (selectedModelId) {
+                await handleDelete(selectedModelId);
+                setDeleteDialogOpen(false);
+                setSelectedModelId(null);
+              }
+            }}
+            color="error"
+            variant="contained"
+          >
+            Confirmar
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {/*Notification*/}
-      <Notification alert={alert} setAlert={setAlert} />
+      <Notification
+        alert={alert}
+        setAlert={setAlert}
+      />
     </>
   );
 }

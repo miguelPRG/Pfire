@@ -70,7 +70,7 @@ async def atualizar_cliente(cliente: ClienteUpdate, request: Request, id: str):
     except:
         raise HTTPException(400, detail="ID inválido. Deve ser um ObjectId válido.")
 
-    await validar_recaptcha_token(cliente.recaptchaToken, "register")
+    await validar_recaptcha_token(cliente.recaptchaToken, "update")
 
     if not jwt.get("isSuperAdmin", None):
         user_empresa = await users_empresas_collection.find_one({"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True})
@@ -99,7 +99,7 @@ async def apagar_cliente(cliente: ClienteActivion, request: Request):
     except:
         raise HTTPException(400, detail="ID ou NIF inválido.")
 
-    await validar_recaptcha_token(cliente.recaptchaToken, "register")
+    await validar_recaptcha_token(cliente.recaptchaToken, "delete")
 
     if not jwt.get("isSuperAdmin", None):
         user_empresa = await users_empresas_collection.find_one({"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True})

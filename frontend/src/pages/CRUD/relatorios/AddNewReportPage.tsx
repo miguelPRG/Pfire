@@ -108,9 +108,10 @@ function AddNewReportPage() {
 
   // Executa a query GraphQL para buscar clientes da empresa
   const [getClientes, { data, loading }] = useLazyQuery(GET_CLIENTES_BY_EMPRESA, {
-    variables: { empresaId: empresa?.id },
     fetchPolicy: "cache-first",
   });
+
+  
 
   useEffect(() => {
     if (empresa?.id) getClientes({ variables: { empresaId: empresa.id } });

@@ -27,6 +27,7 @@ import { useTheme } from "@mui/material/styles"; // Tema do Material UI
 import ArrowCircleUpIcon from "@mui/icons-material/ArrowCircleUp"; // Ícone de scroll para o topo
 import HomeIcon from "@mui/icons-material/Home"; // <--- adicionado
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs"; // <--- adicionado
+import Notification from "../../../components/Notification";
 
 // Esquema de validação para um subcampo personalizado
 const subfieldSchema = z.object({
@@ -76,6 +77,8 @@ export default function ReportTemplatePage() {
   // Verifica se está editando um modelo existente
   const editingModel = location.state?.modelo;
   const isEditing = !!editingModel;
+
+  const [alert, setAlert] = useState<{ message: string; isError: boolean; onConfirm?: () => void } | null>(null);
 
   // Estado para controlar o nome do novo campo a ser adicionado
   const [newFieldName, setNewFieldName] = useState(""); // Nome do novo campo
@@ -223,6 +226,11 @@ export default function ReportTemplatePage() {
 
   const onSubmit = async (data: FormSchema) => {
     try {
+      
+      if(fields.length === 0){
+        throw new Error("Adicione pelo menos um campo personalizado.");
+      }
+      
       // Executa o reCAPTCHA Enterprise
       const recaptchaToken = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
         action: "register",
@@ -328,13 +336,17 @@ export default function ReportTemplatePage() {
         },
       });
     } catch (err: any) {
-      alert(err.message || `Erro ao ${isEditing ? "atualizar" : "criar"} modelo.`);
+      // Mostra erro na tela
+      setAlert({ message: err.message || `Erro ao ${isEditing ? "atualizar" : "criar"} modelo`, isError: true });
     }
   };
 
   // Renderização do componente
   return (
     <>
+      {/* Notification para mostrar erros/sucesso */}
+      <Notification alert={alert} setAlert={setAlert} />
+
       {/* Breadcrumbs */}
       <Box sx={{ width: "100%", display: "flex", flexDirection: "column", padding: 2 }}>
         <Breadcrumbs
@@ -500,6 +512,7 @@ export default function ReportTemplatePage() {
                               <MenuItem value="date">Data</MenuItem>
                               <MenuItem value="object">Multicampo</MenuItem>
                               <MenuItem value="array">Lista</MenuItem>
+                              <MenuItem value="critério">Critério</MenuItem>
                             </Select>
                           )}
                         />

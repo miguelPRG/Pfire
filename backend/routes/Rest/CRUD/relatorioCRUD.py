@@ -98,9 +98,13 @@ async def create_relatorio(relatorio: RelatorioCreate, request: Request):
             if value["datatype"] == "number" and not isinstance(relatorio_fields[key], (int, float)):
                 raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser um número.")
 
-            elif value["datatype"] in ["string", "date"]:
+            elif value["datatype"] in ["string", "date", "critério"]:
                 if not isinstance(relatorio_fields[key], str):
                     raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser uma string.")
+                
+                # se for critério, verificar se o valor é apenas uma letra do alfabeto
+                if value["datatype"] == "critério" and (len(relatorio_fields[key]) != 1 or not relatorio_fields[key].isalpha()):
+                    raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser uma única letra do alfabeto (A-Z).")
 
             elif value["datatype"] == "bool" and not isinstance(relatorio_fields[key], bool):
                 raise HTTPException(status_code=400, detail=f"O campo {full_key} deve ser um booleano (true/false).")

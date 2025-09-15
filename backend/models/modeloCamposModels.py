@@ -9,7 +9,7 @@ MAIN_FIELDS = {
     "recaptchaToken",
 }
 
-ALLOWED_DATATYPES = {"number", "string", "bool", "object", "date", "array"}  # Tipos de dados permitidos
+ALLOWED_DATATYPES = {"number", "string", "bool", "object", "date", "array", "critério"}  # Tipos de dados permitidos
 
 
 # Função auxiliar para validação de campos personalizados no método de criação
@@ -154,7 +154,7 @@ class ModelosCamposUpdate(BaseModel):
         None, max_length=100, description="Nome do modelo. Deve ter no máximo 100 caracteres."
     )  # Ex: "extintores", "para-raios", "bocas de incêndio"
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
-    # recaptchaToken: str
+    recaptchaToken: str
     model_config = ConfigDict(extra="allow")  # Permite campos extras
 
     @field_validator("empresa_id", mode="before")

@@ -72,7 +72,6 @@ const commonComponents: Components = {
   },
   MuiTextField: {
     defaultProps: {
-      margin: "normal",
       fullWidth: true,
       variant: "filled",
       slotProps: {
@@ -86,9 +85,6 @@ const commonComponents: Components = {
     styleOverrides: {
       root: {
         marginBottom: "10px",
-        "&:hover .MuiOutlinedInput-root .MuiOutlinedInput-notchedOutline": {
-          borderColor: "#1976D2",
-        },
         width: "100%",
         "& .MuiInputBase-root": { height: 50 }, // Ajusta altura do campo
         "& .MuiInputLabel-root": {

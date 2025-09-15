@@ -7,16 +7,9 @@ from datetime import datetime
 
 routerModelo = APIRouter(prefix="/modelo", tags=["modelo"])
 
-
 # Criar Modelo
 @routerModelo.post("/")
 async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
-    """
-    - Valida token reCAPTCHA
-    - Verifica permissão (superadmin ou admin da empresa)
-    - Garante unicidade do nome do modelo na empresa
-    - Insere documento em `modelos_collection`
-    """
     # 1) Validar token reCAPTCHA
     await validar_recaptcha_token(modelo.recaptchaToken, "register")
 
@@ -66,7 +59,7 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
 @routerModelo.put("/{id}")
 async def update_modelo(request: Request, modelo: ModelosCamposUpdate, id: str):
     # 1) Validar token reCAPTCHA
-    # await validar_recaptcha_token(modelo.recaptchaToken, "register")
+    await validar_recaptcha_token(modelo.recaptchaToken, "register")
 
     id = ObjectId(id)
 

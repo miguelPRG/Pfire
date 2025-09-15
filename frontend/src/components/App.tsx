@@ -7,6 +7,7 @@ import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
 import ResponsiveAppBar from "./ResponsiveAppBar";
 import LoadingAnimation from "./LoadingAnimation";
+import CreateCriteriaPage from "../pages/CRUD/modelo/CriteriaEdit"; // ajuste o caminho se necessário
 
 /* Função utilitária para simular delay e visualizar animação de carregamento
 
@@ -126,6 +127,7 @@ function App() {
     return <LoadingAnimation />;
   }
 
+  
   return (
     <Router>
       <Suspense fallback={<LoadingAnimation />}>
@@ -151,6 +153,7 @@ function App() {
             <Route path="/report-templates" element={<ProtectedRoute element={<ReportTemplatesPage />} />} />
             <Route path="/add-new-report" element={<ProtectedRoute element={<AddNewReportPage />} />} />
             <Route path="/reports-list" element={<ProtectedRoute element={<ReportListPage />} />} />
+            <Route path="/edit-criteria" element={<ProtectedRoute element={<CreateCriteriaPage />} />} />
             {/* Rota de fallback para redirecionar usuários não autenticados */}
             <Route path="/add-new-report" element={<ProtectedRoute element={<AddNewReportPage />} />} />
 
