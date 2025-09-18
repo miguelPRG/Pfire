@@ -188,17 +188,21 @@ export default function ReportListPage() {
         action,
       });
 
+      const body = {
+        id: reportId,
+        empresa_id: empresa?.id,
+        recaptchaToken,
+      };
+
+      console.log("Corpo: ", body)
+
       const response = await fetch(endpoint, {
         method,
         headers: {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify({
-          id: reportId,
-          empresa_id: empresa?.id,
-          recaptchaToken,
-        }),
+        body: JSON.stringify(body),
       });
 
       const json = await response.json();
