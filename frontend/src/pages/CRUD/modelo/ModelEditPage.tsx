@@ -21,7 +21,7 @@ import {
   Breadcrumbs, // <--- adicionado
 } from "@mui/material"; // Componentes de UI do Material UI
 import DeleteIcon from "@mui/icons-material/Delete"; // Ícone de deletar
-import { useState, useEffect } from "react"; // Hooks do React
+import { useState, useEffect, useRef } from "react"; // Hooks do React
 import { useAuth } from "../../../hooks/AuthContext"; // Contexto de autenticação
 import { useTheme } from "@mui/material/styles"; // Tema do Material UI
 import ArrowCircleUpIcon from "@mui/icons-material/ArrowCircleUp"; // Ícone de scroll para o topo
@@ -59,11 +59,7 @@ const newFieldNameSchema = z.string().min(1, "Nome do campo é obrigatório");
 type Field = z.infer<typeof fieldSchema>;
 type FormSchema = z.infer<typeof formSchema>;
 
-/**
- * Página para criação e edição de modelos de relatórios personalizados.
- * Permite adicionar/remover campos dinâmicos, definir tipos e obrigatoriedade,
- * e submeter o modelo para o backend.
- */
+
 export default function ReportTemplatePage() {
   // Hook para navegação entre páginas
   const navigate = useNavigate();
@@ -94,49 +90,6 @@ export default function ReportTemplatePage() {
   const [originalFieldNames, setOriginalFieldNames] = useState<string[]>([]);
   const [originalSubfieldNames, setOriginalSubfieldNames] = useState<Record<string, string[]>>({});
 
-  // Função para converter customFields do backend para o formato do formulário
-  const convertCustomFieldsToFormFields = (customFields: any[]) => {
-    return (
-      customFields?.map((field: any) => {
-        const fieldName = field.key?.replace(/^custom_/, "") || "";
-        const fieldValue = field.value;
-
-        if (fieldValue?.datatype === "object") {
-          // Para campos objeto, extrair subcampos
-          const subfields = Object.entries(fieldValue)
-            .filter(([key]) => !["datatype", "required"].includes(key))
-            .map(([key, val]: any) => ({
-              // Remove o prefixo custom_ dos subcampos para exibição ao usuário
-              name: key.replace(/^custom_/, ""),
-              datatype: val.datatype,
-              required: val.required,
-            }));
-
-          return {
-            name: fieldName,
-            datatype: fieldValue.datatype,
-            required: fieldValue.required,
-            subfields: subfields.length > 0 ? subfields : undefined,
-          };
-        } else if (fieldValue?.datatype === "array") {
-          // Corrigido: inclui items
-          return {
-            name: fieldName,
-            datatype: fieldValue.datatype,
-            required: fieldValue.required,
-            items: Array.isArray(fieldValue.items) ? fieldValue.items : [],
-          };
-        } else {
-          return {
-            name: fieldName,
-            datatype: fieldValue?.datatype || "",
-            required: fieldValue?.required || false,
-          };
-        }
-      }) || []
-    );
-  };
-
   // Hook do formulário com valores padrão se estiver editando
   const {
     register,
@@ -152,7 +105,6 @@ export default function ReportTemplatePage() {
     defaultValues: isEditing
       ? {
           modeloNome: editingModel.modeloNome,
-          fields: convertCustomFieldsToFormFields(editingModel.customFields),
         }
       : {
           modeloNome: "",
@@ -171,10 +123,6 @@ export default function ReportTemplatePage() {
 
   // useEffect para resetar o formulário quando mudar de modelo
   useEffect(() => {
-    if (location?.state?.modelo) {
-      console.log("Aqui estão os dados do modelo a ser editado: ", location?.state?.modelo);
-    }
-
     if (isEditing) {
       const formattedFields = convertCustomFieldsToFormFields(editingModel.customFields);
       reset({
@@ -204,6 +152,73 @@ export default function ReportTemplatePage() {
    * Adiciona um novo campo personalizado ao array de campos.
    * Valida se o nome não está vazio e não é duplicado.
    */
+
+    // Função para converter customFields do backend para o formato do formulário
+  const convertCustomFieldsToFormFields = (customFields: any[]) => {
+  function ordenarPorIndice(obj) {
+    if (obj.datatype === "object") {
+      // Obtem os campos do objeto, excluindo "datatype", "required" e "indice"
+      const fixedFields = ["datatype", "required", "indice"];
+      const subfields = Object.keys(obj)
+        .filter(k => !fixedFields.includes(k))
+        .sort((a, b) => obj[a].indice - obj[b].indice);
+
+      // Reconstruir objeto na ordem correta
+      const newObj = {};
+      fixedFields.forEach(f => { if (obj[f] !== undefined) newObj[f] = obj[f]; });
+      subfields.forEach(f => newObj[f] = obj[f]);
+      return newObj;
+    }
+    return obj;
+  }
+
+  // Ordena o array principal
+  const sortedData = customFields
+    .map(item => ({ ...item, value: ordenarPorIndice(item.value) }))
+    .sort((a, b) => a.value.indice - b.value.indice);
+
+  // Remover todos os campos indice dos objetos e subcampos
+  return (
+    sortedData?.map((field: any) => {
+      const fieldName = field.key?.replace(/^custom_/, "") || "";
+      const fieldValue = field.value;
+
+      if (fieldValue?.datatype === "object") {
+        // Para campos objeto, extrair subcampos
+        const subfields = Object.entries(fieldValue)
+          .filter(([key]) => !["datatype", "required", "indice"].includes(key))
+          .map(([key, val]: any) => ({
+            // Remove o prefixo custom_ dos subcampos para exibição ao usuário
+            name: key.replace(/^custom_/, ""),
+            datatype: val.datatype,
+            required: val.required,
+            // Não inclui indice!
+          }));
+
+        return {
+          name: fieldName,
+          datatype: fieldValue.datatype,
+          required: fieldValue.required,
+          subfields: subfields.length > 0 ? subfields : undefined,
+        };
+      } else if (fieldValue?.datatype === "array") {
+        return {
+          name: fieldName,
+          datatype: fieldValue.datatype,
+          required: fieldValue.required,
+          items: Array.isArray(fieldValue.items) ? fieldValue.items : [],
+        };
+      } else {
+        return {
+          name: fieldName,
+          datatype: fieldValue?.datatype || "",
+          required: fieldValue?.required || false,
+        };
+      }
+    }) || []
+  );
+  };
+
   const addField = () => {
     try {
       // Validação Zod
@@ -341,6 +356,34 @@ export default function ReportTemplatePage() {
     }
   };
 
+  // Refs para scroll
+  const modeloNomeRef = useRef<HTMLInputElement>(null);
+  const fieldRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  // Atualize o handleSubmit para scrollar até o erro
+  const handleFormSubmit = handleSubmit(
+    async (data) => {
+      await onSubmit(data);
+    },
+    (formErrors) => {
+      // 1. Checa se há erro no nome do modelo
+      if (formErrors.modeloNome) {
+        modeloNomeRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+        modeloNomeRef.current?.focus();
+        return;
+      }
+      // 2. Checa erros nos campos personalizados
+      if (formErrors.fields && Array.isArray(formErrors.fields)) {
+        for (let i = 0; i < formErrors.fields.length; i++) {
+          if (formErrors.fields[i]) {
+            fieldRefs.current[i]?.scrollIntoView({ behavior: "smooth", block: "center" });
+            break;
+          }
+        }
+      }
+    }
+  );
+
   // Renderização do componente
   return (
     <>
@@ -384,7 +427,7 @@ export default function ReportTemplatePage() {
         <Paper elevation={3} sx={{ maxWidth: 700, mx: "auto", mt: 4, p: 3, mb: 10 }}>
           <Box
             component="form"
-            onSubmit={handleSubmit(onSubmit)}
+            onSubmit={handleFormSubmit} // <-- use o novo handleFormSubmit
             sx={{ display: "flex", flexDirection: "column", gap: 2 }}
           >
             {/* Título do formulário */}

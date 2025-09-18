@@ -17,6 +17,8 @@ import {
   Select,
   Breadcrumbs,
   InputLabel,
+  Tooltip,
+  IconButton,
 } from "@mui/material";
 import HomeIcon from "@mui/icons-material/Home";
 // Importa o hook de autenticação personalizado
@@ -27,6 +29,7 @@ import { useLazyQuery } from "@apollo/client/react";
 import { GET_CLIENTES_BY_EMPRESA } from "../../../graphql/clientesQueries";
 // Importa a biblioteca zod para validação de dados
 import { z } from "zod";
+import ArrowCircleUpIcon from "@mui/icons-material/ArrowCircleUp"; // Ícone de scroll para o topo
 import { useTheme } from "@mui/material/styles"; // Tema do Material UI
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs"; // Componente de breadcrumb estilizado
 
@@ -103,6 +106,7 @@ function AddNewReportPage() {
   // Estado para mensagem de erro geral
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [clienteInputValue, setClienteInputValue] = useState(""); // <-- Adicione esta linha
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const formTopRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
 
@@ -111,11 +115,16 @@ function AddNewReportPage() {
     fetchPolicy: "cache-first",
   });
 
-  
-
   useEffect(() => {
     if (empresa?.id) getClientes({ variables: { empresaId: empresa.id } });
   }, [empresa, getClientes]);
+
+    // Efeito para mostrar/esconder o botão de scroll para o topo conforme o scroll da página
+  useEffect(() => {
+    const handleScroll = () => setShowScrollTop(window.scrollY > 100); // Mostra botão se scroll > 100px
+    window.addEventListener("scroll", handleScroll); // Adiciona listener
+    return () => window.removeEventListener("scroll", handleScroll); // Remove listener ao desmontar
+  }, []);
 
   // Se não houver modelo selecionado, exibe mensagem de erro
   if (!selectedModel) {
@@ -189,18 +198,6 @@ function AddNewReportPage() {
           formDataWithBooleans[key] = false;
         }
       });
-
-      // NÃO agrupe subcampos de objetos!
-      // Object.entries(objectFields).forEach(([objectKey, subKeys]) => {
-      //   const obj: Record<string, any> = {};
-      //   subKeys.forEach((subKey) => {
-      //     obj[subKey] = formDataWithBooleans[subKey];
-      //     delete formDataWithBooleans[subKey];
-      //   });
-      //   formDataWithBooleans[objectKey] = obj;
-      // });
-
-      // Monta o payload inicial
       const allowedKeys = [
         "relatorio_nome",
         "modelo_id",
@@ -391,178 +388,191 @@ function AddNewReportPage() {
                   Campos Personalizados
                 </Typography>
 
-                {selectedModel.customFields.map((field: any) => {
-                  const value = field.value;
-                  const baseKey = field.key;
-                  // Função para adicionar ' *' se o campo for obrigatório
-                  const addRequiredMark = (label: string, required: boolean) =>
-                    required && value.datatype != "bool" ? `${label} *` : label;
+                {/* Ordena os campos pelo indice */}
+                {selectedModel.customFields
+                  .slice()
+                  .sort((a: any, b: any) => (a.value.indice ?? 0) - (b.value.indice ?? 0))
+                  .map((field: any) => {
+                    const value = field.value;
+                    const baseKey = field.key;
+                    // Função para adicionar ' *' se o campo for obrigatório
+                    const addRequiredMark = (label: string, required: boolean) =>
+                      required && value.datatype != "bool" ? `${label} *` : label;
 
-                  // Se for um campo composto (object)
-                  if (value.datatype === "object") {
-                    return (
-                      <Fragment key={baseKey}>
-                        <Paper
-                          elevation={2}
-                          sx={{
-                            p: 2,
-                            mt: 2,
-                            mb: 2,
-                            borderRadius: 2,
-                            backgroundColor: theme.palette.action.hover,
-                            border: `1.5px solid ${theme.palette.primary.light}`,
-                            boxShadow: theme.shadows[2],
-                          }}
-                        >
-                          <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 2 }}>
-                            {displayName(baseKey)}
-                          </Typography>
-                          {Object.entries(value).map(([subKey, subValue]: [string, any]) => {
-                            if (["datatype", "required", "label"].includes(subKey)) return null;
+                    // Se for um campo composto (object)
+                    if (value.datatype === "object") {
+                      // Ordena subcampos pelo indice
+                      const subFields = Object.entries(value)
+                        .filter(([subKey, subValue]: [string, any]) => !["datatype", "required", "label", "indice"].includes(subKey))
+                        .sort(([, a]: [string, any], [, b]: [string, any]) => (a.indice ?? 0) - (b.indice ?? 0));
 
-                            const sanitizedSubKey = subKey.replace(/\s+/g, "_");
-                            const fullSubKey = sanitizedSubKey.startsWith("custom_")
-                              ? sanitizedSubKey
-                              : `custom_${sanitizedSubKey}`;
+                      return (
+                        <Fragment key={baseKey}>
+                          <Paper
+                            elevation={2}
+                            sx={{
+                              p: 2,
+                              mt: 2,
+                              mb: 2,
+                              borderRadius: 2,
+                              backgroundColor: theme.palette.action.hover,
+                              border: `1.5px solid ${theme.palette.primary.light}`,
+                              boxShadow: theme.shadows[2],
+                            }}
+                          >
+                            <Typography variant="subtitle1" sx={{ fontWeight: "bold", mb: 2 }}>
+                              {/* Apenas o nome amigável, sem o nome original */}
+                              {displayName(baseKey)}
+                            </Typography>
+                            {subFields.map(([subKey, subValue]: [string, any]) => {
+                              const sanitizedSubKey = subKey.replace(/\s+/g, "_");
+                              const fullSubKey = sanitizedSubKey.startsWith("custom_")
+                                ? sanitizedSubKey
+                                : `custom_${sanitizedSubKey}`;
 
-                            const subLabel = addRequiredMark(displayName(subKey), subValue.required ?? false);
+                              const subLabel = addRequiredMark(displayName(subKey), subValue.required ?? false);
 
-                            return (
-                              <Box key={fullSubKey} sx={{ width: "100%", mt: 1 }}>
-                                <TextField
-                                  fullWidth
-                                  label={subLabel}
-                                  type={
-                                    subValue.datatype === "number"
-                                      ? "number"
-                                      : subValue.datatype === "date"
+                              return (
+                                <Box key={fullSubKey} sx={{ width: "100%", mt: 1 }}>
+                                  <TextField
+                                    fullWidth
+                                    label={
+                                      // Apenas o nome amigável, sem o nome original
+                                      subLabel
+                                    }
+                                    type={
+                                      subValue.datatype === "number"
+                                        ? "number"
+                                        : subValue.datatype === "date"
                                         ? "date"
                                         : "text"
-                                  }
-                                  value={formData[fullSubKey] ?? ""}
-                                  onChange={(e) => handleInputChange(fullSubKey, e.target.value)}
-                                  error={!!errors[`${baseKey}.${fullSubKey}`]}
-                                  helperText={
-                                    errors[`${baseKey}.${fullSubKey}`]
-                                      ? `${subLabel}: ${errors[`${baseKey}.${fullSubKey}`]}`
-                                      : ""
-                                  }
-                                />
-                              </Box>
+                                    }
+                                    value={formData[fullSubKey] ?? ""}
+                                    onChange={(e) => handleInputChange(fullSubKey, e.target.value)}
+                                    error={!!errors[`${baseKey}.${fullSubKey}`]}
+                                    helperText={
+                                      errors[`${baseKey}.${fullSubKey}`]
+                                        ? `${subLabel}: ${errors[`${baseKey}.${fullSubKey}`]}`
+                                        : ""
+                                    }
+                                  />
+                                </Box>
+                              );
+                            })}
+                          </Paper>
+                        </Fragment>
+                      );
+                    }
+                    // Campo simples
+                    const label = addRequiredMark(value.label || displayName(baseKey), value.required ?? false);
+                    return (
+                      <Box key={baseKey} sx={{ width: "100%", mt: 1 }}>
+                        {value.datatype === "bool" ? (
+                          (() => {
+                            const fullKey = baseKey.startsWith("custom_") ? baseKey : `custom_${baseKey}`;
+                            return (
+                              <FormControl fullWidth error={!!errors[fullKey]}>
+                                <Box sx={{ display: "flex", alignItems: "center" }}>
+                                  <Checkbox
+                                    checked={!!formData[fullKey]}
+                                    onChange={(e) => handleInputChange(fullKey, e.target.checked)}
+                                  />
+                                  <Typography>
+                                    {label}
+                                  </Typography>
+                                </Box>
+                                {errors[fullKey] && (
+                                  <Typography variant="caption" color="error">
+                                    {errors[fullKey]}
+                                  </Typography>
+                                )}
+                              </FormControl>
                             );
-                          })}
-                        </Paper>
-                      </Fragment>
-                    );
-                  }
-                  // Campo simples
-                  const label = addRequiredMark(value.label || displayName(baseKey), value.required ?? false);
-                  return (
-                    <Box key={baseKey} sx={{ width: "100%", mt: 1 }}>
-                      {value.datatype === "bool" ? (
-                        (() => {
-                          const fullKey = baseKey.startsWith("custom_") ? baseKey : `custom_${baseKey}`;
-                          return (
-                            <FormControl fullWidth error={!!errors[fullKey]}>
-                              <Box sx={{ display: "flex", alignItems: "center" }}>
-                                <Checkbox
-                                  checked={!!formData[fullKey]}
-                                  onChange={(e) => handleInputChange(fullKey, e.target.checked)}
-                                />
-                                <Typography>{label}</Typography>
-                              </Box>
-                              {errors[fullKey] && (
-                                <Typography variant="caption" color="error">
-                                  {errors[fullKey]}
-                                </Typography>
-                              )}
-                            </FormControl>
-                          );
-                        })()
-                      ) : value.datatype === "array" && Array.isArray(value.items) ? (
-                        <FormControl fullWidth sx={{ mt: 2 }}>
-                          <InputLabel
-                            sx={{
-                              "&.Mui-focused": {
-                                transform: "translate(6px, -18px) scale(0.75)",
-                              },
-                            }}
-                          >
-                            {label}
-                          </InputLabel>
-                          <Select
+                          })()
+                        ) : value.datatype === "array" && Array.isArray(value.items) ? (
+                          <FormControl fullWidth sx={{ mt: 2 }}>
+                            <InputLabel
+                              sx={{
+                                "&.Mui-focused": {
+                                  transform: "translate(6px, -18px) scale(0.75)",
+                                },
+                              }}
+                            >
+                              {label}
+                            </InputLabel>
+                            <Select
+                              value={formData[baseKey] ?? ""}
+                              onChange={(e) => handleInputChange(baseKey, e.target.value)}
+                              renderValue={(selected) => selected}
+                              MenuProps={{
+                                PaperProps: {
+                                  sx: {
+                                    border: `1px solid ${theme.palette.divider}`,
+                                    borderRadius: 2,
+                                    boxShadow: 2,
+                                    backgroundColor: theme.palette.background.paper,
+                                    color: theme.palette.text.primary,
+                                    width: "20%",
+                                  },
+                                },
+                              }}
+                              sx={{
+                                backgroundColor: theme.palette.background.paper,
+                                color: theme.palette.text.primary,
+                                "& .MuiSelect-icon": {
+                                  color: theme.palette.text.primary,
+                                },
+                                "& .MuiOutlinedInput-notchedOutline": {
+                                  borderColor: theme.palette.divider,
+                                },
+                                "&:hover .MuiOutlinedInput-notchedOutline": {
+                                  borderColor: theme.palette.primary.main,
+                                },
+                                "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                                  borderColor: theme.palette.primary.main,
+                                },
+                              }}
+                            >
+                              {value.items.map((option: string) => (
+                                <MenuItem
+                                  key={option}
+                                  value={option}
+                                  sx={{
+                                    backgroundColor: theme.palette.background.paper,
+                                    color: theme.palette.text.primary,
+                                    "&.Mui-selected": {
+                                      backgroundColor: theme.palette.action.selected,
+                                    },
+                                    "&:hover": {
+                                      backgroundColor: theme.palette.action.hover,
+                                    },
+                                  }}
+                                >
+                                  {option}
+                                </MenuItem>
+                              ))}
+                            </Select>
+
+                            {errors[baseKey] && (
+                              <Typography variant="caption" color="error">
+                                {errors[baseKey]}
+                              </Typography>
+                            )}
+                          </FormControl>
+                        ) : (
+                          <TextField
+                            fullWidth
+                            label={label}
+                            type={value.datatype === "number" ? "number" : value.datatype === "date" ? "date" : "text"}
                             value={formData[baseKey] ?? ""}
                             onChange={(e) => handleInputChange(baseKey, e.target.value)}
-                            renderValue={(selected) => selected}
-                            MenuProps={{
-                              PaperProps: {
-                                sx: {
-                                  border: `1px solid ${theme.palette.divider}`,
-                                  borderRadius: 2,
-                                  boxShadow: 2,
-                                  backgroundColor: theme.palette.background.paper,
-                                  color: theme.palette.text.primary,
-                                  width: "20%",
-                                },
-                              },
-                            }}
-                            sx={{
-                              backgroundColor: theme.palette.background.paper,
-                              color: theme.palette.text.primary,
-                              "& .MuiSelect-icon": {
-                                color: theme.palette.text.primary,
-                              },
-                              "& .MuiOutlinedInput-notchedOutline": {
-                                borderColor: theme.palette.divider,
-                              },
-                              "&:hover .MuiOutlinedInput-notchedOutline": {
-                                borderColor: theme.palette.primary.main,
-                              },
-                              "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                                borderColor: theme.palette.primary.main,
-                              },
-                            }}
-                          >
-                            {value.items.map((option: string) => (
-                              <MenuItem
-                                key={option}
-                                value={option}
-                                sx={{
-                                  backgroundColor: theme.palette.background.paper,
-                                  color: theme.palette.text.primary,
-                                  "&.Mui-selected": {
-                                    backgroundColor: theme.palette.action.selected,
-                                  },
-                                  "&:hover": {
-                                    backgroundColor: theme.palette.action.hover,
-                                  },
-                                }}
-                              >
-                                {option}
-                              </MenuItem>
-                            ))}
-                          </Select>
-
-                          {errors[baseKey] && (
-                            <Typography variant="caption" color="error">
-                              {errors[baseKey]}
-                            </Typography>
-                          )}
-                        </FormControl>
-                      ) : (
-                        <TextField
-                          fullWidth
-                          label={label}
-                          type={value.datatype === "number" ? "number" : value.datatype === "date" ? "date" : "text"}
-                          value={formData[baseKey] ?? ""}
-                          onChange={(e) => handleInputChange(baseKey, e.target.value)}
-                          error={!!errors[baseKey]}
-                          helperText={errors[baseKey] ? `${label}: ${errors[baseKey]}` : ""}
-                        />
-                      )}
-                    </Box>
-                  );
-                })}
+                            error={!!errors[baseKey]}
+                            helperText={errors[baseKey] ? `${label}: ${errors[baseKey]}` : ""}
+                          />
+                        )}
+                      </Box>
+                    );
+                  })}
               </Paper>
 
               {/* Campo de seleção de cliente */}
@@ -649,6 +659,41 @@ function AddNewReportPage() {
           </form>
         </Paper>
       </Box>
+      {showScrollTop && (
+        <Tooltip
+          title="Adicionar novo campo"
+          placement="top"
+          slotProps={{
+            popper: {
+              modifiers: [
+                {
+                  name: "offset",
+                  options: {
+                    offset: [10, -3], // leve espaço vertical apenas, sem deslocamento lateral
+                  },
+                },
+              ],
+            },
+          }}
+        >
+          <Box sx={{ position: "fixed", bottom: 18, left: 45, zIndex: 1300 }}>
+            <IconButton
+              color="primary"
+              size="small"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+              sx={{
+                bgcolor: "primary.main",
+                color: "white",
+                "&:hover": { bgcolor: "primary.dark" },
+                width: 45,
+                height: 45,
+              }}
+            >
+              <ArrowCircleUpIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        </Tooltip>
+      )}
     </>
   );
 }
@@ -656,7 +701,7 @@ function AddNewReportPage() {
 function displayName(key: string) {
   // Remove "custom_" e coloca a primeira letra maiúscula
   return key
-    .replace(/^custom_/, "")
+    .replace(/^custom_/, "") // remove custom_ do início
     .replace(/_/g, " ")
     .replace(/^./, (c) => c.toUpperCase());
 }
