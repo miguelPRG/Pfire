@@ -32,6 +32,7 @@ import { z } from "zod";
 import ArrowCircleUpIcon from "@mui/icons-material/ArrowCircleUp"; // Ícone de scroll para o topo
 import { useTheme } from "@mui/material/styles"; // Tema do Material UI
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs"; // Componente de breadcrumb estilizado
+import CriteriaSelectField from "./CriteriaSelectField";
 
 // Declaração global para o objeto grecaptcha (Google reCAPTCHA)
 declare var grecaptcha: any;
@@ -123,7 +124,9 @@ function AddNewReportPage() {
   useEffect(() => {
     const handleScroll = () => setShowScrollTop(window.scrollY > 100); // Mostra botão se scroll > 100px
     window.addEventListener("scroll", handleScroll); // Adiciona listener
+    console.log("selectedModel", selectedModel);
     return () => window.removeEventListener("scroll", handleScroll); // Remove listener ao desmontar
+
   }, []);
 
   // Se não houver modelo selecionado, exibe mensagem de erro
@@ -236,9 +239,8 @@ function AddNewReportPage() {
         }).filter(([key]) => allowedKeys.includes(key) || key.startsWith("custom_"))
       );
 
+      // Validação do zod
       schema.parse(payload);
-
-      console.log(payload);
 
       const response = await fetch("/backend/relatorio", {
         method: "POST",
@@ -395,6 +397,20 @@ function AddNewReportPage() {
                   .map((field: any) => {
                     const value = field.value;
                     const baseKey = field.key;
+
+                    // Se for campo critério
+                    if (value.datatype === "critério") {
+                      return (
+                        <CriteriaSelectField
+                          modelId={selectedModel._id?.$oid || selectedModel.id}
+                          value={formData[baseKey] || ""}
+                          onChange={(val) => handleInputChange(baseKey, val)}
+                          label={displayName(baseKey)}
+                          error={errors[baseKey]}
+                        />
+                      );
+                    }
+
                     // Função para adicionar ' *' se o campo for obrigatório
                     const addRequiredMark = (label: string, required: boolean) =>
                       required && value.datatype != "bool" ? `${label} *` : label;

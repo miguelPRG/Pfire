@@ -33,7 +33,6 @@ async def create_criterio(criterio: CriterioCreate, request: Request):
     criterio_doc["updated_at"] = data
 
     try:
-
         res = await criterios_collection.insert_one(criterio_doc)
 
     except DuplicateKeyError as e:
@@ -82,3 +81,24 @@ async def update_criterio(criterio_id: str, criterio: CriterioUpdate, request: R
         raise HTTPException(status_code=409, detail="Campo duplicado no critério.")
 
     return {"message": "Criterio atualizado com sucesso"}
+
+@routerCriterio.delete("/{criterio_id}")
+async def delete_criterio(criterio_id: str, recaptcha_token: str, request: Request):
+
+    await validar_recaptcha_token(recaptcha_token, "delete")
+    
+    jwt = getattr(request.state, "jwt", None)
+
+    user_id = ObjectId(jwt["user_id"])
+    criterio_id_obj = ObjectId(criterio_id)
+
+    if not jwt["isSuperAdmin"]:
+        user_empresa = await users_empresas_collection.find_one({"user_id": user_id, "isAdmin": True})
+        if not user_empresa:
+            raise HTTPException(status_code=403, detail="Acesso negado. Apenas administradores podem deletar critérios.")
+    
+    res = await criterios_collection.delete_one({"_id": criterio_id_obj})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=500, detail="Falha ao deletar o critério")
+
+    return {"message": "Criterio deletado com sucesso"}
