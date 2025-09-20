@@ -5,7 +5,7 @@ export const GET_REPORTS_BY_COMPANY = gql`
     getRelatorios(empresaId: $empresaId, start: $start) {
       relatorios {
         id
-        numero
+        number
         modeloNome
         clienteNome
         clienteNif

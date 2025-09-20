@@ -41,7 +41,7 @@ class RelatorioQuery:
             # Mapeia os dados do relatório
             relatorio_data = {
                 "id": str(relatorio.get("_id")),
-                "numero": relatorio.get("numero"),
+                "number": relatorio.get("number"),
                 "modelo_nome": relatorio.get("modelo_nome"),
                 "cliente_nome": relatorio.get("cliente_nome"),
                 "cliente_nif": relatorio.get("cliente_nif"),

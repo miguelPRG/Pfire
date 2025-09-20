@@ -1,7 +1,7 @@
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from fastapi import HTTPException
 from bson import ObjectId
-from typing import Any, Optional
+from typing import Any
 
 MAIN_FIELDS = {"modelo_id", "cliente_id", "empresa_id", "recaptchaToken"}
 
