@@ -7,6 +7,7 @@ from datetime import datetime
 
 routerModelo = APIRouter(prefix="/modelo", tags=["modelo"])
 
+
 # Criar Modelo
 @routerModelo.post("/")
 async def criar_modelo(modelo: ModelosCamposCreate, request: Request):

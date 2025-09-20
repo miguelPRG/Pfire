@@ -40,24 +40,21 @@ class RelatorioCreate(BaseModel):
             raise HTTPException(status_code=400, detail=f"ID inválido: {v}")
         return v
 
-    @model_validator(mode='before')
+    @model_validator(mode="before")
     @classmethod
     def validate_and_clean(cls, values):
         values = clean_payload(values) or {}
-        
+
         custom_fields = [k for k in values.keys() if k not in MAIN_FIELDS]
         if not custom_fields:
             raise HTTPException(status_code=400, detail="O relatório deve conter pelo menos um campo personalizado")
-            
+
         for key in values.keys():
             if key in MAIN_FIELDS:
                 continue
             if not key.startswith("custom_"):
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Nome de campo inválido: {key}. Os campos personalizados devem começar com 'custom_'"
-                )
-        
+                raise HTTPException(status_code=400, detail=f"Nome de campo inválido: {key}. Os campos personalizados devem começar com 'custom_'")
+
         return values
 
 

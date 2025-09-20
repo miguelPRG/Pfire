@@ -15,7 +15,7 @@ ALLOWED_DATATYPES = {"number", "string", "bool", "object", "date", "array", "cri
 # Função auxiliar para validação de campos personalizados no método de criação
 def validate_field(key, value, indice=0):
     key = key.strip()
-    
+
     if not key.startswith("custom_") or key == "custom_":
         raise HTTPException(
             status_code=400,

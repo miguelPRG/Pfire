@@ -96,7 +96,7 @@ app.include_router(globalIdsServices.routerUser)
 app.include_router(modelosCamposServices.routerModelo)
 app.include_router(userEmpresaServices.routerUserEmpresa)
 
-#Rotas de CRUD
+# Rotas de CRUD
 app.include_router(userCRUD.routerUser)
 # Rotas da empresa (REST)
 app.include_router(empresaCRUD.routerEmpresa)
@@ -111,6 +111,7 @@ app.include_router(criteriosCRUD.routerCriterio)
 
 # Rota GraphQL
 app.include_router(graphql_router, prefix="/graphql")
+
 
 @app.get("/")
 async def root(request: Request):

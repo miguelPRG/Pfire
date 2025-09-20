@@ -5,11 +5,12 @@ from strawberry.types import Info
 from fastapi import HTTPException
 from bson import ObjectId
 
+
 @strawberry.type
 class CriteriaQuery:
     @strawberry.field
     async def getCriteria(self, info: Info, modelo_id: str) -> list[Criteria]:
-    
+
         request = info.context["request"]
         jwt = getattr(request.state, "jwt", None)
         user_id = ObjectId(jwt["user_id"])
@@ -29,9 +30,7 @@ class CriteriaQuery:
         criteria_cursor = criterios_collection.find({"modelo_id": modelo_id})
         criteria_list = []
         async for criterion in criteria_cursor:
-            options = [
-                Object(**opt) for opt in criterion.get("options", [])
-            ]
+            options = [Object(**opt) for opt in criterion.get("options", [])]
             criterion_data = {
                 "nome": criterion.get("nome"),
                 "options": options,

@@ -9,6 +9,7 @@ from database import relatorios_collection, clientes_collection, modelos_collect
 
 routerRelatorio = APIRouter(prefix="/relatorio")
 
+
 # Criar Relatório
 @routerRelatorio.post("/")
 async def create_relatorio(request: Request, relatorio: RelatorioCreate):
@@ -16,10 +17,10 @@ async def create_relatorio(request: Request, relatorio: RelatorioCreate):
     await validar_recaptcha_token(relatorio.recaptchaToken, "create")
     # Sacar jwt
     jwt = getattr(request.state, "jwt", None)
-    user_id=ObjectId(jwt["user_id"])
-    relatorio.cliente_id=ObjectId(relatorio.cliente_id)
-    relatorio.modelo_id=ObjectId(relatorio.modelo_id)
-    relatorio.empresa_id=ObjectId(relatorio.empresa_id)
+    user_id = ObjectId(jwt["user_id"])
+    relatorio.cliente_id = ObjectId(relatorio.cliente_id)
+    relatorio.modelo_id = ObjectId(relatorio.modelo_id)
+    relatorio.empresa_id = ObjectId(relatorio.empresa_id)
 
     # Verificar se o usuário é super admin
     if not jwt.get("isSuperAdmin", False):
@@ -27,7 +28,7 @@ async def create_relatorio(request: Request, relatorio: RelatorioCreate):
         user_empresa = await users_empresas_collection.find_one({"user_id": user_id, "empresa_id": relatorio.empresa_id})
         if not user_empresa:
             raise HTTPException(status_code=403, detail="Usuário não tem permissão para criar relatórios para esta empresa")
-    
+
     # Verificar se o cliente e o modelo existem e pertencem à empresa
     cliente_task = clientes_collection.find_one({"_id": relatorio.cliente_id, "empresa_id": relatorio.empresa_id, "isActive": True})
     modelo_task = modelos_collection.find_one({"_id": relatorio.modelo_id, "empresa_id": relatorio.empresa_id})
@@ -39,7 +40,6 @@ async def create_relatorio(request: Request, relatorio: RelatorioCreate):
 
     if not modelo:
         raise HTTPException(status_code=404, detail="Modelo não encontrado ou inativo")
-
 
     # Count existing reports for this company
     count = await relatorios_collection.count_documents({"empresa_id": relatorio.empresa_id})

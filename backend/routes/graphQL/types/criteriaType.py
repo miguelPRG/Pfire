@@ -1,9 +1,11 @@
 import strawberry
 
+
 @strawberry.type
 class Object:
     key: str
     value: str
+
 
 @strawberry.type
 class Criteria:

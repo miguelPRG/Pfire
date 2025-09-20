@@ -36,6 +36,7 @@ report_templates_collection = db["report_templates"]
 criterios_collection = db["criterios"]
 contadores_collection = db.contadores
 
+
 async def delete_documentos_inativos():
     # Buscar utilizadores inativos
     inactive_users_cursor = users_collection.find({"isActive": False}, {"_id": 1, "firebaseUID": 1})
