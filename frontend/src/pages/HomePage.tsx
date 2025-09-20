@@ -44,14 +44,14 @@ function HomePage() {
   );
 
   const pieData =
-    chart1Data?.reports?.map((r) => ({
+    chart1Data?.getRelatoriosCountByClientes?.map((r) => ({
       id: r.clienteId,
-      value: r.count,
       label: r.clienteNome,
+      value: r.count,
     })) || [];
 
   const barData =
-    chart2Data?.reports?.map((r) => ({
+    chart2Data?.getRelatoriosCountByModelo?.map((r) => ({
       id: r.modeloId,
       value: r.count,
       label: r.modeloNome,

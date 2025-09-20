@@ -40,13 +40,14 @@ declare var grecaptcha: any;
 
 export interface Report {
   id: string;
-  relatorioNome: string;
-  modeloNome: string;
-  clienteNome: string;
-  clienteNif: string;
-  createdAt: string;
-  customFields: { [key: string]: any }[];
-  isActive: boolean;
+  numero: string;
+  modelo_nome: string;
+  cliente_nome: string;
+  cliente_nif: string;
+  created_at: string;
+  created_by?: string;
+  custom_fields: { key: string; value: any }[];
+  isActive?: boolean;
 }
 
 interface returnedData {
@@ -73,34 +74,25 @@ export default function ReportListPage() {
     variables: { empresaId: empresa?.id, start: page * rowsPerPage },
     fetchPolicy: "cache-first",
   });
-
-  // Lazy query para procurar relatório pelo nome
-  const [getReportsByName, { data: searchData }] = useLazyQuery<returnedData>(GET_REPORTS_BY_COMPANY, {
-    fetchPolicy: "cache-first",
-  });
+  console.log("Data from GET_REPORTS_BY_COMPANY:", data);
 
   // Lazy query para buscar cliente pelo nome
-  const [getClienteByName, { data: clienteData }] = useLazyQuery<{ getClientes: { clientes: Cliente[] } }>(
+  /*const [getClienteByName, { data: clienteData }] = useLazyQuery<{ getClientes: { clientes: Cliente[] } }>(
     GET_CLIENTES_BY_EMPRESA,
     { fetchPolicy: "network-only" }
-  );
-
-  useEffect(() => {
-    if (data) {
-      refetch();
-    }
-  }, []);
+  );*/
 
   useEffect(() => {
     if (search) {
-      getReportsByName({ variables: { empresaId: empresa?.id, name: search } });
+      refetch ({ empresaId: empresa?.id, start: 0, name: search });
     }
   }, [search]);
 
   // Sincronize localReports com reports sempre que reports mudar
+  /*
   useEffect(() => {
     setLocalReports(search ? searchData?.reports?.relatorios || [] : data?.reports?.relatorios || []);
-  }, [searchData, data, search]);
+  }, [searchData, data, search]);*/
 
   // Altere a fonte dos relatórios na tabela
   const reports: Report[] = localReports;
@@ -251,6 +243,7 @@ export default function ReportListPage() {
   };
 
   // Função para exportar PDF
+  /*
   const handleExportPDF = async (report: Report) => {
     try {
       const { data } = await getClienteByName({
@@ -426,7 +419,7 @@ export default function ReportListPage() {
       setAlert({ message: "Erro ao exportar PDF.", isError: true });
     }
   };
-
+*/
   return (
     <>
       <Paper
@@ -525,114 +518,25 @@ export default function ReportListPage() {
           <TableContainer>
             <Table>
               <TableHead>
-                <TableRow sx={{ backgroundColor: theme.palette.background.paper }}>
-                  <TableCell>
-                    <strong>Nome</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>Data de Criação</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>Cliente</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>NIF Cliente</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>Modelo</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>Campos Personalizados</strong>
-                  </TableCell>
-                  <TableCell>
-                    <strong>Status</strong>
-                  </TableCell>
-                  <TableCell sx={{ textAlign: "center" }}>
-                    <strong>Ações</strong>
-                  </TableCell>
+                <TableRow>
+                  <TableCell><strong>Número</strong></TableCell>
+                  <TableCell><strong>Cliente</strong></TableCell>
+                  <TableCell><strong>Modelo</strong></TableCell>
+                  <TableCell><strong>Data Criação</strong></TableCell>
+                  <TableCell><strong>Ações</strong></TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {reports.map((report, index) => (
-                  <TableRow key={report.id} sx={{ backgroundColor: zebraColor(index) }}>
-                    <TableCell>{report.relatorioNome}</TableCell>
-                    <TableCell>{new Date(report.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell>{report.clienteNome || "N/A"}</TableCell>
-                    <TableCell>{report.clienteNif || "N/A"}</TableCell>
-                    <TableCell>{report.modeloNome || "N/A"}</TableCell>
-                    <TableCell sx={{ width: "20%", p: 1, verticalAlign: "top" }}>
-                      {report.customFields.length === 0 ? (
-                        "—"
-                      ) : (
-                        <Stack direction="column" gap={0.7}>
-                          {report.customFields.map(renderFieldChip)}
-                        </Stack>
-                      )}
+                {data?.getRelatorios?.relatorios?.map((report: Report) => (
+                  <TableRow key={report.id}>
+                    <TableCell>{report.numero}</TableCell>
+                    <TableCell>{report.cliente_nome}</TableCell>
+                    <TableCell>{report.modelo_nome}</TableCell>
+                    <TableCell>
+                      {report.created_at ? new Date(report.created_at).toLocaleDateString() : '-'}
                     </TableCell>
-                    <TableCell align="center">
-                      <Button
-                        variant="contained"
-                        size="medium"
-                        sx={{
-                          width: 60,
-                          height: 60,
-                          borderRadius: "50%",
-                          backgroundColor: report.isActive ? theme.palette.success.main : theme.palette.error.main,
-                          color: "#fff",
-                          fontWeight: "bold",
-                          fontSize: 15,
-                          minWidth: 0,
-                          px: 0,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          boxShadow: "none",
-                        }}
-                        disabled={loadingReportId === report.id}
-                        onClick={async () => {
-                          await toggleReportStatus(report.id, report.isActive);
-                        }}
-                      >
-                        {loadingReportId === report.id ? <LoadingAnimation /> : report.isActive ? "Ativo" : "Inativo"}
-                      </Button>
-                    </TableCell>
-                    <TableCell sx={{ verticalAlign: "middle", height: 80 }}>
-                      <Stack direction="row" spacing={2} alignItems="center" justifyContent="center">
-                        {!report.isActive && (
-                          <Button
-                            variant="contained"
-                            color="error"
-                            size="small"
-                            sx={{
-                              borderRadius: "20px",
-                              minWidth: 0,
-                              px: 2,
-                              width: "auto",
-                              textTransform: "none",
-                            }}
-                            onClick={() => {
-                              setSelectedReport(report);
-                              setDeleteDialogOpen(true);
-                            }}
-                          >
-                            Apagar permanentemente
-                          </Button>
-                        )}
-                        <Button
-                          variant="outlined"
-                          size="small"
-                          sx={{
-                            borderRadius: "20px",
-                            minWidth: 0,
-                            px: 2,
-                            width: "auto",
-                            textTransform: "none",
-                          }}
-                          onClick={() => handleExportPDF(report)}
-                        >
-                          Exportar PDF
-                        </Button>
-                      </Stack>
+                    <TableCell>
+                      {/* ...existing actions... */}
                     </TableCell>
                   </TableRow>
                 ))}

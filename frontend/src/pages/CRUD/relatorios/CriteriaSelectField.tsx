@@ -49,8 +49,9 @@ export default function CriteriaSelectField({
               </MenuItem>
             ))
           ) : (
-            <MenuItem disabled>
-              O modelo não possui nenhuma lista de critérios
+            <MenuItem disabled sx={{ whiteSpace: "normal", fontWeight: "bold" }}>
+              O modelo não possui nenhuma lista de critérios.<br />
+              Crie uma lista de critérios ou altere o tipo de dados deste campo.
             </MenuItem>
           )}
         </Select>

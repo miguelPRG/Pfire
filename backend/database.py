@@ -34,6 +34,7 @@ relatorios_collection = db["relatorios"]
 global_ids_collection = db["global_ids"]
 report_templates_collection = db["report_templates"]
 criterios_collection = db["criterios"]
+contadores_collection = db.contadores
 
 async def delete_documentos_inativos():
     # Buscar utilizadores inativos

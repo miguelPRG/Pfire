@@ -7,7 +7,7 @@ from typing import Optional
 @strawberry.type
 class Relatorio:
     id: str
-    relatorio_nome: str
+    numero: int
     modelo_nome: str
     cliente_nome: str
     cliente_nif: str

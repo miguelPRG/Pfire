@@ -1,13 +1,13 @@
 import { lazy, ReactElement, Suspense, useEffect, memo } from "react";
 import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from "react-router-dom";
-import { useAuth } from "../hooks/AuthContext";
-import { useTema } from "../hooks/TemaContext";
+import { useAuth } from "./hooks/AuthContext";
+import { useTema } from "./hooks/TemaContext";
 import { Box, IconButton } from "@mui/material";
 import DarkModeIcon from "@mui/icons-material/DarkMode";
 import LightModeIcon from "@mui/icons-material/LightMode";
-import ResponsiveAppBar from "./ResponsiveAppBar";
-import LoadingAnimation from "./LoadingAnimation";
-import CreateCriteriaPage from "../pages/CRUD/modelo/CriteriaEdit"; // ajuste o caminho se necessário
+import ResponsiveAppBar from "./components/ResponsiveAppBar";
+import LoadingAnimation from "./components/LoadingAnimation";
+import CreateCriteriaPage from "./pages/CRUD/modelo/CriteriaEdit"; // ajuste o caminho se necessário
 
 /* Função utilitária para simular delay e visualizar animação de carregamento
 
@@ -19,21 +19,21 @@ function delay<T>(promise: Promise<T>, ms: number = 0): Promise<T> {
 */
 
 // Lazy-loaded pages
-const Login = lazy(() => import("../pages/public/LoginPage"));
-const Register = lazy(() => import("../pages/public/RegisterPage"));
-const Home = lazy(() => import("../pages/HomePage"));
-const UserManagementTable = lazy(() => import("../pages/CRUD/user/UserManagementTable"));
-const ClientManagementTable = lazy(() => import("../pages/CRUD/cliente/ClientManagementTable"));
-const EmailOperation = lazy(() => import("./EmailOperation"));
-const NewPassword = lazy(() => import("../pages/public/NewPasswordPage"));
-const AddNewClient = lazy(() => import("../pages/CRUD/cliente/AddNewClientPage"));
-const EditProfilePage = lazy(() => import("../pages/EditProfilePage"));
-const ForgotPasswordPage = lazy(() => import("../pages/public/ForgotPasswordPage"));
-const ChooseCompany = lazy(() => import("../pages/CRUD/empresa/CompanySelectorPage"));
-const ReportModelListPage = lazy(() => import("../pages/CRUD/modelo/ModelListPage"));
-const ReportTemplatesPage = lazy(() => import("../pages/CRUD/modelo/ModelEditPage"));
-const AddNewReportPage = lazy(() => import("../pages/CRUD/relatorios/AddNewReportPage"));
-const ReportListPage = lazy(() => import("../pages/CRUD/relatorios/ReportListPage"));
+const Login = lazy(() => import("./pages/public/LoginPage"));
+const Register = lazy(() => import("./pages/public/RegisterPage"));
+const Home = lazy(() => import("./pages/HomePage"));
+const UserManagementTable = lazy(() => import("./pages/CRUD/user/UserManagementTable"));
+const ClientManagementTable = lazy(() => import("./pages/CRUD/cliente/ClientManagementTable"));
+const EmailOperation = lazy(() => import("./components/EmailOperation"));
+const NewPassword = lazy(() => import("./pages/public/NewPasswordPage"));
+const AddNewClient = lazy(() => import("./pages/CRUD/cliente/AddNewClientPage"));
+const EditProfilePage = lazy(() => import("./pages/EditProfilePage"));
+const ForgotPasswordPage = lazy(() => import("./pages/public/ForgotPasswordPage"));
+const ChooseCompany = lazy(() => import("./pages/CRUD/empresa/CompanySelectorPage"));
+const ReportModelListPage = lazy(() => import("./pages/CRUD/modelo/ModelListPage"));
+const ReportTemplatesPage = lazy(() => import("./pages/CRUD/modelo/ModelEditPage"));
+const AddNewReportPage = lazy(() => import("./pages/CRUD/relatorios/AddNewReportPage"));
+const ReportListPage = lazy(() => import("./pages/CRUD/relatorios/ReportListPage"));
 // Rotas que podem ser utilizados apenas depois de autenticação
 const ProtectedRoute = ({ element }: { element: ReactElement }) => {
   const { user, empresa } = useAuth();

@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { AuthProvider } from "./hooks/AuthContext";
 import { TemaProvider } from "./hooks/TemaContext";
-import App from "./components/App";
+import App from "./App";
 import { ApolloProvider } from "@apollo/client/react";
 import client from "./graphql/apolloClient";
 

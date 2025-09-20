@@ -39,7 +39,6 @@ declare var grecaptcha: any;
 
 function buildZodSchema(model: any) {
   const shape: Record<string, any> = {
-    relatorio_nome: z.string("Campo obrigatório"),
     modelo_id: z.string("ID inválido").min(24).max(24),
     cliente_id: z.string("Selecione um cliente").min(1),
     empresa_id: z.string("ID inválido").min(24),
@@ -201,8 +200,9 @@ function AddNewReportPage() {
           formDataWithBooleans[key] = false;
         }
       });
+
+      // Monta o payload inicial
       const allowedKeys = [
-        "relatorio_nome",
         "modelo_id",
         "cliente_id",
         "empresa_id",
@@ -241,6 +241,8 @@ function AddNewReportPage() {
 
       // Validação do zod
       schema.parse(payload);
+
+      console.log("Payload final:", payload);
 
       const response = await fetch("/backend/relatorio", {
         method: "POST",
@@ -362,16 +364,6 @@ function AddNewReportPage() {
           {/* Formulário */}
           <form onSubmit={handleSubmit} noValidate>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              {/* Campo para nome do relatório */}
-              <Box sx={{ width: "100%", flexDirection: "column" }}>
-                <TextField
-                  value={formData.relatorio_nome || ""}
-                  label="Nome do Relatório *"
-                  onChange={(e) => handleInputChange("relatorio_nome", e.target.value)}
-                  error={!!errors.relatorio_nome}
-                  helperText={errors.relatorio_nome}
-                />
-              </Box>
               {/* Separador visual com estilo para os campos personalizados */}
               <Paper
                 elevation={1}
@@ -452,10 +444,7 @@ function AddNewReportPage() {
                                 <Box key={fullSubKey} sx={{ width: "100%", mt: 1 }}>
                                   <TextField
                                     fullWidth
-                                    label={
-                                      // Apenas o nome amigável, sem o nome original
-                                      subLabel
-                                    }
+                                    label={subLabel}
                                     type={
                                       subValue.datatype === "number"
                                         ? "number"
@@ -471,6 +460,7 @@ function AddNewReportPage() {
                                         ? `${subLabel}: ${errors[`${baseKey}.${fullSubKey}`]}`
                                         : ""
                                     }
+                                    slotProps={subValue.datatype === "date" ? { inputLabel: { shrink: true } } : undefined}
                                   />
                                 </Box>
                               );
@@ -584,6 +574,7 @@ function AddNewReportPage() {
                             onChange={(e) => handleInputChange(baseKey, e.target.value)}
                             error={!!errors[baseKey]}
                             helperText={errors[baseKey] ? `${label}: ${errors[baseKey]}` : ""}
+                            slotProps={value.datatype === "date" ? { inputLabel: { shrink: true } } : undefined}
                           />
                         )}
                       </Box>

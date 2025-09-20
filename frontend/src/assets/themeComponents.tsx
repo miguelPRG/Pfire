@@ -78,6 +78,7 @@ const commonComponents: Components = {
         inputLabel: {
           style: {
             fontSize: "1.1rem", // Aumenta o tamanho da fonte do label
+            marginBottom: "5px", // Espaçamento entre label e campo
           },
         },
       },
