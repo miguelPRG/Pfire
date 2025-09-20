@@ -10,7 +10,7 @@ from bson import ObjectId
 @strawberry.type
 class RelatorioQuery:
     @strawberry.field
-    async def getRelatorios(self, info: Info, empresa_id: str, start: int = 0, relatorio_nome: str = None) -> RelatorioList:
+    async def getRelatorios(self, info: Info, empresa_id: str, start: int = 0) -> RelatorioList:
 
         empresa_id = ObjectId(empresa_id)
         lmt = 3  # Limite padrão de resultados por página
@@ -25,9 +25,6 @@ class RelatorioQuery:
 
         # Filtro inicial
         filtro = {"empresa_id": empresa_id}
-
-        if relatorio_nome:
-            filtro["relatorio_nome"] = {"$regex": f"^{relatorio_nome}", "$options": "i"}
 
         # Verificar permissões
         if not jwt["isSuperAdmin"]:
@@ -44,7 +41,7 @@ class RelatorioQuery:
             # Mapeia os dados do relatório
             relatorio_data = {
                 "id": str(relatorio.get("_id")),
-                "relatorio_nome": relatorio.get("relatorio_nome"),
+                "numero": relatorio.get("numero"),
                 "modelo_nome": relatorio.get("modelo_nome"),
                 "cliente_nome": relatorio.get("cliente_nome"),
                 "cliente_nif": relatorio.get("cliente_nif"),

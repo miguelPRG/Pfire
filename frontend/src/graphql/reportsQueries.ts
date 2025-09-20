@@ -2,14 +2,15 @@ import { gql } from "@apollo/client";
 
 export const GET_REPORTS_BY_COMPANY = gql`
   query GetReportsByCompany($empresaId: String!, $start: Int = 0) {
-    reports: getRelatorios(empresaId: $empresaId, start: $start) {
+    getRelatorios(empresaId: $empresaId, start: $start) {
       relatorios {
         id
-        relatorioNome
+        numero
         modeloNome
         clienteNome
         clienteNif
         createdAt
+        createdBy
         customFields
         isActive
       }
@@ -20,7 +21,7 @@ export const GET_REPORTS_BY_COMPANY = gql`
 
 export const GET_RELATORIES_COUNT_BY_CLIENTES = gql`
   query GetRelatoriosCountByClientes($empresaId: String!) {
-    reports: getRelatoriosCountByClientes(empresaId: $empresaId) {
+    getRelatoriosCountByClientes(empresaId: $empresaId) {
       clienteId
       clienteNome
       count
@@ -30,7 +31,7 @@ export const GET_RELATORIES_COUNT_BY_CLIENTES = gql`
 
 export const GET_RELATORIES_COUNT_BY_MODELO = gql`
   query GetRelatoriosCountByModelo($empresaId: String!) {
-    reports: getRelatoriosCountByModelo(empresaId: $empresaId) {
+    getRelatoriosCountByModelo(empresaId: $empresaId) {
       modeloId
       modeloNome
       count
