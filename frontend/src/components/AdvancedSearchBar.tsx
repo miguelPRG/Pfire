@@ -43,6 +43,14 @@ export default function AdvancedSearchBar({
             label="Campo"
             value={value.field}
             onChange={(e) => onChange({ field: e.target.value as string, text: value.text })}
+            MenuProps={{
+              PaperProps: {
+                sx: {
+                  maxWidth: 280, // ajuste conforme necessário
+                  width: '50%',
+                },
+              },
+            }}
           >
             {fields.map((f) => (
               <MenuItem key={f.value} value={f.value}>
@@ -51,7 +59,6 @@ export default function AdvancedSearchBar({
             ))}
           </Select>
         </FormControl>
-
         <TextField
           size="small"
           label="Valor"
@@ -59,7 +66,6 @@ export default function AdvancedSearchBar({
           onChange={(e) => onChange({ field: value.field, text: e.target.value })}
           sx={{ width: controlWidth }}
         />
-
         <Stack direction="row" spacing={1} justifyContent="flex-end">
           <Button variant="contained" onClick={handleApply} sx={{ minWidth: 112 }}>
             Aplicar
