@@ -46,9 +46,8 @@ export default function CompanySelectorPage() {
   const navigate = useNavigate();
   const mounted = useRef(false);
 
-  // carga "normal" (sin filtros) para el estado inicial
   const { data, error, loading } = useQuery<ReturnedData>(GET_EMPRESAS, {
-    fetchPolicy: "cache-first",
+    fetchPolicy: "cache-and-network", // para cachear e actualizar sempre
     variables: {
       start: page * rowsPerPage,
       filter: {}, // <-- Corrigido para 'filter'
@@ -378,7 +377,7 @@ export default function CompanySelectorPage() {
           )}
 
           {/* Paginación */}
-          {pageCount > 1 && (
+          {empresas.length > 0 && pageCount > 1 && (
             <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
               <Pagination
                 count={pageCount}

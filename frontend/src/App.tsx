@@ -36,15 +36,18 @@ const AddNewReportPage = lazy(() => import("./pages/CRUD/relatorios/AddNewReport
 const ReportListPage = lazy(() => import("./pages/CRUD/relatorios/ReportListPage"));
 // Rotas que podem ser utilizados apenas depois de autenticação
 const ProtectedRoute = ({ element }: { element: ReactElement }) => {
-  const { user, empresa } = useAuth();
+  const { user, empresa, loading } = useAuth();
   const location = useLocation();
+
+  if (loading) {
+    return <LoadingAnimation />;
+  }
 
   if (!user) {
     console.log("Usuário não autenticado, redirecionando para a página de login.");
     return <Navigate to="/login" />;
   }
 
-  // ✅ Permitir acesso sem empresa apenas a estas rotas
   const allowedWithoutEmpresa = ["/choose-company", "/criar-empresa"];
 
   if (!empresa && !allowedWithoutEmpresa.includes(location.pathname)) {

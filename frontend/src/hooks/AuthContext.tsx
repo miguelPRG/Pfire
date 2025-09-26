@@ -103,7 +103,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Pega o empresaId do localStorage
   const localEmpresaId = typeof window !== "undefined" ? localStorage.getItem("empresaId") : null;
-  const localUserId = typeof window !== "undefined" ? localStorage.getItem("userId") : null;
 
   // Use o hook useQuery no topo do componente
   const { data, error } = useQuery(GET_EMPRESAS, {
@@ -123,11 +122,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userData = await response.json();
 
         if (response.ok) {
-          if (localUserId && localUserId !== userData.id) {
-            localStorage.clear(); // Limpa o localStorage se o userId for diferente do guardado
-          }
-
-          localStorage.setItem("userId", userData.id); // <--- armazena o userId no localStorage
 
           setUser({
             id: userData.id,
@@ -213,14 +207,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.detail || "Erro desconhecido do servidor");
       }
 
-      setLoading(true);
-
-      if (localUserId && localUserId !== data.id) {
-        // Se o userId guardado no localStorage for diferente do userId retornado, limpar o localStorage
-        localStorage.clear();
+      if(data.id != localStorage.getItem("userId")){
+        localStorage.removeItem("empresaId"); // Limpa o empresaId se o userId for diferente
       }
 
-      localStorage.setItem("userId", data.id); // <--- armazena o userId no localStorage
+      setLoading(true);
+
+      // Guardar o id do user no localStorage
+      localStorage.setItem("userId", data.id);
 
       setUser({
         id: data.id,
@@ -306,14 +300,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const msg = data?.detail || (await response.text()) || "OAuth login falhou";
         throw new Error(msg);
       }
-
-      //Se for detetado um user novo ou um user cujo o seu id seja diferente do userId guardado no localStorage, limpar o localStorage
-      if (data.newUser || (localUserId && localUserId !== data.id)) {
-        //Apagar dados da empresa do localStorage
-        localStorage.clear();
-      }
-
-      localStorage.setItem("userId", data.id); // <--- armazena o userId no localStorage
 
       setUser({
         id: data.id,
