@@ -36,7 +36,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import NoDataMessage from "../../../components/NoDataMessage";
-
+import CircularProgress from "@mui/material/CircularProgress";
 // Função utilitária para formatar tipos de campos
 const formatType = (type: string) => {
   const map: Record<string, string> = {
@@ -75,8 +75,11 @@ export default function ReportModelListPage() {
   const [page, setPage] = useState(0);
   const [alert, setAlert] = useState<{ message: string; isError: boolean; onConfirm?: () => void } | null>(null);
   const [cloningId, setCloningId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
+  const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
+  const [modelToCloneId, setModelToCloneId] = useState<string | null>(null);
 
   const { control } = useForm();
 
@@ -129,6 +132,9 @@ export default function ReportModelListPage() {
 
   // Função para deletar um modelo de relatório
   const handleDelete = async (id: string) => {
+
+    setDeleteId(id);
+
     try {
       const recaptchaToken = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
         action: "register",
@@ -317,6 +323,11 @@ export default function ReportModelListPage() {
     );
   };
 
+  const requestClone = (id: string) => {
+    setModelToCloneId(id);
+    setCloneDialogOpen(true);
+  };
+
   if (loading) return <LoadingAnimation />;
   if (error) return <Typography color="error">Erro ao carregar modelos: {error.message}</Typography>;
 
@@ -383,7 +394,6 @@ export default function ReportModelListPage() {
             }}
           />
         </Box>
-
         <TableContainer>
           <Table>
             <TableHead>
@@ -482,7 +492,10 @@ export default function ReportModelListPage() {
                           </Tooltip>
 
                           <Tooltip title="Clonar Modelo" placement="top" sx={{ width: 40, height: 40 }}>
-                            <IconButton onClick={() => handleClone(modelo.id)} disabled={cloningId === modelo.id}>
+                            <IconButton
+                              onClick={() => requestClone(modelo.id)}
+                              disabled={cloningId === modelo.id}
+                            >
                               <ContentCopyIcon />
                             </IconButton>
                           </Tooltip>
@@ -568,7 +581,44 @@ export default function ReportModelListPage() {
             color="error"
             variant="contained"
           >
-            Confirmar
+          {deleteId === selectedModelId ? (
+              <CircularProgress size={24} sx={{ color: "#fff" }} />
+            ) : (
+              "Confirmar"
+            )}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog de confirmação para clonar modelo */}
+      <Dialog open={cloneDialogOpen} onClose={() => setCloneDialogOpen(false)}>
+        <DialogTitle sx={{ fontWeight: "bold" }}>Clonar modelo</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Tem certeza que deseja <strong>clonar</strong> este modelo? Esta ação irá duplicar o modelo selecionado.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCloneDialogOpen(false)} variant="outlined">
+            Cancelar
+          </Button>
+          <Button
+            onClick={async () => {
+              if (modelToCloneId) {
+                await handleClone(modelToCloneId);
+                setCloneDialogOpen(false);
+                setModelToCloneId(null);
+              }
+            }}
+            color="success"
+            variant="contained"
+            disabled={cloningId === modelToCloneId}
+          >
+            {cloningId === modelToCloneId ? (
+              <CircularProgress size={24} sx={{ color: "#fff" }} />
+            ) : (
+              "Confirmar"
+            )}
           </Button>
         </DialogActions>
       </Dialog>
