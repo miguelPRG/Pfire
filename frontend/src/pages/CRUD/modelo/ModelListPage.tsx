@@ -35,6 +35,7 @@ import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
+import NoDataMessage from "../../../components/NoDataMessage";
 
 // Função utilitária para formatar tipos de campos
 const formatType = (type: string) => {
@@ -85,7 +86,7 @@ export default function ReportModelListPage() {
   const { data, loading, error, refetch } = useQuery<returnedData>(GET_MODELOS_RELATORIOS, {
     variables: { empresaId: empresa?.id, start: page * rowsPerPage },
     skip: !empresa,
-    fetchPolicy: "cache-first",
+    fetchPolicy: "cache-and-network",
   });
 
   const [getModelosByName, { data: searchData }] = useLazyQuery<returnedData>(GET_MODELOS_RELATORIOS, {
@@ -117,10 +118,6 @@ export default function ReportModelListPage() {
       });
       // Remove o estado da localização
       window.history.replaceState({}, document.title);
-    }
-
-    if (data) {
-      refetch();
     }
   }, []);
 
@@ -406,19 +403,26 @@ export default function ReportModelListPage() {
               </TableRow>
             </TableHead>
             <TableBody>
-              {modelos.map((modelo: any, i: number) => (
-                <TableRow key={modelo.id} sx={{ backgroundColor: zebraColor(i) }}>
-                  <TableCell>
-                    <Link
-                      component="button"
-                      onClick={() =>
-                        navigate("/report-templates", {
-                          state: {
-                            modelo: {
-                              id: modelo.id,
-                              modeloNome: modelo.modeloNome,
-                              customFields: modelo.customFields,
-                              createdAt: modelo.createdAt,
+              {modelos.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4}>
+                    <NoDataMessage nome="modelos" />
+                  </TableCell>
+                </TableRow>
+              ) : (
+                modelos.map((modelo: any, i: number) => (
+                  <TableRow key={modelo.id} sx={{ backgroundColor: zebraColor(i) }}>
+                    <TableCell>
+                      <Link
+                        component="button"
+                        onClick={() =>
+                          navigate("/report-templates", {
+                            state: {
+                              modelo: {
+                                id: modelo.id,
+                                modeloNome: modelo.modeloNome,
+                                customFields: modelo.customFields,
+                                createdAt: modelo.createdAt,
                             },
                           },
                         })
@@ -522,7 +526,8 @@ export default function ReportModelListPage() {
                     </Box>
                   </TableCell>
                 </TableRow>
-              ))}
+              ))
+            )}
             </TableBody>
           </Table>
         </TableContainer>

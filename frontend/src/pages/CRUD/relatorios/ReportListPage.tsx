@@ -32,9 +32,10 @@ import { GET_CLIENTES_BY_EMPRESA } from "../../../graphql/clientesQueries";
 import Notification from "../../../components/Notification";
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
 import LoadingAnimation from "../../../components/LoadingAnimation";
-import { Cliente } from "../cliente/ClientManagementTable";
+import { Cliente } from "../cliente/ClientListPage";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import NoDataMessage from "../../../components/NoDataMessage";
 
 declare var grecaptcha: any;
 
@@ -72,9 +73,8 @@ export default function ReportListPage() {
 
   const { data, loading, error, refetch } = useQuery<returnedData>(GET_REPORTS_BY_COMPANY, {
     variables: { empresaId: empresa?.id, start: page * rowsPerPage },
-    fetchPolicy: "cache-first",
+    fetchPolicy: "cache-and-network",
   });
-  console.log("Data from GET_REPORTS_BY_COMPANY:", data);
 
   // Lazy query para buscar cliente pelo nome
   /*const [getClienteByName, { data: clienteData }] = useLazyQuery<{ getClientes: { clientes: Cliente[] } }>(
@@ -527,19 +527,27 @@ export default function ReportListPage() {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {data?.getRelatorios?.relatorios?.map((report: Report) => (
-                  <TableRow key={report.id}>
-                    <TableCell>{report.numero}</TableCell>
-                    <TableCell>{report.cliente_nome}</TableCell>
-                    <TableCell>{report.modelo_nome}</TableCell>
-                    <TableCell>
-                      {report.created_at ? new Date(report.created_at).toLocaleDateString() : '-'}
-                    </TableCell>
-                    <TableCell>
-                      {/* ...existing actions... */}
+                {data?.getRelatorios?.relatorios?.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5}>
+                      <NoDataMessage nome="relatórios" />
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  data?.getRelatorios?.relatorios?.map((report: Report) => (
+                    <TableRow key={report.id}>
+                      <TableCell>{report.numero}</TableCell>
+                      <TableCell>{report.cliente_nome}</TableCell>
+                      <TableCell>{report.modelo_nome}</TableCell>
+                      <TableCell>
+                        {report.created_at ? new Date(report.created_at).toLocaleDateString() : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {/* ...existing actions... */}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </TableContainer>

@@ -9,6 +9,7 @@ import LoadingAnimation from "../../../components/LoadingAnimation";
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
 import HomeIcon from "@mui/icons-material/Home";
 import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
+import NoDataMessage from "../../../components/NoDataMessage";
 
 interface Empresa {
   id: string;
@@ -345,9 +346,7 @@ export default function CompanySelectorPage() {
 
           {/* Empresas em linhas responsivas */}
           {empresas.length === 0 ? (
-            <Box sx={{ textAlign: "center", py: 8, color: theme.palette.text.secondary }}>
-              <Typography variant="h6">Nenhuma empresa encontrada.</Typography>
-            </Box>
+            <NoDataMessage nome="empresas" />
           ) : (
             [0, 3].map((start) => {
               const empresasPorLinha = larguraTela < 600 ? 1 : larguraTela < 900 ? 2 : 3;

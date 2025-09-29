@@ -34,6 +34,7 @@ import LoadingAnimation from "../../../components/LoadingAnimation";
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
 import HomeIcon from "@mui/icons-material/Home";
 import { useNavigate } from "react-router-dom";
+import NoDataMessage from "../../../components/NoDataMessage";
 
 declare var grecaptcha: any;
 
@@ -91,7 +92,7 @@ export default function UserManagementTable() {
   // Consulta inicial (cache/página)
   const { data, refetch, loading } = useQuery<returnedData>(GET_USERS, {
     variables: { empresaId: empresa?.id, start: page * rowsPerPage, name: search || undefined },
-    fetchPolicy: "cache-first",
+    fetchPolicy: "cache-and-network",
   });
 
   // Pesquisa remota por nome
@@ -375,111 +376,119 @@ export default function UserManagementTable() {
           </TableHead>
 
           <TableBody>
-            {sortedRows
-              .filter((u) => u.id !== user?.id)
-              .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-              .map((user, index) => (
-                <TableRow
-                  key={user.id}
-                  sx={{
-                    backgroundColor: zebraColor(index),
-                  }}
-                >
-                  <TableCell
+            {sortedRows.filter((u) => u.id !== user?.id).length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={columns.length + 1}>
+                  <NoDataMessage nome="utilizadores" />
+                </TableCell>
+              </TableRow>
+            ) : (
+              sortedRows
+                .filter((u) => u.id !== user?.id)
+                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .map((user, index) => (
+                  <TableRow
+                    key={user.id}
                     sx={{
-                      py: 1,
+                      backgroundColor: zebraColor(index),
                     }}
                   >
-                    {user.nome}
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      py: 1,
-                    }}
-                  >
-                    {user.telefone}
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      py: 1,
-                    }}
-                  >
-                    <Box
+                    <TableCell
                       sx={{
-                        borderRadius: "50%",
-                        width: 50,
-                        height: 50,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        bgcolor: user.isActive ? "success.main" : "error.main",
-                        color: "#fff",
-                        fontWeight: "bold",
-                        fontSize: "0.9rem",
+                        py: 1,
                       }}
                     >
-                      {user.isActive ? "Ativo" : "Inativo"}
-                    </Box>
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      py: 1,
-                    }}
-                  >
-                    {user.email}
-                  </TableCell>
-                  <TableCell
-                    sx={{
-                      py: 1,
-                    }}
-                  >
-                    <Button
-                      variant="outlined"
-                      size="small"
+                      {user.nome}
+                    </TableCell>
+                    <TableCell
                       sx={{
-                        borderRadius: "20px",
-                        minWidth: 0,
-                        px: 1.5,
-                        width: "auto",
-                        textTransform: "none",
+                        py: 1,
                       }}
-                      onClick={() => handleToggleAdmin(user)}
-                      disabled={!!roleLoading[user.id]}
                     >
-                      {roleLoading[user.id] ? "Alterando..." : user.role}
-                    </Button>
-                  </TableCell>
-                  <TableCell align="center">
-                    <Box
+                      {user.telefone}
+                    </TableCell>
+                    <TableCell
                       sx={{
-                        display: "flex",
-                        gap: 1,
-                        justifyContent: "center",
+                        py: 1,
                       }}
                     >
                       <Box
                         sx={{
-                          backgroundColor: "error.main",
-                          color: "#fff",
                           borderRadius: "50%",
-                          width: 36,
-                          height: 36,
+                          width: 50,
+                          height: 50,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          cursor: "pointer",
-                          "&:hover": {
-                            backgroundColor: "error.dark",
-                          },
+                          bgcolor: user.isActive ? "success.main" : "error.main",
+                          color: "#fff",
+                          fontWeight: "bold",
+                          fontSize: "0.9rem",
                         }}
-                        onClick={() => handleOpenDeleteDialog(user.id)}
                       >
-                        <Delete fontSize="small" />
+                        {user.isActive ? "Ativo" : "Inativo"}
                       </Box>
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))}
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        py: 1,
+                      }}
+                    >
+                      {user.email}
+                    </TableCell>
+                    <TableCell
+                      sx={{
+                        py: 1,
+                      }}
+                    >
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        sx={{
+                          borderRadius: "20px",
+                          minWidth: 0,
+                          px: 1.5,
+                          width: "auto",
+                          textTransform: "none",
+                        }}
+                        onClick={() => handleToggleAdmin(user)}
+                        disabled={!!roleLoading[user.id]}
+                      >
+                        {roleLoading[user.id] ? "Alterando..." : user.role}
+                      </Button>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Box
+                        sx={{
+                          display: "flex",
+                          gap: 1,
+                          justifyContent: "center",
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            backgroundColor: "error.main",
+                            color: "#fff",
+                            borderRadius: "50%",
+                            width: 36,
+                            height: 36,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            cursor: "pointer",
+                            "&:hover": {
+                              backgroundColor: "error.dark",
+                            },
+                          }}
+                          onClick={() => handleOpenDeleteDialog(user.id)}
+                        >
+                          <Delete fontSize="small" />
+                        </Box>
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))
+            )}
           </TableBody>
         </Table>
       </TableContainer>

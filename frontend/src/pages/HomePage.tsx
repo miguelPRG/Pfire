@@ -4,6 +4,7 @@ import { useTheme } from "@mui/material/styles";
 import { useQuery } from "@apollo/client/react";
 import { PieChart, BarChart } from "@mui/x-charts";
 import { GET_RELATORIES_COUNT_BY_CLIENTES, GET_RELATORIES_COUNT_BY_MODELO } from "../graphql/reportsQueries";
+import NoDataMessage from "../components/NoDataMessage";
 
 interface ReportCliente {
   clienteId: string;
@@ -216,7 +217,7 @@ function HomePage() {
               {pieLoading ? (
                 <Skeleton variant="rectangular" height={chartSize} width={chartSize} />
               ) : pieData.length === 0 ? (
-                <Typography color="text.secondary">Sem dados para mostrar.</Typography>
+                <NoDataMessage nome="Relatórios por Cliente" isTablet={false} />
               ) : (
                 <PieChart
                   series={[{ data: pieData }]}
@@ -272,7 +273,7 @@ function HomePage() {
               {barLoading ? (
                 <Skeleton variant="rectangular" height={chartSize} width={chartSize} />
               ) : barData.length === 0 ? (
-                <Typography color="text.secondary">Sem dados para mostrar.</Typography>
+                <NoDataMessage nome="Relatórios por Modelo" isTablet={false} />
               ) : (
                 <BarChart
                   xAxis={[
