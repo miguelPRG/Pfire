@@ -3,6 +3,16 @@ from datetime import datetime
 from typing import Optional
 
 
+@strawberry.input
+class ClienteFilter:
+    nome: Optional[str] = None
+    nif: Optional[str] = None
+    localidade: Optional[str] = None
+    morada: Optional[str] = None
+    codigo_postal: Optional[str] = None
+    telefone: Optional[str] = None
+
+
 @strawberry.type
 class Cliente:
     id: str

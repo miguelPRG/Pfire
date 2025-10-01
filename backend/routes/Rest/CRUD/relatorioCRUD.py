@@ -9,7 +9,6 @@ from database import relatorios_collection, clientes_collection, modelos_collect
 
 routerRelatorio = APIRouter(prefix="/relatorio")
 
-
 # Criar Relatório
 @routerRelatorio.post("/")
 async def create_relatorio(request: Request, relatorio: RelatorioCreate):
@@ -59,8 +58,12 @@ async def create_relatorio(request: Request, relatorio: RelatorioCreate):
 
     try:
         result = await relatorios_collection.insert_one(relatorio_data)
-    except DuplicateKeyError:
-        raise HTTPException(status_code=400, detail="Já existe um relatório com este número nesta empresa.")
+    except DuplicateKeyError as e:
+        text = str(e).lower()
+        if "number" in text:
+            raise HTTPException(status_code=400, detail="Já existe um relatório com este número nesta empresa.")
+
+        raise HTTPException(status_code=400, detail="Campo duplicado no relatório.")
 
     return {"message": "Relatório criado com sucesso!"}
 

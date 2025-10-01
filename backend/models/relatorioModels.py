@@ -40,7 +40,7 @@ class RelatorioCreate(BaseModel):
             raise HTTPException(status_code=400, detail=f"ID inválido: {v}")
         return v
 
-    @model_validator(mode="before")
+    @model_validator(mode='before')
     @classmethod
     def validate_and_clean(cls, values):
         values = clean_payload(values) or {}

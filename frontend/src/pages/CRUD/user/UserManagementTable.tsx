@@ -11,7 +11,6 @@ import {
   Box,
   Pagination,
   TableSortLabel,
-  InputAdornment,
   Typography,
   Button,
   Container,
@@ -21,9 +20,9 @@ import {
   DialogActions,
   Breadcrumbs,
 } from "@mui/material";
-import { Search, Delete } from "@mui/icons-material";
+import { Delete } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
-import { useQuery, useLazyQuery } from "@apollo/client/react";
+import { useQuery } from "@apollo/client/react";
 import { GET_USERS } from "../../../graphql/usersQueries";
 import { useAuth } from "../../../hooks/AuthContext";
 import { z } from "zod";
@@ -35,6 +34,7 @@ import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
 import HomeIcon from "@mui/icons-material/Home";
 import { useNavigate } from "react-router-dom";
 import NoDataMessage from "../../../components/NoDataMessage";
+import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
 
 declare var grecaptcha: any;
 
@@ -59,7 +59,6 @@ const inviteSchema = z.object({
 export default function UserManagementTable() {
   const theme = useTheme();
   const [page, setPage] = useState(0);
-  const [search, setSearch] = useState("");
   const [orderBy, setOrderBy] = useState<keyof User | null>(null);
   const [order, setOrder] = useState<"asc" | "desc">("asc");
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -89,29 +88,15 @@ export default function UserManagementTable() {
     resolver: zodResolver(inviteSchema),
   });
 
-  // Consulta inicial (cache/página)
+  // Consulta inicial (cache/página) -> ya no usamos 'name' variable
   const { data, refetch, loading } = useQuery<returnedData>(GET_USERS, {
-    variables: { empresaId: empresa?.id, start: page * rowsPerPage, name: search || undefined },
+    variables: { empresaId: empresa?.id, start: page * rowsPerPage },
     fetchPolicy: "cache-and-network",
   });
 
-  // Pesquisa remota por nome
-  const [getUsersByName, { data: searchData }] = useLazyQuery<returnedData>(GET_USERS, {
-    fetchPolicy: "cache-first",
-  });
-
-  // Dispara busca remota se search não está vazio
-  useEffect(() => {
-    if (search) {
-      getUsersByName({ variables: { empresaId: empresa?.id, name: search, start: page * rowsPerPage } });
-    }
-    // eslint-disable-next-line
-  }, [search, page, empresa]);
-
-  // Decide qual fonte de dados usar
-  const users: User[] = search ? searchData?.getUsers?.users || [] : data?.getUsers?.users || [];
-
-  const totalUsers: number = search ? searchData?.getUsers?.totalUsers || 0 : data?.getUsers?.totalUsers || 0;
+  // Decide qual fonte de dados usar -> sempre de `data`
+  const users: User[] = data?.getUsers?.users || [];
+  const totalUsers: number = data?.getUsers?.totalUsers || 0;
 
   const pageCount = Math.ceil(totalUsers / rowsPerPage);
 
@@ -159,7 +144,42 @@ export default function UserManagementTable() {
     setOrderBy(property);
   };
 
-  const sortedRows = [...users].sort((a, b) => {
+  // Advanced search state
+  const [advValue, setAdvValue] = useState<{ field: string; text: string }>({ field: "", text: "" });
+  const advFields = [
+    { value: "username", label: "Username" },
+    { value: "email", label: "Email" },
+    { value: "role", label: "Role" },
+    { value: "nome", label: "Nome" },
+  ];
+
+  // corregido: usar tipo User para localUsers
+  const [localUsers, setLocalUsers] = useState<User[]>([]);
+
+  // sincronizar localUsers cuando cambian los datos originais
+  useEffect(() => {
+    setLocalUsers(data?.getUsers?.users || []);
+  }, [data]);
+
+  // Nuevo: aplicar filtrado local solo al clicar "Aplicar"
+  const applyAdvancedFilterUsers = (applied?: { field: string; text: string }) => {
+    setPage(0);
+    const source = data?.getUsers?.users || [];
+    const field = applied?.field ?? advValue.field;
+    const val = (applied?.text ?? advValue.text ?? "").toString().trim().toLowerCase();
+
+    if (!field || !val) {
+      setLocalUsers(source);
+      return;
+    }
+
+    const filtered = source.filter((u: any) =>
+      String((u as any)[field] || "").toLowerCase().includes(val)
+    );
+    setLocalUsers(filtered);
+  };
+
+  const sortedRows = [...localUsers].sort((a, b) => {
     if (!orderBy) return 0;
     return order === "asc"
       ? a[orderBy]!.toString().localeCompare(b[orderBy]!.toString())
@@ -273,6 +293,7 @@ export default function UserManagementTable() {
     setDeleteDialogOpen(false);
     setSelectedUserId(null);
   };
+
   if (loading) return <LoadingAnimation />;
   return (
     <Paper sx={{ width: "100%", p: 2, boxShadow: "none" }}>
@@ -331,26 +352,27 @@ export default function UserManagementTable() {
           gap: 2,
         }}
       >
-        <TextField
-          variant="outlined"
-          size="small"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Pesquisar por nome"
-          slotProps={{
-            input: {
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search sx={{ color: theme.palette.primary.main }} />
-                </InputAdornment>
-              ),
-            },
-          }}
-          sx={{
-            width: "75%",
-            mt: 1,
-          }}
-        />
+        {/* Eliminada la TextField de búsqueda tradicional */}
+      </Box>
+
+      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 2 }}>
+        <Box sx={{ width: "100%", maxWidth: 920 }}>
+          <AdvancedSearchBar
+            fields={advFields}
+            value={advValue}
+            onChange={(next) => setAdvValue(next)}
+            onApply={(next) => {
+              setPage(0); // reinicia paginación al aplicar
+              applyAdvancedFilterUsers(next);
+            }}
+            onClear={async () => {
+              setAdvValue({ field: "", text: "" });
+              const result = await refetch({ empresaId: empresa?.id, start: 0 });
+              setLocalUsers(result?.data.getUsers.users || []);
+              setPage(0);
+            }}
+          />
+        </Box>
       </Box>
 
       <TableContainer>

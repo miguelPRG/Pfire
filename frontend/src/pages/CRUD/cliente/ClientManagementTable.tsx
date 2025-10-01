@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery, useLazyQuery } from "@apollo/client/react";
+import { useQuery } from "@apollo/client/react";
 import {
   Table,
   TableBody,
@@ -21,6 +21,7 @@ import {
   DialogActions,
   Breadcrumbs,
   CircularProgress,
+  Tooltip,
 } from "@mui/material";
 import { Search } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -32,6 +33,7 @@ import LoadingAnimation from "../../../components/LoadingAnimation";
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
 import HomeIcon from "@mui/icons-material/Home";
 import NoDataMessage from "../../../components/NoDataMessage";
+import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
 
 declare var grecaptcha: any;
 
@@ -60,7 +62,8 @@ interface returnedData {
 export default function ClientManagementTable() {
   // Todos os hooks no topo!
   const [page, setPage] = useState(0);
-  const [search, setSearch] = useState("");
+  // flag para que solo muestre loading en la primera carga
+  const [initialLoaded, setInitialLoaded] = useState(false);
   const [orderBy, setOrderBy] = useState<keyof Cliente | null>(null);
   const [order, setOrder] = useState<"asc" | "desc">("asc");
   const [alert, setAlert] = useState<null | { message: string; isError: boolean }>(null);
@@ -68,6 +71,16 @@ export default function ClientManagementTable() {
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
   const [localClientes, setLocalClientes] = useState<Cliente[]>([]);
   const [loadingClienteId, setLoadingClienteId] = useState<string | null>(null);
+
+  // Advanced search state
+  const [advValue, setAdvValue] = useState<{ field: string; text: string }>({ field: "", text: "" });
+  const advFields = [
+    { value: "nome", label: "Nome" },
+    { value: "email", label: "Email" },
+    { value: "telefone", label: "Telefone" },
+    { value: "nif", label: "NIF" },
+    { value: "localidade", label: "Localidade" },
+  ];
 
   const rowsPerPage = 10;
   const theme = useTheme();
@@ -81,14 +94,6 @@ export default function ClientManagementTable() {
     fetchPolicy: "cache-and-network",
   });
 
-  // Consulta remota para pesquisa
-  const [getClientesByName, { data: searchData, loading: searchLoading }] = useLazyQuery<returnedData>(
-    GET_CLIENTES_BY_EMPRESA,
-    {
-      fetchPolicy: "cache-first",
-    }
-  );
-
   useEffect(() => {
     // Será true após a criação ou atualização de um cliente
     if (location.state?.message) {
@@ -100,22 +105,32 @@ export default function ClientManagementTable() {
       window.history.replaceState({}, document.title);
     }
 
-  }, []);
-
-  // Se não encontrou localmente e search não está vazio, faz consulta remota
-  useEffect(() => {
-    if (search) {
-      getClientesByName({ variables: { empresaId: empresa?.id, nome: search, start: 0 } });
+    if (data) {
+      // cuando vienen nuevos datos (página/refetch o búsqueda) actualizamos la lista local
+      setLocalClientes(data.getClientes.clientes || []);
+      if (!initialLoaded) setInitialLoaded(true);
     }
+  }, [data]);
 
-    // Atualiza a lista local conforme o resultado da pesquisa ou dados gerais
-    setLocalClientes(search ? searchData?.getClientes?.clientes || [] : data?.getClientes?.clientes || []);
-  }, [search, searchData, data]);
+  // Função para aplicar consulta avançada
+  const applyAdvancedFilter = () => {
+    setPage(0);
+    const source = data?.getClientes?.clientes || [];
+    if (advValue.field || advValue.text) {
+      const q = advValue.text.toLowerCase();
+      const filtered = source.filter((c: Cliente) =>
+        String((c as any)[advValue.field] || "").toLowerCase().includes(q)
+      );
+      setLocalClientes(filtered);
+    } else {
+      setLocalClientes(source);
+    }
+  };
 
   const clientes: Cliente[] = localClientes;
 
-  // Decide o total de clientes para paginação
-  const totalClientes = search ? searchData?.getClientes?.totalClientes || 0 : data?.getClientes?.totalClientes || 0;
+  // Decide el total de clientes para paginación (data se actualiza tras refetch)
+  const totalClientes = data?.getClientes?.totalClientes || 0;
 
   const pageCount = Math.ceil(totalClientes / rowsPerPage);
 
@@ -129,14 +144,13 @@ export default function ClientManagementTable() {
 
   const backgroundColor = theme.palette.mode === "dark" ? "rgb(12,12,12)" : "#f0f0f0";
 
-  const filteredRows = clientes
-    .filter((row) => row.nome?.toLowerCase().includes(search.toLowerCase()))
-    .sort((a, b) => {
-      if (!orderBy) return 0;
-      const aValue = a[orderBy]?.toString() || "";
-      const bValue = b[orderBy]?.toString() || "";
-      return order === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-    });
+  // ahora usamos solo `clientes` (localClientes / resultados remotos) e ordenamos
+  const filteredRows = [...clientes].sort((a, b) => {
+    if (!orderBy) return 0;
+    const aValue = a[orderBy]?.toString() || "";
+    const bValue = b[orderBy]?.toString() || "";
+    return order === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+  });
 
   // Função para apagar cliente
   const apagarCliente = async (cliente: Cliente) => {
@@ -217,7 +231,8 @@ export default function ClientManagementTable() {
     }
   };
 
-  if (loading || searchLoading) return <LoadingAnimation />;
+  // Mostrar loading solo en la primera carga; búsquedas posteriores no muestran animación completa
+  if (!initialLoaded && loading) return <LoadingAnimation />;
   if (error) return <Typography>Erro ao carregar clientes: {error.message}</Typography>;
 
   return (
@@ -273,33 +288,23 @@ export default function ClientManagementTable() {
             gap: 2,
           }}
         >
-          <TextField
-            variant="outlined"
-            size="small"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Pesquisar"
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search sx={{ color: theme.palette.primary.main }} />
-                  </InputAdornment>
-                ),
-              },
-            }}
-            sx={{
-              "& .MuiOutlinedInput-root": {
-                backgroundColor: theme.palette.mode === "dark" ? "rgb(12, 12, 12)" : "#f0f0f0",
-                borderRadius: "25px",
-                "&.Mui-focused fieldset": {
-                  borderColor: theme.palette.mode === "dark" ? "rgb(12, 12, 12)" : "#f0f0f0",
-                },
-              },
-              width: "75%",
-              mt: 1,
-            }}
-          />
+          {/* Advanced search bar */}
+          <Box sx={{ width: "100%", maxWidth: 920 }}>
+            <AdvancedSearchBar
+              fields={advFields}
+              value={advValue}
+              onChange={(next) => setAdvValue(next)}
+              onApply={() => {
+                applyAdvancedFilter();
+              }}
+              onClear={async () => {
+                setAdvValue({ field: "", text: "" });
+                const result = await refetch({ empresaId: empresa?.id, start: 0 }); // força refetch
+                setLocalClientes(result?.data.getClientes.clientes || []);
+                setPage(0);
+              }}
+            />
+          </Box>
         </Box>
 
         <div style={{ overflowX: "auto" }}>
@@ -420,7 +425,9 @@ export default function ClientManagementTable() {
                             textOverflow: "ellipsis",
                           }}
                         >
-                          {cliente.morada}
+                          <Tooltip title={cliente.morada || ""} placement="top" arrow>
+                            <span>{cliente.morada}</span>
+                          </Tooltip>
                         </TableCell>
                         <TableCell>{cliente.codigoPostal}</TableCell>
                         {/* Novo campo criado em */}
