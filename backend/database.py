@@ -4,9 +4,14 @@ from asyncio import gather, to_thread
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 from firebase_admin import auth
+from dotenv import load_dotenv
+from pathlib import Path
+
+# Carregar variáveis de ambiente do arquivo .env
+load_dotenv(Path(__file__).parent / ".env")
 
 # Obter a URI do MongoDB do arquivo .env
-uri = os.getenv("MONGO_URL")  # A URI do MongoDB Atlas
+uri = os.getenv("MONGODB_URL")  # A URI do MongoDB Atlas
 
 # Conectar ao MongoDB
 client = AsyncIOMotorClient(uri)
@@ -52,6 +57,8 @@ async def delete_documentos_inativos():
         except Exception as e:
             print(f"[DatabaseCleaner] Erro ao remover utilizador Firebase {uid}: {e}")
 
+    # Inicializar lista de tasks
+    tasks = []
     # Adicione tasks de Firebase se houver uids
     tasks += [delete_firebase_user(uid) for uid in firebase_uids]
     # Adicione tasks de remoção de relações e utilizadores se houver ids
