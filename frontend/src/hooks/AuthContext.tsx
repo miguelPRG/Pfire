@@ -122,7 +122,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const userData = await response.json();
 
         if (response.ok) {
-
           setUser({
             id: userData.id,
             nome: userData.nome,
@@ -207,7 +206,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.detail || "Erro desconhecido do servidor");
       }
 
-      if(data.id != localStorage.getItem("userId")){
+      if (data.id != localStorage.getItem("userId")) {
         localStorage.removeItem("empresaId"); // Limpa o empresaId se o userId for diferente
       }
 

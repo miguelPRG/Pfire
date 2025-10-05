@@ -20,7 +20,14 @@ import {
   Tooltip,
   Breadcrumbs,
 } from "@mui/material";
-import { ExpandLess, ExpandMore, Search, Delete, ContentCopy as ContentCopyIcon, PlaylistAddCheck } from "@mui/icons-material";
+import {
+  ExpandLess,
+  ExpandMore,
+  Search,
+  Delete,
+  ContentCopy as ContentCopyIcon,
+  PlaylistAddCheck,
+} from "@mui/icons-material";
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
@@ -132,7 +139,6 @@ export default function ReportModelListPage() {
 
   // Função para deletar um modelo de relatório
   const handleDelete = async (id: string) => {
-
     setDeleteId(id);
 
     try {
@@ -433,114 +439,111 @@ export default function ReportModelListPage() {
                                 modeloNome: modelo.modeloNome,
                                 customFields: modelo.customFields,
                                 createdAt: modelo.createdAt,
+                              },
                             },
-                          },
-                        })
-                      }
-                      sx={{ cursor: "pointer", textDecoration: "none" }}
-                    >
-                      {modelo.modeloNome}
-                    </Link>
-                  </TableCell>
-                  <TableCell>{new Date(modelo.createdAt).toLocaleDateString()}</TableCell>
-                  <TableCell>
-                    {Array.isArray(modelo.customFields)
-                      ? modelo.customFields.map((field: any, index: number) => {
-                          const keyName = field.key?.replace(/^custom_/, "") || "(sem nome)";
-                          const value = field.value;
-                          return renderField(value, keyName);
-                        })
-                      : "-"}
-                  </TableCell>
-                  <TableCell align="center">
-                    <Box sx={{ display: "flex", gap: 2, justifyContent: "space-between" }}>
-                      {empresa?.isAdmin && (
-                        <>
-                          <Tooltip title="Adicionar Relatório" placement="top">
-                            <IconButton
-                              onClick={() =>
-                                navigate("/add-new-report", {
-                                  state: {
-                                    selectedModel: modelo,
-                                  },
-                                })
-                              }
-                              sx={{
-                                color: "#fff",
-                                backgroundColor: "primary.main",
-                                border: "1px solid",
-                                borderColor: "primary.main",
-                                "&:hover": {
-                                  backgroundColor: "primary.dark",
-                                  color: "#fff",
-                                },
-                                width: 40,
-                                height: 40,
-                              }}
-                            >
-                              <Typography
-                                component="span"
+                          })
+                        }
+                        sx={{ cursor: "pointer", textDecoration: "none" }}
+                      >
+                        {modelo.modeloNome}
+                      </Link>
+                    </TableCell>
+                    <TableCell>{new Date(modelo.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      {Array.isArray(modelo.customFields)
+                        ? modelo.customFields.map((field: any, index: number) => {
+                            const keyName = field.key?.replace(/^custom_/, "") || "(sem nome)";
+                            const value = field.value;
+                            return renderField(value, keyName);
+                          })
+                        : "-"}
+                    </TableCell>
+                    <TableCell align="center">
+                      <Box sx={{ display: "flex", gap: 2, justifyContent: "space-between" }}>
+                        {empresa?.isAdmin && (
+                          <>
+                            <Tooltip title="Adicionar Relatório" placement="top">
+                              <IconButton
+                                onClick={() =>
+                                  navigate("/add-new-report", {
+                                    state: {
+                                      selectedModel: modelo,
+                                    },
+                                  })
+                                }
                                 sx={{
-                                  fontSize: 26,
-                                  fontWeight: "bold",
                                   color: "#fff",
+                                  backgroundColor: "primary.main",
+                                  border: "1px solid",
+                                  borderColor: "primary.main",
+                                  "&:hover": {
+                                    backgroundColor: "primary.dark",
+                                    color: "#fff",
+                                  },
+                                  width: 40,
+                                  height: 40,
                                 }}
                               >
-                                +
-                              </Typography>
-                            </IconButton>
-                          </Tooltip>
+                                <Typography
+                                  component="span"
+                                  sx={{
+                                    fontSize: 26,
+                                    fontWeight: "bold",
+                                    color: "#fff",
+                                  }}
+                                >
+                                  +
+                                </Typography>
+                              </IconButton>
+                            </Tooltip>
 
-                          <Tooltip title="Clonar Modelo" placement="top" sx={{ width: 40, height: 40 }}>
-                            <IconButton
-                              onClick={() => requestClone(modelo.id)}
-                              disabled={cloningId === modelo.id}
-                            >
-                              <ContentCopyIcon />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Criar Critérios" placement="top">
-                            <IconButton
-                              onClick={() => navigate("/edit-criteria", { state: { modeloId: modelo.id } })}
-                              sx={{
-                                color: "#fff",
-                                backgroundColor: "primary.main",
-                                border: "1px solid",
-                                borderColor: "primary.main",
-                                "&:hover": {
-                                  backgroundColor: "primary.dark",
+                            <Tooltip title="Clonar Modelo" placement="top" sx={{ width: 40, height: 40 }}>
+                              <IconButton onClick={() => requestClone(modelo.id)} disabled={cloningId === modelo.id}>
+                                <ContentCopyIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Criar Critérios" placement="top">
+                              <IconButton
+                                onClick={() => navigate("/edit-criteria", { state: { modeloId: modelo.id } })}
+                                sx={{
                                   color: "#fff",
-                                },
-                                width: 40,
-                                height: 40,
-                              }}
-                            >
-                              <PlaylistAddCheck />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Excluir modelo" placement="top">
-                            <IconButton
-                              onClick={() => requestDelete(modelo.id)}
-                              sx={{
-                                backgroundColor: "error.main",
-                                color: "#fff",
-                                "&:hover": {
-                                  backgroundColor: "error.dark",
-                                },
-                                width: 40,
-                                height: 40,
-                              }}
-                            >
-                              <Delete fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </>
-                      )}
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+                                  backgroundColor: "primary.main",
+                                  border: "1px solid",
+                                  borderColor: "primary.main",
+                                  "&:hover": {
+                                    backgroundColor: "primary.dark",
+                                    color: "#fff",
+                                  },
+                                  width: 40,
+                                  height: 40,
+                                }}
+                              >
+                                <PlaylistAddCheck />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Excluir modelo" placement="top">
+                              <IconButton
+                                onClick={() => requestDelete(modelo.id)}
+                                sx={{
+                                  backgroundColor: "error.main",
+                                  color: "#fff",
+                                  "&:hover": {
+                                    backgroundColor: "error.dark",
+                                  },
+                                  width: 40,
+                                  height: 40,
+                                }}
+                              >
+                                <Delete fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </>
+                        )}
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>
@@ -563,7 +566,8 @@ export default function ReportModelListPage() {
         <DialogTitle sx={{ fontWeight: "bold" }}>Eliminar modelo permanentemente!</DialogTitle>
         <DialogContent>
           <Typography>
-            Tem certeza que deseja eliminar este modelo <strong>de forma permanente?</strong> Esta ação não pode ser desfeita!
+            Tem certeza que deseja eliminar este modelo <strong>de forma permanente?</strong> Esta ação não pode ser
+            desfeita!
           </Typography>
         </DialogContent>
         <DialogActions>
@@ -581,11 +585,7 @@ export default function ReportModelListPage() {
             color="error"
             variant="contained"
           >
-          {deleteId === selectedModelId ? (
-              <CircularProgress size={24} sx={{ color: "#fff" }} />
-            ) : (
-              "Confirmar"
-            )}
+            {deleteId === selectedModelId ? <CircularProgress size={24} sx={{ color: "#fff" }} /> : "Confirmar"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -614,20 +614,13 @@ export default function ReportModelListPage() {
             variant="contained"
             disabled={cloningId === modelToCloneId}
           >
-            {cloningId === modelToCloneId ? (
-              <CircularProgress size={24} sx={{ color: "#fff" }} />
-            ) : (
-              "Confirmar"
-            )}
+            {cloningId === modelToCloneId ? <CircularProgress size={24} sx={{ color: "#fff" }} /> : "Confirmar"}
           </Button>
         </DialogActions>
       </Dialog>
 
       {/*Notification*/}
-      <Notification
-        alert={alert}
-        setAlert={setAlert}
-      />
+      <Notification alert={alert} setAlert={setAlert} />
     </>
   );
 }

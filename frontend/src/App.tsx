@@ -130,7 +130,6 @@ function App() {
     return <LoadingAnimation />;
   }
 
-  
   return (
     <Router>
       <Suspense fallback={<LoadingAnimation />}>

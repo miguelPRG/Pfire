@@ -119,7 +119,9 @@ export default function ClientManagementTable() {
     if (advValue.field || advValue.text) {
       const q = advValue.text.toLowerCase();
       const filtered = source.filter((c: Cliente) =>
-        String((c as any)[advValue.field] || "").toLowerCase().includes(q)
+        String((c as any)[advValue.field] || "")
+          .toLowerCase()
+          .includes(q)
       );
       setLocalClientes(filtered);
     } else {

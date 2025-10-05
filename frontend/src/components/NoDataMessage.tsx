@@ -8,7 +8,7 @@ const bounce = keyframes`
   100% { transform: translateY(0);}
 `;
 
-export default function NoDataMessage({nome, isTablet = true}: {nome?: string, isTablet?: boolean} ) {
+export default function NoDataMessage({ nome, isTablet = true }: { nome?: string; isTablet?: boolean }) {
   return (
     <Box
       sx={{

@@ -119,13 +119,12 @@ function AddNewReportPage() {
     if (empresa?.id) getClientes({ variables: { empresaId: empresa.id } });
   }, [empresa, getClientes]);
 
-    // Efeito para mostrar/esconder o botão de scroll para o topo conforme o scroll da página
+  // Efeito para mostrar/esconder o botão de scroll para o topo conforme o scroll da página
   useEffect(() => {
     const handleScroll = () => setShowScrollTop(window.scrollY > 100); // Mostra botão se scroll > 100px
     window.addEventListener("scroll", handleScroll); // Adiciona listener
     console.log("selectedModel", selectedModel);
     return () => window.removeEventListener("scroll", handleScroll); // Remove listener ao desmontar
-
   }, []);
 
   // Se não houver modelo selecionado, exibe mensagem de erro
@@ -411,7 +410,10 @@ function AddNewReportPage() {
                     if (value.datatype === "object") {
                       // Ordena subcampos pelo indice
                       const subFields = Object.entries(value)
-                        .filter(([subKey, subValue]: [string, any]) => !["datatype", "required", "label", "indice"].includes(subKey))
+                        .filter(
+                          ([subKey, subValue]: [string, any]) =>
+                            !["datatype", "required", "label", "indice"].includes(subKey)
+                        )
                         .sort(([, a]: [string, any], [, b]: [string, any]) => (a.indice ?? 0) - (b.indice ?? 0));
 
                       return (
@@ -449,8 +451,8 @@ function AddNewReportPage() {
                                       subValue.datatype === "number"
                                         ? "number"
                                         : subValue.datatype === "date"
-                                        ? "date"
-                                        : "text"
+                                          ? "date"
+                                          : "text"
                                     }
                                     value={formData[fullSubKey] ?? ""}
                                     onChange={(e) => handleInputChange(fullSubKey, e.target.value)}
@@ -460,7 +462,9 @@ function AddNewReportPage() {
                                         ? `${subLabel}: ${errors[`${baseKey}.${fullSubKey}`]}`
                                         : ""
                                     }
-                                    slotProps={subValue.datatype === "date" ? { inputLabel: { shrink: true } } : undefined}
+                                    slotProps={
+                                      subValue.datatype === "date" ? { inputLabel: { shrink: true } } : undefined
+                                    }
                                   />
                                 </Box>
                               );
@@ -483,9 +487,7 @@ function AddNewReportPage() {
                                     checked={!!formData[fullKey]}
                                     onChange={(e) => handleInputChange(fullKey, e.target.checked)}
                                   />
-                                  <Typography>
-                                    {label}
-                                  </Typography>
+                                  <Typography>{label}</Typography>
                                 </Box>
                                 {errors[fullKey] && (
                                   <Typography variant="caption" color="error">

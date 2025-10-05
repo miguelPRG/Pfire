@@ -59,7 +59,6 @@ const newFieldNameSchema = z.string().min(1, "Nome do campo é obrigatório");
 type Field = z.infer<typeof fieldSchema>;
 type FormSchema = z.infer<typeof formSchema>;
 
-
 export default function ReportTemplatePage() {
   // Hook para navegação entre páginas
   const navigate = useNavigate();
@@ -153,70 +152,72 @@ export default function ReportTemplatePage() {
    * Valida se o nome não está vazio e não é duplicado.
    */
 
-    // Função para converter customFields do backend para o formato do formulário
+  // Função para converter customFields do backend para o formato do formulário
   const convertCustomFieldsToFormFields = (customFields: any[]) => {
-  function ordenarPorIndice(obj) {
-    if (obj.datatype === "object") {
-      // Obtem os campos do objeto, excluindo "datatype", "required" e "indice"
-      const fixedFields = ["datatype", "required", "indice"];
-      const subfields = Object.keys(obj)
-        .filter(k => !fixedFields.includes(k))
-        .sort((a, b) => obj[a].indice - obj[b].indice);
+    function ordenarPorIndice(obj) {
+      if (obj.datatype === "object") {
+        // Obtem os campos do objeto, excluindo "datatype", "required" e "indice"
+        const fixedFields = ["datatype", "required", "indice"];
+        const subfields = Object.keys(obj)
+          .filter((k) => !fixedFields.includes(k))
+          .sort((a, b) => obj[a].indice - obj[b].indice);
 
-      // Reconstruir objeto na ordem correta
-      const newObj = {};
-      fixedFields.forEach(f => { if (obj[f] !== undefined) newObj[f] = obj[f]; });
-      subfields.forEach(f => newObj[f] = obj[f]);
-      return newObj;
-    }
-    return obj;
-  }
-
-  // Ordena o array principal
-  const sortedData = customFields
-    .map(item => ({ ...item, value: ordenarPorIndice(item.value) }))
-    .sort((a, b) => a.value.indice - b.value.indice);
-
-  // Remover todos os campos indice dos objetos e subcampos
-  return (
-    sortedData?.map((field: any) => {
-      const fieldName = field.key?.replace(/^custom_/, "") || "";
-      const fieldValue = field.value;
-
-      if (fieldValue?.datatype === "object") {
-        // Para campos objeto, extrair subcampos
-        const subfields = Object.entries(fieldValue)
-          .filter(([key]) => !["datatype", "required", "indice"].includes(key))
-          .map(([key, val]: any) => ({
-            // Remove o prefixo custom_ dos subcampos para exibição ao usuário
-            name: key.replace(/^custom_/, ""),
-            datatype: val.datatype,
-            required: val.required,
-            // Não inclui indice!
-          }));
-
-        return {
-          name: fieldName,
-          datatype: fieldValue.datatype,
-          required: fieldValue.required,
-          subfields: subfields.length > 0 ? subfields : undefined,
-        };
-      } else if (fieldValue?.datatype === "array") {
-        return {
-          name: fieldName,
-          datatype: fieldValue.datatype,
-          required: fieldValue.required,
-          items: Array.isArray(fieldValue.items) ? fieldValue.items : [],
-        };
-      } else {
-        return {
-          name: fieldName,
-          datatype: fieldValue?.datatype || "",
-          required: fieldValue?.required || false,
-        };
+        // Reconstruir objeto na ordem correta
+        const newObj = {};
+        fixedFields.forEach((f) => {
+          if (obj[f] !== undefined) newObj[f] = obj[f];
+        });
+        subfields.forEach((f) => (newObj[f] = obj[f]));
+        return newObj;
       }
-    }) || []
-  );
+      return obj;
+    }
+
+    // Ordena o array principal
+    const sortedData = customFields
+      .map((item) => ({ ...item, value: ordenarPorIndice(item.value) }))
+      .sort((a, b) => a.value.indice - b.value.indice);
+
+    // Remover todos os campos indice dos objetos e subcampos
+    return (
+      sortedData?.map((field: any) => {
+        const fieldName = field.key?.replace(/^custom_/, "") || "";
+        const fieldValue = field.value;
+
+        if (fieldValue?.datatype === "object") {
+          // Para campos objeto, extrair subcampos
+          const subfields = Object.entries(fieldValue)
+            .filter(([key]) => !["datatype", "required", "indice"].includes(key))
+            .map(([key, val]: any) => ({
+              // Remove o prefixo custom_ dos subcampos para exibição ao usuário
+              name: key.replace(/^custom_/, ""),
+              datatype: val.datatype,
+              required: val.required,
+              // Não inclui indice!
+            }));
+
+          return {
+            name: fieldName,
+            datatype: fieldValue.datatype,
+            required: fieldValue.required,
+            subfields: subfields.length > 0 ? subfields : undefined,
+          };
+        } else if (fieldValue?.datatype === "array") {
+          return {
+            name: fieldName,
+            datatype: fieldValue.datatype,
+            required: fieldValue.required,
+            items: Array.isArray(fieldValue.items) ? fieldValue.items : [],
+          };
+        } else {
+          return {
+            name: fieldName,
+            datatype: fieldValue?.datatype || "",
+            required: fieldValue?.required || false,
+          };
+        }
+      }) || []
+    );
   };
 
   const addField = () => {
@@ -241,11 +242,10 @@ export default function ReportTemplatePage() {
 
   const onSubmit = async (data: FormSchema) => {
     try {
-      
-      if(fields.length === 0){
+      if (fields.length === 0) {
         throw new Error("Adicione pelo menos um campo personalizado.");
       }
-      
+
       // Executa o reCAPTCHA Enterprise
       const recaptchaToken = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
         action: "register",

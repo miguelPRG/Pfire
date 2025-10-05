@@ -69,8 +69,7 @@ class ClienteQuery:
             if not jwt.get("isSuperAdmin", False):
                 cliente_data = {k: v for k, v in cliente_data.items() if k not in ["isActive", "created_by", "updated_by", "updated_at"]}
 
-            #print("Dados dos clientes:", cliente_data)  # Debugging line
-
+            # print("Dados dos clientes:", cliente_data)  # Debugging line
 
             clientes.append(Cliente(**filter_null_fields(cliente_data)))
 

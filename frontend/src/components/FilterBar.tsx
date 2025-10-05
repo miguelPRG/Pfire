@@ -55,10 +55,7 @@ export default function FilterBar({
 
       {/* Filtro 1 */}
       <FormControl size="small">
-        <Select
-          value={filter1.field}
-          onChange={(e) => setFilter1({ ...filter1, field: e.target.value as any })}
-        >
+        <Select value={filter1.field} onChange={(e) => setFilter1({ ...filter1, field: e.target.value as any })}>
           {fields.map((f) => (
             <MenuItem key={f.value} value={f.value}>
               {f.label}
@@ -67,10 +64,7 @@ export default function FilterBar({
         </Select>
       </FormControl>
       <FormControl size="small">
-        <Select
-          value={filter1.operator}
-          onChange={(e) => setFilter1({ ...filter1, operator: e.target.value as any })}
-        >
+        <Select value={filter1.operator} onChange={(e) => setFilter1({ ...filter1, operator: e.target.value as any })}>
           {operators.map((o) => (
             <MenuItem key={o.value} value={o.value}>
               {o.label}
@@ -87,10 +81,7 @@ export default function FilterBar({
 
       {/* Filtro 2 */}
       <FormControl size="small">
-        <Select
-          value={filter2.field}
-          onChange={(e) => setFilter2({ ...filter2, field: e.target.value as any })}
-        >
+        <Select value={filter2.field} onChange={(e) => setFilter2({ ...filter2, field: e.target.value as any })}>
           {fields.map((f) => (
             <MenuItem key={f.value} value={f.value}>
               {f.label}
@@ -99,10 +90,7 @@ export default function FilterBar({
         </Select>
       </FormControl>
       <FormControl size="small">
-        <Select
-          value={filter2.operator}
-          onChange={(e) => setFilter2({ ...filter2, operator: e.target.value as any })}
-        >
+        <Select value={filter2.operator} onChange={(e) => setFilter2({ ...filter2, operator: e.target.value as any })}>
           {operators.map((o) => (
             <MenuItem key={o.value} value={o.value}>
               {o.label}

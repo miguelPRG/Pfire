@@ -9,6 +9,7 @@ from database import relatorios_collection, clientes_collection, modelos_collect
 
 routerRelatorio = APIRouter(prefix="/relatorio")
 
+
 # Criar Relatório
 @routerRelatorio.post("/")
 async def create_relatorio(request: Request, relatorio: RelatorioCreate):

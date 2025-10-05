@@ -84,7 +84,7 @@ export default function ReportListPage() {
 
   useEffect(() => {
     if (search) {
-      refetch ({ empresaId: empresa?.id, start: 0, name: search });
+      refetch({ empresaId: empresa?.id, start: 0, name: search });
     }
   }, [search]);
 
@@ -186,7 +186,7 @@ export default function ReportListPage() {
         recaptchaToken,
       };
 
-      console.log("Corpo: ", body)
+      console.log("Corpo: ", body);
 
       const response = await fetch(endpoint, {
         method,
@@ -519,11 +519,21 @@ export default function ReportListPage() {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell><strong>Número</strong></TableCell>
-                  <TableCell><strong>Cliente</strong></TableCell>
-                  <TableCell><strong>Modelo</strong></TableCell>
-                  <TableCell><strong>Data Criação</strong></TableCell>
-                  <TableCell><strong>Ações</strong></TableCell>
+                  <TableCell>
+                    <strong>Número</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Cliente</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Modelo</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Data Criação</strong>
+                  </TableCell>
+                  <TableCell>
+                    <strong>Ações</strong>
+                  </TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -540,11 +550,9 @@ export default function ReportListPage() {
                       <TableCell>{report.cliente_nome}</TableCell>
                       <TableCell>{report.modelo_nome}</TableCell>
                       <TableCell>
-                        {report.created_at ? new Date(report.created_at).toLocaleDateString() : '-'}
+                        {report.created_at ? new Date(report.created_at).toLocaleDateString() : "-"}
                       </TableCell>
-                      <TableCell>
-                        {/* ...existing actions... */}
-                      </TableCell>
+                      <TableCell>{/* ...existing actions... */}</TableCell>
                     </TableRow>
                   ))
                 )}

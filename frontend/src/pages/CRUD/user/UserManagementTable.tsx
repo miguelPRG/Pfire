@@ -174,7 +174,9 @@ export default function UserManagementTable() {
     }
 
     const filtered = source.filter((u: any) =>
-      String((u as any)[field] || "").toLowerCase().includes(val)
+      String((u as any)[field] || "")
+        .toLowerCase()
+        .includes(val)
     );
     setLocalUsers(filtered);
   };

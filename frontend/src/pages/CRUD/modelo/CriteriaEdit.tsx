@@ -2,16 +2,7 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-  Box,
-  Container,
-  Paper,
-  Typography,
-  TextField,
-  Button,
-  IconButton,
-  Breadcrumbs,
-} from "@mui/material";
+import { Box, Container, Paper, Typography, TextField, Button, IconButton, Breadcrumbs } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useState, useLayoutEffect, useEffect } from "react";
@@ -26,8 +17,11 @@ import Tooltip from "@mui/material/Tooltip";
 // ---------------------- ZOD SCHEMA ----------------------
 // Validação Zod para cada opção: key deve ser uma letra única, value não pode ser vazio
 const optionsSchema = z.object({
-  key: z.string().regex(/^[A-Za-z]$/, "Coloque 1 letra").length(1),
-  value: z.string().min(1, "Valor não pode ser vazio")
+  key: z
+    .string()
+    .regex(/^[A-Za-z]$/, "Coloque 1 letra")
+    .length(1),
+  value: z.string().min(1, "Valor não pode ser vazio"),
 });
 
 // Validação Zod para o formulário inteiro
@@ -50,7 +44,6 @@ export default function CreateCriteriaPage() {
       navigate("/");
       // recarregar a página
       window.location.reload();
-
     } else {
       setIsloading(false);
     }
@@ -100,7 +93,7 @@ export default function CreateCriteriaPage() {
       }
 
       const recaptchaToken = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-        action: criterioID ? 'update' : 'register',
+        action: criterioID ? "update" : "register",
       });
 
       const payload = {
@@ -109,49 +102,48 @@ export default function CreateCriteriaPage() {
         options: data.options,
         recaptcha_token: recaptchaToken,
       };
-      
+
       console.log("Payload to be sent:", payload);
-      
+
       let res;
 
       if (criterioID) {
         res = await fetch(`/backend/criterio/${criterioID}`, {
           method: "PUT",
           body: JSON.stringify(payload),
-          credentials: 'include',
-          headers: { "Content-Type": "application/json" }
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
         });
       } else {
         res = await fetch(`/backend/criterio`, {
           method: "POST",
           body: JSON.stringify(payload),
-          credentials: 'include',
-          headers: { "Content-Type": "application/json" }
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
         });
       }
 
       const result = await res.json();
 
       if (!res.ok) {
-
         console.log("Error response from server:", result);
 
-        throw new Error(result.detail || 'Erro ao criar/atualizar critérios');
+        throw new Error(result.detail || "Erro ao criar/atualizar critérios");
       }
 
-      setAlert({ message: result.message || 'Critérios criados com sucesso!', isError: false });
+      setAlert({ message: result.message || "Critérios criados com sucesso!", isError: false });
       // Navega para a lista de modelos e envia mensagem via state
       navigate("/report-models", {
         state: {
           message: {
-            text: result.message || 'Critérios criados com sucesso!',
+            text: result.message || "Critérios criados com sucesso!",
             error: false,
           },
           reload: true, // se quiser forçar reload
         },
       });
     } catch (err: any) {
-      setAlert({ message: err.message || 'Erro ao criar critérios', isError: true });
+      setAlert({ message: err.message || "Erro ao criar critérios", isError: true });
     } finally {
       setSubmitting(false);
     }
@@ -160,7 +152,7 @@ export default function CreateCriteriaPage() {
   // ---------------------- TOCAR TODOS OS CAMPOS ----------------------
   // Marca todos os campos como "touched" para garantir que os erros aparecem ao submeter
 
-  if(isloading){
+  if (isloading) {
     return <LoadingAnimation />;
   }
 
@@ -199,12 +191,10 @@ export default function CreateCriteriaPage() {
         />
       </Breadcrumbs>
       <Paper sx={{ p: 4 }}>
-        <Typography variant="h2" sx={{ mb: 2 }}>Editar Critério</Typography>
-        <Container
-          component="form"
-          onSubmit={handleSubmit(onSubmit)}
-          sx={{ mt: 2, maxWidth: "900px" }}
-        >
+        <Typography variant="h2" sx={{ mb: 2 }}>
+          Editar Critério
+        </Typography>
+        <Container component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 2, maxWidth: "900px" }}>
           {/* ---------------------- CAMPO NOME ---------------------- */}
           <TextField
             sx={{ mb: 5 }}
@@ -218,12 +208,17 @@ export default function CreateCriteriaPage() {
 
           {/* ---------------------- CAMPOS DINÂMICOS DE OPTIONS ---------------------- */}
           {fields.map((field, index) => (
-            <Container key={field.id} sx={{ mb: 5, p: 2, border: '1px solid #ccc', borderRadius: 1, maxWidth: "850px" }}>
-              <Typography variant="h3" sx={{ mb: 3 }}>Opção {String.fromCharCode(65 + index)}</Typography>
-                <Box sx={{ mb: 2, display: 'flex', flexFlow: "row wrap", gap: 2, alignItems: 'center'}}>
+            <Container
+              key={field.id}
+              sx={{ mb: 5, p: 2, border: "1px solid #ccc", borderRadius: 1, maxWidth: "850px" }}
+            >
+              <Typography variant="h3" sx={{ mb: 3 }}>
+                Opção {String.fromCharCode(65 + index)}
+              </Typography>
+              <Box sx={{ mb: 2, display: "flex", flexFlow: "row wrap", gap: 2, alignItems: "center" }}>
                 {/* Campo da chave */}
                 <TextField
-                  sx={{ display: "none"}}
+                  sx={{ display: "none" }}
                   label="Letra"
                   margin="normal"
                   value={String.fromCharCode(65 + index)}
@@ -231,20 +226,20 @@ export default function CreateCriteriaPage() {
                 />
                 {/* Campo do valor como TextArea */}
                 <TextField
-                  sx={{ flexBasis: 500, flexShrink: 1, }}
+                  sx={{ flexBasis: 500, flexShrink: 1 }}
                   id="outlined-multiline-static"
                   label="Valor"
                   multiline
-                  slotProps= {{inputLabel: {className: 'label-multilinha'}}}
+                  slotProps={{ inputLabel: { className: "label-multilinha" } }}
                   rows={4}
                   {...register(`options.${index}.value`)}
                   error={!!errors.options?.[index]?.value}
                   helperText={errors.options?.[index]?.value?.message}
                 />
-                </Box>
-              <Box sx={{alignItems: 'center'}}>
+              </Box>
+              <Box sx={{ alignItems: "center" }}>
                 {/* Botão para remover campo */}
-                <IconButton 
+                <IconButton
                   onClick={() => {
                     remove(index); // Remove o campo do array
                     trigger; // Opcional: pode validar após remover, mas não é obrigatório
@@ -254,7 +249,8 @@ export default function CreateCriteriaPage() {
                     color: "white",
                     "&:hover": { bgcolor: "error.dark" },
                     alignSelf: "center",
-                  }}>
+                  }}
+                >
                   <DeleteIcon />
                 </IconButton>
               </Box>

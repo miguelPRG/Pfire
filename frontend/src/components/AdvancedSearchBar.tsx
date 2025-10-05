@@ -1,4 +1,16 @@
-import { Box, Stack, FormControl, InputLabel, Select, MenuItem, TextField, Button, useTheme, Checkbox, FormControlLabel } from "@mui/material";
+import {
+  Box,
+  Stack,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  TextField,
+  Button,
+  useTheme,
+  Checkbox,
+  FormControlLabel,
+} from "@mui/material";
 
 type FieldOption = { value: string; label: string };
 type AdvState = { field: string; text: string };
@@ -113,16 +125,15 @@ export default function AdvancedSearchBar({
                 color: isDark ? theme.palette.text.primary : undefined,
               }}
               MenuProps={{
-              PaperProps: {
-                sx: {
-                  maxWidth: 280,
+                PaperProps: {
+                  sx: {
+                    maxWidth: 280,
+                  },
                 },
-              },
-            }}
+              }}
             >
               <MenuItem value="Técnico">Técnico</MenuItem>
               <MenuItem value="Admin">Admin</MenuItem>
-              
             </Select>
           </FormControl>
         ) : (

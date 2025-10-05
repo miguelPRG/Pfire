@@ -37,7 +37,7 @@ export default function CriteriaSelectField({
             PaperProps: {
               sx: {
                 maxWidth: "300px",
-                width: "75%"
+                width: "75%",
               },
             },
           }}
@@ -50,14 +50,13 @@ export default function CriteriaSelectField({
             ))
           ) : (
             <MenuItem disabled sx={{ whiteSpace: "normal", fontWeight: "bold" }}>
-              O modelo não possui nenhuma lista de critérios.<br />
+              O modelo não possui nenhuma lista de critérios.
+              <br />
               Crie uma lista de critérios ou altere o tipo de dados deste campo.
             </MenuItem>
           )}
         </Select>
-        {error && (
-          <span style={{ color: "red", fontSize: 12 }}>{error}</span>
-        )}
+        {error && <span style={{ color: "red", fontSize: 12 }}>{error}</span>}
       </FormControl>
     </Box>
   );
