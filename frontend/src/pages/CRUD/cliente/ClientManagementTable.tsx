@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "@apollo/client/react";
+import { useState, useEffect, use } from "react";
+import { useQuery, useLazyQuery } from "@apollo/client/react";
 import {
   Table,
   TableBody,
@@ -10,10 +10,8 @@ import {
   Paper,
   Box,
   Pagination,
-  TextField,
   Typography,
   Button,
-  InputAdornment,
   Link,
   Dialog,
   DialogTitle,
@@ -23,7 +21,6 @@ import {
   CircularProgress,
   Tooltip,
 } from "@mui/material";
-import { Search } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { GET_CLIENTES_BY_EMPRESA } from "../../../graphql/clientesQueries";
 import { useTheme } from "@mui/material/styles";
@@ -88,14 +85,27 @@ export default function ClientManagementTable() {
   const location = useLocation();
   const { empresa } = useAuth();
 
+  // Estado único para fonte dos clientes e total
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [totalClientes, setTotalClientes] = useState(0);
+
   // Consulta inicial (cache)
   const { data, loading, error, refetch } = useQuery<returnedData>(GET_CLIENTES_BY_EMPRESA, {
     variables: { empresaId: empresa?.id, start: page * rowsPerPage },
     fetchPolicy: "cache-and-network",
   });
 
+  // Consulta lazy query para filtro
+  const [fetchByFilter, { data: dadosFiltrados }] = useLazyQuery<returnedData>(GET_CLIENTES_BY_EMPRESA, {
+    fetchPolicy: "cache-first",
+  });
+
+  // Adicione um estado para saber se está em busca avançada
+  const [isAdvancedSearch, setIsAdvancedSearch] = useState(false);
+
+  // Atualiza clientes quando data ou dadosFiltrados mudam
   useEffect(() => {
-    // Será true após a criação ou atualização de um cliente
+
     if (location.state?.message) {
       setAlert({
         message: location.state.message.text,
@@ -105,38 +115,56 @@ export default function ClientManagementTable() {
       window.history.replaceState({}, document.title);
     }
 
-    if (data) {
-      // cuando vienen nuevos datos (página/refetch o búsqueda) actualizamos la lista local
-      setLocalClientes(data.getClientes.clientes || []);
-      if (!initialLoaded) setInitialLoaded(true);
+    if (isAdvancedSearch) {
+      if (dadosFiltrados) {
+        setClientes(dadosFiltrados.getClientes.clientes || []);
+        setTotalClientes(dadosFiltrados.getClientes.totalClientes || 0);
+      }
+    } else {
+      if (data) {
+        console.log("Dados recebidos:", data);
+        setClientes(data.getClientes.clientes || []);
+        setTotalClientes(data.getClientes.totalClientes || 0);
+      }
     }
-  }, [data]);
+  }, [data, dadosFiltrados]);
+
+  // Atualiza consulta ao mudar de página
+  useEffect(() => {
+    fetchByFilter({
+      variables: {
+        empresaId: empresa?.id,
+        start: page * rowsPerPage,
+        filter: isAdvancedSearch && advValue.field && advValue.text ? { [advValue.field]: advValue.text } : null,
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   // Função para aplicar consulta avançada
-  const applyAdvancedFilter = () => {
+  const applyAdvancedFilter = async () => {
+    setIsAdvancedSearch(true);
     setPage(0);
-    const source = data?.getClientes?.clientes || [];
-    if (advValue.field || advValue.text) {
-      const q = advValue.text.toLowerCase();
-      const filtered = source.filter((c: Cliente) =>
-        String((c as any)[advValue.field] || "")
-          .toLowerCase()
-          .includes(q)
-      );
-      setLocalClientes(filtered);
-    } else {
-      setLocalClientes(source);
-    }
+    await fetchByFilter({
+      variables: {
+        empresaId: empresa?.id,
+        start: 0,
+        filter: { [advValue.field]: advValue.text },
+      },
+    });
   };
 
-  const clientes: Cliente[] = localClientes;
-
-  // Decide el total de clientes para paginación (data se actualiza tras refetch)
-  const totalClientes = data?.getClientes?.totalClientes || 0;
+  // Função para limpar filtro avançado
+  const clearAdvancedFilter = async () => {
+    setIsAdvancedSearch(false);
+    setAdvValue({ field: "", text: "" });
+    setPage(0);
+    const result = await refetch({ empresaId: empresa?.id, start: 0 });
+    setClientes(result?.data.getClientes.clientes || []);
+    setTotalClientes(result?.data.getClientes.totalClientes || 0);
+  };
 
   const pageCount = Math.ceil(totalClientes / rowsPerPage);
-
-  const handleChangePage = (_: unknown, newPage: number) => setPage(newPage);
 
   const handleSort = (property: keyof Cliente) => {
     const isAsc = orderBy === property && order === "asc";
@@ -147,7 +175,7 @@ export default function ClientManagementTable() {
   const backgroundColor = theme.palette.mode === "dark" ? "rgb(12,12,12)" : "#f0f0f0";
 
   // ahora usamos solo `clientes` (localClientes / resultados remotos) e ordenamos
-  const filteredRows = [...clientes].sort((a, b) => {
+  const filteredRows = Array.from(clientes).sort((a, b) => {
     if (!orderBy) return 0;
     const aValue = a[orderBy]?.toString() || "";
     const bValue = b[orderBy]?.toString() || "";
@@ -296,15 +324,8 @@ export default function ClientManagementTable() {
               fields={advFields}
               value={advValue}
               onChange={(next) => setAdvValue(next)}
-              onApply={() => {
-                applyAdvancedFilter();
-              }}
-              onClear={async () => {
-                setAdvValue({ field: "", text: "" });
-                const result = await refetch({ empresaId: empresa?.id, start: 0 }); // força refetch
-                setLocalClientes(result?.data.getClientes.clientes || []);
-                setPage(0);
-              }}
+              onApply={applyAdvancedFilter}
+              onClear={clearAdvancedFilter}
             />
           </Box>
         </Box>
@@ -393,114 +414,121 @@ export default function ClientManagementTable() {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredRows.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((cliente, i) => {
-                    const isEvenRow = i % 2 === 0;
-                    const rowBg =
-                      theme.palette.mode === "dark"
-                        ? isEvenRow
-                          ? "#252525"
-                          : "#1d1d1d"
-                        : isEvenRow
-                          ? "#f5f5f5"
-                          : "#e0e0e0";
-                    return (
-                      <TableRow key={cliente.id} sx={{ backgroundColor: rowBg }}>
-                        <TableCell>
-                          <Link
-                            component="button"
-                            onClick={() => navigate("/add-client", { state: { cliente } })}
-                            sx={{ cursor: "pointer" }}
+                  filteredRows
+                    .sort((a, b) => {
+                      if (!orderBy) return 0;
+                      const aValue = a[orderBy]?.toString() || "";
+                      const bValue = b[orderBy]?.toString() || "";
+                      return order === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+                    })
+                    .map((cliente, i) => {
+                      const isEvenRow = i % 2 === 0;
+                      const rowBg =
+                        theme.palette.mode === "dark"
+                          ? isEvenRow
+                            ? "#252525"
+                            : "#1d1d1d"
+                          : isEvenRow
+                            ? "#f5f5f5"
+                            : "#e0e0e0";
+                      return (
+                        <TableRow key={cliente.id} sx={{ backgroundColor: rowBg }}>
+                          <TableCell>
+                            <Link
+                              component="button"
+                              onClick={() => navigate("/add-client", { state: { cliente } })}
+                              sx={{ cursor: "pointer" }}
+                            >
+                              {cliente.nome}
+                            </Link>
+                          </TableCell>
+                          <TableCell>{cliente.email}</TableCell>
+                          <TableCell>{cliente.telefone}</TableCell>
+                          <TableCell>{cliente.nif}</TableCell>
+                          <TableCell>{cliente.localidade}</TableCell>
+                          <TableCell
+                            sx={{
+                              maxWidth: 80,
+                              width: 80,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
                           >
-                            {cliente.nome}
-                          </Link>
-                        </TableCell>
-                        <TableCell>{cliente.email}</TableCell>
-                        <TableCell>{cliente.telefone}</TableCell>
-                        <TableCell>{cliente.nif}</TableCell>
-                        <TableCell>{cliente.localidade}</TableCell>
-                        <TableCell
-                          sx={{
-                            maxWidth: 80,
-                            width: 80,
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                          }}
-                        >
-                          <Tooltip title={cliente.morada || ""} placement="top" arrow>
-                            <span>{cliente.morada}</span>
-                          </Tooltip>
-                        </TableCell>
-                        <TableCell>{cliente.codigoPostal}</TableCell>
-                        {/* Novo campo criado em */}
-                        <TableCell>
-                          {cliente.createdAt ? new Date(cliente.createdAt).toLocaleDateString("pt-PT") : ""}
-                        </TableCell>
-                        {empresa?.isAdmin ? (
-                          <>
-                            <TableCell>
-                              <Button
-                                variant="contained"
-                                size="small"
-                                sx={{
-                                  width: 55,
-                                  height: 55,
-                                  borderRadius: "50%",
-                                  backgroundColor: cliente.isActive
-                                    ? theme.palette.success.main
-                                    : theme.palette.error.main,
-                                  color: "#fff",
-                                  fontWeight: "bold",
-                                  fontSize: 15,
-                                  minWidth: 0,
-                                  px: 0,
-                                  position: "relative",
-                                }}
-                                disabled={loadingClienteId === cliente.id}
-                                onClick={async () => {
-                                  setLoadingClienteId(cliente.id);
-                                  await toggleClienteStatus(cliente.id, cliente.isActive);
-                                  setLoadingClienteId(null);
-                                }}
-                              >
-                                {loadingClienteId === cliente.id ? (
-                                  <CircularProgress size={28} sx={{ color: "#fff" }} />
-                                ) : cliente.isActive ? (
-                                  "Ativo"
-                                ) : (
-                                  "Inativo"
-                                )}
-                              </Button>
-                            </TableCell>
-                            <TableCell>
-                              {!cliente.isActive && (
+                            <Tooltip title={cliente.morada || ""} placement="top" arrow>
+                              <span>{cliente.morada}</span>
+                            </Tooltip>
+                          </TableCell>
+                          <TableCell>{cliente.codigoPostal}</TableCell>
+                          {/* Novo campo criado em */}
+                          <TableCell>
+                            {cliente.createdAt ? new Date(cliente.createdAt).toLocaleDateString("pt-PT") : ""}
+                          </TableCell>
+                          {empresa?.isAdmin ? (
+                            <>
+                              <TableCell>
                                 <Button
                                   variant="contained"
-                                  color="error"
                                   size="small"
                                   sx={{
-                                    borderRadius: "20px",
+                                    width: 55,
+                                    height: 55,
+                                    borderRadius: "50%",
+                                    backgroundColor: cliente.isActive
+                                      ? theme.palette.success.main
+                                      : theme.palette.error.main,
+                                    color: "#fff",
+                                    fontWeight: "bold",
+                                    fontSize: 15,
                                     minWidth: 0,
-                                    px: 1.5,
-                                    width: "auto",
-                                    textTransform: "none",
+                                    px: 0,
+                                    position: "relative",
                                   }}
-                                  onClick={() => {
-                                    setSelectedCliente(cliente);
-                                    setDeleteDialogOpen(true);
+                                  disabled={loadingClienteId === cliente.id}
+                                  onClick={async () => {
+                                    setLoadingClienteId(cliente.id);
+                                    await toggleClienteStatus(cliente.id, cliente.isActive);
+                                    setLoadingClienteId(null);
                                   }}
                                 >
-                                  Apagar permanentemente
+                                  {loadingClienteId === cliente.id ? (
+                                    <CircularProgress size={28} sx={{ color: "#fff" }} />
+                                  ) : cliente.isActive ? (
+                                    "Ativo"
+                                  ) : (
+                                    "Inativo"
+                                  )}
                                 </Button>
-                              )}
-                            </TableCell>
-                          </>
-                        ) : (
-                          <></>
-                        )}
-                      </TableRow>
-                    );
-                  })
+                              </TableCell>
+                              <TableCell>
+                                {!cliente.isActive && (
+                                  <Button
+                                    variant="contained"
+                                    color="error"
+                                    size="small"
+                                    sx={{
+                                      borderRadius: "20px",
+                                      minWidth: 0,
+                                      px: 1.5,
+                                      width: "auto",
+                                      textTransform: "none",
+                                    }}
+                                    onClick={() => {
+                                      setSelectedCliente(cliente);
+                                      setDeleteDialogOpen(true);
+                                    }}
+                                  >
+                                    Apagar permanentemente
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </>
+                          ) : (
+                            <></>
+                          )}
+                        </TableRow>
+                      );
+                    })
                 )}
               </TableBody>
             </Table>
@@ -511,7 +539,9 @@ export default function ClientManagementTable() {
             <Pagination
               count={pageCount}
               page={page + 1}
-              onChange={(e, val) => handleChangePage(e, val - 1)}
+              onChange={(e, val) => {
+              setPage(val - 1);
+            }}
               color="primary"
               shape="rounded"
             />
