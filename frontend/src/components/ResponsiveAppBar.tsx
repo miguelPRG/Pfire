@@ -20,6 +20,7 @@ import Sidebar from "./Sidebar";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import BusinessIcon from "@mui/icons-material/Business";
 import LogoutIcon from "@mui/icons-material/Logout";
+import "../assets/styles/ResponsiveAppBar.css";
 
 function ResponsiveAppBar() {
   const { logout, empresa } = useAuth();
@@ -79,28 +80,19 @@ function ResponsiveAppBar() {
           disableGutters
           sx={{
             minHeight: 54,
-            px: {
-              xs: 1,
-              sm: 2,
-              md: 3,
-            },
+            px: { xs: 1, sm: 2, md: 3 },
             display: "flex",
             justifyContent: "space-between",
           }}
         >
-          {/* Lado esquerdo */}
-          <Box sx={{ display: "flex", alignItems: "center" }}>
+          {/* Box 1: Sidebar + Logo */}
+          <Box sx={{ display: "flex", alignItems: "center", flex: "0 0 auto" }}>
             {empresa && (
               <IconButton onClick={toggleSidebar} color="inherit" sx={{ marginRight: 2 }}>
                 <MenuIcon />
               </IconButton>
             )}
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-              }}
-            >
+            <Box sx={{ display: "flex", alignItems: "center" }}>
               <Box
                 component="img"
                 src={logo}
@@ -108,18 +100,13 @@ function ResponsiveAppBar() {
                 sx={{
                   cursor: "pointer",
                   height: 40,
-                  transform: {
-                    xs: "scale(2.1)",
-                    sm: "scale(2.75)",
-                    md: "scale(2.8)",
-                  },
+                  transform: { xs: "scale(2.1)", sm: "scale(2.75)", md: "scale(2.8)" },
                   transformOrigin: "left center",
                   mr: 2,
                   ml: 2,
                 }}
                 onClick={() => navigate("/")}
               />
-
               <Typography
                 variant="h6"
                 component="span"
@@ -129,16 +116,8 @@ function ResponsiveAppBar() {
                   letterSpacing: ".2rem",
                   color: "inherit",
                   textDecoration: "none",
-                  fontSize: {
-                    xs: "1.2rem",
-                    sm: "1.8rem",
-                    md: "2.0rem",
-                  },
-                  ml: {
-                    xs: 1.65,
-                    sm: 3.4,
-                    md: 3.8,
-                  },
+                  fontSize: { xs: "1.2rem", sm: "1.8rem", md: "2.0rem" },
+                  ml: { xs: 1.65, sm: 3.4, md: 3.8 },
                   cursor: "pointer",
                 }}
                 onClick={() => navigate("/")}
@@ -148,13 +127,67 @@ function ResponsiveAppBar() {
             </Box>
           </Box>
 
-          {/* Lado direito */}
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
+          {/* Box 2: Menu de navegação */}
+          <div className="nav-links">
+            <Box
+              component="nav"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                flex: "1 1 auto",
+                justifyContent: "center",
+                ml: 2,
+                mr: 2,
+                gap: 5.5, // deixa os links mais próximos
+              }}
+            >
+              <Typography
+                variant="body1"
+                sx={{
+                  cursor: "pointer",
+                  color: "inherit",
+                  textDecoration: "none",
+                  ml: 2,
+                  fontWeight: 500,
+                  "&:hover": { textDecoration: "underline" },
+                }}
+                onClick={() => navigate("/report-models")}
+              >
+                Modelos
+              </Typography>
+              <Typography
+                variant="body1"
+                sx={{
+                  cursor: "pointer",
+                  color: "inherit",
+                  textDecoration: "none",
+                  fontWeight: 500,
+                  "&:hover": { textDecoration: "underline" },
+                }}
+                onClick={() => navigate("/clients-list")}
+              >
+                Clientes
+              </Typography>
+              {empresa?.isAdmin && (
+                <Typography
+                  variant="body1"
+                  sx={{
+                    cursor: "pointer",
+                    color: "inherit",
+                    textDecoration: "none",
+                    fontWeight: 500,
+                    "&:hover": { textDecoration: "underline" },
+                  }}
+                  onClick={() => navigate("/users-list")}
+                >
+                  Funcionários
+                </Typography>
+              )}
+            </Box>
+          </div>
+
+          {/* Box 3: User + Dropdown */}
+          <Box sx={{ display: "flex", alignItems: "center", flex: "0 0 auto" }}>
             <Tooltip title="Open settings">
               <IconButton
                 onClick={openUserMenu}
@@ -165,7 +198,6 @@ function ResponsiveAppBar() {
                 <Avatar alt="User Avatar" src="/static/images/avatar/2.jpg" />
               </IconButton>
             </Tooltip>
-
             <Menu
               anchorEl={anchorElUser}
               open={Boolean(anchorElUser)}
@@ -197,12 +229,7 @@ function ResponsiveAppBar() {
                     action();
                   }}
                 >
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                  >
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
                     {icon}
                     <Typography variant="body2" textAlign="left" width="100%">
                       {label}
