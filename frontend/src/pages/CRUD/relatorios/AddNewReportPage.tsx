@@ -33,6 +33,7 @@ import ArrowCircleUpIcon from "@mui/icons-material/ArrowCircleUp"; // Ícone de 
 import { useTheme } from "@mui/material/styles"; // Tema do Material UI
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs"; // Componente de breadcrumb estilizado
 import CriteriaSelectField from "./CriteriaSelectField";
+import { useRecaptcha } from "../../../hooks/RecaptchaContext";
 
 // Declaração global para o objeto grecaptcha (Google reCAPTCHA)
 declare var grecaptcha: any;
@@ -109,6 +110,7 @@ function AddNewReportPage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const formTopRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
+  const { generateToken } = useRecaptcha();
 
   // Executa a query GraphQL para buscar clientes da empresa
   const [getClientes, { data, loading }] = useLazyQuery(GET_CLIENTES_BY_EMPRESA, {
@@ -169,9 +171,7 @@ function AddNewReportPage() {
     setErrorMessage(null);
 
     try {
-      const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-        action: "register",
-      });
+      const recaptchaToken = await generateToken("register");
 
       // Garante que todos os campos booleanos estejam presentes no payload
       const booleanKeys: string[] = [];

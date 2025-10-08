@@ -10,6 +10,7 @@ import GlobalPhone from "../../../components/GlobalPhone";
 import validarNIF from "../../utils/isValidNIF";
 import HomeIcon from "@mui/icons-material/Home"; // Adicione esta linha
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs"; // Adicione esta linha
+import { useRecaptcha } from "../../../hooks/RecaptchaContext";
 
 declare var grecaptcha: any;
 
@@ -45,6 +46,7 @@ export default function AddNewClientPage() {
   const navigate = useNavigate(); // Hook para navegação programática
   const theme = useTheme(); // Acessa o tema do Material UI
   const [errorMessage, setErrorMessage] = useState<string | null>(null); // Estado para mensagens de erro
+  const { generateToken } = useRecaptcha();
 
   // Inicializa o formulário com react-hook-form e zodResolver
   const {
@@ -146,10 +148,7 @@ export default function AddNewClientPage() {
   const onSubmit = async (formData: AddClientFormInputs) => {
     setErrorMessage(null); // Limpa mensagem de erro
     try {
-      // Executa reCAPTCHA e obtém token
-      const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-        action: "register",
-      });
+      const recaptchaToken = await generateToken("register");
 
       if (!empresa?.id) {
         setErrorMessage("Empresa não encontrada."); // Verifica se empresa existe

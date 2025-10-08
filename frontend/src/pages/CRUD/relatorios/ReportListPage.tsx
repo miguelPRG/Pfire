@@ -36,6 +36,7 @@ import { Cliente } from "../cliente/ClientListPage";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import NoDataMessage from "../../../components/NoDataMessage";
+import { useRecaptcha } from "../../../hooks/RecaptchaContext";
 
 declare var grecaptcha: any;
 
@@ -70,6 +71,7 @@ export default function ReportListPage() {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [localReports, setLocalReports] = useState<Report[]>([]);
   const [loadingReportId, setLoadingReportId] = useState<string | null>(null);
+  const { generateToken } = useRecaptcha();
 
   const { data, loading, error, refetch } = useQuery<returnedData>(GET_REPORTS_BY_COMPANY, {
     variables: { empresaId: empresa?.id, start: page * rowsPerPage },
@@ -161,32 +163,26 @@ export default function ReportListPage() {
 
   const toggleReportStatus = async (reportId: string, currentStatus: boolean) => {
     try {
-      setLoadingReportId(reportId); // Inicia loading
+      setLoadingReportId(reportId);
       let endpoint = "";
       let method: "PUT" | "DELETE";
-      let action = "";
+      let action: RecaptchaAction = "updateUser";
 
       if (currentStatus) {
         endpoint = "/backend/relatorio/";
         method = "DELETE";
-        action = "delete";
       } else {
         endpoint = "/backend/relatorio/activate";
         method = "PUT";
-        action = "activate";
       }
 
-      const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-        action,
-      });
+      const recaptchaToken = await generateToken(action);
 
       const body = {
         id: reportId,
         empresa_id: empresa?.id,
         recaptchaToken,
       };
-
-      console.log("Corpo: ", body);
 
       const response = await fetch(endpoint, {
         method,
@@ -215,12 +211,14 @@ export default function ReportListPage() {
         isError: true,
       });
     } finally {
-      setLoadingReportId(null); // Finaliza loading
+      setLoadingReportId(null);
     }
   };
 
   const hardDeleteReport = async (report: Report) => {
     try {
+      const recaptchaToken = await generateToken("updateUser");
+
       const res = await fetch("/backend/relatorio/hard-delete", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
@@ -228,9 +226,7 @@ export default function ReportListPage() {
         body: JSON.stringify({
           id: report.id,
           empresa_id: empresa?.id,
-          recaptchaToken: await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-            action: "hard_delete",
-          }),
+          recaptchaToken,
         }),
       });
       const json = await res.json();

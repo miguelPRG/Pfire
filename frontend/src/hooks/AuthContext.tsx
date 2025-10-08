@@ -2,21 +2,7 @@ import { createContext, useState, useContext, ReactNode, useEffect, useCallback 
 import { FirebaseLogin } from "../firebase";
 import { GET_EMPRESAS } from "../graphql/empresasQueries";
 import { useQuery } from "@apollo/client/react";
-
-declare global {
-  interface Window {
-    grecaptcha: {
-      enterprise: {
-        execute: (
-          siteKey: string,
-          options: {
-            action: string;
-          }
-        ) => Promise<string>;
-      };
-    };
-  }
-}
+import { useRecaptcha } from "./RecaptchaContext";
 
 interface UserLoggedIn {
   id: string;
@@ -100,6 +86,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserLoggedIn | null>(null);
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Hook para usar o reCAPTCHA
+  const { generateToken } = useRecaptcha();
 
   // Pega o empresaId do localStorage
   const localEmpresaId = typeof window !== "undefined" ? localStorage.getItem("empresaId") : null;
@@ -185,9 +174,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     try {
-      const token = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-        action: "login",
-      });
+      const token = await generateToken("login");
       const response = await fetch(`/backend/user/login`, {
         method: "POST",
         headers: {
@@ -237,10 +224,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } & Record<string, unknown>
   ) {
     try {
-      const token = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-        action: "register",
-      });
-
+      const token = await generateToken("register");
       payload.recaptchaToken = token;
 
       // Verifica se a empresa é null e remove do payload se for
@@ -354,9 +338,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const updateUser = useCallback(async (user: UserUpdate) => {
-    const recaptchaToken = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-      action: "register",
-    });
+    const recaptchaToken = await generateToken("updateUser");
 
     if (user.nome) user.nome = user?.nome?.trim();
     if (user.telefone) user.telefone = user?.telefone?.trim();
@@ -395,12 +377,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Erro ao atualizar usuário:", error);
       throw error;
     }
-  }, []);
+  }, [generateToken]);
 
   const updatePassword = useCallback(async (passwordUpdate: PasswordUpdate) => {
-    const recaptchaToken = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-      action: "updatePassword",
-    });
+    const recaptchaToken = await generateToken("updatePassword");
 
     console.log(passwordUpdate);
 
@@ -427,12 +407,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Erro ao atualizar password:", error);
       throw error;
     }
-  }, []);
+  }, [generateToken]);
 
   const updateCompany = useCallback(async (emp: EmpresaUpdate, id: string) => {
-    const recaptchaToken = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-      action: "updateCompany",
-    });
+    const recaptchaToken = await generateToken("updateCompany");
 
     try {
       const response = await fetch(`/backend/empresa/${id}`, {
@@ -476,7 +454,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Erro ao atualizar empresa:", error);
       throw error;
     }
-  }, []);
+  }, [generateToken]);
 
   return (
     <AuthContext.Provider

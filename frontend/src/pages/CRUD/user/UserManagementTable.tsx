@@ -35,6 +35,7 @@ import HomeIcon from "@mui/icons-material/Home";
 import { useNavigate } from "react-router-dom";
 import NoDataMessage from "../../../components/NoDataMessage";
 import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
+import { useRecaptcha } from "../../../hooks/RecaptchaContext";
 
 declare var grecaptcha: any;
 
@@ -69,6 +70,7 @@ export default function UserManagementTable() {
   const [roleLoading, setRoleLoading] = useState<{ [userId: string]: boolean }>({});
   const rowsPerPage = 10;
   const navigate = useNavigate();
+  const { generateToken } = useRecaptcha();
 
   interface returnedData {
     getUsers: {
@@ -104,9 +106,8 @@ export default function UserManagementTable() {
     setRoleLoading((prev) => ({ ...prev, [user.id]: true }));
     const endpoint = user.role == "Admin" ? "/backend/user/revoke_admin" : "/backend/user/set_admin";
     try {
-      const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-        action: user.role == "Admin" ? "revoke_admin" : "set_admin",
-      });
+      const recaptchaToken = await generateToken(user.role == "Admin" ? "updateUser" : "updateUser");
+      
       const res = await fetch(endpoint, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -204,9 +205,7 @@ export default function UserManagementTable() {
 
   // Função para enviar convite (ajuste para sua API)
   const handleInvite = async (values: { email: string }) => {
-    const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-      action: "invite_user",
-    });
+    const recaptchaToken = await generateToken("register");
 
     // Validação Zod
     const validation = inviteSchema.safeParse({ email: values.email.trim() });
@@ -248,9 +247,7 @@ export default function UserManagementTable() {
 
   const handleDelete = async (id: string) => {
     try {
-      const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-        action: "expulsar_utilizador",
-      });
+      const recaptchaToken = await generateToken("updateUser");
 
       const res = await fetch("/backend/user/expel", {
         method: "DELETE",

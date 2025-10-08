@@ -1,4 +1,4 @@
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useLazyQuery } from "@apollo/client/react";
 import {
   Table,
@@ -31,6 +31,7 @@ import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
 import HomeIcon from "@mui/icons-material/Home";
 import NoDataMessage from "../../../components/NoDataMessage";
 import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
+import { useRecaptcha } from "../../../hooks/RecaptchaContext";
 
 declare var grecaptcha: any;
 
@@ -84,6 +85,7 @@ export default function ClientManagementTable() {
   const navigate = useNavigate();
   const location = useLocation();
   const { empresa } = useAuth();
+  const { generateToken } = useRecaptcha();
 
   // Estado único para fonte dos clientes e total
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -185,18 +187,16 @@ export default function ClientManagementTable() {
   // Função para apagar cliente
   const apagarCliente = async (cliente: Cliente) => {
     try {
-      const url = "/backend/cliente/hard-delete";
-
-      const res = await fetch(url, {
+      const recaptchaToken = await generateToken("updateUser");
+      
+      const res = await fetch("/backend/cliente/hard-delete", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           id: cliente.id,
           empresa_id: empresa?.id,
-          recaptchaToken: await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-            action: "delete",
-          }),
+          recaptchaToken,
         }),
       });
       const json = await res.json();
@@ -213,21 +213,17 @@ export default function ClientManagementTable() {
     try {
       let endpoint = "";
       let method: "PUT" | "DELETE";
-      let action = "";
+      let action: RecaptchaAction = "updateUser";
 
       if (currentStatus) {
         endpoint = "/backend/cliente/";
         method = "DELETE";
-        action = "delete";
       } else {
         endpoint = "/backend/cliente/activate";
         method = "PUT";
-        action = "activate";
       }
 
-      const recaptchaToken = await grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-        action,
-      });
+      const recaptchaToken = await generateToken(action);
 
       const response = await fetch(endpoint, {
         method,

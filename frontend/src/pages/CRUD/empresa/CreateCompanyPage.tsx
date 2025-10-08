@@ -7,6 +7,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import isValidNIF from "../../utils/isValidNIF";
 import GlobalPhone from "../../../components/GlobalPhone";
+import { useRecaptcha } from "../../../hooks/RecaptchaContext";
 
 // 📌 Esquema de validação
 const empresaSchema = z.object({
@@ -33,6 +34,7 @@ export default function CreateCompanyPage() {
   const [alert, setAlert] = useState<{ message: string; isError: boolean } | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { generateToken } = useRecaptcha();
 
   const {
     register,
@@ -49,25 +51,7 @@ export default function CreateCompanyPage() {
   const onSubmit = async (data: EmpresaFormInputs) => {
     setLoading(true);
     try {
-      const SITE_KEY = (import.meta as any).env?.VITE_RECAPTCHA_SITE_KEY || "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4";
-
-      const grecaptcha = (window as any).grecaptcha;
-
-      await new Promise<void>((resolve) => {
-        if (grecaptcha?.enterprise?.ready) {
-          grecaptcha.enterprise.ready(() => resolve());
-        } else {
-          resolve();
-        }
-      });
-
-      if (!grecaptcha?.enterprise?.execute) {
-        throw new Error("reCAPTCHA não carregado. Verifique o script em index.html.");
-      }
-
-      const recaptchaToken: string = await grecaptcha.enterprise.execute(SITE_KEY, {
-        action: "create",
-      });
+      const recaptchaToken = await generateToken("register");
 
       const payload = { ...data, recaptchaToken };
 

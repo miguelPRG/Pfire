@@ -28,6 +28,7 @@ import ArrowCircleUpIcon from "@mui/icons-material/ArrowCircleUp"; // Ícone de 
 import HomeIcon from "@mui/icons-material/Home"; // <--- adicionado
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs"; // <--- adicionado
 import Notification from "../../../components/Notification";
+import { useRecaptcha } from "../../../hooks/RecaptchaContext";
 
 // Esquema de validação para um subcampo personalizado
 const subfieldSchema = z.object({
@@ -240,16 +241,15 @@ export default function ReportTemplatePage() {
     }
   };
 
+  const { generateToken } = useRecaptcha();
+
   const onSubmit = async (data: FormSchema) => {
     try {
       if (fields.length === 0) {
         throw new Error("Adicione pelo menos um campo personalizado.");
       }
 
-      // Executa o reCAPTCHA Enterprise
-      const recaptchaToken = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-        action: "register",
-      });
+      const recaptchaToken = await generateToken("register");
 
       // Monta o objeto de campos personalizados para o backend
       const customFields: Record<string, any> = {};

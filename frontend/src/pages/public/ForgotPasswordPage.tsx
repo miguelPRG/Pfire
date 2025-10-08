@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Box, Button, Container, TextField, Typography, Paper, Fade, Alert } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/images/logo.png";
+import { useRecaptcha } from "../../hooks/RecaptchaContext";
 
 // Esquema de validação com Zod
 const forgotPasswordSchema = z.object({
@@ -18,6 +19,7 @@ function ForgotPassword() {
   const [open, setOpen] = useState(false);
   const [alertMsg, setAlertMsg] = useState("");
   const [alertType, setAlertType] = useState<"success" | "error">("success");
+  const { generateToken } = useRecaptcha();
 
   const {
     register,
@@ -29,10 +31,7 @@ function ForgotPassword() {
 
   async function onSubmit(data: ForgotPasswordFormInputs) {
     try {
-      // Gerar recaptcha v3
-      const recaptchaToken = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-        action: "forgot_password",
-      });
+      const recaptchaToken = await generateToken("register");
 
       const response = await fetch("/backend/user/forgot-password", {
         method: "POST",

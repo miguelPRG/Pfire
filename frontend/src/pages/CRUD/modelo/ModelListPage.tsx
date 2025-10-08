@@ -44,6 +44,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import NoDataMessage from "../../../components/NoDataMessage";
 import CircularProgress from "@mui/material/CircularProgress";
+import { useRecaptcha } from "../../../hooks/RecaptchaContext";
 // Função utilitária para formatar tipos de campos
 const formatType = (type: string) => {
   const map: Record<string, string> = {
@@ -89,6 +90,7 @@ export default function ReportModelListPage() {
   const [modelToCloneId, setModelToCloneId] = useState<string | null>(null);
 
   const { control } = useForm();
+  const { generateToken } = useRecaptcha();
 
   const rowsPerPage = 3;
 
@@ -142,9 +144,7 @@ export default function ReportModelListPage() {
     setDeleteId(id);
 
     try {
-      const recaptchaToken = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-        action: "register",
-      });
+      const recaptchaToken = await generateToken("register");
 
       const res = await fetch(`/backend/modelo`, {
         method: "DELETE",
@@ -178,19 +178,16 @@ export default function ReportModelListPage() {
   };
 
   const handleClone = async (modeloId: string) => {
-    setCloningId(modeloId); // Desativa o botão
+    setCloningId(modeloId);
     try {
-      const recaptchaToken = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-        action: "clone",
-      });
+      const recaptchaToken = await generateToken("register");
 
-      // Solo envía lo que el backend espera
       const res = await fetch("/backend/modelo/clone", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          id: modeloId, // Debe ser el ObjectId válido (24 chars)
+          id: modeloId,
           recaptchaToken,
         }),
       });
@@ -223,7 +220,7 @@ export default function ReportModelListPage() {
         isError: true,
       });
     } finally {
-      setCloningId(null); // Reativa o botão
+      setCloningId(null);
     }
   };
 
