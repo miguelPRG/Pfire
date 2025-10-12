@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserLoggedIn | null>(null);
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   // Hook para usar o reCAPTCHA
   const { generateToken } = useRecaptcha();
 
@@ -337,124 +337,133 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("empresaId", empresa.id); // <--- armazena o empresaId no localStorage
   }
 
-  const updateUser = useCallback(async (user: UserUpdate) => {
-    const recaptchaToken = await generateToken("updateUser");
+  const updateUser = useCallback(
+    async (user: UserUpdate) => {
+      const recaptchaToken = await generateToken("updateUser");
 
-    if (user.nome) user.nome = user?.nome?.trim();
-    if (user.telefone) user.telefone = user?.telefone?.trim();
+      if (user.nome) user.nome = user?.nome?.trim();
+      if (user.telefone) user.telefone = user?.telefone?.trim();
 
-    const body = JSON.stringify({
-      recaptchaToken,
-      nome: user.nome,
-      telefone: user.telefone,
-    });
-
-    try {
-      const response = await fetch("/backend/user/", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body,
+      const body = JSON.stringify({
+        recaptchaToken,
+        nome: user.nome,
+        telefone: user.telefone,
       });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.detail || "Erro ao atualizar usuário");
+      try {
+        const response = await fetch("/backend/user/", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body,
+        });
+
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.detail || "Erro ao atualizar usuário");
+        }
+
+        setUser((prevUser) => {
+          if (!prevUser) return prevUser;
+          return {
+            ...prevUser,
+            id: prevUser.id,
+            nome: user.nome !== undefined ? user.nome : prevUser.nome,
+            telefone: user.telefone !== undefined ? user.telefone : prevUser.telefone,
+          } as UserLoggedIn;
+        });
+      } catch (error) {
+        console.error("Erro ao atualizar usuário:", error);
+        throw error;
       }
+    },
+    [generateToken]
+  );
 
-      setUser((prevUser) => {
-        if (!prevUser) return prevUser;
-        return {
-          ...prevUser,
-          id: prevUser.id,
-          nome: user.nome !== undefined ? user.nome : prevUser.nome,
-          telefone: user.telefone !== undefined ? user.telefone : prevUser.telefone,
-        } as UserLoggedIn;
-      });
-    } catch (error) {
-      console.error("Erro ao atualizar usuário:", error);
-      throw error;
-    }
-  }, [generateToken]);
+  const updatePassword = useCallback(
+    async (passwordUpdate: PasswordUpdate) => {
+      const recaptchaToken = await generateToken("updatePassword");
 
-  const updatePassword = useCallback(async (passwordUpdate: PasswordUpdate) => {
-    const recaptchaToken = await generateToken("updatePassword");
+      console.log(passwordUpdate);
 
-    console.log(passwordUpdate);
+      try {
+        const response = await fetch("/backend/user/update-password", {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            password: passwordUpdate.password,
+            newPassword: passwordUpdate.newPassword,
+            confirmPassword: passwordUpdate.confirmPassword,
+            recaptchaToken,
+          }),
+        });
 
-    try {
-      const response = await fetch("/backend/user/update-password", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          password: passwordUpdate.password,
-          newPassword: passwordUpdate.newPassword,
-          confirmPassword: passwordUpdate.confirmPassword,
-          recaptchaToken,
-        }),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.detail || "Erro ao atualizar senha");
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.detail || "Erro ao atualizar senha");
+        }
+      } catch (error) {
+        console.error("Erro ao atualizar password:", error);
+        throw error;
       }
-    } catch (error) {
-      console.error("Erro ao atualizar password:", error);
-      throw error;
-    }
-  }, [generateToken]);
+    },
+    [generateToken]
+  );
 
-  const updateCompany = useCallback(async (emp: EmpresaUpdate, id: string) => {
-    const recaptchaToken = await generateToken("updateCompany");
+  const updateCompany = useCallback(
+    async (emp: EmpresaUpdate, id: string) => {
+      const recaptchaToken = await generateToken("updateCompany");
 
-    try {
-      const response = await fetch(`/backend/empresa/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+      try {
+        const response = await fetch(`/backend/empresa/${id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
 
-        credentials: "include",
-        body: JSON.stringify({
-          recaptchaToken,
-          nome: emp?.nome,
-          nif: emp.nif,
-          telefone: emp.telefone,
-          morada: emp.morada,
-          localidade: emp.localidade,
-          codigo_postal: emp.codigoPostal,
-          logo: emp.logo, // Se for uma string base64, remove o prefixo
-        }),
-      });
+          credentials: "include",
+          body: JSON.stringify({
+            recaptchaToken,
+            nome: emp?.nome,
+            nif: emp.nif,
+            telefone: emp.telefone,
+            morada: emp.morada,
+            localidade: emp.localidade,
+            codigo_postal: emp.codigoPostal,
+            logo: emp.logo, // Se for uma string base64, remove o prefixo
+          }),
+        });
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.detail || "Erro ao atualizar empresa");
+        if (!response.ok) {
+          const data = await response.json();
+          throw new Error(data.detail || "Erro ao atualizar empresa");
+        }
+
+        setEmpresa((prevEmpresa) => {
+          if (!prevEmpresa) return prevEmpresa;
+          return {
+            ...prevEmpresa,
+            nome: emp.nome !== undefined ? emp.nome : prevEmpresa.nome,
+            nif: emp.nif !== undefined ? emp.nif : prevEmpresa.nif,
+            telefone: emp.telefone !== undefined ? emp.telefone : prevEmpresa.telefone,
+            morada: emp.morada !== undefined ? emp.morada : prevEmpresa.morada,
+            localidade: emp.localidade !== undefined ? emp.localidade : prevEmpresa.localidade,
+            codigoPostal: emp.codigoPostal !== undefined ? emp.codigoPostal : prevEmpresa.codigoPostal,
+            logo: emp.logo || null,
+          } as Empresa;
+        });
+      } catch (error) {
+        console.error("Erro ao atualizar empresa:", error);
+        throw error;
       }
-
-      setEmpresa((prevEmpresa) => {
-        if (!prevEmpresa) return prevEmpresa;
-        return {
-          ...prevEmpresa,
-          nome: emp.nome !== undefined ? emp.nome : prevEmpresa.nome,
-          nif: emp.nif !== undefined ? emp.nif : prevEmpresa.nif,
-          telefone: emp.telefone !== undefined ? emp.telefone : prevEmpresa.telefone,
-          morada: emp.morada !== undefined ? emp.morada : prevEmpresa.morada,
-          localidade: emp.localidade !== undefined ? emp.localidade : prevEmpresa.localidade,
-          codigoPostal: emp.codigoPostal !== undefined ? emp.codigoPostal : prevEmpresa.codigoPostal,
-          logo: emp.logo || null,
-        } as Empresa;
-      });
-    } catch (error) {
-      console.error("Erro ao atualizar empresa:", error);
-      throw error;
-    }
-  }, [generateToken]);
+    },
+    [generateToken]
+  );
 
   return (
     <AuthContext.Provider

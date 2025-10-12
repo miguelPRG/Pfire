@@ -107,7 +107,6 @@ export default function ClientManagementTable() {
 
   // Atualiza clientes quando data ou dadosFiltrados mudam
   useEffect(() => {
-
     if (location.state?.message) {
       setAlert({
         message: location.state.message.text,
@@ -188,7 +187,7 @@ export default function ClientManagementTable() {
   const apagarCliente = async (cliente: Cliente) => {
     try {
       const recaptchaToken = await generateToken("updateUser");
-      
+
       const res = await fetch("/backend/cliente/hard-delete", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
@@ -536,8 +535,8 @@ export default function ClientManagementTable() {
               count={pageCount}
               page={page + 1}
               onChange={(e, val) => {
-              setPage(val - 1);
-            }}
+                setPage(val - 1);
+              }}
               color="primary"
               shape="rounded"
             />

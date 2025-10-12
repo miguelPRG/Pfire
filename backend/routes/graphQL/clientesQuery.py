@@ -7,7 +7,7 @@ import strawberry
 from strawberry.types import Info
 from bson import ObjectId
 from re import escape
- 
+
 
 @strawberry.type
 class ClienteQuery:

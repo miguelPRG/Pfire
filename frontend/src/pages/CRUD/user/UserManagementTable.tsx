@@ -107,7 +107,7 @@ export default function UserManagementTable() {
     const endpoint = user.role == "Admin" ? "/backend/user/revoke_admin" : "/backend/user/set_admin";
     try {
       const recaptchaToken = await generateToken(user.role == "Admin" ? "updateUser" : "updateUser");
-      
+
       const res = await fetch(endpoint, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
