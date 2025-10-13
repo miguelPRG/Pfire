@@ -51,7 +51,6 @@ export default function CompanySelectorPage() {
     fetchPolicy: "cache-and-network", // para cachear e actualizar sempre
     variables: {
       start: page * rowsPerPage,
-      filter: {}, // <-- Corrigido para 'filter'
     },
   });
 
