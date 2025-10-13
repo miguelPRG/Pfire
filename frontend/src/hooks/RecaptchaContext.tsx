@@ -19,7 +19,7 @@ declare global {
 const RECAPTCHA_SITE_KEY = "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4";
 
 // Tipos para as ações disponíveis
-export type RecaptchaAction = "login" | "register" | "updatePassword" | "updateCompany" | "updateUser";
+export type RecaptchaAction = "login" | "register" | "update" | "delete";
 
 interface RecaptchaContextType {
   generateToken: (action: RecaptchaAction) => Promise<string>;

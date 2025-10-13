@@ -1,4 +1,3 @@
-import re
 from .types.clienteType import Cliente, ClienteList, ClienteFilter
 from database import clientes_collection, users_empresas_collection
 from .utils.limpar import filter_null_fields
@@ -36,17 +35,17 @@ class ClienteQuery:
         # Si viene un objeto filter, aplicarlo con regex (igual que EmpresaFilter)
         if filter:
             if filter.nome:
-                filtro["nome"] = {"$regex": f"{escape(filter.nome.strip())}", "$options": "i"}
-            if filter.nif and filter.nif.strip():
-                filtro["nif"] = {"$regex": f"{escape(filter.nif.strip())}", "$options": "i"}
-            if filter.localidade and filter.localidade.strip():
-                filtro["localidade"] = {"$regex": f"{escape(filter.localidade.strip())}", "$options": "i"}
-            if filter.morada and filter.morada.strip():
-                filtro["morada"] = {"$regex": f"{escape(filter.morada.strip())}", "$options": "i"}
-            if filter.codigo_postal and filter.codigo_postal.strip():
-                filtro["codigo_postal"] = {"$regex": f"{escape(filter.codigo_postal.strip())}", "$options": "i"}
-            if filter.telefone and filter.telefone.strip():
-                filtro["telefone"] = {"$regex": f"{escape(filter.telefone.strip())}", "$options": "i"}
+                filtro["nome"] = {"$regex": f"^{escape(filter.nome.strip())}", "$options": "i"}
+            elif filter.nif and filter.nif.strip():
+                filtro["nif"] = {"$regex": f"^{escape(filter.nif.strip())}", "$options": "i"}
+            elif filter.localidade and filter.localidade.strip():
+                filtro["localidade"] = {"$regex": f"^{escape(filter.localidade.strip())}", "$options": "i"}
+            elif filter.morada and filter.morada.strip():
+                filtro["morada"] = {"$regex": f"^{escape(filter.morada.strip())}", "$options": "i"}
+            #elif filter.codigo_postal and filter.codigo_postal.strip():
+            #    filtro["codigo_postal"] = {"$regex": f"{escape(filter.codigo_postal.strip())}", "$options": "i"}
+            elif filter.telefone and filter.telefone.strip():
+                filtro["telefone"] = {"$regex": f"^{escape(filter.telefone.strip())}", "$options": "i"}
 
         clientes = []
 

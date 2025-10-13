@@ -62,15 +62,15 @@ class EmpresaQuery:
             filtro_emp = {}
             if filter.nome:
                 filtro_emp["nome"] = {"$regex": f"^{filter.nome}", "$options": "i"}
-            if filter.nif:
+            elif filter.nif:
                 filtro_emp["nif"] = {"$regex": f"^{filter.nif}", "$options": "i"}
-            if filter.localidade:
+            elif filter.localidade:
                 filtro_emp["localidade"] = {"$regex": f"^{filter.localidade}", "$options": "i"}
-            if filter.morada:
+            elif filter.morada:
                 filtro_emp["morada"] = {"$regex": f"^{filter.morada}", "$options": "i"}
-            if filter.codigo_postal:
+            elif filter.codigo_postal:
                 filtro_emp["codigo_postal"] = {"$regex": f"^{filter.codigo_postal}", "$options": "i"}
-            if filter.telefone:
+            elif filter.telefone:
                 filtro_emp["telefone"] = {"$regex": f"^{filter.telefone}", "$options": "i"}
 
             total_empresas = await empresas_collection.count_documents(filtro_emp)

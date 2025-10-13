@@ -22,7 +22,7 @@ import {
 } from "@mui/material";
 import { Delete } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
-import { useQuery } from "@apollo/client/react";
+import { useQuery, useLazyQuery } from "@apollo/client/react";
 import { GET_USERS } from "../../../graphql/usersQueries";
 import { useAuth } from "../../../hooks/AuthContext";
 import { z } from "zod";
@@ -54,8 +54,15 @@ interface User {
 }
 
 const inviteSchema = z.object({
-  email: z.string().email("Email inválido"),
+  email: z.email("Email inválido"),
 });
+
+interface returnedData {
+  getUsers: {
+    users: User[];
+    totalUsers: number;
+  };
+}
 
 export default function UserManagementTable() {
   const theme = useTheme();
@@ -72,33 +79,89 @@ export default function UserManagementTable() {
   const navigate = useNavigate();
   const { generateToken } = useRecaptcha();
 
-  interface returnedData {
-    getUsers: {
-      users: User[];
-      totalUsers: number;
-    };
-  }
+  // Advanced search state
+  const [advValue, setAdvValue] = useState<{ field: string; text: string }>({ field: "", text: "" });
+  const advFields = [
+    { value: "nome", label: "Nome" },
+    { value: "email", label: "Email" },
+    { value: "telefone", label: "Telefone" },
+    { value: "role", label: "Papel" },
+  ];
 
-  // React Hook Form para o convite
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setError,
-    formState: { errors, isSubmitting },
-  } = useForm<{ email: string }>({
-    resolver: zodResolver(inviteSchema),
-  });
+  // Busca avançada: lógica igual à da tabela de clientes
+  const [isAdvancedSearch, setIsAdvancedSearch] = useState(false);
+  const [users, setUsers] = useState<User[]>([]);
+  const [totalUsers, setTotalUsers] = useState(0);
 
-  // Consulta inicial (cache/página) -> ya no usamos 'name' variable
+  // Consulta inicial (cache/página)
   const { data, refetch, loading } = useQuery<returnedData>(GET_USERS, {
     variables: { empresaId: empresa?.id, start: page * rowsPerPage },
     fetchPolicy: "cache-and-network",
   });
 
-  // Decide qual fonte de dados usar -> sempre de `data`
-  const users: User[] = data?.getUsers?.users || [];
-  const totalUsers: number = data?.getUsers?.totalUsers || 0;
+  // Consulta lazy para filtro avançado
+  const [fetchByFilter, { data: filteredData }] = useLazyQuery<returnedData>(GET_USERS, {
+    fetchPolicy: "cache-first",
+  });
+
+  // Atualiza usuários quando data ou filteredData mudam
+  useEffect(() => {
+    if (isAdvancedSearch) {
+      if (filteredData) {
+        setUsers(filteredData.getUsers.users || []);
+        setTotalUsers(filteredData.getUsers.totalUsers || 0);
+      }
+    } else {
+      if (data) {
+        setUsers(data.getUsers.users || []);
+        setTotalUsers(data.getUsers.totalUsers || 0);
+      }
+    }
+  }, [data, filteredData, isAdvancedSearch]);
+
+  // Atualiza consulta ao mudar de página
+  useEffect(() => {
+    if (isAdvancedSearch && advValue.field && advValue.text) {
+      fetchByFilter({
+        variables: {
+          empresaId: empresa?.id,
+          start: page * rowsPerPage,
+          filter: { [advValue.field]: advValue.text },
+        },
+      });
+    } else {
+      refetch({ empresaId: empresa?.id, start: page * rowsPerPage });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
+
+  // Função para aplicar filtro avançado
+  const applyAdvancedFilterUsers = async (applied?: { field: string; text: string }) => {
+    setIsAdvancedSearch(true);
+    setPage(0);
+    const field = applied?.field ?? advValue.field;
+    const val = (applied?.text ?? advValue.text ?? "").toString().trim();
+
+    console.log("Aplicando filtro avançado: ", val);
+
+    await fetchByFilter({
+      variables: {
+        empresaId: empresa?.id,
+        start: 0,
+        filter: { [field]: val }, // <-- só envia filtro se houver valor
+      },
+    });
+  };
+
+  // Função para limpar filtro avançado
+  const clearAdvancedFilter = async () => {
+    setIsAdvancedSearch(false);
+    setAdvValue({ field: "", text: "" });
+    setPage(0);
+    const result = await refetch({ empresaId: empresa?.id, start: 0 });
+    setUsers(result?.data.getUsers.users || []);
+    setTotalUsers(result?.data.getUsers.totalUsers || 0);
+  };
 
   const pageCount = Math.ceil(totalUsers / rowsPerPage);
 
@@ -106,7 +169,7 @@ export default function UserManagementTable() {
     setRoleLoading((prev) => ({ ...prev, [user.id]: true }));
     const endpoint = user.role == "Admin" ? "/backend/user/revoke_admin" : "/backend/user/set_admin";
     try {
-      const recaptchaToken = await generateToken(user.role == "Admin" ? "updateUser" : "updateUser");
+      const recaptchaToken = await generateToken("update");
 
       const res = await fetch(endpoint, {
         method: "PUT",
@@ -145,49 +208,14 @@ export default function UserManagementTable() {
     setOrderBy(property);
   };
 
-  // Advanced search state
-  const [advValue, setAdvValue] = useState<{ field: string; text: string }>({ field: "", text: "" });
-  const advFields = [
-    { value: "username", label: "Username" },
-    { value: "email", label: "Email" },
-    { value: "role", label: "Role" },
-    { value: "nome", label: "Nome" },
-  ];
-
-  // corregido: usar tipo User para localUsers
-  const [localUsers, setLocalUsers] = useState<User[]>([]);
-
-  // sincronizar localUsers cuando cambian los datos originais
-  useEffect(() => {
-    setLocalUsers(data?.getUsers?.users || []);
-  }, [data]);
-
-  // Nuevo: aplicar filtrado local solo al clicar "Aplicar"
-  const applyAdvancedFilterUsers = (applied?: { field: string; text: string }) => {
-    setPage(0);
-    const source = data?.getUsers?.users || [];
-    const field = applied?.field ?? advValue.field;
-    const val = (applied?.text ?? advValue.text ?? "").toString().trim().toLowerCase();
-
-    if (!field || !val) {
-      setLocalUsers(source);
-      return;
-    }
-
-    const filtered = source.filter((u: any) =>
-      String((u as any)[field] || "")
-        .toLowerCase()
-        .includes(val)
-    );
-    setLocalUsers(filtered);
-  };
-
-  const sortedRows = [...localUsers].sort((a, b) => {
-    if (!orderBy) return 0;
-    return order === "asc"
-      ? a[orderBy]!.toString().localeCompare(b[orderBy]!.toString())
-      : b[orderBy]!.toString().localeCompare(a[orderBy]!.toString());
-  });
+  const sortedRows = [...users]
+    .filter((u) => u.id !== user?.id)
+    .sort((a, b) => {
+      if (!orderBy) return 0;
+      const aValue = a[orderBy]?.toString() || "";
+      const bValue = b[orderBy]?.toString() || "";
+      return order === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+    });
 
   const zebraColor = (index: number) =>
     theme.palette.mode === "dark" ? (index % 2 === 0 ? "#252525" : "#1d1d1d") : index % 2 === 0 ? "#f5f5f5" : "#e0e0e0";
@@ -199,9 +227,21 @@ export default function UserManagementTable() {
     email: "Email",
     isAdmin: "Papel",
     isSuperAdmin: "Super Admin",
+    role: "Papel",
   };
 
-  const columns: (keyof User)[] = ["nome", "telefone", "isActive", "email", "isAdmin"];
+  const columns: (keyof User)[] = ["nome", "telefone", "isActive", "email", "role"];
+
+  // React Hook Form para o convite
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<{ email: string }>({
+    resolver: zodResolver(inviteSchema),
+  });
 
   // Função para enviar convite (ajuste para sua API)
   const handleInvite = async (values: { email: string }) => {
@@ -213,8 +253,6 @@ export default function UserManagementTable() {
       setError("email", { message: validation.error.issues[0].message });
       return;
     }
-
-    console.log("Nome da empresa: ", empresa?.nome);
 
     try {
       const res = await fetch("/backend/user/invite", {
@@ -343,33 +381,14 @@ export default function UserManagementTable() {
         </Button>
       </Container>
 
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          mb: 2,
-          gap: 2,
-        }}
-      >
-        {/* Eliminada la TextField de búsqueda tradicional */}
-      </Box>
-
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 2 }}>
         <Box sx={{ width: "100%", maxWidth: 920 }}>
           <AdvancedSearchBar
             fields={advFields}
             value={advValue}
             onChange={(next) => setAdvValue(next)}
-            onApply={(next) => {
-              setPage(0); // reinicia paginación al aplicar
-              applyAdvancedFilterUsers(next);
-            }}
-            onClear={async () => {
-              setAdvValue({ field: "", text: "" });
-              const result = await refetch({ empresaId: empresa?.id, start: 0 });
-              setLocalUsers(result?.data.getUsers.users || []);
-              setPage(0);
-            }}
+            onApply={applyAdvancedFilterUsers}
+            onClear={clearAdvancedFilter}
           />
         </Box>
       </Box>
@@ -393,11 +412,12 @@ export default function UserManagementTable() {
                   </TableSortLabel>
                 </TableCell>
               ))}
+              <TableCell />
             </TableRow>
           </TableHead>
 
           <TableBody>
-            {sortedRows.filter((u) => u.id !== user?.id).length === 0 ? (
+            {sortedRows.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={columns.length + 1}>
                   <NoDataMessage nome="utilizadores" />
@@ -405,8 +425,7 @@ export default function UserManagementTable() {
               </TableRow>
             ) : (
               sortedRows
-                .filter((u) => u.id !== user?.id)
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                .slice(0, rowsPerPage)
                 .map((user, index) => (
                   <TableRow
                     key={user.id}
@@ -414,25 +433,9 @@ export default function UserManagementTable() {
                       backgroundColor: zebraColor(index),
                     }}
                   >
-                    <TableCell
-                      sx={{
-                        py: 1,
-                      }}
-                    >
-                      {user.nome}
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        py: 1,
-                      }}
-                    >
-                      {user.telefone}
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        py: 1,
-                      }}
-                    >
+                    <TableCell sx={{ py: 1 }}>{user.nome}</TableCell>
+                    <TableCell sx={{ py: 1 }}>{user.telefone}</TableCell>
+                    <TableCell sx={{ py: 1 }}>
                       <Box
                         sx={{
                           borderRadius: "50%",
@@ -450,18 +453,8 @@ export default function UserManagementTable() {
                         {user.isActive ? "Ativo" : "Inativo"}
                       </Box>
                     </TableCell>
-                    <TableCell
-                      sx={{
-                        py: 1,
-                      }}
-                    >
-                      {user.email}
-                    </TableCell>
-                    <TableCell
-                      sx={{
-                        py: 1,
-                      }}
-                    >
+                    <TableCell sx={{ py: 1 }}>{user.email}</TableCell>
+                    <TableCell sx={{ py: 1 }}>
                       <Button
                         variant="outlined"
                         size="small"

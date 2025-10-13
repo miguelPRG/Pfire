@@ -3,6 +3,14 @@ from datetime import datetime
 from typing import Optional
 
 
+@strawberry.input
+class UserFilter:
+    nome: Optional[str] = None
+    email: Optional[str] = None
+    telefone: Optional[str] = None
+    role: Optional[bool] = None  # "Admin" ou "Técnico"
+
+
 @strawberry.type
 class User:
     id: str
