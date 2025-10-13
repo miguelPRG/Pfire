@@ -10,13 +10,13 @@ import client from "./graphql/apolloClient";
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <TemaProvider>
-      <ApolloProvider client={client}>
-        <RecaptchaProvider>
-          <AuthProvider>
-            <App />
-          </AuthProvider>
-        </RecaptchaProvider>
-      </ApolloProvider>
+      <RecaptchaProvider>
+        <ApolloProvider client={client}>
+            <AuthProvider>
+              <App />
+            </AuthProvider>
+        </ApolloProvider>
+      </RecaptchaProvider>
     </TemaProvider>
   </React.StrictMode>
 );
