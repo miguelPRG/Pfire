@@ -30,6 +30,7 @@ const AddNewClient = lazy(() => import("./pages/CRUD/cliente/AddNewClientPage"))
 const EditProfilePage = lazy(() => import("./pages/EditProfilePage"));
 const ForgotPasswordPage = lazy(() => import("./pages/public/ForgotPasswordPage"));
 const ChooseCompany = lazy(() => import("./pages/CRUD/empresa/CompanySelectorPage"));
+const CreateCompanyPage = lazy(() => import("./pages/CRUD/empresa/CreateCompanyPage"));
 const ReportModelListPage = lazy(() => import("./pages/CRUD/modelo/ModelListPage"));
 const ReportTemplatesPage = lazy(() => import("./pages/CRUD/modelo/ModelEditPage"));
 const AddNewReportPage = lazy(() => import("./pages/CRUD/relatorios/AddNewReportPage"));
@@ -151,6 +152,7 @@ function App() {
             <Route path="/add-client" element={<ProtectedRoute element={<AddNewClient />} />} />
             <Route path="/edit-profile" element={<ProtectedRoute element={<EditProfilePage />} />} />
             <Route path="/choose-company" element={<ProtectedRoute element={<ChooseCompanyRoute />} />} />
+            <Route path="/create-company" element={<ProtectedRoute element={<CreateCompanyPage />} />} />
             <Route path="/report-models" element={<ProtectedRoute element={<ReportModelListPage />} />} />
             <Route path="/report-templates" element={<ProtectedRoute element={<ReportTemplatesPage />} />} />
             <Route path="/add-new-report" element={<ProtectedRoute element={<AddNewReportPage />} />} />

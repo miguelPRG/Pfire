@@ -77,7 +77,7 @@ export default function CompanySelectorPage() {
     ? searchData?.getEmpresas?.totalEmpresas || 0
     : data?.getEmpresas?.totalEmpresas || 0;
 
-  const pageCount = Math.ceil((totalEmpresas + 1) / rowsPerPage);
+  const pageCount = Math.ceil((totalEmpresas) / rowsPerPage);
 
   // seleccionar empresa recordada
   useLayoutEffect(() => {
@@ -309,7 +309,7 @@ export default function CompanySelectorPage() {
                 },
                 py: 5,
               }}
-              onClick={() => navigate("/criar-empresa")}
+              onClick={() => navigate("/create-company")}
             >
               <Box
                 sx={{
