@@ -32,9 +32,7 @@ import HomeIcon from "@mui/icons-material/Home";
 import NoDataMessage from "../../../components/NoDataMessage";
 import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
 import { useRecaptcha } from "../../../hooks/RecaptchaContext";
-import { filter } from "rxjs";
-
-declare var grecaptcha: any;
+import { RecaptchaAction } from "../../../hooks/RecaptchaContext";
 
 export interface Cliente {
   id: string;
@@ -187,7 +185,7 @@ export default function ClientManagementTable() {
   // Função para apagar cliente
   const apagarCliente = async (cliente: Cliente) => {
     try {
-      const recaptchaToken = await generateToken("updateUser");
+      const recaptchaToken = await generateToken("update");
 
       const res = await fetch("/backend/cliente/hard-delete", {
         method: "DELETE",
@@ -213,9 +211,13 @@ export default function ClientManagementTable() {
     try {
       let endpoint = "";
       let method: "PUT" | "DELETE";
-      let action: RecaptchaAction = "updateUser";
+      let action: RecaptchaAction = "update";
 
       if (currentStatus) {
+        // DESATIVAR: muda localmente antes do await
+        setClientes((prev) =>
+          prev.map((c) => (c.id === clienteId ? { ...c, isActive: false } : c))
+        );
         endpoint = "/backend/cliente/";
         method = "DELETE";
       } else {
@@ -239,6 +241,12 @@ export default function ClientManagementTable() {
       const json = await response.json();
 
       if (!response.ok) {
+        // Se falhar ao desativar, volta ao estado anterior
+        if (currentStatus) {
+          setClientes((prev) =>
+            prev.map((c) => (c.id === clienteId ? { ...c, isActive: true } : c))
+          );
+        }
         throw new Error(json.detail || `Erro ao ${currentStatus ? "desativar" : "ativar"} cliente.`);
       }
 
@@ -247,8 +255,12 @@ export default function ClientManagementTable() {
         isError: false,
       });
 
-      // Atualiza o estado local do cliente
-      setLocalClientes((prev) => prev.map((c) => (c.id === clienteId ? { ...c, isActive: !currentStatus } : c)));
+      // ATIVAR: só muda localmente depois do sucesso
+      if (!currentStatus) {
+        setClientes((prev) =>
+          prev.map((c) => (c.id === clienteId ? { ...c, isActive: true } : c))
+        );
+      }
     } catch (error: any) {
       setAlert({
         message: error.message || `Erro ao ${currentStatus ? "desativar" : "ativar"} cliente.`,
@@ -497,7 +509,7 @@ export default function ClientManagementTable() {
                                 </Button>
                               </TableCell>
                               <TableCell>
-                                {!cliente.isActive && (
+                                {!cliente.isActive && loadingClienteId !== cliente.id && (
                                   <Button
                                     variant="contained"
                                     color="error"

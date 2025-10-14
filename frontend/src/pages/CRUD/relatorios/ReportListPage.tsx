@@ -37,6 +37,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import NoDataMessage from "../../../components/NoDataMessage";
 import { useRecaptcha } from "../../../hooks/RecaptchaContext";
+import { RecaptchaAction } from "../../../hooks/RecaptchaContext";
 
 declare var grecaptcha: any;
 
@@ -166,7 +167,7 @@ export default function ReportListPage() {
       setLoadingReportId(reportId);
       let endpoint = "";
       let method: "PUT" | "DELETE";
-      let action: RecaptchaAction = "updateUser";
+      let action: RecaptchaAction = "update";
 
       if (currentStatus) {
         endpoint = "/backend/relatorio/";
@@ -217,7 +218,7 @@ export default function ReportListPage() {
 
   const hardDeleteReport = async (report: Report) => {
     try {
-      const recaptchaToken = await generateToken("updateUser");
+      const recaptchaToken = await generateToken("update");
 
       const res = await fetch("/backend/relatorio/hard-delete", {
         method: "DELETE",

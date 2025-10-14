@@ -185,12 +185,20 @@ export default function UserManagementTable() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.detail || "Erro ao alterar papel.");
 
+      // Atualiza localmente o papel do user só após sucesso
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === user.id
+            ? { ...u, role: user.role === "Admin" ? "Técnico" : "Admin" }
+            : u
+        )
+      );
+
       setAlert({
         message: "Papel alterado com sucesso!",
         isError: false,
       });
 
-      await refetch();
     } catch (err) {
       setAlert({
         message: err instanceof Error ? err.message : "Erro ao alterar papel.",
@@ -361,7 +369,7 @@ export default function UserManagementTable() {
             fontSize: 30,
           }}
         >
-          Utilizadores
+         Lista de Funcionários
         </Typography>
 
         <Button

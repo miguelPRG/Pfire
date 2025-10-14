@@ -119,13 +119,14 @@ async def reset_password(request: Request, user: UserChangePassword):
 @routerUser.put("/email/accept-invite/{global_id}")
 async def accept_invite(global_id: str, request: Request):
 
-    # Verificar se o global ID Eexiste
+    print("Aceitar convite para empresa - Global ID:", global_id)
 
+    # Verificar se o global ID Eexiste
     global_id_data = await global_ids_collection.find_one({"global_id": global_id, "operation": "convite"})
 
     print("Global ID Data:", global_id_data)
 
-    if not global_id_data or global_id_data.get("email"):
+    if not global_id_data:
         raise HTTPException(status_code=404, detail="Global ID não encontrado ou inválido.")
 
     # Criar novo user_empresa
@@ -133,8 +134,6 @@ async def accept_invite(global_id: str, request: Request):
     empresa_id = global_id_data["empresa_id"]
     guest_user_id = global_id_data["guest_user_id"]
     data = datetime.now()
-
-    print(" Pre criamos o convite")
 
     user_empresa = UserEmpresaCreate(
         user_id=guest_user_id,
