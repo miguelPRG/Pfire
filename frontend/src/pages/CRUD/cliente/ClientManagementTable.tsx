@@ -33,6 +33,7 @@ import NoDataMessage from "../../../components/NoDataMessage";
 import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
 import { useRecaptcha } from "../../../hooks/RecaptchaContext";
 import { RecaptchaAction } from "../../../hooks/RecaptchaContext";
+import client from "../../../graphql/apolloClient";
 
 export interface Cliente {
   id: string;
@@ -96,7 +97,12 @@ export default function ClientManagementTable() {
 
   // Atualiza clientes quando data ou dadosFiltrados mudam
   useEffect(() => {
-    if (location.state?.message) {
+
+    const run = async () => {
+      //limpar a cache de consultas anteriores
+      await client.clearStore();
+
+      if (location.state?.message) {
       setAlert({
         message: location.state.message.text,
         isError: location.state.message.error,
@@ -108,8 +114,11 @@ export default function ClientManagementTable() {
     fetchClientes({
       variables: { empresaId: empresa?.id, start: 0 },
       fetchPolicy: "network-only",
-    })
+    });
+  };
 
+    run();
+    // eslint-disable-next-line
   }, []);
 
   useEffect(() => {

@@ -36,6 +36,7 @@ import { useNavigate } from "react-router-dom";
 import NoDataMessage from "../../../components/NoDataMessage";
 import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
 import { useRecaptcha } from "../../../hooks/RecaptchaContext";
+import client from "../../../graphql/apolloClient";
 
 interface User {
   id: string;
@@ -95,11 +96,19 @@ export default function UserManagementTable() {
 
   // Carregamento inicial
   useEffect(() => {
-    fetchUsers({
+
+    const run = async () => {
+      //limpar a cache de consultas anteriores
+      await client.clearStore();
+
+      fetchUsers({
       variables: { empresaId: empresa?.id, start: 0 },
       fetchPolicy: "network-only",
     });
-    // eslint-disable-next-line
+    }
+
+    run();  
+
   }, []);
 
   // Atualiza users quando data muda

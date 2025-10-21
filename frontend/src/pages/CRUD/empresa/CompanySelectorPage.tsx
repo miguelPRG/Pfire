@@ -10,6 +10,7 @@ import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
 import HomeIcon from "@mui/icons-material/Home";
 import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
 import NoDataMessage from "../../../components/NoDataMessage";
+import client from "../../../graphql/apolloClient";
 
 interface Empresa {
   id: string;
@@ -58,10 +59,18 @@ export default function CompanySelectorPage() {
 
   // Busca inicial sempre network-only
   useEffect(() => {
-    fetchEmpresas({
-      variables: { start: 0 },
-      fetchPolicy: "network-only",
-    });
+    const run = async () => {
+      // limpa a cache global do Apollo (promise)
+      await client.clearStore(); // ou client.resetStore() se quiser que queries ativas sejam re-executadas
+
+      // busca inicial forçando rede
+      fetchEmpresas({
+        variables: { start: 0 },
+        fetchPolicy: "network-only",
+      });
+    };
+
+    run();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
