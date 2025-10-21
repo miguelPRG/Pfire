@@ -71,7 +71,7 @@ class EmpresaQuery:
             elif filter.codigo_postal:
                 filtro_emp["codigo_postal"] = {"$regex": f"^{filter.codigo_postal}", "$options": "i"}
             elif filter.telefone:
-                filtro_emp["telefone"] = {"$regex": f"^{filter.telefone}", "$options": "i"}
+                filtro_emp["telefone"] = {"$regex": f"{filter.telefone}", "$options": "i"}
 
             total_empresas = await empresas_collection.count_documents(filtro_emp)
             async for empresa in empresas_collection.find(filtro_emp).skip(start).limit(lmt):

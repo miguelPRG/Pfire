@@ -47,7 +47,7 @@ class UserQuery:
                 filtro_users["email"] = {"$regex": f"^{email_escaped}", "$options": "i"}
             elif filter.telefone:
                 telefone_escaped = escape(str(filter.telefone).strip())
-                filtro_users["telefone"] = {"$regex": f"^{telefone_escaped}", "$options": "i"}
+                filtro_users["telefone"] = {"$regex": f"{telefone_escaped}", "$options": "i"}
             if filter.role is not None:
                 filtro_users_empresas["isAdmin"] = filter.role
 

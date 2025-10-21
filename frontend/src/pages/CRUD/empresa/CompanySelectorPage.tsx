@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Button, Paper, Typography, Box, Pagination, Breadcrumbs } from "@mui/material";
-import { useQuery, useLazyQuery } from "@apollo/client/react";
+import { useLazyQuery } from "@apollo/client/react";
 import { GET_EMPRESAS } from "../../../graphql/empresasQueries";
 import { useAuth } from "../../../hooks/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -33,13 +33,10 @@ interface ReturnedData {
 export default function CompanySelectorPage() {
   const [page, setPage] = useState(0);
   const rowsPerPage = 6;
-
-  // estado de búsqueda avanzada (solo dropdown + valor)
   const [adv, setAdv] = useState<{ field: string; text: string }>({
     field: "localidade",
     text: "",
   });
-
   const [isAdvancedActive, setIsAdvancedActive] = useState(false);
 
   const theme = useTheme();
@@ -47,12 +44,8 @@ export default function CompanySelectorPage() {
   const navigate = useNavigate();
   const mounted = useRef(false);
 
-  const { data, error, loading } = useQuery<ReturnedData>(GET_EMPRESAS, {
-    fetchPolicy: "cache-and-network", // para cachear e actualizar sempre
-    variables: {
-      start: page * rowsPerPage,
-    },
-  });
+  // lazy para todas as buscas
+  const [fetchEmpresas, { data, error, loading }] = useLazyQuery<ReturnedData>(GET_EMPRESAS);
 
   // Estado para largura da tela
   const [larguraTela, setLarguraTela] = useState(window.innerWidth);
@@ -63,23 +56,47 @@ export default function CompanySelectorPage() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // lazy para avanzada
-  const [fetchEmpresas, { data: searchData }] = useLazyQuery<ReturnedData>(GET_EMPRESAS, {
-    fetchPolicy: "cache-first",
-  });
+  // Busca inicial sempre network-only
+  useEffect(() => {
+    fetchEmpresas({
+      variables: { start: 0 },
+      fetchPolicy: "network-only",
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // datos que se muestran
-  const empresas: Empresa[] = isAdvancedActive
-    ? searchData?.getEmpresas?.empresas || []
-    : data?.getEmpresas?.empresas || [];
+  // Busca avançada
+  const handleApplyAdvanced = () => {
+    setIsAdvancedActive(true);
+    setPage(0);
+    fetchEmpresas({
+      variables: {
+        start: 0,
+        filter: adv.text.trim() ? { [adv.field]: adv.text.trim() } : {},
+      },
+      fetchPolicy: "cache-first",
+    });
+  };
 
-  const totalEmpresas: number = isAdvancedActive
-    ? searchData?.getEmpresas?.totalEmpresas || 0
-    : data?.getEmpresas?.totalEmpresas || 0;
+  // Paginação
+  const handlePageChange = (_: any, value: number) => {
+    const nextPage = value - 1;
+    setPage(nextPage);
+    fetchEmpresas({
+      variables: {
+        start: nextPage * rowsPerPage,
+        ...(isAdvancedActive && adv.text.trim() ? { filter: { [adv.field]: adv.text.trim() } } : {}),
+      },
+      fetchPolicy: "cache-first",
+    });
+  };
 
-  const pageCount = Math.ceil((totalEmpresas) / rowsPerPage);
+  // dados que se mostram
+  const empresas: Empresa[] = data?.getEmpresas?.empresas || [];
+  const totalEmpresas: number = data?.getEmpresas?.totalEmpresas || 0;
+  const pageCount = Math.ceil(totalEmpresas / rowsPerPage);
 
-  // seleccionar empresa recordada
+  // selecionar empresa recordada
   useLayoutEffect(() => {
     if (!mounted.current) {
       mounted.current = true;
@@ -96,18 +113,6 @@ export default function CompanySelectorPage() {
 
   if (loading) return <LoadingAnimation />;
   if (error) return <Typography>Erro ao carregar empresas: {error.message}</Typography>;
-
-  // aplicar avanzada
-  const handleApplyAdvanced = () => {
-    setIsAdvancedActive(true);
-    setPage(0);
-    fetchEmpresas({
-      variables: {
-        start: 0,
-        filter: adv.text.trim() ? { [adv.field]: adv.text.trim() } : {},
-      },
-    });
-  };
 
   const handleSelect = (emp: Empresa) => {
     const url = localStorage.getItem("empresaId") ? -1 : "/";
@@ -374,24 +379,13 @@ export default function CompanySelectorPage() {
             })
           )}
 
-          {/* Paginación */}
+          {/* Paginação */}
           {empresas.length > 0 && pageCount > 1 && (
             <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
               <Pagination
                 count={pageCount}
                 page={page + 1}
-                onChange={(_, value) => {
-                  const nextPage = value - 1;
-                  setPage(nextPage);
-                  if (isAdvancedActive) {
-                    fetchEmpresas({
-                      variables: {
-                        start: nextPage * rowsPerPage,
-                        filter: adv.text.trim() ? { [adv.field]: adv.text.trim() } : {},
-                      },
-                    });
-                  }
-                }}
+                onChange={handlePageChange}
                 color="primary"
                 showFirstButton
                 showLastButton

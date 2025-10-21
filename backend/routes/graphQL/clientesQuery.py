@@ -45,7 +45,7 @@ class ClienteQuery:
             #elif filter.codigo_postal and filter.codigo_postal.strip():
             #    filtro["codigo_postal"] = {"$regex": f"{escape(filter.codigo_postal.strip())}", "$options": "i"}
             elif filter.telefone and filter.telefone.strip():
-                filtro["telefone"] = {"$regex": f"^{escape(filter.telefone.strip())}", "$options": "i"}
+                filtro["telefone"] = {"$regex": f"{escape(filter.telefone.strip())}", "$options": "i"}
 
         clientes = []
 

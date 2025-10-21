@@ -210,28 +210,44 @@ async def register_user(data: UserRegister, request: Request):
     # Este if garante que o user será registo por uma das duas maneiras: "Registo Tradicional ou por Convite"
     if not data.global_id and not data.empresa:
         raise HTTPException(status_code=400, detail="Empresa ou global Id é obrigatória para registo.")
+    
+    if data.user.password != data.user.confirmPassword:
+        raise HTTPException(status_code=400, detail="A senha e a confirmação da senha não coincidem.")
 
     # Validar el token reCAPTCHA
     await validar_recaptcha_token(data.recaptchaToken, "register")
 
     # Dados do global_id caso este seja fornecido
     global_id_doc = None
+    # Capturamos o id da empresa que está associada ao user
+    id_empresa = None
+    # Um variavel booleana que indicará se o user é administrador ou não da empresa
+    is_admin = False
 
+     # Isto siginifica que o user foi convidado a criar a conta e associar-se a uma empresa
     if data.global_id:
 
+        # Verificar se o global_id é válido
         global_id_doc = await global_ids_collection.find_one({"global_id": data.global_id, "operation": "convite"})
 
         if not global_id_doc:
-            raise HTTPException(status_code=404, detail="Global ID inválido ou expirado.")
+            raise HTTPException(status_code=404, detail="Convite não encontrado ou expirado.")
 
-        if not global_id_doc.get("email") == data.user.email:
-            raise HTTPException(status_code=400, detail="O email do convite não corresponde ao email fornecido.")
+        id_empresa = global_id_doc["empresa_id"]
+
+        global_id_apagar = await global_ids_collection.delete_one({"global_id": data.global_id})
+
+        if global_id_apagar.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="Este convite não existe ou já foi utilizado.")
+
 
     date = datetime.now()
 
-    # Criar novo user
+    # Criar novo user depois de verificarmos o global_id
     del data.user.confirmPassword  # Eliminar confirmPassword do modelo UserRegister, pois não é necessário no MongoDB
+    del data.recaptchaToken  # Eliminar recaptchaToken do modelo UserRegister, pois não é necessário no MongoDB
     new_user = data.user
+    # Criptografar a senha
     new_user.password = pwd_context.hash(new_user.password)
     user_doc = new_user.model_dump(by_alias=True)
     user_doc.update(
@@ -257,18 +273,11 @@ async def register_user(data: UserRegister, request: Request):
 
     # Capturar o ID do usuário recém-criado
     user_id = res_user.inserted_id
-    # Capturamos o id da empresa que está associada ao user
-    id_empresa = None
-    # Um variavel booleana que indicará se o user é administrador ou não da empresa
-    is_admin = False
-
-    # Verifica se foi inserido um global_id. Provavelmente o user foi convidado para uma empresa
-    if global_id_doc:
-        id_empresa = global_id_doc.get("empresa_id")
 
     # Isto significa que o user registou-se a ele próprio, sem convite
-    else:
-        # Criar EMPRESA, capturando nif duplicado
+    if not id_empresa:
+        
+        # Criar EMPRESA, capturando nif ou nome duplicado se houver
         new_empresa = data.empresa
         empresa_doc = new_empresa.model_dump(by_alias=True)
         empresa_doc.update(
@@ -285,9 +294,6 @@ async def register_user(data: UserRegister, request: Request):
         except DuplicateKeyError as e:
             text = str(e).lower()
 
-            # Apagar o user que foi criado, pois não será necessário
-            await users_collection.delete_one({"_id": user_id})
-
             if "nif" in text:
                 raise HTTPException(status_code=409, detail="O NIF já está registrado.")
 
@@ -299,16 +305,17 @@ async def register_user(data: UserRegister, request: Request):
         id_empresa = res_emp.inserted_id
         is_admin = True  # O usuário que cria a empresa é automaticamente administrador
 
+
     # Criamos a tabela intermediária entre User e Empresa
     ue = UserEmpresaCreate(
         user_id=user_id,
         empresa_id=id_empresa,
         isAdmin=is_admin,
         # Se for convidado, o criador é o que enviou o convite
-        created_by=global_id_doc["host_user_id"] if global_id_doc else user_id,
+        created_by=user_id,
         created_at=date,
         # Se for convidado, o criador é o que enviou o convite
-        updated_by=global_id_doc["host_user_id"] if global_id_doc else user_id,
+        updated_by=user_id,
         updated_at=date,
     ).model_dump(by_alias=True)
 
@@ -452,8 +459,10 @@ async def update_password(user: UserUpdatePassword, request: Request):
 @routerUser.post("/invite")
 async def invite_user_to_empresa(request: Request, user: UserInvitation):
 
+    print(user)
+
     # Validar reCAPTCHA token
-    await validar_recaptcha_token(user.recaptchaToken, "invite_user")
+    await validar_recaptcha_token(user.recaptchaToken, "invite")
 
     jwt = getattr(request.state, "jwt", None)
     user_id = ObjectId(jwt["user_id"])

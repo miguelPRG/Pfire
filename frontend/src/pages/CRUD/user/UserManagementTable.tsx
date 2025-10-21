@@ -22,7 +22,7 @@ import {
 } from "@mui/material";
 import { Delete } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
-import { useQuery, useLazyQuery } from "@apollo/client/react";
+import { useLazyQuery } from "@apollo/client/react";
 import { GET_USERS } from "../../../graphql/usersQueries";
 import { useAuth } from "../../../hooks/AuthContext";
 import { z } from "zod";
@@ -36,8 +36,6 @@ import { useNavigate } from "react-router-dom";
 import NoDataMessage from "../../../components/NoDataMessage";
 import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
 import { useRecaptcha } from "../../../hooks/RecaptchaContext";
-
-declare var grecaptcha: any;
 
 interface User {
   id: string;
@@ -88,68 +86,54 @@ export default function UserManagementTable() {
     { value: "role", label: "Papel" },
   ];
 
-  // Busca avançada: lógica igual à da tabela de clientes
   const [isAdvancedSearch, setIsAdvancedSearch] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
 
-  // Consulta inicial (cache/página)
-  const { data, refetch, loading } = useQuery<returnedData>(GET_USERS, {
-    variables: { empresaId: empresa?.id, start: page * rowsPerPage },
-    fetchPolicy: "cache-and-network",
-  });
+  // Apenas um useLazyQuery
+  const [fetchUsers, { data, loading }] = useLazyQuery<returnedData>(GET_USERS);
 
-  // Consulta lazy para filtro avançado
-  const [fetchByFilter, { data: filteredData }] = useLazyQuery<returnedData>(GET_USERS, {
-    fetchPolicy: "cache-first",
-  });
-
-  // Atualiza usuários quando data ou filteredData mudam
+  // Carregamento inicial
   useEffect(() => {
-    if (isAdvancedSearch) {
-      if (filteredData) {
-        setUsers(filteredData.getUsers.users || []);
-        setTotalUsers(filteredData.getUsers.totalUsers || 0);
-      }
-    } else {
-      if (data) {
-        setUsers(data.getUsers.users || []);
-        setTotalUsers(data.getUsers.totalUsers || 0);
-      }
-    }
-  }, [data, filteredData, isAdvancedSearch]);
+    fetchUsers({
+      variables: { empresaId: empresa?.id, start: 0 },
+      fetchPolicy: "network-only",
+    });
+    // eslint-disable-next-line
+  }, []);
 
-  // Atualiza consulta ao mudar de página
+  // Atualiza users quando data muda
   useEffect(() => {
-    if (isAdvancedSearch && advValue.field && advValue.text) {
-      fetchByFilter({
-        variables: {
-          empresaId: empresa?.id,
-          start: page * rowsPerPage,
-          filter: { [advValue.field]: advValue.text },
-        },
-      });
-    } else {
-      refetch({ empresaId: empresa?.id, start: page * rowsPerPage });
+    if (data) {
+      setUsers(data.getUsers.users || []);
+      setTotalUsers(data.getUsers.totalUsers || 0);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data]);
+
+  // Paginação
+  useEffect(() => {
+    fetchUsers({
+      variables: {
+        empresaId: empresa?.id,
+        start: page * rowsPerPage,
+        ...(isAdvancedSearch && advValue.text.trim() ? { filter: { [advValue.field]: advValue.text.trim() } } : {}),
+      },
+      fetchPolicy: "cache-first",
+    });
+    // eslint-disable-next-line
   }, [page]);
 
   // Função para aplicar filtro avançado
-  const applyAdvancedFilterUsers = async (applied?: { field: string; text: string }) => {
+  const applyAdvancedFilterUsers = () => {
     setIsAdvancedSearch(true);
     setPage(0);
-    const field = applied?.field ?? advValue.field;
-    const val = (applied?.text ?? advValue.text ?? "").toString().trim();
-
-    console.log("Aplicando filtro avançado: ", val);
-
-    await fetchByFilter({
+    fetchUsers({
       variables: {
         empresaId: empresa?.id,
         start: 0,
-        filter: { [field]: val }, // <-- só envia filtro se houver valor
+        filter: advValue.text.trim() ? { [advValue.field]: advValue.text.trim() } : {},
       },
+      fetchPolicy: "cache-first",
     });
   };
 
@@ -158,9 +142,18 @@ export default function UserManagementTable() {
     setIsAdvancedSearch(false);
     setAdvValue({ field: "", text: "" });
     setPage(0);
-    const result = await refetch({ empresaId: empresa?.id, start: 0 });
-    setUsers(result?.data.getUsers.users || []);
-    setTotalUsers(result?.data.getUsers.totalUsers || 0);
+
+    try{
+      const result = await fetchUsers({
+      variables: { empresaId: empresa?.id, start: 0 },
+      fetchPolicy: "cache-first",
+    });
+      setUsers(result?.data.getUsers.users || []);
+      setTotalUsers(result?.data.getUsers.totalUsers || 0);
+    }
+    catch(err){
+      console.error("Erro ao limpar filtro avançado:", err);
+    }
   };
 
   const pageCount = Math.ceil(totalUsers / rowsPerPage);
@@ -253,7 +246,7 @@ export default function UserManagementTable() {
 
   // Função para enviar convite (ajuste para sua API)
   const handleInvite = async (values: { email: string }) => {
-    const recaptchaToken = await generateToken("register");
+    const recaptchaToken = await generateToken("invite");
 
     // Validação Zod
     const validation = inviteSchema.safeParse({ email: values.email.trim() });
@@ -293,7 +286,7 @@ export default function UserManagementTable() {
 
   const handleDelete = async (id: string) => {
     try {
-      const recaptchaToken = await generateToken("updateUser");
+      const recaptchaToken = await generateToken("delete");
 
       const res = await fetch("/backend/user/expel", {
         method: "DELETE",
@@ -312,7 +305,17 @@ export default function UserManagementTable() {
         message: json.detail || "Utilizador expulso com sucesso.",
         isError: false,
       });
-      await refetch(); // Atualiza a lista de utilizadores
+
+      // Apenas chama fetchUsers, não atualize o estado manualmente!
+      await fetchUsers({
+        variables: {
+          empresaId: empresa?.id,
+          start: page * rowsPerPage,
+          ...(isAdvancedSearch && advValue.text.trim() ? { filter: { [advValue.field]: advValue.text.trim() } } : {}),
+        },
+        fetchPolicy: "network-only",
+      });
+
     } catch (err: any) {
       setAlert({
         message: err.message || "Erro ao eliminar utilizador.",
@@ -433,7 +436,7 @@ export default function UserManagementTable() {
               </TableRow>
             ) : (
               sortedRows
-                .slice(0, rowsPerPage)
+                .slice(page * rowsPerPage, (page + 1) * rowsPerPage)
                 .map((user, index) => (
                   <TableRow
                     key={user.id}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery, useLazyQuery } from "@apollo/client/react";
+import { useLazyQuery } from "@apollo/client/react";
 import {
   Table,
   TableBody,
@@ -66,7 +66,6 @@ export default function ClientManagementTable() {
   const [alert, setAlert] = useState<null | { message: string; isError: boolean }>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
-  const [localClientes, setLocalClientes] = useState<Cliente[]>([]);
   const [loadingClienteId, setLoadingClienteId] = useState<string | null>(null);
 
   // Advanced search state
@@ -88,18 +87,9 @@ export default function ClientManagementTable() {
 
   // Estado único para fonte dos clientes e total
   const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [totalClientes, setTotalClientes] = useState(0);
+  const [totalClientes, setTotalClientes] = useState(0); // valor inicial
 
-  // Consulta inicial (cache)
-  const { data, loading, error, refetch } = useQuery<returnedData>(GET_CLIENTES_BY_EMPRESA, {
-    variables: { empresaId: empresa?.id, start: page * rowsPerPage },
-    fetchPolicy: "cache-and-network",
-  });
-
-  // Consulta lazy query para filtro
-  const [fetchByFilter, { data: dadosFiltrados }] = useLazyQuery<returnedData>(GET_CLIENTES_BY_EMPRESA, {
-    fetchPolicy: "cache-first",
-  });
+  const [fetchClientes, { data, loading, error}] = useLazyQuery<returnedData>(GET_CLIENTES_BY_EMPRESA);
 
   // Adicione um estado para saber se está em busca avançada
   const [isAdvancedSearch, setIsAdvancedSearch] = useState(false);
@@ -115,42 +105,47 @@ export default function ClientManagementTable() {
       window.history.replaceState({}, document.title);
     }
 
-    if (isAdvancedSearch) {
-      if (dadosFiltrados) {
-        setClientes(dadosFiltrados.getClientes.clientes || []);
-        setTotalClientes(dadosFiltrados.getClientes.totalClientes || 0);
-      }
-    } else {
-      if (data) {
-        console.log("Dados recebidos:", data);
-        setClientes(data.getClientes.clientes || []);
-        setTotalClientes(data.getClientes.totalClientes || 0);
-      }
-    }
-  }, [data, dadosFiltrados]);
+    fetchClientes({
+      variables: { empresaId: empresa?.id, start: 0 },
+      fetchPolicy: "network-only",
+    })
 
-  // Atualiza consulta ao mudar de página
+  }, []);
+
   useEffect(() => {
-    fetchByFilter({
+
+    if (data){
+      setClientes(data.getClientes.clientes);
+      setTotalClientes(data.getClientes.totalClientes);
+      if (!initialLoaded) setInitialLoaded(true);
+    }
+
+  }, [data]);
+
+  // Paginação
+  useEffect(() => {
+    fetchClientes({
       variables: {
         empresaId: empresa?.id,
         start: page * rowsPerPage,
-        filter: isAdvancedSearch && advValue.field && advValue.text ? { [advValue.field]: advValue.text } : null,
+        ...(isAdvancedSearch && advValue.text.trim() ? { filter: { [advValue.field]: advValue.text.trim() } } : {}),
       },
+      fetchPolicy: "cache-first",
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line
   }, [page]);
 
   // Função para aplicar consulta avançada
-  const applyAdvancedFilter = async () => {
+  const applyAdvancedFilter = () => {totalClientes
     setIsAdvancedSearch(true);
     setPage(0);
-    await fetchByFilter({
+    fetchClientes({
       variables: {
         empresaId: empresa?.id,
         start: 0,
-        filter: { [advValue.field]: advValue.text },
+        filter: advValue.text.trim() ? { [advValue.field]: advValue.text.trim() } : {},
       },
+      fetchPolicy: "cache-first",
     });
   };
 
@@ -159,7 +154,13 @@ export default function ClientManagementTable() {
     setIsAdvancedSearch(false);
     setAdvValue({ field: "", text: "" });
     setPage(0);
-    const result = await refetch({ empresaId: empresa?.id, start: 0 });
+    const result = await fetchClientes({ 
+      variables: {
+        empresaId: empresa?.id, 
+        start: 0 
+      },
+      fetchPolicy: "cache-first",
+    });
     setClientes(result?.data.getClientes.clientes || []);
     setTotalClientes(result?.data.getClientes.totalClientes || 0);
   };
@@ -200,7 +201,14 @@ export default function ClientManagementTable() {
       const json = await res.json();
       if (!res.ok) throw new Error(json.detail || "Erro ao apagar cliente.");
       setAlert({ message: json.message || "Cliente apagado com sucesso!", isError: false });
-      await refetch();
+      await fetchClientes({
+        variables: {
+          empresaId: empresa?.id,
+          start: page * rowsPerPage,
+          ...(isAdvancedSearch && advValue.text.trim() ? { filter: { [advValue.field]: advValue.text.trim() } } : {}),
+        },
+        fetchPolicy: "network-only",
+      });
     } catch (err: any) {
       setAlert({ message: err.message || "Erro ao apagar cliente.", isError: true });
     }

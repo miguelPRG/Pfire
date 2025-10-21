@@ -49,7 +49,7 @@ async def get_global_id(global_id: str, request: Request):
     return global_id_data
 
 
-# Ativqar utilizador pós registo
+# Ativar utilizador pós registo
 @routerUser.put("/email/activate/{global_id}")
 async def confirm_user(global_id: str, request: Request):
 
@@ -102,14 +102,14 @@ async def reset_password(request: Request, user: UserChangePassword):
     new_password_hashed = pwd_context.hash(user.password)
     user_update = users_collection.update_one({"_id": user_id}, {"$set": {"password": new_password_hashed, "updated_at": datetime.now()}})
 
-    global_id_deelete = global_ids_collection.delete_one({"global_id": user.global_id})
+    global_id_delete = global_ids_collection.delete_one({"global_id": user.global_id})
 
-    user_update, global_id_deelete = await gather(user_update, global_id_deelete)
+    user_update, global_id_delete = await gather(user_update, global_id_delete)
 
     if not user_update.modified_count:
         raise HTTPException(status_code=409, detail="Erro ao atualizar a password do utilizador.")
 
-    if global_id_deelete.deleted_count == 0:
+    if global_id_delete.deleted_count == 0:
         raise HTTPException(status_code=500, detail="Erro ao remover o global ID após atualização da password.")
 
     return {"message": "Password atualizada com sucesso!"}
