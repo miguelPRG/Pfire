@@ -12,9 +12,9 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
     <TemaProvider>
       <RecaptchaProvider>
         <ApolloProvider client={client}>
-            <AuthProvider>
-              <App />
-            </AuthProvider>
+          <AuthProvider>
+            <App />
+          </AuthProvider>
         </ApolloProvider>
       </RecaptchaProvider>
     </TemaProvider>

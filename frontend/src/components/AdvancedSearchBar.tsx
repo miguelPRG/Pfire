@@ -113,7 +113,7 @@ export default function AdvancedSearchBar({
           />
         ) : value.field === "role" ? (
           <FormControl size="small" sx={{ width: controlWidth }}>
-            <InputLabel id="adv-role-label">Qual é o papel?</InputLabel>            
+            <InputLabel id="adv-role-label">Qual é o papel?</InputLabel>
             <Select
               labelId="adv-role-label"
               value={value.text || ""}
@@ -151,9 +151,9 @@ export default function AdvancedSearchBar({
         )}
 
         <Stack direction="row" spacing={1} justifyContent="flex-end">
-          <Button 
-            variant="contained" 
-            onClick={handleApply} 
+          <Button
+            variant="contained"
+            onClick={handleApply}
             sx={{ minWidth: 112 }}
             disabled={!value.field || !value.text} // Desativa se campo ou valor estiverem vazios
           >

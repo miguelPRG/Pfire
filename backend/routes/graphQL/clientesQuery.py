@@ -42,7 +42,7 @@ class ClienteQuery:
                 filtro["localidade"] = {"$regex": f"^{escape(filter.localidade.strip())}", "$options": "i"}
             elif filter.morada and filter.morada.strip():
                 filtro["morada"] = {"$regex": f"^{escape(filter.morada.strip())}", "$options": "i"}
-            #elif filter.codigo_postal and filter.codigo_postal.strip():
+            # elif filter.codigo_postal and filter.codigo_postal.strip():
             #    filtro["codigo_postal"] = {"$regex": f"{escape(filter.codigo_postal.strip())}", "$options": "i"}
             elif filter.telefone and filter.telefone.strip():
                 filtro["telefone"] = {"$regex": f"{escape(filter.telefone.strip())}", "$options": "i"}

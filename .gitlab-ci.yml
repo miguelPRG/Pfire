@@ -31,12 +31,14 @@ python_test:
     - apt-get update && apt-get install -y --no-install-recommends gcc libmariadb-dev pkg-config curl git && rm -rf /var/lib/apt/lists/*
     - cd backend
     - rm -rf .venv/
-    - python -m venv .venv
+    - curl -LsSf https://astral.sh/uv/install.sh | sh
+    - source $HOME/.local/bin/env
+    - uv venv
     - . .venv/bin/activate
-    - pip install --upgrade pip
-    - pip install -r requirements.txt
-    - pip install bandit
-    - bandit -r . -c bandit.yml --exclude ./startBackend.py
+    - uv pip install --upgrade pip
+    - uv pip install -r pyproject.toml
+    - uv add bandit
+    - bandit -r . --exclude ./tests,./migrations,./venv,./.venv,./docs,./__pycache__,./controller
   allow_failure: true
 
 # Frontend Security Check

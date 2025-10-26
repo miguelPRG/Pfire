@@ -116,7 +116,7 @@ class UserRegister(BaseModel):
 class UserLogin(BaseModel):
     email: EmailStr = Field(max_length=254, description="O email deve ser um endereço de email válido.")
     password: str = Field(..., min_length=9, max_length=100, description="A senha deve ter pelo menos 9 caracteres.")
-    #recaptchaToken: Optional[str] = None
+    # recaptchaToken: Optional[str] = None
 
     @field_validator("email", mode="before")
     def strip_email(cls, v):

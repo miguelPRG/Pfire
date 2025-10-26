@@ -32,7 +32,7 @@ class UserQuery:
             user_empresa = await users_empresas_collection.find_one({"user_id": ObjectId(jwt["user_id"]), "empresa_id": empresa_id, "isAdmin": True})
             if not user_empresa:
                 raise HTTPException(status_code=403, detail="Acesso negado. Apenas administradores podem visualizar os utilizadores.")
-        
+
         filtro_users_empresas = {"empresa_id": empresa_id}
         filtro_users = {}
 
@@ -61,23 +61,23 @@ class UserQuery:
         user_ids = [ue["user_id"] for ue in user_empresas_list]
 
         if user_ids:
-        
+
             user_filter = {"_id": {"$in": user_ids}}
 
             if filtro_users:
                 user_filter = {**user_filter, **filtro_users}
-            
+
             # Buscar todos os users de uma vez
             users_list = await users_collection.find(user_filter).to_list(length=None)
-            
+
             # Criar um mapeamento user_id -> user para acesso rápido
             users_map = {str(user["_id"]): user for user in users_list}
-            
+
             # Construir resultado final mantendo a ordem e role de user_empresas
             for user_empresa in user_empresas_list:
                 user_id = str(user_empresa["user_id"])
                 user = users_map.get(user_id)
-                
+
                 if not user:
                     continue
 

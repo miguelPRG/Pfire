@@ -90,45 +90,42 @@ export default function ClientManagementTable() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [totalClientes, setTotalClientes] = useState(0); // valor inicial
 
-  const [fetchClientes, { data, loading, error}] = useLazyQuery<returnedData>(GET_CLIENTES_BY_EMPRESA);
+  const [fetchClientes, { data, loading, error }] = useLazyQuery<returnedData>(GET_CLIENTES_BY_EMPRESA);
 
   // Adicione um estado para saber se está em busca avançada
   const [isAdvancedSearch, setIsAdvancedSearch] = useState(false);
 
   // Atualiza clientes quando data ou dadosFiltrados mudam
   useEffect(() => {
-
     const run = async () => {
       //limpar a cache de consultas anteriores
       await client.clearStore();
 
       if (location.state?.message) {
-      setAlert({
-        message: location.state.message.text,
-        isError: location.state.message.error,
-      });
-      // Remove o estado da localização
-      window.history.replaceState({}, document.title);
-    }
+        setAlert({
+          message: location.state.message.text,
+          isError: location.state.message.error,
+        });
+        // Remove o estado da localização
+        window.history.replaceState({}, document.title);
+      }
 
-    fetchClientes({
-      variables: { empresaId: empresa?.id, start: 0 },
-      fetchPolicy: "network-only",
-    });
-  };
+      fetchClientes({
+        variables: { empresaId: empresa?.id, start: 0 },
+        fetchPolicy: "network-only",
+      });
+    };
 
     run();
     // eslint-disable-next-line
   }, []);
 
   useEffect(() => {
-
-    if (data){
+    if (data) {
       setClientes(data.getClientes.clientes);
       setTotalClientes(data.getClientes.totalClientes);
       if (!initialLoaded) setInitialLoaded(true);
     }
-
   }, [data]);
 
   // Paginação
@@ -145,7 +142,8 @@ export default function ClientManagementTable() {
   }, [page]);
 
   // Função para aplicar consulta avançada
-  const applyAdvancedFilter = () => {totalClientes
+  const applyAdvancedFilter = () => {
+    totalClientes;
     setIsAdvancedSearch(true);
     setPage(0);
     fetchClientes({
@@ -163,10 +161,10 @@ export default function ClientManagementTable() {
     setIsAdvancedSearch(false);
     setAdvValue({ field: "", text: "" });
     setPage(0);
-    const result = await fetchClientes({ 
+    const result = await fetchClientes({
       variables: {
-        empresaId: empresa?.id, 
-        start: 0 
+        empresaId: empresa?.id,
+        start: 0,
       },
       fetchPolicy: "cache-first",
     });
@@ -232,9 +230,7 @@ export default function ClientManagementTable() {
 
       if (currentStatus) {
         // DESATIVAR: muda localmente antes do await
-        setClientes((prev) =>
-          prev.map((c) => (c.id === clienteId ? { ...c, isActive: false } : c))
-        );
+        setClientes((prev) => prev.map((c) => (c.id === clienteId ? { ...c, isActive: false } : c)));
         endpoint = "/backend/cliente/";
         method = "DELETE";
       } else {
@@ -260,9 +256,7 @@ export default function ClientManagementTable() {
       if (!response.ok) {
         // Se falhar ao desativar, volta ao estado anterior
         if (currentStatus) {
-          setClientes((prev) =>
-            prev.map((c) => (c.id === clienteId ? { ...c, isActive: true } : c))
-          );
+          setClientes((prev) => prev.map((c) => (c.id === clienteId ? { ...c, isActive: true } : c)));
         }
         throw new Error(json.detail || `Erro ao ${currentStatus ? "desativar" : "ativar"} cliente.`);
       }
@@ -274,9 +268,7 @@ export default function ClientManagementTable() {
 
       // ATIVAR: só muda localmente depois do sucesso
       if (!currentStatus) {
-        setClientes((prev) =>
-          prev.map((c) => (c.id === clienteId ? { ...c, isActive: true } : c))
-        );
+        setClientes((prev) => prev.map((c) => (c.id === clienteId ? { ...c, isActive: true } : c)));
       }
     } catch (error: any) {
       setAlert({

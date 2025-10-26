@@ -96,19 +96,17 @@ export default function UserManagementTable() {
 
   // Carregamento inicial
   useEffect(() => {
-
     const run = async () => {
       //limpar a cache de consultas anteriores
       await client.clearStore();
 
       fetchUsers({
-      variables: { empresaId: empresa?.id, start: 0 },
-      fetchPolicy: "network-only",
-    });
-    }
+        variables: { empresaId: empresa?.id, start: 0 },
+        fetchPolicy: "network-only",
+      });
+    };
 
-    run();  
-
+    run();
   }, []);
 
   // Atualiza users quando data muda
@@ -152,15 +150,14 @@ export default function UserManagementTable() {
     setAdvValue({ field: "", text: "" });
     setPage(0);
 
-    try{
+    try {
       const result = await fetchUsers({
-      variables: { empresaId: empresa?.id, start: 0 },
-      fetchPolicy: "cache-first",
-    });
+        variables: { empresaId: empresa?.id, start: 0 },
+        fetchPolicy: "cache-first",
+      });
       setUsers(result?.data.getUsers.users || []);
       setTotalUsers(result?.data.getUsers.totalUsers || 0);
-    }
-    catch(err){
+    } catch (err) {
       console.error("Erro ao limpar filtro avançado:", err);
     }
   };
@@ -189,18 +186,13 @@ export default function UserManagementTable() {
 
       // Atualiza localmente o papel do user só após sucesso
       setUsers((prev) =>
-        prev.map((u) =>
-          u.id === user.id
-            ? { ...u, role: user.role === "Admin" ? "Técnico" : "Admin" }
-            : u
-        )
+        prev.map((u) => (u.id === user.id ? { ...u, role: user.role === "Admin" ? "Técnico" : "Admin" } : u))
       );
 
       setAlert({
         message: "Papel alterado com sucesso!",
         isError: false,
       });
-
     } catch (err) {
       setAlert({
         message: err instanceof Error ? err.message : "Erro ao alterar papel.",
@@ -324,7 +316,6 @@ export default function UserManagementTable() {
         },
         fetchPolicy: "network-only",
       });
-
     } catch (err: any) {
       setAlert({
         message: err.message || "Erro ao eliminar utilizador.",
@@ -381,7 +372,7 @@ export default function UserManagementTable() {
             fontSize: 30,
           }}
         >
-         Lista de Funcionários
+          Lista de Funcionários
         </Typography>
 
         <Button
@@ -444,84 +435,82 @@ export default function UserManagementTable() {
                 </TableCell>
               </TableRow>
             ) : (
-              sortedRows
-                .slice(page * rowsPerPage, (page + 1) * rowsPerPage)
-                .map((user, index) => (
-                  <TableRow
-                    key={user.id}
-                    sx={{
-                      backgroundColor: zebraColor(index),
-                    }}
-                  >
-                    <TableCell sx={{ py: 1 }}>{user.nome}</TableCell>
-                    <TableCell sx={{ py: 1 }}>{user.telefone}</TableCell>
-                    <TableCell sx={{ py: 1 }}>
+              sortedRows.slice(page * rowsPerPage, (page + 1) * rowsPerPage).map((user, index) => (
+                <TableRow
+                  key={user.id}
+                  sx={{
+                    backgroundColor: zebraColor(index),
+                  }}
+                >
+                  <TableCell sx={{ py: 1 }}>{user.nome}</TableCell>
+                  <TableCell sx={{ py: 1 }}>{user.telefone}</TableCell>
+                  <TableCell sx={{ py: 1 }}>
+                    <Box
+                      sx={{
+                        borderRadius: "50%",
+                        width: 50,
+                        height: 50,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        bgcolor: user.isActive ? "success.main" : "error.main",
+                        color: "#fff",
+                        fontWeight: "bold",
+                        fontSize: "0.9rem",
+                      }}
+                    >
+                      {user.isActive ? "Ativo" : "Inativo"}
+                    </Box>
+                  </TableCell>
+                  <TableCell sx={{ py: 1 }}>{user.email}</TableCell>
+                  <TableCell sx={{ py: 1 }}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      sx={{
+                        borderRadius: "20px",
+                        minWidth: 0,
+                        px: 1.5,
+                        width: "auto",
+                        textTransform: "none",
+                      }}
+                      onClick={() => handleToggleAdmin(user)}
+                      disabled={!!roleLoading[user.id]}
+                    >
+                      {roleLoading[user.id] ? "Alterando..." : user.role}
+                    </Button>
+                  </TableCell>
+                  <TableCell align="center">
+                    <Box
+                      sx={{
+                        display: "flex",
+                        gap: 1,
+                        justifyContent: "center",
+                      }}
+                    >
                       <Box
                         sx={{
+                          backgroundColor: "error.main",
+                          color: "#fff",
                           borderRadius: "50%",
-                          width: 50,
-                          height: 50,
+                          width: 36,
+                          height: 36,
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          bgcolor: user.isActive ? "success.main" : "error.main",
-                          color: "#fff",
-                          fontWeight: "bold",
-                          fontSize: "0.9rem",
+                          cursor: "pointer",
+                          "&:hover": {
+                            backgroundColor: "error.dark",
+                          },
                         }}
+                        onClick={() => handleOpenDeleteDialog(user.id)}
                       >
-                        {user.isActive ? "Ativo" : "Inativo"}
+                        <Delete fontSize="small" />
                       </Box>
-                    </TableCell>
-                    <TableCell sx={{ py: 1 }}>{user.email}</TableCell>
-                    <TableCell sx={{ py: 1 }}>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        sx={{
-                          borderRadius: "20px",
-                          minWidth: 0,
-                          px: 1.5,
-                          width: "auto",
-                          textTransform: "none",
-                        }}
-                        onClick={() => handleToggleAdmin(user)}
-                        disabled={!!roleLoading[user.id]}
-                      >
-                        {roleLoading[user.id] ? "Alterando..." : user.role}
-                      </Button>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Box
-                        sx={{
-                          display: "flex",
-                          gap: 1,
-                          justifyContent: "center",
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            backgroundColor: "error.main",
-                            color: "#fff",
-                            borderRadius: "50%",
-                            width: 36,
-                            height: 36,
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            cursor: "pointer",
-                            "&:hover": {
-                              backgroundColor: "error.dark",
-                            },
-                          }}
-                          onClick={() => handleOpenDeleteDialog(user.id)}
-                        >
-                          <Delete fontSize="small" />
-                        </Box>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))
             )}
           </TableBody>
         </Table>

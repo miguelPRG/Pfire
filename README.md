@@ -82,8 +82,13 @@ Para executar os servidores, foram criados ficheiros de ativação que não só 
 
 ##### Executar Backend:
 
+Primeira deverá ser executado este comando para evitar problemas de incopatibilidade entre **WSL** e **Windows**
+
+`sudo apt install dos2unix`
+
 1. `cd /backend`
-2. `python3 startBackend.py`
+2. `dos2unix startFrontend.sh`
+2. `./startBackend.sh`
 
 ##### Executar Frontend:
 

@@ -210,7 +210,7 @@ async def register_user(data: UserRegister, request: Request):
     # Este if garante que o user será registo por uma das duas maneiras: "Registo Tradicional ou por Convite"
     if not data.global_id and not data.empresa:
         raise HTTPException(status_code=400, detail="Empresa ou global Id é obrigatória para registo.")
-    
+
     if data.user.password != data.user.confirmPassword:
         raise HTTPException(status_code=400, detail="A senha e a confirmação da senha não coincidem.")
 
@@ -224,7 +224,7 @@ async def register_user(data: UserRegister, request: Request):
     # Um variavel booleana que indicará se o user é administrador ou não da empresa
     is_admin = False
 
-     # Isto siginifica que o user foi convidado a criar a conta e associar-se a uma empresa
+    # Isto siginifica que o user foi convidado a criar a conta e associar-se a uma empresa
     if data.global_id:
 
         # Verificar se o global_id é válido
@@ -239,7 +239,6 @@ async def register_user(data: UserRegister, request: Request):
 
         if global_id_apagar.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Este convite não existe ou já foi utilizado.")
-
 
     date = datetime.now()
 
@@ -276,7 +275,7 @@ async def register_user(data: UserRegister, request: Request):
 
     # Isto significa que o user registou-se a ele próprio, sem convite
     if not id_empresa:
-        
+
         # Criar EMPRESA, capturando nif ou nome duplicado se houver
         new_empresa = data.empresa
         empresa_doc = new_empresa.model_dump(by_alias=True)
@@ -304,7 +303,6 @@ async def register_user(data: UserRegister, request: Request):
 
         id_empresa = res_emp.inserted_id
         is_admin = True  # O usuário que cria a empresa é automaticamente administrador
-
 
     # Criamos a tabela intermediária entre User e Empresa
     ue = UserEmpresaCreate(
