@@ -24,7 +24,7 @@ fi
 # 3️⃣ Ativar ambiente virtual e instalar dependências
 echo "Ativando ambiente virtual e instalando dependências..."
 source "$VENV_DIR/bin/activate"
-uv pip install -r pyproject.toml
+uv sync && uvicorn main:app --reload
 
 
 
