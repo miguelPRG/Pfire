@@ -2,12 +2,15 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from apis.recaptchaValidation import validar_recaptcha_token
 from controller.jwtValidation import generate_jwt
+from base64 import b64decode
+from imghdr import what
 from bson import ObjectId
 from passlib.context import CryptContext
 from models.userModels import UserUpdate, UserActivation
 from datetime import datetime
 from database import users_collection
 from controller.token_blacklist import add_token_to_blacklist  # Nueva función para usar Redis
+
 
 routerUser = APIRouter(prefix="/user")
 
@@ -29,37 +32,45 @@ async def update_user(user: UserUpdate, request: Request):
     jwt = getattr(request.state, "jwt", None)
     user_id = ObjectId(jwt["user_id"])
 
+    if user.assinatura:
+        # Converter string base 64 para BinaryData do mongoDB
+        try:
+            user.assinatura = b64decode(user.assinatura)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail="Erro ao decodificar a imagem. Verifica se a imagem está em base64.")
+
+        tipo = what(None, user.assinatura)
+        if tipo not in ["jpeg", "jpg", "png"]:
+            raise HTTPException(status_code=404, detail="Tipo de imagem não permitido. Apenas JPEG e PNG são aceitos.")
+
     update_data = user.model_dump(exclude_unset=True)
     update_data["updated_at"] = datetime.now()
     update_data["updated_by"] = user_id
-    del update_data["recaptchaToken"]  # Remover o campo recaptchaToken do dicionário
 
     result = await users_collection.update_one({"_id": user_id, "isActive": True}, {"$set": update_data})
 
     if not result.modified_count:
         raise HTTPException(status_code=400, detail="Erro ao atualizar. O utilizador não foi encontrado ou não está ativo.")
 
-    result = await users_collection.find_one({"_id": user_id})
+    if user.nome and user.nome != jwt.get("nome")  or user.telefone and user.telefone != jwt.get("telefone"):
 
-    token = request.cookies.get("_fp")
-    if not token:
-        raise HTTPException(status_code=401, detail="Token não encontrado.")
+        token = request.cookies.get("_fp")
+        await add_token_to_blacklist(token, jwt["exp"])
 
-    await add_token_to_blacklist(token, jwt["exp"])
+        token = generate_jwt(
+            str(user_id),
+            nome=user.nome,
+            email=jwt.get("email"),
+            isSuperAdmin=jwt.get("isSuperAdmin", False),
+            telefone=user.telefone,
+            firebase_uid=jwt.get("firebase_uid")
+        )
+        response = JSONResponse({"message": "Utilizador atualizado com sucesso!"})
+        response.set_cookie(key="_fp", value=token, httponly=True, samesite="Strict", secure=True)
 
-    token = generate_jwt(
-        str(user_id),
-        result["nome"],
-        result["email"],
-        result["isSuperAdmin"],
-        result.get("telefone"),
-        jwt.get("firebase_UID"),
-    )
+        return response
 
-    response = JSONResponse({"message": "Utilizador atualizado com sucesso!"})
-    response.set_cookie(key="_fp", value=token, httponly=True, samesite="Strict", secure=True)
-
-    return response
+    return {"message": "Utilizador atualizado com sucesso!"}
 
 
 # 🚀 Apagar Usuário
@@ -105,3 +116,4 @@ async def activate_user(request: Request, user: UserActivation):
         raise HTTPException(status_code=409, detail="Erro ao ativar utilizador. Verifica se o utilizador existe ou se já foi ativado.")
 
     return {"message": "Utilizador ativado com sucesso!"}
+

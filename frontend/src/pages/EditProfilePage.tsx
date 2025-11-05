@@ -19,6 +19,7 @@ const userInfoSchema = z.object({
     .string()
     .trim()
     .regex(/^[+]?\d{9,15}$/, "Número de telefone inválido"),
+  assinatura: z.string().optional(), // Removido z.base64() para aceitar string vazia
 });
 
 const userPasswordSchema = z
@@ -103,11 +104,12 @@ function EditProfilePage() {
   // Ref para o topo da página
   const topRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const assinaturaInputRef = useRef<HTMLInputElement>(null); // ref do input da assinatura
 
   const userInfoForm = useForm<UserInfoFormType>({
     resolver: zodResolver(userInfoSchema),
-    defaultValues: { name: "", telefone: "" },
-    shouldUnregister: true, // Permite limpar os campos ao resetar o formulário
+    defaultValues: { name: "", telefone: "", assinatura: "" }, // default para assinatura
+    shouldUnregister: true,
     mode: "onSubmit",
   });
   const userPasswordForm = useForm<UserPasswordFormType>({
@@ -123,7 +125,11 @@ function EditProfilePage() {
 
   useEffect(() => {
     if (user) {
-      userInfoForm.reset({ name: user?.nome || "", telefone: user?.telefone || "" });
+      userInfoForm.reset({
+        name: user?.nome || "",
+        telefone: user?.telefone || "",
+        assinatura: user?.assinatura || "",
+      });
     }
     if (empresa) {
       companyForm.reset({
@@ -133,10 +139,10 @@ function EditProfilePage() {
         locality: empresa?.localidade || "",
         postalCode: empresa?.codigoPostal || "",
         companyPhone: empresa?.telefone || "",
-        logo: empresa?.logo || "", // <-- Adicione esta linha!
+        logo: empresa?.logo || "",
       });
     }
-  }, [user, empresa]);
+  }, [user, empresa, userInfoForm, companyForm]);
 
   // Scroll suave para o topo quando globalMessage muda
   useEffect(() => {
@@ -149,9 +155,12 @@ function EditProfilePage() {
   const handleSubmitUserUpdate: SubmitHandler<UserInfoFormType> = async (data) => {
     setSubmitting((s) => ({ ...s, info: true }));
     try {
-      await updateUser({ nome: data.name, telefone: data.telefone });
+      await updateUser({
+        nome: data.name,
+        telefone: data.telefone,
+        assinatura: data.assinatura, // Sempre incluir, mesmo que seja undefined ou vazio
+      });
       setGlobalMessage({ error: false, message: "Utilizador atualizado com sucesso" });
-      // Forçar renderização para garantir que o Alert apareça imediatamente
     } catch (error: any) {
       setGlobalMessage({ error: true, message: error?.message || "Erro ao atualizar dados do usuário" });
       await new Promise((resolve) => setTimeout(resolve, 0));
@@ -220,8 +229,119 @@ function EditProfilePage() {
         />
         <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} component="span" label="Editar Perfil" />
       </Breadcrumbs>
+
       <SectionForm title="Alterar Nome e Telefone" onSubmit={userInfoForm.handleSubmit(handleSubmitUserUpdate)}>
         <Grid container spacing={2}>
+          {/* Uploader da assinatura */}
+          <Grid size={{ xs: 12 }} sx={{ marginBottom: 2, marginTop: 1 }}>
+            <Box display="flex" justifyContent="center" alignItems="center" height={140}>
+              <Paper
+                elevation={1}
+                sx={{
+                  width: 160,
+                  height: 160,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "50%",
+                  bgcolor: "#f5f5f5",
+                  color: "#bdbdbd",
+                  fontSize: 18,
+                  fontWeight: 500,
+                  border: "2px solid #bdbdbd",
+                  overflow: "hidden",
+                  position: "relative",
+                  cursor: "pointer",
+                  transition: "box-shadow 0.3s, border-color 0.3s",
+                  "&:hover": {
+                    boxShadow: 6,
+                    "& .edit-overlay": {
+                      opacity: 1,
+                      bgcolor: "rgba(100, 97, 97, 0.45)",
+                    },
+                  },
+                }}
+                onClick={() => assinaturaInputRef.current?.click()}
+              >
+                {userInfoForm.watch("assinatura") || user?.assinatura ? (
+                  <>
+                    <img
+                      src={`data:image/png;base64,${userInfoForm.watch("assinatura") || user?.assinatura}`}
+                      alt="Assinatura do utilizador"
+                      style={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                          background: "#f5f5f5",
+                          borderRadius: "50%",
+                        }}
+                      />
+                      <Box
+                        className="edit-overlay"
+                        sx={{
+                          position: "absolute",
+                          top: 0,
+                          inset: 0,
+                          left: 0,
+                          borderRadius: "50%",
+                          width: "100%",
+                          height: "100%",
+                          bgcolor: "rgba(25, 118, 210, 0.35)", // Normal
+                          color: "#fff",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          opacity: 0,
+                          transition: "opacity 0.3s, background 0.3s",
+                          fontSize: 22,
+                          fontWeight: "bold",
+                          pointerEvents: "none",
+                        }}
+                      >
+                        <CameraAltIcon fontSize="large" />
+                      </Box>
+                  </>
+                ) : (
+                  <Box textAlign="center">Insira a assinatura aqui</Box>
+                )}
+                <input
+                  ref={assinaturaInputRef}
+                  accept="image/png, image/jpeg, image/jpg"
+                  id="assinatura-upload"
+                  type="file"
+                  style={{ display: "none" }}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const maxSize = 1024 * 1024; // 1MB
+                      const allowedTypes = ["image/png", "image/jpeg", "image/jpg"];
+                      if (!allowedTypes.includes(file.type)) {
+                        alert("Apenas imagens JPG, JPEG ou PNG são permitidas.");
+                        return;
+                      }
+                      if (file.size > maxSize) {
+                        alert("O ficheiro é demasiado grande. O limite é 1MB.");
+                        return;
+                      }
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        userInfoForm.setValue("assinatura", (reader.result as string).split(",")[1], {
+                          shouldDirty: true,
+                          shouldValidate: false,
+                        });
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                />
+              </Paper>
+            </Box>
+          </Grid>
+
           <Grid size={{ xs: 12 }}>
             <TextField
               label="Nome"

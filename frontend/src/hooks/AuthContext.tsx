@@ -9,6 +9,7 @@ interface UserLoggedIn {
   nome: string;
   email: string;
   telefone?: string;
+  assinatura?: string;
   isSuperAdmin?: boolean;
   firebaseUID?: string; // Adicionei este campo para armazenar o Firebase UID
 }
@@ -23,6 +24,7 @@ interface UserRegistered {
 interface UserUpdate {
   nome?: string;
   telefone?: string;
+  assinatura?: string;
 }
 
 interface PasswordUpdate {
@@ -116,6 +118,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             nome: userData.nome,
             email: userData.email,
             telefone: userData.telefone,
+            assinatura: userData.assinatura,
             isSuperAdmin: userData.isSuperAdmin,
             firebaseUID: userData.firebaseUID,
           });
@@ -207,6 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nome: data.nome,
         email: data.email,
         telefone: data.telefone,
+        assinatura: data.assinatura,
         isSuperAdmin: data.isSuperAdmin,
         firebaseUID: data.firebaseUID,
       });
@@ -289,6 +293,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         nome: data.nome,
         email: data.email,
         telefone: data.telefone,
+        assinatura: data.assinatura,
         isSuperAdmin: data.isSuperAdmin,
         firebaseUID: data.firebaseUID,
       });
@@ -339,15 +344,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateUser = useCallback(
     async (user: UserUpdate) => {
-      const recaptchaToken = await generateToken("updateUser");
 
       if (user.nome) user.nome = user?.nome?.trim();
       if (user.telefone) user.telefone = user?.telefone?.trim();
 
       const body = JSON.stringify({
-        recaptchaToken,
         nome: user.nome,
         telefone: user.telefone,
+        assinatura: user.assinatura,
       });
 
       try {
@@ -372,6 +376,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             id: prevUser.id,
             nome: user.nome !== undefined ? user.nome : prevUser.nome,
             telefone: user.telefone !== undefined ? user.telefone : prevUser.telefone,
+            assinatura: user.assinatura !== undefined ? user.assinatura : prevUser.assinatura,
           } as UserLoggedIn;
         });
       } catch (error) {

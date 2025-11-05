@@ -1,33 +1,28 @@
-#!/usr/bin/env bash
-set -e
+#!/usr/bin/env -S bash -Eeuo pipefail
 
-# Caminhos
-UV_HOME="$HOME/snap/code/210/.local/bin"
+# Config
 VENV_DIR=".venv"
+export PATH="$HOME/.local/bin:$PATH"   # donde 'uv' suele instalarse
 
-# 1️⃣ Instalar UV se não existir
-if ! command -v uv &> /dev/null; then
-    echo "UV não encontrado. Instalando..."
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    sudo mv "$UV_HOME/uv" /usr/local/bin/uv
-    sudo mv "$UV_HOME/uvx" /usr/local/bin/uvx
-else
-    echo "UV já instalado."
+# 1) Instalar uv si no existe
+if ! command -v uv >/dev/null 2>&1; then
+  echo "Instalando uv..."
+  curl -LsSf https://astral.sh/uv/install.sh | sh
 fi
 
-# 2️⃣ Criar ambiente virtual se não existir
-if [ ! -d "$VENV_DIR" ]; then
-    echo "Criando ambiente virtual..."
-    uv venv
+# 2) Crear venv si no existe
+if [[ ! -d "$VENV_DIR" ]]; then
+  echo "Creando entorno virtual..."
+  uv venv "$VENV_DIR"
 fi
 
-# 3️⃣ Ativar ambiente virtual e instalar dependências
-echo "Ativando ambiente virtual e instalando dependências..."
+# 3) Activar venv e instalar dependencias
+echo "Activando venv e instalando dependencias..."
 source "$VENV_DIR/bin/activate"
-uv sync && uvicorn main:app --reload
+if [[ -f "pyproject.toml" ]]; then
+  uv sync
+fi
 
-
-
-# 4️⃣ Arrancar servidor Uvicorn
+# 4) Arrancar servidor (un Ãºnico uvicorn)
 echo "Arrancando servidor..."
-uvicorn main:app --reload
+exec uvicorn main:app --reload --host 0.0.0.0 --port 8000

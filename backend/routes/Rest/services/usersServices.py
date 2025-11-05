@@ -24,6 +24,7 @@ from uuid import uuid4
 from bson import ObjectId
 from pymongo.errors import DuplicateKeyError
 from asyncio import gather
+from base64 import b64encode
 
 routerUser = APIRouter(prefix="/user")
 
@@ -121,7 +122,7 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
         user_empresa = UserEmpresaCreate(
             user_id=user_doc["_id"],
             empresa_id=ObjectId(global_id_data["empresa_id"]),
-            isAdmin=False,  # Por padrão, o novo usuário não é administrador
+            isAdmin=False,
             created_by=ObjectId(global_id_data["host_user_id"]),
             created_at=data,
             updated_by=ObjectId(global_id_data["host_user_id"]),
@@ -152,10 +153,19 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
         "nome": user_doc.get("nome", ""),
         "email": user_doc.get("email", ""),
         "telefone": user_doc.get("telefone", ""),
+        "assinatura": user_doc.get("assinatura", None),
         "isSuperAdmin": user_doc.get("isSuperAdmin", False),
         "newUser": new_user_flag,
         "firebaseUID": uid,
     }
+
+    # Se existir assinatura em bytes/Binary, converte para base64 string
+    assinatura_val = response_payload.get("assinatura")
+    if isinstance(assinatura_val, (bytes, bytearray)):
+        response_payload["assinatura"] = b64encode(assinatura_val).decode("utf-8")
+
+    # Tirar chaves com valor None
+    response_payload = {key: value for key, value in response_payload.items() if value is not None}
 
     response = JSONResponse(content=response_payload)
     # seta cookie HTTP-only com o JWT
@@ -189,18 +199,34 @@ async def login(user: UserLogin, request: Request):
         raise HTTPException(status_code=500, detail="Erro ao atualizar o último login.")
 
     token = generate_jwt(str(db_user["_id"]), db_user["nome"], db_user["email"], db_user["isSuperAdmin"], db_user.get("telefone"))
+    
+    content = {
+        "id": str(db_user["_id"]),
+        "nome": db_user["nome"],
+        "email": db_user["email"],
+        "telefone": db_user.get("telefone", None),
+        "assinatura": db_user.get("assinatura", None),
+        "isSuperAdmin": db_user.get("isSuperAdmin", False),
+    }
 
-    response = JSONResponse(
-        {
-            "id": str(db_user["_id"]),
-            "nome": db_user["nome"],
-            "email": db_user["email"],
-            "isSuperAdmin": db_user.get("isSuperAdmin", False),
-        }
+    # Se existir assinatura em bytes/Binary, converte para base64 string
+    assinatura_val = content.get("assinatura")
+    if isinstance(assinatura_val, (bytes, bytearray)):
+        content["assinatura"] = b64encode(assinatura_val).decode("utf-8")
+
+    # Tirar chaves com valor None
+    content = {key: value for key, value in content.items() if value is not None}
+
+    resp = JSONResponse(content)
+    # Opcional: alinhar com o login OAuth e definir o cookie JWT
+    resp.set_cookie(
+        key="_fp",
+        value=token,
+        httponly=True,
+        secure=True,
+        samesite="Strict",
     )
-    response.set_cookie(key="_fp", value=token, httponly=True, samesite="Strict", secure=True)
-
-    return response
+    return resp
 
 
 # 🚀 Registar um novo User
@@ -352,11 +378,18 @@ async def auth_user(request: Request):
 
     jwt = getattr(request.state, "jwt", None)
 
+    assinatura_val = await users_collection.find_one({"_id": ObjectId(jwt["user_id"])}, {"assinatura": 1})
+
+    # converter para base64
+    if isinstance(assinatura_val.get("assinatura"), (bytes, bytearray)):
+        assinatura_val["assinatura"] = b64encode(assinatura_val["assinatura"]).decode("utf-8")
+
     return {
-        "id": jwt["user_id"],
+         "id": jwt["user_id"],
         "nome": jwt["nome"],
         "email": jwt["email"],
         "telefone": jwt.get("telefone", None),
+        "assinatura": assinatura_val.get("assinatura", None),
         "isSuperAdmin": jwt.get("isSuperAdmin", False),
     }
 

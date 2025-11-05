@@ -43,9 +43,9 @@ class UserCreate(BaseModel):
 
 
 class UserUpdate(BaseModel):
-    recaptchaToken: str
     nome: Optional[str] = Field(None, max_length=100)
     telefone: Optional[str] = Field(None, pattern=r"^\+?[0-9\s\-()]{7,15}$")
+    assinatura: Optional[str] = Field(None, max_length=1398101, description="Assinatura do user em base64, até 1MB.")
 
     @field_validator("nome", "telefone", mode="before")
     @classmethod

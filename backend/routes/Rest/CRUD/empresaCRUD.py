@@ -82,7 +82,7 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str):
 
         tipo = what(None, empresa.logo)
         if tipo not in ["jpeg", "jpg", "png"]:
-            raise ValueError("Tipo de imagem não permitido. Apenas JPEG e PNG são aceitos.")
+            raise HTTPException(status_code=404, detail="Tipo de imagem não permitido. Apenas JPEG e PNG são aceitos.")
 
     # Se o utilizador não for super admin, verificar se ele é admin da empresa que quer atualizar
     if not jwt.get("isSuperAdmin", False):

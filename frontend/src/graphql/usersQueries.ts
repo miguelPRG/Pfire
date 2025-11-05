@@ -18,3 +18,11 @@ export const GET_USERS = gql`
     }
   }
 `;
+
+export const GET_USER_SIGNATURE = gql`
+  query GetUserSignature {
+    getUserSignature {
+      assinatura
+    }
+  }
+`
