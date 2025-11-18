@@ -1,5 +1,20 @@
 import { useAuth } from "../hooks/AuthContext";
-import { Box, Button, Container, TextField, Typography, Paper, Grid, Alert, Breadcrumbs } from "@mui/material";
+import {
+  Box,
+  Button,
+  Container,
+  TextField,
+  Typography,
+  Paper,
+  Grid,
+  Alert,
+  Breadcrumbs,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Stack,
+} from "@mui/material";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -11,6 +26,7 @@ import PasswordField from "../components/PasswordField";
 import StyledBreadcrumb from "../components/StyledBreadCrumbs";
 import { useNavigate } from "react-router-dom";
 import HomeIcon from "@mui/icons-material/Home";
+import WarningAmberIcon from "@mui/icons-material/WarningAmber";
 
 // Schemas
 const userInfoSchema = z.object({
@@ -89,8 +105,9 @@ function SectionForm({ title, onSubmit, children }: Omit<SectionFormProps, "mess
 }
 
 function EditProfilePage() {
-  const { user, empresa, updateUser, updatePassword, updateCompany } = useAuth();
+  const { user, empresa, updateUser, updatePassword, updateCompany, deactivateUser, logout } = useAuth();
   const navigate = useNavigate();
+
   // Estado global para o alerta
   const [globalMessage, setGlobalMessage] = useState<MessageType>(null);
 
@@ -100,6 +117,11 @@ function EditProfilePage() {
     password: boolean;
     company: boolean;
   }>({ info: false, password: false, company: false });
+
+  // Estado para confirmação de desativação (REST v1)
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [deactivating, setDeactivating] = useState(false);
 
   // Ref para o topo da página
   const topRef = useRef<HTMLDivElement>(null);
@@ -203,6 +225,34 @@ function EditProfilePage() {
     }
   };
 
+  // Confirmar desativação (REST v1)
+  const handleConfirmDeactivate = async () => {
+    if (!user?.id) {
+      setGlobalMessage({ error: true, message: "Utilizador não encontrado." });
+      return;
+    }
+    setDeactivating(true);
+    try {
+      await deactivateUser(); // REST
+      setGlobalMessage({
+        error: false,
+        message: "Conta desativada. A sessão será terminada.",
+      });
+      setTimeout(() => {
+        logout().finally(() => navigate("/login"));
+      }, 800);
+    } catch (err: any) {
+      setGlobalMessage({
+        error: true,
+        message: err?.message || "Erro ao Apagar utilizador",
+      });
+    } finally {
+      setDeactivating(false);
+      setConfirmOpen(false);
+      setConfirmText("");
+    }
+  };
+
   return (
     <Container maxWidth={false} sx={{ mt: 5 }}>
       <div ref={topRef} />
@@ -269,40 +319,40 @@ function EditProfilePage() {
                       src={`data:image/png;base64,${userInfoForm.watch("assinatura") || user?.assinatura}`}
                       alt="Assinatura do utilizador"
                       style={{
-                          position: "absolute",
-                          top: 0,
-                          left: 0,
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                          background: "#f5f5f5",
-                          borderRadius: "50%",
-                        }}
-                      />
-                      <Box
-                        className="edit-overlay"
-                        sx={{
-                          position: "absolute",
-                          top: 0,
-                          inset: 0,
-                          left: 0,
-                          borderRadius: "50%",
-                          width: "100%",
-                          height: "100%",
-                          bgcolor: "rgba(25, 118, 210, 0.35)", // Normal
-                          color: "#fff",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          opacity: 0,
-                          transition: "opacity 0.3s, background 0.3s",
-                          fontSize: 22,
-                          fontWeight: "bold",
-                          pointerEvents: "none",
-                        }}
-                      >
-                        <CameraAltIcon fontSize="large" />
-                      </Box>
+                        position: "absolute",
+                        top: 0,
+                        left: 0,
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        background: "#f5f5f5",
+                        borderRadius: "50%",
+                      }}
+                    />
+                    <Box
+                      className="edit-overlay"
+                      sx={{
+                        position: "absolute",
+                        top: 0,
+                        inset: 0,
+                        left: 0,
+                        borderRadius: "50%",
+                        width: "100%",
+                        height: "100%",
+                        bgcolor: "rgba(25, 118, 210, 0.35)", // Normal
+                        color: "#fff",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        opacity: 0,
+                        transition: "opacity 0.3s, background 0.3s",
+                        fontSize: 22,
+                        fontWeight: "bold",
+                        pointerEvents: "none",
+                      }}
+                    >
+                      <CameraAltIcon fontSize="large" />
+                    </Box>
                   </>
                 ) : (
                   <Box textAlign="center">Insira a assinatura aqui</Box>
@@ -373,6 +423,7 @@ function EditProfilePage() {
           </Grid>
         </Grid>
       </SectionForm>
+
       <SectionForm title="Alterar Senha" onSubmit={userPasswordForm.handleSubmit(handleSubmitUserPassword)}>
         <Grid container spacing={2}>
           <Grid size={{ xs: 12 }}>
@@ -420,6 +471,7 @@ function EditProfilePage() {
           </Grid>
         </Grid>
       </SectionForm>
+
       {empresa?.isAdmin && (
         <SectionForm title="Editar Dados da Empresa" onSubmit={companyForm.handleSubmit(handleSubmitCompany)}>
           <Grid container spacing={2}>
@@ -601,6 +653,75 @@ function EditProfilePage() {
           </Grid>
         </SectionForm>
       )}
+
+      {/* Sección de desativação de utilizador (Versão 1 - REST) */}
+      <Paper
+        elevation={3}
+        sx={{
+          p: 3,
+          borderRadius: 3,
+          mt: 2,
+          mx: "auto",
+          width: "100%",
+          maxWidth: "700px",
+          border: "1px solid",
+          borderColor: "error.light",
+          bgcolor: "error.lighter",
+        }}
+      >
+        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+          <WarningAmberIcon color="error" />
+          <Typography variant="h2" fontWeight="bold" color="error.main">
+            Apagar utilizador
+          </Typography>
+        </Stack>
+
+        <Typography variant="body1" sx={{ mb: 2 }}>
+          A sua será conta apagada e o sistema terminará a sessão automaticamente.
+          Será retida por 30 dias até ser apagada permanentemente.
+        </Typography>
+
+        <Box display="flex" justifyContent="center">
+          <Button
+            variant="outlined"
+            color="error"
+            onClick={() => setConfirmOpen(true)}
+            disabled={deactivating}
+          >
+            {deactivating ? "Processando..." : "Apagar conta"}
+          </Button>
+        </Box>
+
+        <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} maxWidth="xs" fullWidth>
+          <DialogTitle>Confirmar exclusão</DialogTitle>
+          <DialogContent>
+            <Typography sx={{ mb: 2 }}>
+              Esta ação irá apagar a sua conta. Para confirmar, escreva <b>Apagar</b> no campo abaixo.
+            </Typography>
+            <TextField
+              autoFocus
+              fullWidth
+              label="Confirmar"
+              value={confirmText}
+              onChange={(e) => setConfirmText(e.target.value)}
+              placeholder="Apagar"
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setConfirmOpen(false)} disabled={deactivating}>
+              Cancelar
+            </Button>
+            <Button
+              variant="contained"
+              color="error"
+              onClick={handleConfirmDeactivate}
+              disabled={deactivating || confirmText !== "Apagar"}
+            >
+              {deactivating ? "Desativando..." : "Confirmar"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </Paper>
     </Container>
   );
 }

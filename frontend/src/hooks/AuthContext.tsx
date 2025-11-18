@@ -80,6 +80,7 @@ interface AuthContextType {
   updateUser: (user: UserUpdate) => Promise<void>;
   updatePassword: (passwordUpdate: PasswordUpdate) => Promise<void>;
   updateCompany: (empresa: EmpresaUpdate, id: string) => Promise<void>;
+  deactivateUser: () => Promise<void>; // <<< NUEVO (REST v1)
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -470,6 +471,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [generateToken]
   );
 
+  // --------- NUEVO: Desativar usuário (REST v1) ----------
+  const deactivateUser = useCallback(async () => {
+    // Cambia aquí si tu backend expone otra ruta
+    const DEACTIVATE_ENDPOINT = "/backend/user/deactivate";
+
+    // Intento opcional de recaptcha (si backend o WAF lo pide)
+    let recaptchaToken: string | null = null;
+    try {
+      recaptchaToken = await generateToken("deactivateUser");
+    } catch {
+      // si falla, seguimos sin token; el backend puede ignorarlo
+    }
+
+    const response = await fetch(DEACTIVATE_ENDPOINT, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify({
+        is_active: false,
+        recaptchaToken: recaptchaToken ?? undefined,
+      }),
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(data?.detail || "Erro ao desativar usuário");
+    }
+
+    // No hacemos logout aquí para permitir feedback en la UI.
+    // El componente llamará logout() después de mostrar un mensaje.
+    return;
+  }, [generateToken]);
+  // -------------------------------------------------------
+
   return (
     <AuthContext.Provider
       value={{
@@ -484,6 +521,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateUser,
         updatePassword,
         updateCompany,
+        deactivateUser, // <<< incluido en el contexto
       }}
     >
       {children}

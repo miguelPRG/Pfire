@@ -23,6 +23,6 @@ if [[ -f "pyproject.toml" ]]; then
   uv sync
 fi
 
-# 4) Arrancar servidor (un Ãºnico uvicorn)
+# 4) Arrancar servidor (un único uvicorn)
 echo "Arrancando servidor..."
 exec uvicorn main:app --reload --host 0.0.0.0 --port 8000
