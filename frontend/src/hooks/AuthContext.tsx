@@ -80,15 +80,26 @@ interface AuthContextType {
   updateUser: (user: UserUpdate) => Promise<void>;
   updatePassword: (passwordUpdate: PasswordUpdate) => Promise<void>;
   updateCompany: (empresa: EmpresaUpdate, id: string) => Promise<void>;
-  deactivateUser: () => Promise<void>; // <<< NUEVO (REST v1)
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Para salir del contexto y eliminar la cookie de autenticación
+export function killAuthCookie() {
+  try {
+    document.cookie = `_fp=; Max-Age=0; path=/`;
+    document.cookie = `_fp=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+    // Si tu login seteó domain, repite con domain explícito:
+    document.cookie = `_fp=; Max-Age=0; path=/; domain=${location.hostname}`;
+  } catch {}
+}
+
+
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserLoggedIn | null>(null);
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [loading, setLoading] = useState(true);
+
 
   // Hook para usar o reCAPTCHA
   const { generateToken } = useRecaptcha();
@@ -278,8 +289,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }),
       });
 
-      setLoading(true); // <--- adicione isto para indicar que o login está em progresso
-
       const data = await response.json();
 
       console.log("Dados do login com OAuth:", data);
@@ -288,6 +297,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const msg = data?.detail || (await response.text()) || "OAuth login falhou";
         throw new Error(msg);
       }
+
+      setLoading(true); // <--- adicione isto para indicar que o login está em progresso
 
       setUser({
         id: data.id,
@@ -311,20 +322,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function logout() {
+  async function logout() { // Função de logout que elimina cookie e estado = async () => {
     try {
       await fetch("backend/user/logout", {
         method: "POST",
         credentials: "include",
-      });
-
+      }); // await fetch("/backend/user/logout", { method: "POST", credentials: "include" }).catch(() => {}); } catch {}
+      killAuthCookie();
       setEmpresa(null);
       setUser(null);
+      try {
+        localStorage.removeItem("authUser");
+        sessionStorage.removeItem("authUser");
+      } catch {}
     } catch (error) {
       console.error("Erro ao fazer logout");
     } finally {
       setLoading(false); // <--- indica que o logout foi concluído
     }
+
   }
 
   function chooseCompany(empresa: Empresa) {
@@ -390,7 +406,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updatePassword = useCallback(
     async (passwordUpdate: PasswordUpdate) => {
-      const recaptchaToken = await generateToken("updatePassword");
+      const recaptchaToken = await generateToken("update");
 
       console.log(passwordUpdate);
 
@@ -423,7 +439,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateCompany = useCallback(
     async (emp: EmpresaUpdate, id: string) => {
-      const recaptchaToken = await generateToken("updateCompany");
+      const recaptchaToken = await generateToken("update");
 
       try {
         const response = await fetch(`/backend/empresa/${id}`, {
@@ -470,41 +486,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     [generateToken]
   );
-
-  // --------- NUEVO: Desativar usuário (REST v1) ----------
-  const deactivateUser = useCallback(async () => {
-    // Cambia aquí si tu backend expone otra ruta
-    const DEACTIVATE_ENDPOINT = "/backend/user/deactivate";
-
-    // Intento opcional de recaptcha (si backend o WAF lo pide)
-    let recaptchaToken: string | null = null;
-    try {
-      recaptchaToken = await generateToken("deactivateUser");
-    } catch {
-      // si falla, seguimos sin token; el backend puede ignorarlo
-    }
-
-    const response = await fetch(DEACTIVATE_ENDPOINT, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-      body: JSON.stringify({
-        is_active: false,
-        recaptchaToken: recaptchaToken ?? undefined,
-      }),
-    });
-
-    const data = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(data?.detail || "Erro ao desativar usuário");
-    }
-
-    // No hacemos logout aquí para permitir feedback en la UI.
-    // El componente llamará logout() después de mostrar un mensaje.
-    return;
-  }, [generateToken]);
   // -------------------------------------------------------
 
   return (
@@ -521,7 +502,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         updateUser,
         updatePassword,
         updateCompany,
-        deactivateUser, // <<< incluido en el contexto
       }}
     >
       {children}

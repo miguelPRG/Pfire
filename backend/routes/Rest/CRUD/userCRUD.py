@@ -77,9 +77,6 @@ async def update_user(user: UserUpdate, request: Request):
 @routerUser.delete("/")
 async def soft_delete_user(request: Request, user: UserActivation):
 
-    # Validar o reCAPTCHA token
-    await validar_recaptcha_token(user.recaptchaToken, "delete")
-
     jwt = getattr(request.state, "jwt", None)
     updated_fields = {"isActive": False, "updated_at": datetime.now(), "updated_by": ObjectId(jwt["user_id"])}
 
@@ -137,8 +134,13 @@ async def deactivate_me(request: Request):
         {"$set": {"isActive": False, "updated_at": datetime.now()}}
     )
 
-    if not result.modified_count:
-        # O no existe o ya estaba desactivado; lo tratamos como idempotente
-        return {"ok": True, "message": "Conta já estava desativada"}
+    resp = JSONResponse({"ok": True, "message": "Conta desativada"})
+    # Borra la cookie con las mismas propiedades de path que usas al setearla
+    resp.delete_cookie("_fp", path="/")
+    return resp
 
-    return {"ok": True, "message": "Conta desativada"}
+    #if not result.modified_count:
+        # O no existe o ya estaba desactivado; lo tratamos como idempotente
+    #    return {"ok": True, "message": "Conta já estava desativada"}
+
+    #return {"ok": True, "message": "Conta desativada"}

@@ -27,6 +27,7 @@ import StyledBreadcrumb from "../components/StyledBreadCrumbs";
 import { useNavigate } from "react-router-dom";
 import HomeIcon from "@mui/icons-material/Home";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import { id } from "zod/v4/locales";
 
 // Schemas
 const userInfoSchema = z.object({
@@ -105,7 +106,7 @@ function SectionForm({ title, onSubmit, children }: Omit<SectionFormProps, "mess
 }
 
 function EditProfilePage() {
-  const { user, empresa, updateUser, updatePassword, updateCompany, deactivateUser, logout } = useAuth();
+  const { user, empresa, updateUser, updatePassword, updateCompany, logout } = useAuth();
   const navigate = useNavigate();
 
   // Estado global para o alerta
@@ -233,18 +234,36 @@ function EditProfilePage() {
     }
     setDeactivating(true);
     try {
-      await deactivateUser(); // REST
+      // Fazer a requisição ao endpoint PATCH /user/deactivate
+      const response = await fetch('backend/user', {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Importante para enviar o cookie _fp
+        body: JSON.stringify({
+          id: user.id,
+        }),
+
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.detail || "Erro ao desativar conta");
+      }
+
       setGlobalMessage({
         error: false,
         message: "Conta desativada. A sessão será terminada.",
       });
+      
       setTimeout(() => {
-        logout().finally(() => navigate("/login"));
+        logout().finally(() => navigate("/login", { replace: true }));
       }, 800);
     } catch (err: any) {
       setGlobalMessage({
         error: true,
-        message: err?.message || "Erro ao Apagar utilizador",
+        message: err?.message || "Erro ao apagar utilizador",
       });
     } finally {
       setDeactivating(false);
