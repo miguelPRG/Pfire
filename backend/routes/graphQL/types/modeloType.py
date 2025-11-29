@@ -5,6 +5,12 @@ from typing import Optional
 
 
 @strawberry.type
+class CustomField:
+    key: str
+    value: JSON
+
+
+@strawberry.type
 class Modelo:
     id: str
     modelo_nome: str
@@ -12,7 +18,7 @@ class Modelo:
     created_at: datetime
     updated_by: Optional[str] = None
     updated_at: Optional[datetime] = None
-    custom_fields: list[JSON]
+    custom_fields: list[CustomField]  # Altere para usar o tipo estruturado
 
 
 @strawberry.type

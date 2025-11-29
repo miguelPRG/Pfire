@@ -1,4 +1,4 @@
-from .types.modeloType import Modelo, ModeloList
+from .types.modeloType import Modelo, ModeloList, CustomField  # Importe o tipo CustomField
 from database import modelos_collection, users_empresas_collection
 from .utils.limpar import filter_null_fields
 from fastapi import HTTPException
@@ -12,7 +12,7 @@ class ModeloQuery:
     @strawberry.field
     async def getModelos(self, info: Info, empresa_id: str, start: int = 0, name: str = "") -> ModeloList:
 
-        lmt = 3  # Limite padrão de resultados por página
+        lmt = 1  # Limite padrão de resultados por página
 
         if start < 0:
             start = 0
@@ -32,25 +32,27 @@ class ModeloQuery:
         filtro = {"empresa_id": empresa_id}
 
         if name:
-            filtro["modelo_nome"] = {"$regex": f"^{name}", "$options": "i"}
+            filtro["modelo_nome"] = {"$regex": f"{name}", "$options": "i"}
 
         modelos = []
 
         async for modelo in modelos_collection.find(filtro).skip(start).limit(lmt):
 
             # Extraia os campos personalizados (chaves que começam com "custom_")
-            # Mapeia os campos personalizados como uma lista de pares chave-valor
-            custom_fields = [{"key": k, "value": v} for k, v in modelo.items() if k.startswith("custom_")]
+            # Mapeia os campos personalizados como uma lista de instâncias de CustomField
+            custom_fields = [
+                CustomField(key=k, value=v) for k, v in modelo.items() if k.startswith("custom_")
+            ]
 
             # Mapeia os dados do modelo
             modelo_data = {
                 "id": str(modelo.get("_id")),
                 "modelo_nome": modelo.get("modelo_nome"),
-                "created_by": str(modelo.get("created_by")),
+                "created_by": str(modelo.get("created_by")) if modelo.get("created_by") else None,
                 "created_at": modelo.get("created_at"),
-                "updated_by": str(modelo.get("updated_by")),
+                "updated_by": str(modelo.get("updated_by")) if modelo.get("updated_by") else None,
                 "updated_at": modelo.get("updated_at"),
-                "custom_fields": custom_fields,  # Adiciona os campos personalizados como lista
+                "custom_fields": custom_fields,  # Adiciona os campos personalizados como lista de CustomField
             }
 
             if not jwt.get("isSuperAdmin", False):
@@ -58,5 +60,6 @@ class ModeloQuery:
 
             modelos.append(Modelo(**filter_null_fields(modelo_data)))
 
-        total_modelos = await modelos_collection.count_documents({"empresa_id": empresa_id})
+        # contar usando o mesmo filtro; se 'name' não for fornecido o filtro é só pela empresa_id
+        total_modelos = await modelos_collection.count_documents(filtro)
         return ModeloList(modelos=modelos, totalModelos=total_modelos)

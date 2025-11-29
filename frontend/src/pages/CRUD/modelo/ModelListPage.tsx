@@ -11,23 +11,16 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TextField,
+ 
   Typography,
-  InputAdornment,
+  
   IconButton,
   Grid,
   Link,
   Tooltip,
   Breadcrumbs,
 } from "@mui/material";
-import {
-  ExpandLess,
-  ExpandMore,
-  Search,
-  Delete,
-  ContentCopy as ContentCopyIcon,
-  PlaylistAddCheck,
-} from "@mui/icons-material";
+import { ExpandLess, ExpandMore, Search, Delete, ContentCopy as ContentCopyIcon, Description as DescriptionIcon, Height } from "@mui/icons-material";
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
@@ -42,9 +35,13 @@ import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
-import NoDataMessage from "../../../components/NoDataMessage";
+
 import CircularProgress from "@mui/material/CircularProgress";
-import { useRecaptcha } from "../../../hooks/RecaptchaContext";
+import AddCommentIcon from '@mui/icons-material/AddComment';
+import { GET_CRITERIA_BY_MODEL } from "../../../graphql/criteriaQueries";
+import React from "react";
+import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
+
 // Função utilitária para formatar tipos de campos
 const formatType = (type: string) => {
   const map: Record<string, string> = {
@@ -67,6 +64,22 @@ interface returnedData {
   totalModelos: number;
 }
 
+// types para a query de critérios
+interface CriteriaOption {
+  key: string;
+  value: any;
+}
+interface CriteriaItem {
+  nome: string;
+  options: CriteriaOption[];
+}
+interface CriteriaData {
+  getCriteria: CriteriaItem[]; // deve refletir exatamente o nome do campo na query GraphQL
+}
+interface CriteriaVars {
+  modelId: string; // nome e tipo conforme variáveis da query
+}
+
 // Componente principal da página de listagem de modelos de relatórios
 export default function ReportModelListPage() {
   // Recupera informações da empresa autenticada
@@ -79,8 +92,11 @@ export default function ReportModelListPage() {
   const location = useLocation();
 
   // Estado para pesquisa, paginação e campos expandidos
-  const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
+  const rowsPerPage = 1;
+  const [search, setSearch] = useState("");
+  const [isAdvancedActive, setIsAdvancedActive] = useState(false);
+  const [advValue, setAdvValue] = useState<{ field: string; text: string }>({ field: "", text: "" });
   const [alert, setAlert] = useState<{ message: string; isError: boolean; onConfirm?: () => void } | null>(null);
   const [cloningId, setCloningId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -89,37 +105,50 @@ export default function ReportModelListPage() {
   const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
   const [modelToCloneId, setModelToCloneId] = useState<string | null>(null);
 
-  const { control } = useForm();
-  const { generateToken } = useRecaptcha();
 
-  const rowsPerPage = 3;
+
+  const { control } = useForm();
 
   // Consulta inicial (cache/página)
   const { data, loading, error, refetch } = useQuery<returnedData>(GET_MODELOS_RELATORIOS, {
-    variables: { empresaId: empresa?.id, start: page * rowsPerPage },
+    variables: { empresaId: empresa?.id, start: page * rowsPerPage, name: "" },
     skip: !empresa,
     fetchPolicy: "cache-and-network",
   });
 
-  const [getModelosByName, { data: searchData }] = useLazyQuery<returnedData>(GET_MODELOS_RELATORIOS, {
-    fetchPolicy: "cache-first",
-  });
-
+  // Lazy query para busca avançada
+  const [fetchModelos, { data: searchData }] = useLazyQuery<returnedData>(GET_MODELOS_RELATORIOS, {
+   fetchPolicy: "network-only", // garante dados atualizados ao paginar / filtrar
+ });
+  
   // Decide qual lista mostrar
-  const modelos: any[] = search ? searchData?.getModelos?.modelos || [] : data?.getModelos?.modelos || [];
+  const modelos: any[] = isAdvancedActive
+    ? searchData?.getModelos?.modelos || []
+    : data?.getModelos?.modelos || [];
 
   // Decide o total de modelos para paginação
-  const totalModelos: number = search ? searchData?.getModelos?.totalModelos || 0 : data?.getModelos?.totalModelos || 0;
+  const totalModelos: number = isAdvancedActive
+    ? searchData?.getModelos?.totalModelos || 0
+    : data?.getModelos?.totalModelos || 0;
 
   const pageCount = Math.max(1, Math.ceil(totalModelos / rowsPerPage));
 
-  // Pesquisa remota
+  // número total de colunas da tabela (ajusta colspan quando não há modelos)
+  const baseColumns = 3; // Nome, Data de Criação, Ações (ajuste se necessário)
+  const customFieldsCount = modelos[0]?.customFields?.length || 0;
+  const totalColumns = baseColumns + customFieldsCount;
+  
+  // Pesquisa remota: a execução da busca avançada é controlada pelo AdvancedSearchBar (sem debounce).
   useEffect(() => {
-    if (search) {
-      getModelosByName({ variables: { empresaId: empresa?.id, name: search, start: page * rowsPerPage } });
+    // quando pagina muda e não estamos em modo avançado, refaz a query padrão
+    if (!isAdvancedActive) {
+      refetch?.({ empresaId: empresa?.id, start: page * rowsPerPage, name: undefined });
+    } else {
+      // em modo avançado, mantém a lista atual (página avançada será solicitada quando aplicar)
+      fetchModelos({ variables: { empresaId: empresa?.id, start: page * rowsPerPage, name: advValue.text } });
     }
     // eslint-disable-next-line
-  }, [search, page, empresa]);
+  }, [empresa, page]);
 
   useEffect(() => {
     // Será true após a criação ou atualização de um modelo
@@ -137,6 +166,22 @@ export default function ReportModelListPage() {
   const requestDelete = (id: string) => {
     setSelectedModelId(id);
     setDeleteDialogOpen(true);
+  };
+
+  const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
+    const nextPage = value - 1;
+    setPage(nextPage);
+  
+    // Se busca avançada estiver ativa, faz nova busca para a página selecionada
+    if (isAdvancedActive) {
+      fetchModelos({
+        variables: {
+          empresaId: empresa?.id,
+          start: nextPage * rowsPerPage,
+          name: advValue.text || "", // usar a variável 'name' esperada pela query
+        },
+      });
+    }
   };
 
   // Função para deletar um modelo de relatório
@@ -331,13 +376,145 @@ export default function ReportModelListPage() {
     setCloneDialogOpen(true);
   };
 
+  // componente interno que busca e renderiza critérios para um modelo usando useQuery (declarativo)
+  const CriteriaTable: React.FC<{ modelo: any }> = ({ modelo }) => {
+    const { data, loading: critLoading, error: critError } = useQuery<CriteriaData, CriteriaVars>(
+      GET_CRITERIA_BY_MODEL,
+      { variables: { modelId: modelo.id }, skip: !modelo?.id }
+    );
+
+    const criterios: any[] = data?.getCriteria || [];
+
+    const optionKeys = React.useMemo(() => {
+      const keys = new Set<string>();
+      criterios.forEach((c) => {
+        if (Array.isArray(c.options)) {
+          c.options.forEach((o: any) => {
+            if (o && o.key != null) keys.add(String(o.key));
+          });
+        }
+      });
+      return Array.from(keys);
+    }, [criterios]);
+    
+    return (
+      <Box key={`criteria-${modelo.id}`} sx={{ mt: 2 }}>
+        
+
+        {critLoading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
+            <CircularProgress />
+          </Box>
+        ) : critError ? (
+          <Typography color="error">{critError.message}</Typography>
+        ) : criterios.length === 0 ? (
+          <Paper variant="outlined" sx={{ p: 2, textAlign: "center" , maxWidth: "25%" }}>
+            <Typography color="text.secondary" sx={{ mb: 1 }}>
+              Sem critérios.
+            </Typography>
+
+            <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 1, justifyContent: "center" }}>
+              <Tooltip title="Criar critério para este modelo" placement="top">
+                <IconButton
+                  
+                  onClick={() => navigate("/editar-criterio", { state: { modeloId: modelo.id } })}
+                  // forçar tamanho e centralização do ícone
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    minWidth: 40,
+                    minHeight: 40,
+                    p: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    backgroundColor: "primary.main",
+                    color: "#fff",
+                    "&:hover": { backgroundColor: "primary.dark" },
+                  }}
+                >
+                  <AddCommentIcon sx={{ fontSize: 24, color: "#fff" }} />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          </Paper>
+         ) : (
+          <TableContainer
+            component={Paper}
+            sx={{
+              maxWidth: { xs: "100%", sm: "80%", md: "60%" }, // responsivo
+              mt: 2,
+              boxShadow: "0 8px 20px rgba(0,0,0,0.10)",
+              borderRadius: 2,
+              overflow: "auto", // permite scroll X e Y quando necessário
+              WebkitOverflowScrolling: "touch",
+              border: "1px solid rgba(0,0,0,0.05)",
+              // limita altura em dispositivos pequenos para mostrar scroll vertical
+              maxHeight: { xs: 320, sm: 420, md: "none" },
+            }}
+          >
+            <Table sx={{ minWidth: 650 }} size="small" aria-label="criteria table">
+               <TableHead>
+                 <TableRow >
+                   <TableCell>Nome do Critério</TableCell>
+                   {optionKeys.map((k) => (
+                     <TableCell key={k} align="left">
+                       {k}
+                     </TableCell>
+
+                   ))}
+ 
+                   
+                 </TableRow>
+               </TableHead>
+
+            <TableBody>
+                 {criterios.map((crit: any) => (
+                <TableRow key={crit.id || `${modelo.id}-crit-${crit.nome || Math.random()}`} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                     <TableCell component="th" scope="row">
+                       {crit.nome || "-"}
+                     </TableCell>
+                    {optionKeys.map((k) => {
+                      const opt = Array.isArray(crit.options) ? crit.options.find((o: any) => String(o.key) === k) : undefined;
+                      const v = opt?.value;
+                      const valueText =
+                        v === null || v === undefined
+                          ? "-"
+                          : typeof v === "object"
+                          ? JSON.stringify(v)
+                          : String(v);
+                      return (
+                        <TableCell key={`${crit.id || crit.nome}-${k}`} align="left">
+                          {valueText}
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+         )}
+      </Box>
+    );
+  };
+
   if (loading) return <LoadingAnimation />;
   if (error) return <Typography color="error">Erro ao carregar modelos: {error.message}</Typography>;
 
   return (
     <>
       {/* Container principal */}
-      <Paper sx={{ width: "100%", p: 2, boxShadow: "none", backgroundColor: theme.palette.background.default }}>
+      <Paper
+        sx={{
+          width: "100%",
+          p: 2,
+          boxShadow: "none",
+          backgroundColor: theme.palette.background.default,
+          position: "relative", // necessário para posicionamento absoluto da paginação
+          pb: 8, // espaço inferior para a paginação fixa dentro do Paper
+        }}
+      >
         {/* Breadcrumbs */}
         <Breadcrumbs
           aria-label="breadcrumb"
@@ -366,65 +543,81 @@ export default function ReportModelListPage() {
           </Button>
         </Box>
 
-        {/* Filtros: seleção de quantidade por página e campo de pesquisa */}
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 2 }}>
-          <TextField
-            variant="outlined"
-            size="small"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Pesquisar por nome"
-            slotProps={{
-              input: {
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search sx={{ color: theme.palette.primary.main }} />
-                  </InputAdornment>
-                ),
-              },
+        {/* Barra de pesquisa (enter para pesquisar) */}
+        <Box
+          sx={{
+            maxWidth: 650, // largura máxima ajustada
+            mb: 3,
+            alignSelf: "flex-start", // garante alinhamento à esquerda dentro do container
+          }}
+        >
+          <AdvancedSearchBar
+            fields={[{ value: "modeloNome", label: "Nome do Modelo" }]}
+            value={advValue}
+            onChange={(next) => setAdvValue(next)}
+            onApply={() => {
+              // aplica filtro: ativa modo avançado e executa a lazy query
+              if ((advValue.text || "").trim() === "") {
+                setIsAdvancedActive(false);
+                setPage(0);
+                refetch?.({ empresaId: empresa?.id, start: 0, name: undefined });
+              } else {
+                setIsAdvancedActive(true);
+                setPage(0);
+                fetchModelos({ variables: { empresaId: empresa?.id, start: 0, name: advValue.text } });
+              }
             }}
-            sx={{
-              width: "75%",
-              mt: 1,
-              "& .MuiOutlinedInput-root": {
-                backgroundColor: theme.palette.background.paper,
-                borderRadius: "25px",
-                color: theme.palette.text.primary,
-                "&.Mui-focused fieldset": {
-                  borderColor: theme.palette.primary.main,
-                },
-              },
+            onClear={() => {
+              setAdvValue({ field: "", text: "" });
+              setIsAdvancedActive(false);
+              setPage(0);
+              refetch?.({ empresaId: empresa?.id, start: 0, name: undefined });
             }}
+            booleanFields={[]}
+            
+
           />
         </Box>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow sx={{ backgroundColor: theme.palette.background.paper }}>
-                <TableCell>
-                  <strong>Nome</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Data de criação</strong>
-                </TableCell>
-                <TableCell>
-                  <strong>Campos Personalizados</strong>
-                </TableCell>
-                <TableCell align="center">
-                  <strong>Ações</strong>
+
+        <TableContainer
+            component={Paper}
+            sx={{
+              
+              mt: 2,
+              boxShadow: "0 8px 20px rgba(0,0,0,0.10)",
+              borderRadius: 2,
+              overflow: "auto", // permite scroll X e Y quando necessário
+              WebkitOverflowScrolling: "touch", //
+              border: "1px solid rgba(0,0,0,0.05)",
+              // limita altura em dispositivos pequenos para mostrar scroll vertical
+            }}
+          >
+          <Table sx={{ minWidth: 650 }} size="small" aria-label="a dense table">
+            <TableHead sx={{height : "70px"}}>
+              <TableRow>
+                <TableCell sx={{ fontWeight: 700 }}>Nome</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Data de Criação</TableCell>
+                {Array.isArray(modelos[0]?.customFields) &&
+                  modelos[0].customFields.map((field: any, index: number) => (
+                    <TableCell key={index} sx={{ fontWeight: 700 }}>
+                      {field.key?.replace(/^custom_/, "") || "Campo Personalizado"}
+                    </TableCell>
+                  ))}
+                <TableCell align="center" sx={{ fontWeight: 700 }}>
+                  Ações
                 </TableCell>
               </TableRow>
             </TableHead>
-            <TableBody>
+            <TableBody sx={{ height: "110px" }}>
               {modelos.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4}>
-                    <NoDataMessage nome="modelos" />
+                  <TableCell colSpan={totalColumns}>
+                    <Typography color="text.secondary">Modelo não encontrado.</Typography>
                   </TableCell>
                 </TableRow>
               ) : (
-                modelos.map((modelo: any, i: number) => (
-                  <TableRow key={modelo.id} sx={{ backgroundColor: zebraColor(i) }}>
+                modelos.map((modelo: any) => (
+                  <TableRow key={modelo.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                     <TableCell>
                       <Link
                         component="button"
@@ -436,121 +629,181 @@ export default function ReportModelListPage() {
                                 modeloNome: modelo.modeloNome,
                                 customFields: modelo.customFields,
                                 createdAt: modelo.createdAt,
-                              },
                             },
-                          })
-                        }
-                        sx={{ cursor: "pointer", textDecoration: "none" }}
-                      >
-                        {modelo.modeloNome}
-                      </Link>
-                    </TableCell>
-                    <TableCell>{new Date(modelo.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      {Array.isArray(modelo.customFields)
-                        ? modelo.customFields.map((field: any, index: number) => {
-                            const keyName = field.key?.replace(/^custom_/, "") || "(sem nome)";
-                            const value = field.value;
-                            return renderField(value, keyName);
-                          })
-                        : "-"}
-                    </TableCell>
-                    <TableCell align="center">
-                      <Box sx={{ display: "flex", gap: 2, justifyContent: "space-between" }}>
-                        {empresa?.isAdmin && (
-                          <>
-                            <Tooltip title="Adicionar Relatório" placement="top">
-                              <IconButton
-                                onClick={() =>
-                                  navigate("/add-new-report", {
-                                    state: {
-                                      selectedModel: modelo,
-                                    },
-                                  })
-                                }
-                                sx={{
-                                  color: "#fff",
-                                  backgroundColor: "primary.main",
-                                  border: "1px solid",
-                                  borderColor: "primary.main",
-                                  "&:hover": {
-                                    backgroundColor: "primary.dark",
-                                    color: "#fff",
-                                  },
-                                  width: 40,
-                                  height: 40,
-                                }}
-                              >
-                                <Typography
-                                  component="span"
-                                  sx={{
-                                    fontSize: 26,
-                                    fontWeight: "bold",
-                                    color: "#fff",
-                                  }}
-                                >
-                                  +
-                                </Typography>
-                              </IconButton>
-                            </Tooltip>
+                          },
+                        })
+                      }
+                      sx={{ cursor: "pointer", textDecoration: "none" }}
+                    >
+                      {modelo.modeloNome}
+                    </Link>
+                  </TableCell>
+                  <TableCell>{new Date(modelo.createdAt).toLocaleDateString()}</TableCell>
+                  {Array.isArray(modelo.customFields) &&
+                    modelo.customFields.map((field: any, index: number) => (
+                      <TableCell key={index}>
+                        
+                        {(() => {
+                          const val = field.value;
+                          if (val === null || val === undefined) return "-";
 
-                            <Tooltip title="Clonar Modelo" placement="top" sx={{ width: 40, height: 40 }}>
-                              <IconButton onClick={() => requestClone(modelo.id)} disabled={cloningId === modelo.id}>
-                                <ContentCopyIcon />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Criar Critérios" placement="top">
-                              <IconButton
-                                onClick={() => navigate("/edit-criteria", { state: { modeloId: modelo.id } })}
-                                sx={{
-                                  color: "#fff",
-                                  backgroundColor: "primary.main",
-                                  border: "1px solid",
-                                  borderColor: "primary.main",
-                                  "&:hover": {
-                                    backgroundColor: "primary.dark",
-                                    color: "#fff",
+                          // Primitivos: string, number, boolean
+                          if (typeof val === "string" || typeof val === "number" || typeof val === "boolean") {
+                            return String(val);
+                          }
+
+                          // Objetos com propriedade `datatype`
+                          if (typeof val === "object") {
+                            if (val.datatype) {
+                              if (val.datatype === "array" && Array.isArray(val.items)) return val.items.join(", ");
+                              if (val.datatype === "string") return "Texto";
+                              if (val.datatype === "date") return "Data";
+                              if (val.datatype === "bool" || val.datatype === "boolean") return "Sim/Não";
+                              if (val.datatype === "number") return "Número";
+                              // fallback: usar label do formatType se existir
+                              return formatType(String(val.datatype));
+                            }
+
+                            // objeto com items sem datatype
+                            if (Array.isArray(val.items)) return val.items.join(", ");
+
+                            // último recurso: serializar para string (não retorna objeto React)
+                            try {
+                              return JSON.stringify(val);
+                            } catch {
+                              return "-";
+                            }
+                          }
+
+                          return "-";
+                        })()}
+                      </TableCell>
+                    ))}
+                  <TableCell align="center">
+                    <Box sx={{ display: "flex", gap: 2, justifyContent: "space-between" }}>
+                      {empresa?.isAdmin && (
+                        <>
+                          <Tooltip title="Adicionar Relatório" placement="top">
+                            <IconButton
+                              onClick={() =>
+                                navigate("/add-new-report", {
+                                  state: {
+                                    selectedModel: modelo,
                                   },
-                                  width: 40,
-                                  height: 40,
+                                })
+                              }
+                              sx={{
+                                color: "#fff",
+                                backgroundColor: "primary.main",
+                                border: "1px solid",
+                                borderColor: "primary.main",
+                                "&:hover": {
+                                  backgroundColor: "primary.dark",
+                                  color: "#fff",
+                                },
+                                width: 40,
+                                height: 40,
+                              }}
+                            >
+                              <Typography
+                                component="span"
+                                sx={{
+                                  fontSize: 26,
+                                  fontWeight: "bold",
+                                  color: "#fff",
                                 }}
                               >
-                                <PlaylistAddCheck />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Excluir modelo" placement="top">
-                              <IconButton
-                                onClick={() => requestDelete(modelo.id)}
-                                sx={{
-                                  backgroundColor: "error.main",
-                                  color: "#fff",
-                                  "&:hover": {
-                                    backgroundColor: "error.dark",
+                                +
+                              </Typography>
+                            </IconButton>
+                          </Tooltip>
+
+                          <Tooltip title="Clonar Modelo" placement="top" sx={{ width: 40, height: 40 }}>
+                            <IconButton
+                              onClick={() => requestClone(modelo.id)}
+                              disabled={cloningId === modelo.id}
+                            >
+                              <ContentCopyIcon />
+                            </IconButton>
+                          </Tooltip>
+                           <Tooltip title="Ver relatórios" placement="top">
+                            <IconButton
+                              aria-label="Ver relatórios"
+                              onClick={() =>
+                                navigate("/reports-list", {
+                                  state: {
+                                    filter: {
+                                      modeloId: modelo.id,
+                                    },
                                   },
-                                  width: 40,
-                                  height: 40,
-                                }}
-                              >
-                                <Delete fontSize="small" />
-                              </IconButton>
-                            </Tooltip>
-                          </>
-                        )}
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
+                                })
+                              }
+                              sx={{
+                                color: "#fff",
+                                backgroundColor: "primary.main",
+                                border: "1px solid",
+                                borderColor: "primary.main",
+                                "&:hover": {
+                                  backgroundColor: "primary.dark",
+                                  color: "#fff",
+                                },
+                                width: 40,
+                                height: 40,
+                              }}
+                            >
+                              <DescriptionIcon sx={{ fontSize: 24, color: "#fff" }} />
+                            </IconButton>
+                          </Tooltip>
+
+                         
+                          <Tooltip title="Excluir modelo" placement="top">
+                            <IconButton
+                              onClick={() => requestDelete(modelo.id)}
+                              sx={{
+                                backgroundColor: "error.main",
+                                color: "#fff",
+                                "&:hover": {
+                                  backgroundColor: "error.dark",
+                                },
+                                width: 40,
+                                height: 40,
+                              }}
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </>
+                      )}
+                    </Box>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
             </TableBody>
           </Table>
         </TableContainer>
 
+        {/* Renderiza tabela de critérios por modelo */}
+        {modelos.map((modelo: any) => (
+          <CriteriaTable key={`criteria-${modelo.id}`} modelo={modelo} />
+        ))}
+
         {pageCount > 1 && (
-          <Box sx={{ display: "flex", justifyContent: "space-between", mt: 2, alignItems: "center" }}>
+          <Box
+            sx={{
+              position: "absolute",
+              bottom: 12,
+              left: 0,
+              right: 0,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
             <Pagination
               count={pageCount}
               page={page + 1}
-              onChange={(_, val) => setPage(val - 1)}
+              onChange={handlePageChange}
               color="primary"
               shape="rounded"
             />
@@ -618,6 +871,8 @@ export default function ReportModelListPage() {
 
       {/*Notification*/}
       <Notification alert={alert} setAlert={setAlert} />
+
+      
     </>
   );
 }

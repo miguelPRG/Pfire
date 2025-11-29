@@ -8,11 +8,7 @@ const commonComponents: Components = {
         padding: "0", // 🔹 Remove padding global
         border: "none", // 🔹 Remove qualquer borda global
         boxShadow: "none", // 🔹 Remove sombras que possam criar efeito de borda
-        "& .MuiBox-root": {
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        },
+        // removido "& .MuiBox-root" que forçava centralização global
       },
 
       span: {
@@ -155,6 +151,20 @@ const commonComponents: Components = {
       },
     },
   },
+
+  // Forçar células de tabela alinhadas à esquerda (aplica globalmente)
+  MuiTableCell: {
+    styleOverrides: {
+      root: {
+        textAlign: "left",
+        padding: "6px 16px",
+      },
+      head: {
+        fontWeight: 700,
+      },
+    },
+  },
+
   MuiIconButton: {
     styleOverrides: {
       root: {

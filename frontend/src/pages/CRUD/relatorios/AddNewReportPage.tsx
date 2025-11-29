@@ -257,7 +257,7 @@ function AddNewReportPage() {
       }
 
       // Navega para página de relatórios com sucesso
-      navigate("/reports-list", {
+      navigate("/report-models", {
         state: {
           message: {
             text: "Relatório adicionado com sucesso!",

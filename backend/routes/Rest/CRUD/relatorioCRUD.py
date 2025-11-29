@@ -47,7 +47,7 @@ async def create_relatorio(request: Request, relatorio: RelatorioCreate):
     # Create report data with auto-generated number
     data = datetime.now()
     relatorio_data = relatorio.model_dump()
-    relatorio_data["number"] = count + 1
+    relatorio_data["numero"] = count + 1
     relatorio_data["cliente_nome"] = cliente["nome"]
     relatorio_data["cliente_nif"] = cliente["nif"]
     relatorio_data["modelo_nome"] = modelo["modelo_nome"]
@@ -55,6 +55,7 @@ async def create_relatorio(request: Request, relatorio: RelatorioCreate):
     relatorio_data["updated_by"] = user_id
     relatorio_data["created_at"] = data
     relatorio_data["updated_at"] = data
+    relatorio_data["isActive"] = True
     del relatorio_data["recaptchaToken"]
 
     try:

@@ -41,7 +41,7 @@ class UserQuery:
             # Filtros para a coleção users
             if filter.nome:
                 nome_escaped = escape(str(filter.nome).strip())
-                filtro_users["nome"] = {"$regex": f"^{nome_escaped}", "$options": "i"}
+                filtro_users["nome"] = {"$regex": f"{nome_escaped}", "$options": "i"}
             elif filter.email:
                 email_escaped = escape(str(filter.email).strip())
                 filtro_users["email"] = {"$regex": f"^{email_escaped}", "$options": "i"}

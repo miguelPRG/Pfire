@@ -130,22 +130,27 @@ function LoginPage() {
       >
         <Box
           sx={{
+            display: "flex",
             backgroundColor: "primary.main",
             borderRadius: "50%",
             width: 70,
             height: 70,
             position: "absolute",
             top: "-30px",
+            mx: "50%",
+            transform: "translateX(-50%)",
             zIndex: 1,
             marginTop: 5,
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
           <img
             src={logo}
             alt="Logo"
             style={{
-              width: "100px",
-              height: "100px",
+              width: "105px",
+              height: "105px",
             }}
           />
         </Box>

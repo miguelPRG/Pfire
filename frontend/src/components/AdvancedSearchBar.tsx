@@ -31,7 +31,7 @@ export default function AdvancedSearchBar({
   booleanFields?: string[]; // indica qué campos son booleanos
 }) {
   const theme = useTheme();
-  const controlWidth = { xs: "100%", sm: 280 };
+  const controlWidth = { xs: "100%" };
   const isDark = theme.palette.mode === "dark";
 
   const handleApply = () => {
@@ -61,7 +61,6 @@ export default function AdvancedSearchBar({
           border: `1px solid ${isDark ? theme.palette.divider : "#e7eaf3"}`,
           bgcolor: isDark ? "#0b1220" : "#fff",
           width: "100%",
-          maxWidth: 920,
         }}
       >
         <FormControl size="small" sx={{ width: controlWidth }}>

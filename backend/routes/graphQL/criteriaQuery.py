@@ -1,4 +1,4 @@
-from .types.criteriaType import Criteria, Object
+from .types.criteriaType import Criteria, Option
 from database import criterios_collection, modelos_collection, users_empresas_collection
 import strawberry
 from strawberry.types import Info
@@ -9,12 +9,11 @@ from bson import ObjectId
 @strawberry.type
 class CriteriaQuery:
     @strawberry.field
-    async def getCriteria(self, info: Info, modelo_id: str) -> list[Criteria]:
-
+    async def getCriteria(self, info: Info, modeloId: str) -> list[Criteria]:
         request = info.context["request"]
         jwt = getattr(request.state, "jwt", None)
         user_id = ObjectId(jwt["user_id"])
-        modelo_id = ObjectId(modelo_id)
+        modelo_id = ObjectId(modeloId)
 
         modelo = await modelos_collection.find_one({"_id": modelo_id})
 
@@ -30,8 +29,9 @@ class CriteriaQuery:
         criteria_cursor = criterios_collection.find({"modelo_id": modelo_id})
         criteria_list = []
         async for criterion in criteria_cursor:
-            options = [Object(**opt) for opt in criterion.get("options", [])]
+            options = [Option(key=opt.get("key"), value=str(opt.get("value"))) for opt in criterion.get("options", [])]
             criterion_data = {
+                "id": str(criterion.get("_id")),
                 "nome": criterion.get("nome"),
                 "options": options,
             }

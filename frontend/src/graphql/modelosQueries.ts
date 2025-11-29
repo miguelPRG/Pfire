@@ -7,7 +7,10 @@ export const GET_MODELOS_RELATORIOS = gql`
         id
         modeloNome
         createdAt
-        customFields
+        customFields {
+          key
+          value
+        }
       }
       totalModelos
     }

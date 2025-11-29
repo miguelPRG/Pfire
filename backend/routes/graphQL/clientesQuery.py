@@ -35,7 +35,7 @@ class ClienteQuery:
         # Si viene un objeto filter, aplicarlo con regex (igual que EmpresaFilter)
         if filter:
             if filter.nome:
-                filtro["nome"] = {"$regex": f"^{escape(filter.nome.strip())}", "$options": "i"}
+                filtro["nome"] = {"$regex": f"{escape(filter.nome.strip())}", "$options": "i"}
             elif filter.nif and filter.nif.strip():
                 filtro["nif"] = {"$regex": f"^{escape(filter.nif.strip())}", "$options": "i"}
             elif filter.localidade and filter.localidade.strip():
