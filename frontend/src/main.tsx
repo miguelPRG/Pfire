@@ -7,7 +7,6 @@ import { RecaptchaProvider } from "./hooks/RecaptchaContext";
 import App from "./App";
 import client from "./graphql/apolloClient";
 
-
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <TemaProvider>

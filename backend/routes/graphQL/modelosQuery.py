@@ -40,9 +40,7 @@ class ModeloQuery:
 
             # Extraia os campos personalizados (chaves que começam com "custom_")
             # Mapeia os campos personalizados como uma lista de instâncias de CustomField
-            custom_fields = [
-                CustomField(key=k, value=v) for k, v in modelo.items() if k.startswith("custom_")
-            ]
+            custom_fields = [CustomField(key=k, value=v) for k, v in modelo.items() if k.startswith("custom_")]
 
             # Mapeia os dados do modelo
             modelo_data = {

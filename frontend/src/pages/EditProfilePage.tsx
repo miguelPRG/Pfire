@@ -235,16 +235,15 @@ function EditProfilePage() {
     setDeactivating(true);
     try {
       // Fazer a requisição ao endpoint PATCH /user/deactivate
-      const response = await fetch('backend/user', {
-        method: 'DELETE',
+      const response = await fetch("backend/user", {
+        method: "DELETE",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include', // Importante para enviar o cookie _fp
+        credentials: "include", // Importante para enviar o cookie _fp
         body: JSON.stringify({
           id: user.id,
         }),
-
       });
 
       if (!response.ok) {
@@ -256,7 +255,7 @@ function EditProfilePage() {
         error: false,
         message: "Conta desativada. A sessão será terminada.",
       });
-      
+
       setTimeout(() => {
         logout().finally(() => navigate("/login", { replace: true }));
       }, 800);
@@ -696,17 +695,12 @@ function EditProfilePage() {
         </Stack>
 
         <Typography variant="body1" sx={{ mb: 2 }}>
-          A sua será conta apagada e o sistema terminará a sessão automaticamente.
-          Será retida por 30 dias até ser apagada permanentemente.
+          A sua será conta apagada e o sistema terminará a sessão automaticamente. Será retida por 30 dias até ser
+          apagada permanentemente.
         </Typography>
 
         <Box display="flex" justifyContent="center">
-          <Button
-            variant="outlined"
-            color="error"
-            onClick={() => setConfirmOpen(true)}
-            disabled={deactivating}
-          >
+          <Button variant="outlined" color="error" onClick={() => setConfirmOpen(true)} disabled={deactivating}>
             {deactivating ? "Processando..." : "Apagar conta"}
           </Button>
         </Box>

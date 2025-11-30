@@ -86,8 +86,7 @@ export default function UserManagementTable() {
     { value: "email", label: "Email" },
     { value: "telefone", label: "Telefone" },
     { value: "role", label: "Papel" },
-    { value : "acao", label: "Ação" },
-
+    { value: "acao", label: "Ação" },
   ];
 
   const [isAdvancedSearch, setIsAdvancedSearch] = useState(false);
@@ -401,10 +400,10 @@ export default function UserManagementTable() {
             width: "100%",
             boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
             borderRadius: 2,
-          
+
             border: "1px solid rgba(0,0,0,0.06)",
-             overflow: "auto", // permite scroll X e Y quando necessário
-              WebkitOverflowScrolling: "touch",
+            overflow: "auto", // permite scroll X e Y quando necessário
+            WebkitOverflowScrolling: "touch",
           }}
         >
           <Table sx={{ minWidth: 650 }} size="small" aria-label="dense users table">
@@ -434,7 +433,7 @@ export default function UserManagementTable() {
                 </TableRow>
               ) : (
                 sortedRows.slice(page * rowsPerPage, (page + 1) * rowsPerPage).map((user, index) => (
-                  <TableRow key={user.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                  <TableRow key={user.id} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
                     <TableCell>{user.nome}</TableCell>
                     <TableCell>{user.telefone}</TableCell>
                     <TableCell>
@@ -479,8 +478,8 @@ export default function UserManagementTable() {
                         {roleLoading[user.id] ? "Alterando..." : user.role}
                       </Button>
                     </TableCell>
-              
-                    <TableCell >
+
+                    <TableCell>
                       <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-start" }}>
                         <Button
                           onClick={() => handleOpenDeleteDialog(user.id)}

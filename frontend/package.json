@@ -11,23 +11,23 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@apollo/client": "^4.0.9",
+    "@apollo/client": "^4.0.10",
     "@hookform/resolvers": "^5.2.2",
-    "@mui/icons-material": "^7.3.5",
-    "@mui/material": "^7.3.5",
-    "@mui/x-charts": "^8.18.0",
+    "@mui/icons-material": "^7.3.6",
+    "@mui/material": "^7.3.6",
+    "@mui/x-charts": "^8.22.0",
     "@vitejs/plugin-react-swc": "^4.2.2",
     "firebase": "^12.6.0",
     "graphql": "^16.12.0",
-    "jspdf": "^3.0.3",
+    "jspdf": "^3.0.4",
     "jspdf-autotable": "^5.0.2",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
-    "react-hook-form": "^7.66.1",
-    "react-phone-number-input": "^3.4.13",
-    "react-router-dom": "^7.9.6",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-hook-form": "^7.68.0",
+    "react-phone-number-input": "^3.4.14",
+    "react-router-dom": "^7.10.1",
     "rxjs": "^7.8.2",
-    "zod": "^4.1.12"
+    "zod": "^4.2.0"
   },
   "devDependencies": {
     "@emotion/react": "^11.14.0",
@@ -36,12 +36,12 @@
     "@testing-library/react": "^16.3.0",
     "@types/jsdom": "^27.0.0",
     "@types/react-dom": "^19.2.3",
-    "jsdom": "^27.2.0",
-    "prettier": "^3.6.2",
-    "vite": "^7.2.2",
-    "vitest": "^4.0.10"
+    "jsdom": "^27.3.0",
+    "prettier": "^3.7.4",
+    "vite": "^7.3.0",
+    "vitest": "^4.0.15"
   },
   "optionalDependencies": {
-    "@rollup/rollup-linux-x64-gnu": "4.53.2"
+    "@rollup/rollup-linux-x64-gnu": "4.53.3"
   }
 }

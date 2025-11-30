@@ -327,16 +327,16 @@ export default function ClientManagementTable() {
             Adicionar novo Cliente
           </Button>
         </Box>
-           
-       <Box
-                 sx={{
-                   maxWidth: 650, // largura máxima ajustada
-                   mb: 3,
-                   alignSelf: "flex-start", // garante alinhamento à esquerda dentro do container
-                 }}
-               >
+
+        <Box
+          sx={{
+            maxWidth: 650, // largura máxima ajustada
+            mb: 3,
+            alignSelf: "flex-start", // garante alinhamento à esquerda dentro do container
+          }}
+        >
           {/* Advanced search bar */}
-          <Box sx={{  width: "100%", maxWidth: 750, mb: 3 }}>
+          <Box sx={{ width: "100%", maxWidth: 750, mb: 3 }}>
             <AdvancedSearchBar
               fields={advFields}
               value={advValue}
@@ -357,7 +357,7 @@ export default function ClientManagementTable() {
               overflow: "hidden",
               border: "1px solid rgba(0,0,0,0.06)",
               overflow: "auto", // permite scroll X e Y quando necessário
-                          WebkitOverflowScrolling: "touch",
+              WebkitOverflowScrolling: "touch",
             }}
           >
             <Table sx={{ minWidth: 650 }} size="small" aria-label="dense clients table">
@@ -436,7 +436,7 @@ export default function ClientManagementTable() {
                       return order === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
                     })
                     .map((cliente) => (
-                      <TableRow key={cliente.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                      <TableRow key={cliente.id} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
                         <TableCell>
                           <Link
                             component="button"
@@ -464,7 +464,9 @@ export default function ClientManagementTable() {
                           </Tooltip>
                         </TableCell>
                         <TableCell>{cliente.codigoPostal}</TableCell>
-                        <TableCell>{cliente.createdAt ? new Date(cliente.createdAt).toLocaleDateString("pt-PT") : ""}</TableCell>
+                        <TableCell>
+                          {cliente.createdAt ? new Date(cliente.createdAt).toLocaleDateString("pt-PT") : ""}
+                        </TableCell>
                         {empresa?.isAdmin ? (
                           <>
                             <TableCell>
@@ -475,7 +477,9 @@ export default function ClientManagementTable() {
                                   width: 55,
                                   height: 55,
                                   borderRadius: "50%",
-                                  backgroundColor: cliente.isActive ? theme.palette.success.main : theme.palette.error.main,
+                                  backgroundColor: cliente.isActive
+                                    ? theme.palette.success.main
+                                    : theme.palette.error.main,
                                   color: "#fff",
                                   fontWeight: "bold",
                                   fontSize: 15,

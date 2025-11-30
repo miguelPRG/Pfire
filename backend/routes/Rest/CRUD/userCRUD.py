@@ -52,7 +52,7 @@ async def update_user(user: UserUpdate, request: Request):
     if not result.modified_count:
         raise HTTPException(status_code=400, detail="Erro ao atualizar. O utilizador não foi encontrado ou não está ativo.")
 
-    if user.nome and user.nome != jwt.get("nome")  or user.telefone and user.telefone != jwt.get("telefone"):
+    if user.nome and user.nome != jwt.get("nome") or user.telefone and user.telefone != jwt.get("telefone"):
 
         token = request.cookies.get("_fp")
         await add_token_to_blacklist(token, jwt["exp"])
@@ -63,7 +63,7 @@ async def update_user(user: UserUpdate, request: Request):
             email=jwt.get("email"),
             isSuperAdmin=jwt.get("isSuperAdmin", False),
             telefone=user.telefone,
-            firebase_uid=jwt.get("firebase_uid")
+            firebase_uid=jwt.get("firebase_uid"),
         )
         response = JSONResponse({"message": "Utilizador atualizado com sucesso!"})
         response.set_cookie(key="_fp", value=token, httponly=True, samesite="Strict", secure=True)
@@ -114,6 +114,7 @@ async def activate_user(request: Request, user: UserActivation):
 
     return {"message": "Utilizador ativado com sucesso!"}
 
+
 @routerUser.patch("/deactivate")
 async def deactivate_me(request: Request):
     """
@@ -129,18 +130,15 @@ async def deactivate_me(request: Request):
     if not email:
         raise HTTPException(status_code=400, detail="Token inválido (sem email)")
 
-    result = await users_collection.update_one(
-        {"email": email},
-        {"$set": {"isActive": False, "updated_at": datetime.now()}}
-    )
+    result = await users_collection.update_one({"email": email}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
 
     resp = JSONResponse({"ok": True, "message": "Conta desativada"})
     # Borra la cookie con las mismas propiedades de path que usas al setearla
     resp.delete_cookie("_fp", path="/")
     return resp
 
-    #if not result.modified_count:
-        # O no existe o ya estaba desactivado; lo tratamos como idempotente
+    # if not result.modified_count:
+    # O no existe o ya estaba desactivado; lo tratamos como idempotente
     #    return {"ok": True, "message": "Conta já estava desativada"}
 
-    #return {"ok": True, "message": "Conta desativada"}
+    # return {"ok": True, "message": "Conta desativada"}

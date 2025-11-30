@@ -204,7 +204,7 @@ async def login(user: UserLogin, request: Request):
         raise HTTPException(status_code=500, detail="Erro ao atualizar o último login.")
 
     token = generate_jwt(str(db_user["_id"]), db_user["nome"], db_user["email"], db_user["isSuperAdmin"], db_user.get("telefone"))
-    
+
     content = {
         "id": str(db_user["_id"]),
         "nome": db_user["nome"],
@@ -390,7 +390,7 @@ async def auth_user(request: Request):
         assinatura_val["assinatura"] = b64encode(assinatura_val["assinatura"]).decode("utf-8")
 
     return {
-         "id": jwt["user_id"],
+        "id": jwt["user_id"],
         "nome": jwt["nome"],
         "email": jwt["email"],
         "telefone": jwt.get("telefone", None),

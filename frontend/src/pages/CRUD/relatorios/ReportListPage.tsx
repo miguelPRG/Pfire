@@ -128,7 +128,7 @@ export default function ReportListPage() {
           modeloId: location.state?.filter?.modeloId,
           filter: { numero: Number(search) }, // Garantir que é number
         },
-      }).then(result => {
+      }).then((result) => {
         if (result.data?.getRelatorios?.relatorios) {
           setReports(result.data.getRelatorios.relatorios);
         }
@@ -156,21 +156,21 @@ export default function ReportListPage() {
       empresaId: empresa?.id,
       modeloId: location.state?.filter?.modeloId,
       start: page * rowsPerPage,
-    }).then(response => {
-      console.log("Dados retornados:", response.data); // Log para verificar os dados retornados
-      if (response.data?.getRelatorios?.relatorios) {
-        setReports(response.data.getRelatorios.relatorios);
-      }
-    }).catch(error => {
-      console.error("Erro ao refetch:", error); // Log para verificar erros
-    });
+    })
+      .then((response) => {
+        console.log("Dados retornados:", response.data); // Log para verificar os dados retornados
+        if (response.data?.getRelatorios?.relatorios) {
+          setReports(response.data.getRelatorios.relatorios);
+        }
+      })
+      .catch((error) => {
+        console.error("Erro ao refetch:", error); // Log para verificar erros
+      });
   }, [page]);
 
   // Calcula total de relatórios para paginação (valor retornado pela API)
   const totalReports: number = data?.getRelatorios?.totalRelatorios || 0;
   const pageCount = Math.max(1, Math.ceil(totalReports / rowsPerPage)); // Isso deve funcionar corretamente
-
-  
 
   // Normaliza diferentes formatos de customFields para array de { key, value } // extractFields normaliza formatos diferentes de customFields (array ou object) e remove o prefixo "custom_" das keys.
   const extractFields = (cf: any): { key: string; value: any }[] => {
@@ -244,9 +244,7 @@ export default function ReportListPage() {
             try {
               return JSON.stringify(
                 // também remove custom_ nas chaves internas do objeto para leitura mais limpa
-                Object.fromEntries(
-                  Object.entries(v).map(([k2, v2]) => [String(k2).replace(/^custom_/, ""), v2])
-                )
+                Object.fromEntries(Object.entries(v).map(([k2, v2]) => [String(k2).replace(/^custom_/, ""), v2]))
               );
             } catch {
               return "-";
@@ -270,7 +268,7 @@ export default function ReportListPage() {
     if (Array.isArray(val)) return val.join(", ");
     if (typeof val === "object") {
       // Prefer common shapes
-      if ("value" in val && (typeof (val as any).value !== "object")) return String((val as any).value);
+      if ("value" in val && typeof (val as any).value !== "object") return String((val as any).value);
       if ("items" in val && Array.isArray((val as any).items)) return (val as any).items.join(", ");
       if ("datatype" in val) {
         const dt = String((val as any).datatype).toLowerCase();
@@ -293,13 +291,13 @@ export default function ReportListPage() {
     const headRow2: any[] = [];
 
     // colunas fixas (cada uma com rowSpan = 2)
-    ["Número", "Cliente", "NIF", "Modelo"].forEach((t) =>
-      headRow1.push({ content: t, rowSpan: 2 })
-    );
+    ["Número", "Cliente", "NIF", "Modelo"].forEach((t) => headRow1.push({ content: t, rowSpan: 2 }));
 
     // colunas dinâmicas (parent -> subs)
     customFieldKeys.forEach((parentKey) => {
-      const displayParent = String(parentKey).replace(/^custom_/, "").replace(/_/g, " ");
+      const displayParent = String(parentKey)
+        .replace(/^custom_/, "")
+        .replace(/_/g, " ");
       const subs = parentSubKeys[parentKey] || [];
       if (subs.length === 0) {
         headRow1.push({ content: displayParent, rowSpan: 2 });
@@ -346,11 +344,7 @@ export default function ReportListPage() {
     if (rgbMatch) return [Number(rgbMatch[1]), Number(rgbMatch[2]), Number(rgbMatch[3])];
     const h = s.replace("#", "");
     if (h.length === 3) {
-      return [
-        parseInt(h[0] + h[0], 16),
-        parseInt(h[1] + h[1], 16),
-        parseInt(h[2] + h[2], 16),
-      ];
+      return [parseInt(h[0] + h[0], 16), parseInt(h[1] + h[1], 16), parseInt(h[2] + h[2], 16)];
     }
     if (h.length === 6) {
       return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
@@ -541,83 +535,81 @@ export default function ReportListPage() {
           />
           <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} label="Relatórios" />
         </Breadcrumbs>
-                <Box sx={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-        
-        <Typography
-          variant="h5"
-          sx={{
-            fontWeight: "bold",
-            fontSize: 30,
-            color: theme.palette.text.primary,
-            textAlign: "center",
-            mb: 3,
-          }}
-        >
-          Relatórios
-        </Typography>
-        {/* Cabeçalho com título e botões (Novo Relatório, Exportar Todos) */}
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "flex-end", // Mudança aqui: "right" -> "flex-end"
-            flexDirection: { xs: "column", sm: "row" },
-            alignItems: "center",
-            mb: 2,
-            gap: 2,
-          }}
-        >
-          <Button
-            variant="contained"
-            color="primary"
-            startIcon={<Add sx={{ fontSize: 18 }} />}
-            onClick={() => navigate("/report-models")}
-            sx={{ maxWidth: { md: "250px" }, width: "100%", minWidth: "150px" }}
-          >
-            Novo Relatório
-          </Button>
-
-          <Button
-            variant="outlined"
-            startIcon={<FileDownloadIcon sx={{ fontSize: 18 }} />}
-            onClick={handleExportAll}
-            disabled={exportingAll}
+        <Box sx={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+          <Typography
+            variant="h5"
             sx={{
-              maxWidth: { md: "250px" },
-              width: "100%",
-              minWidth: "150px",
-              backgroundColor: "#ffffffff",
-              borderColor: "#b8b8b8ff", // Laranja escuro
-              color: "#000000ff",
+              fontWeight: "bold",
+              fontSize: 30,
+              color: theme.palette.text.primary,
+              textAlign: "center",
+              mb: 3,
             }}
           >
-            {exportingAll ? "Exportando..." : "Exportar"}
-          </Button>
+            Relatórios
+          </Typography>
+          {/* Cabeçalho com título e botões (Novo Relatório, Exportar Todos) */}
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "flex-end", // Mudança aqui: "right" -> "flex-end"
+              flexDirection: { xs: "column", sm: "row" },
+              alignItems: "center",
+              mb: 2,
+              gap: 2,
+            }}
+          >
+            <Button
+              variant="contained"
+              color="primary"
+              startIcon={<Add sx={{ fontSize: 18 }} />}
+              onClick={() => navigate("/report-models")}
+              sx={{ maxWidth: { md: "250px" }, width: "100%", minWidth: "150px" }}
+            >
+              Novo Relatório
+            </Button>
+
+            <Button
+              variant="outlined"
+              startIcon={<FileDownloadIcon sx={{ fontSize: 18 }} />}
+              onClick={handleExportAll}
+              disabled={exportingAll}
+              sx={{
+                maxWidth: { md: "250px" },
+                width: "100%",
+                minWidth: "150px",
+                backgroundColor: "#ffffffff",
+                borderColor: "#b8b8b8ff", // Laranja escuro
+                color: "#000000ff",
+              }}
+            >
+              {exportingAll ? "Exportando..." : "Exportar"}
+            </Button>
+          </Box>
         </Box>
-      </Box>
         {/* Barra de busca: pesquisa por número (esquerda) + AdvancedSearchBar (direita) */}
-       <Box
-                 sx={{
-                   maxWidth: 650, // largura máxima ajustada
-                   mb: 2,
-                  
-                   alignSelf: "flex-start", // garante alinhamento à esquerda dentro do container
-                 }}
-               >
+        <Box
+          sx={{
+            maxWidth: 650, // largura máxima ajustada
+            mb: 2,
+
+            alignSelf: "flex-start", // garante alinhamento à esquerda dentro do container
+          }}
+        >
           {/* Campo de texto para pesquisa por número */}
 
-         
-            <AdvancedSearchBar
-              fields={[
-                { value: "numero", label: "Número do Relatório" },
-                { value: "clienteNome", label: "Nome do Cliente" },
-                { value: "clienteNif", label: "NIF do Cliente" },
-              ]}
-              value={advFilter}
-              onChange={setAdvFilter}
-              onApply={handleApplyAdvanced}
-            />
-          </Box>
-        
+          <AdvancedSearchBar
+            fields={[
+              { value: "numero", label: "Número do Relatório" },
+              { value: "clienteNome", label: "Nome do Cliente" },
+              { value: "clienteNif", label: "NIF do Cliente" },
+            ]}
+            value={advFilter}
+            onChange={setAdvFilter}
+            onApply={handleApplyAdvanced}
+          />
+        </Box>
+
         {/* Exibição da tabela (loading / error / conteúdo) */}
         {loading ? (
           // Mostra animação de loading enquanto a query está em progresso
@@ -629,7 +621,7 @@ export default function ReportListPage() {
           // Tabela com colunas fixas e colunas dinâmicas para campos personalizados
           <TableContainer component={Paper}>
             <Table sx={{ minWidth: 650 }} size="small" aria-label="a dense table">
-               {/* Cabeçalho em duas linhas: 1) nomes dos campos pais (colSpan = nº subcampos ou 1) 2) nomes dos subcampos */}
+              {/* Cabeçalho em duas linhas: 1) nomes dos campos pais (colSpan = nº subcampos ou 1) 2) nomes dos subcampos */}
               <TableHead sx={{ background: "#070707d4" }}>
                 <TableRow>
                   <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }}>
@@ -652,7 +644,9 @@ export default function ReportListPage() {
 
                     // primeiro renderiza os campos simples (uma célula por campo, como Número/Cliente)
                     const simpleHeaders = simpleFields.map((key) => {
-                      const displayKey = String(key).replace(/^custom_/, "").replace(/_/g, " ");
+                      const displayKey = String(key)
+                        .replace(/^custom_/, "")
+                        .replace(/_/g, " ");
                       return (
                         <TableCell
                           key={key}
@@ -668,7 +662,9 @@ export default function ReportListPage() {
                     // depois renderiza os parents multicampos (colSpan = nº subs)
                     const complexHeaders = complexFields.map((key) => {
                       const subs = parentSubKeys[key] || [];
-                      const displayKey = String(key).replace(/^custom_/, "").replace(/_/g, " ");
+                      const displayKey = String(key)
+                        .replace(/^custom_/, "")
+                        .replace(/_/g, " ");
                       return (
                         <TableCell
                           key={key}

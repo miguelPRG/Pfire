@@ -34,7 +34,6 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
     >
       {/* Lista principal */}
       <List sx={{ flexGrow: 1 }}>
-       
         {/* Modelos - Com submenu */}
         <ListItem disablePadding>
           <ListItemButton onClick={() => handleNavigation("/report-models")}>

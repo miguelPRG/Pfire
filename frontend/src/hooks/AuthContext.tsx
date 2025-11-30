@@ -93,13 +93,10 @@ export function killAuthCookie() {
   } catch {}
 }
 
-
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserLoggedIn | null>(null);
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [loading, setLoading] = useState(true);
-
 
   // Hook para usar o reCAPTCHA
   const { generateToken } = useRecaptcha();
@@ -322,7 +319,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  async function logout() { // Função de logout que elimina cookie e estado = async () => {
+  async function logout() {
+    // Função de logout que elimina cookie e estado = async () => {
     try {
       await fetch("backend/user/logout", {
         method: "POST",
@@ -340,7 +338,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false); // <--- indica que o logout foi concluído
     }
-
   }
 
   function chooseCompany(empresa: Empresa) {
@@ -361,7 +358,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateUser = useCallback(
     async (user: UserUpdate) => {
-
       if (user.nome) user.nome = user?.nome?.trim();
       if (user.telefone) user.telefone = user?.telefone?.trim();
 

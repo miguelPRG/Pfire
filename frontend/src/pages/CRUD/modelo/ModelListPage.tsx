@@ -11,16 +11,22 @@ import {
   TableContainer,
   TableHead,
   TableRow,
- 
   Typography,
-  
   IconButton,
   Grid,
   Link,
   Tooltip,
   Breadcrumbs,
 } from "@mui/material";
-import { ExpandLess, ExpandMore, Search, Delete, ContentCopy as ContentCopyIcon, Description as DescriptionIcon, Height } from "@mui/icons-material";
+import {
+  ExpandLess,
+  ExpandMore,
+  Search,
+  Delete,
+  ContentCopy as ContentCopyIcon,
+  Description as DescriptionIcon,
+  Height,
+} from "@mui/icons-material";
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
@@ -37,7 +43,7 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 
 import CircularProgress from "@mui/material/CircularProgress";
-import AddCommentIcon from '@mui/icons-material/AddComment';
+import AddCommentIcon from "@mui/icons-material/AddComment";
 import { GET_CRITERIA_BY_MODEL } from "../../../graphql/criteriaQueries";
 import React from "react";
 import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
@@ -105,8 +111,6 @@ export default function ReportModelListPage() {
   const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
   const [modelToCloneId, setModelToCloneId] = useState<string | null>(null);
 
-
-
   const { control } = useForm();
 
   // Consulta inicial (cache/página)
@@ -118,13 +122,11 @@ export default function ReportModelListPage() {
 
   // Lazy query para busca avançada
   const [fetchModelos, { data: searchData }] = useLazyQuery<returnedData>(GET_MODELOS_RELATORIOS, {
-   fetchPolicy: "network-only", // garante dados atualizados ao paginar / filtrar
- });
-  
+    fetchPolicy: "network-only", // garante dados atualizados ao paginar / filtrar
+  });
+
   // Decide qual lista mostrar
-  const modelos: any[] = isAdvancedActive
-    ? searchData?.getModelos?.modelos || []
-    : data?.getModelos?.modelos || [];
+  const modelos: any[] = isAdvancedActive ? searchData?.getModelos?.modelos || [] : data?.getModelos?.modelos || [];
 
   // Decide o total de modelos para paginação
   const totalModelos: number = isAdvancedActive
@@ -137,7 +139,7 @@ export default function ReportModelListPage() {
   const baseColumns = 3; // Nome, Data de Criação, Ações (ajuste se necessário)
   const customFieldsCount = modelos[0]?.customFields?.length || 0;
   const totalColumns = baseColumns + customFieldsCount;
-  
+
   // Pesquisa remota: a execução da busca avançada é controlada pelo AdvancedSearchBar (sem debounce).
   useEffect(() => {
     // quando pagina muda e não estamos em modo avançado, refaz a query padrão
@@ -171,7 +173,7 @@ export default function ReportModelListPage() {
   const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
     const nextPage = value - 1;
     setPage(nextPage);
-  
+
     // Se busca avançada estiver ativa, faz nova busca para a página selecionada
     if (isAdvancedActive) {
       fetchModelos({
@@ -378,10 +380,14 @@ export default function ReportModelListPage() {
 
   // componente interno que busca e renderiza critérios para um modelo usando useQuery (declarativo)
   const CriteriaTable: React.FC<{ modelo: any }> = ({ modelo }) => {
-    const { data, loading: critLoading, error: critError } = useQuery<CriteriaData, CriteriaVars>(
-      GET_CRITERIA_BY_MODEL,
-      { variables: { modelId: modelo.id }, skip: !modelo?.id }
-    );
+    const {
+      data,
+      loading: critLoading,
+      error: critError,
+    } = useQuery<CriteriaData, CriteriaVars>(GET_CRITERIA_BY_MODEL, {
+      variables: { modelId: modelo.id },
+      skip: !modelo?.id,
+    });
 
     const criterios: any[] = data?.getCriteria || [];
 
@@ -396,11 +402,9 @@ export default function ReportModelListPage() {
       });
       return Array.from(keys);
     }, [criterios]);
-    
+
     return (
       <Box key={`criteria-${modelo.id}`} sx={{ mt: 2 }}>
-        
-
         {critLoading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
             <CircularProgress />
@@ -408,7 +412,7 @@ export default function ReportModelListPage() {
         ) : critError ? (
           <Typography color="error">{critError.message}</Typography>
         ) : criterios.length === 0 ? (
-          <Paper variant="outlined" sx={{ p: 2, textAlign: "center" , maxWidth: "25%" }}>
+          <Paper variant="outlined" sx={{ p: 2, textAlign: "center", maxWidth: "25%" }}>
             <Typography color="text.secondary" sx={{ mb: 1 }}>
               Sem critérios.
             </Typography>
@@ -416,7 +420,6 @@ export default function ReportModelListPage() {
             <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 1, justifyContent: "center" }}>
               <Tooltip title="Criar critério para este modelo" placement="top">
                 <IconButton
-                  
                   onClick={() => navigate("/editar-criterio", { state: { modeloId: modelo.id } })}
                   // forçar tamanho e centralização do ícone
                   sx={{
@@ -438,7 +441,7 @@ export default function ReportModelListPage() {
               </Tooltip>
             </Box>
           </Paper>
-         ) : (
+        ) : (
           <TableContainer
             component={Paper}
             sx={{
@@ -454,35 +457,33 @@ export default function ReportModelListPage() {
             }}
           >
             <Table sx={{ minWidth: 650 }} size="small" aria-label="criteria table">
-               <TableHead>
-                 <TableRow >
-                   <TableCell>Nome do Critério</TableCell>
-                   {optionKeys.map((k) => (
-                     <TableCell key={k} align="left">
-                       {k}
-                     </TableCell>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Nome do Critério</TableCell>
+                  {optionKeys.map((k) => (
+                    <TableCell key={k} align="left">
+                      {k}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              </TableHead>
 
-                   ))}
- 
-                   
-                 </TableRow>
-               </TableHead>
-
-            <TableBody>
-                 {criterios.map((crit: any) => (
-                <TableRow key={crit.id || `${modelo.id}-crit-${crit.nome || Math.random()}`} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                     <TableCell component="th" scope="row">
-                       {crit.nome || "-"}
-                     </TableCell>
+              <TableBody>
+                {criterios.map((crit: any) => (
+                  <TableRow
+                    key={crit.id || `${modelo.id}-crit-${crit.nome || Math.random()}`}
+                    sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
+                  >
+                    <TableCell component="th" scope="row">
+                      {crit.nome || "-"}
+                    </TableCell>
                     {optionKeys.map((k) => {
-                      const opt = Array.isArray(crit.options) ? crit.options.find((o: any) => String(o.key) === k) : undefined;
+                      const opt = Array.isArray(crit.options)
+                        ? crit.options.find((o: any) => String(o.key) === k)
+                        : undefined;
                       const v = opt?.value;
                       const valueText =
-                        v === null || v === undefined
-                          ? "-"
-                          : typeof v === "object"
-                          ? JSON.stringify(v)
-                          : String(v);
+                        v === null || v === undefined ? "-" : typeof v === "object" ? JSON.stringify(v) : String(v);
                       return (
                         <TableCell key={`${crit.id || crit.nome}-${k}`} align="left">
                           {valueText}
@@ -494,7 +495,7 @@ export default function ReportModelListPage() {
               </TableBody>
             </Table>
           </TableContainer>
-         )}
+        )}
       </Box>
     );
   };
@@ -574,26 +575,23 @@ export default function ReportModelListPage() {
               refetch?.({ empresaId: empresa?.id, start: 0, name: undefined });
             }}
             booleanFields={[]}
-            
-
           />
         </Box>
 
         <TableContainer
-            component={Paper}
-            sx={{
-              
-              mt: 2,
-              boxShadow: "0 8px 20px rgba(0,0,0,0.10)",
-              borderRadius: 2,
-              overflow: "auto", // permite scroll X e Y quando necessário
-              WebkitOverflowScrolling: "touch", //
-              border: "1px solid rgba(0,0,0,0.05)",
-              // limita altura em dispositivos pequenos para mostrar scroll vertical
-            }}
-          >
+          component={Paper}
+          sx={{
+            mt: 2,
+            boxShadow: "0 8px 20px rgba(0,0,0,0.10)",
+            borderRadius: 2,
+            overflow: "auto", // permite scroll X e Y quando necessário
+            WebkitOverflowScrolling: "touch", //
+            border: "1px solid rgba(0,0,0,0.05)",
+            // limita altura em dispositivos pequenos para mostrar scroll vertical
+          }}
+        >
           <Table sx={{ minWidth: 650 }} size="small" aria-label="a dense table">
-            <TableHead sx={{height : "70px"}}>
+            <TableHead sx={{ height: "70px" }}>
               <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Nome</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Data de Criação</TableCell>
@@ -617,7 +615,7 @@ export default function ReportModelListPage() {
                 </TableRow>
               ) : (
                 modelos.map((modelo: any) => (
-                  <TableRow key={modelo.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
+                  <TableRow key={modelo.id} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
                     <TableCell>
                       <Link
                         component="button"
@@ -629,156 +627,151 @@ export default function ReportModelListPage() {
                                 modeloNome: modelo.modeloNome,
                                 customFields: modelo.customFields,
                                 createdAt: modelo.createdAt,
+                              },
                             },
-                          },
-                        })
-                      }
-                      sx={{ cursor: "pointer", textDecoration: "none" }}
-                    >
-                      {modelo.modeloNome}
-                    </Link>
-                  </TableCell>
-                  <TableCell>{new Date(modelo.createdAt).toLocaleDateString()}</TableCell>
-                  {Array.isArray(modelo.customFields) &&
-                    modelo.customFields.map((field: any, index: number) => (
-                      <TableCell key={index}>
-                        
-                        {(() => {
-                          const val = field.value;
-                          if (val === null || val === undefined) return "-";
+                          })
+                        }
+                        sx={{ cursor: "pointer", textDecoration: "none" }}
+                      >
+                        {modelo.modeloNome}
+                      </Link>
+                    </TableCell>
+                    <TableCell>{new Date(modelo.createdAt).toLocaleDateString()}</TableCell>
+                    {Array.isArray(modelo.customFields) &&
+                      modelo.customFields.map((field: any, index: number) => (
+                        <TableCell key={index}>
+                          {(() => {
+                            const val = field.value;
+                            if (val === null || val === undefined) return "-";
 
-                          // Primitivos: string, number, boolean
-                          if (typeof val === "string" || typeof val === "number" || typeof val === "boolean") {
-                            return String(val);
-                          }
-
-                          // Objetos com propriedade `datatype`
-                          if (typeof val === "object") {
-                            if (val.datatype) {
-                              if (val.datatype === "array" && Array.isArray(val.items)) return val.items.join(", ");
-                              if (val.datatype === "string") return "Texto";
-                              if (val.datatype === "date") return "Data";
-                              if (val.datatype === "bool" || val.datatype === "boolean") return "Sim/Não";
-                              if (val.datatype === "number") return "Número";
-                              // fallback: usar label do formatType se existir
-                              return formatType(String(val.datatype));
+                            // Primitivos: string, number, boolean
+                            if (typeof val === "string" || typeof val === "number" || typeof val === "boolean") {
+                              return String(val);
                             }
 
-                            // objeto com items sem datatype
-                            if (Array.isArray(val.items)) return val.items.join(", ");
-
-                            // último recurso: serializar para string (não retorna objeto React)
-                            try {
-                              return JSON.stringify(val);
-                            } catch {
-                              return "-";
-                            }
-                          }
-
-                          return "-";
-                        })()}
-                      </TableCell>
-                    ))}
-                  <TableCell align="center">
-                    <Box sx={{ display: "flex", gap: 2, justifyContent: "space-between" }}>
-                      {empresa?.isAdmin && (
-                        <>
-                          <Tooltip title="Adicionar Relatório" placement="top">
-                            <IconButton
-                              onClick={() =>
-                                navigate("/add-new-report", {
-                                  state: {
-                                    selectedModel: modelo,
-                                  },
-                                })
+                            // Objetos com propriedade `datatype`
+                            if (typeof val === "object") {
+                              if (val.datatype) {
+                                if (val.datatype === "array" && Array.isArray(val.items)) return val.items.join(", ");
+                                if (val.datatype === "string") return "Texto";
+                                if (val.datatype === "date") return "Data";
+                                if (val.datatype === "bool" || val.datatype === "boolean") return "Sim/Não";
+                                if (val.datatype === "number") return "Número";
+                                // fallback: usar label do formatType se existir
+                                return formatType(String(val.datatype));
                               }
-                              sx={{
-                                color: "#fff",
-                                backgroundColor: "primary.main",
-                                border: "1px solid",
-                                borderColor: "primary.main",
-                                "&:hover": {
-                                  backgroundColor: "primary.dark",
-                                  color: "#fff",
-                                },
-                                width: 40,
-                                height: 40,
-                              }}
-                            >
-                              <Typography
-                                component="span"
+
+                              // objeto com items sem datatype
+                              if (Array.isArray(val.items)) return val.items.join(", ");
+
+                              // último recurso: serializar para string (não retorna objeto React)
+                              try {
+                                return JSON.stringify(val);
+                              } catch {
+                                return "-";
+                              }
+                            }
+
+                            return "-";
+                          })()}
+                        </TableCell>
+                      ))}
+                    <TableCell align="center">
+                      <Box sx={{ display: "flex", gap: 2, justifyContent: "space-between" }}>
+                        {empresa?.isAdmin && (
+                          <>
+                            <Tooltip title="Adicionar Relatório" placement="top">
+                              <IconButton
+                                onClick={() =>
+                                  navigate("/add-new-report", {
+                                    state: {
+                                      selectedModel: modelo,
+                                    },
+                                  })
+                                }
                                 sx={{
-                                  fontSize: 26,
-                                  fontWeight: "bold",
                                   color: "#fff",
+                                  backgroundColor: "primary.main",
+                                  border: "1px solid",
+                                  borderColor: "primary.main",
+                                  "&:hover": {
+                                    backgroundColor: "primary.dark",
+                                    color: "#fff",
+                                  },
+                                  width: 40,
+                                  height: 40,
                                 }}
                               >
-                                +
-                              </Typography>
-                            </IconButton>
-                          </Tooltip>
+                                <Typography
+                                  component="span"
+                                  sx={{
+                                    fontSize: 26,
+                                    fontWeight: "bold",
+                                    color: "#fff",
+                                  }}
+                                >
+                                  +
+                                </Typography>
+                              </IconButton>
+                            </Tooltip>
 
-                          <Tooltip title="Clonar Modelo" placement="top" sx={{ width: 40, height: 40 }}>
-                            <IconButton
-                              onClick={() => requestClone(modelo.id)}
-                              disabled={cloningId === modelo.id}
-                            >
-                              <ContentCopyIcon />
-                            </IconButton>
-                          </Tooltip>
-                           <Tooltip title="Ver relatórios" placement="top">
-                            <IconButton
-                              aria-label="Ver relatórios"
-                              onClick={() =>
-                                navigate("/reports-list", {
-                                  state: {
-                                    filter: {
-                                      modeloId: modelo.id,
+                            <Tooltip title="Clonar Modelo" placement="top" sx={{ width: 40, height: 40 }}>
+                              <IconButton onClick={() => requestClone(modelo.id)} disabled={cloningId === modelo.id}>
+                                <ContentCopyIcon />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Ver relatórios" placement="top">
+                              <IconButton
+                                aria-label="Ver relatórios"
+                                onClick={() =>
+                                  navigate("/reports-list", {
+                                    state: {
+                                      filter: {
+                                        modeloId: modelo.id,
+                                      },
                                     },
-                                  },
-                                })
-                              }
-                              sx={{
-                                color: "#fff",
-                                backgroundColor: "primary.main",
-                                border: "1px solid",
-                                borderColor: "primary.main",
-                                "&:hover": {
-                                  backgroundColor: "primary.dark",
+                                  })
+                                }
+                                sx={{
                                   color: "#fff",
-                                },
-                                width: 40,
-                                height: 40,
-                              }}
-                            >
-                              <DescriptionIcon sx={{ fontSize: 24, color: "#fff" }} />
-                            </IconButton>
-                          </Tooltip>
+                                  backgroundColor: "primary.main",
+                                  border: "1px solid",
+                                  borderColor: "primary.main",
+                                  "&:hover": {
+                                    backgroundColor: "primary.dark",
+                                    color: "#fff",
+                                  },
+                                  width: 40,
+                                  height: 40,
+                                }}
+                              >
+                                <DescriptionIcon sx={{ fontSize: 24, color: "#fff" }} />
+                              </IconButton>
+                            </Tooltip>
 
-                         
-                          <Tooltip title="Excluir modelo" placement="top">
-                            <IconButton
-                              onClick={() => requestDelete(modelo.id)}
-                              sx={{
-                                backgroundColor: "error.main",
-                                color: "#fff",
-                                "&:hover": {
-                                  backgroundColor: "error.dark",
-                                },
-                                width: 40,
-                                height: 40,
-                              }}
-                            >
-                              <Delete fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        </>
-                      )}
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
+                            <Tooltip title="Excluir modelo" placement="top">
+                              <IconButton
+                                onClick={() => requestDelete(modelo.id)}
+                                sx={{
+                                  backgroundColor: "error.main",
+                                  color: "#fff",
+                                  "&:hover": {
+                                    backgroundColor: "error.dark",
+                                  },
+                                  width: 40,
+                                  height: 40,
+                                }}
+                              >
+                                <Delete fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </>
+                        )}
+                      </Box>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </TableContainer>
@@ -800,13 +793,7 @@ export default function ReportModelListPage() {
               alignItems: "center",
             }}
           >
-            <Pagination
-              count={pageCount}
-              page={page + 1}
-              onChange={handlePageChange}
-              color="primary"
-              shape="rounded"
-            />
+            <Pagination count={pageCount} page={page + 1} onChange={handlePageChange} color="primary" shape="rounded" />
           </Box>
         )}
       </Paper>
@@ -871,8 +858,6 @@ export default function ReportModelListPage() {
 
       {/*Notification*/}
       <Notification alert={alert} setAlert={setAlert} />
-
-      
     </>
   );
 }

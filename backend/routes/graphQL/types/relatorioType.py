@@ -42,4 +42,3 @@ class RelatorioFilter:
     clienteNome: str = None
     clienteNif: str = None
     numero: int = None
-    

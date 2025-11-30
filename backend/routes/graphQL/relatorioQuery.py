@@ -1,4 +1,10 @@
-from .types.relatorioType import Relatorio, RelatorioList, RelatorioCountByCliente, RelatorioCountByModelo, RelatorioFilter  # Adicione o tipo RelatorioFilter
+from .types.relatorioType import (
+    Relatorio,
+    RelatorioList,
+    RelatorioCountByCliente,
+    RelatorioCountByModelo,
+    RelatorioFilter,
+)  # Adicione o tipo RelatorioFilter
 from database import relatorios_collection, users_empresas_collection
 from .utils.limpar import filter_null_fields
 from fastapi import HTTPException
@@ -12,11 +18,11 @@ class RelatorioQuery:
     @strawberry.field
     async def getRelatorios(self, info: Info, modelo_id: str, empresa_id: str, start: int = 0, filter: RelatorioFilter = None) -> RelatorioList:
 
-        request = info.context["request"]    
+        request = info.context["request"]
         jwt = getattr(request.state, "jwt", None)
 
         user_id = ObjectId(jwt["user_id"])
-        modelo_id = ObjectId(modelo_id) 
+        modelo_id = ObjectId(modelo_id)
         empresa_id = ObjectId(empresa_id)
 
         lmt = 4  # Limite padrão de resultados Relatórpor página
@@ -30,7 +36,7 @@ class RelatorioQuery:
             user_empresa = await users_empresas_collection.find_one({"empresa_id": empresa_id, "user_id": user_id})
             if not user_empresa:
                 raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para ver relatórios nesta empresa.")
-        
+
         # Filtro inicial
         filtro = {"modelo_id": modelo_id}
 
@@ -41,7 +47,7 @@ class RelatorioQuery:
                 filtro["cliente_nome"] = {"$regex": f"{filter.clienteNome}", "$options": "i"}
             elif filter.clienteNif:
                 filtro["cliente_nif"] = {"$regex": f"^{filter.clienteNif}", "$options": "i"}
-            
+
             elif filter.numero is not None:
                 filtro["numero"] = filter.numero
 

@@ -25,4 +25,4 @@ export const GET_USER_SIGNATURE = gql`
       assinatura
     }
   }
-`
+`;
