@@ -53,7 +53,9 @@ class RelatorioCreate(BaseModel):
             if key in MAIN_FIELDS:
                 continue
             if not key.startswith("custom_"):
-                raise HTTPException(status_code=400, detail=f"Nome de campo inválido: {key}. Os campos personalizados devem começar com 'custom_'")
+                raise HTTPException(
+                    status_code=400, detail=f"Nome de campo inválido: {key}. Os campos personalizados devem começar com 'custom_'"
+                )
 
         return values
 
@@ -61,7 +63,6 @@ class RelatorioCreate(BaseModel):
 class RelatorioActivation(BaseModel):
     id: str = Field(..., min_length=24, max_length=24)
     empresa_id: str = Field(..., min_length=24, max_length=24)
-    recaptchaToken: str
 
     @field_validator("id", "empresa_id", mode="before")
     def validate_object_id(cls, v):

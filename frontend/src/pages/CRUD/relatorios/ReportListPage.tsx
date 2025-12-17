@@ -11,32 +11,52 @@ import {
   TableRow,
   Typography,
   Pagination,
-  IconButton,
-  Tooltip,
-  CircularProgress,
   Breadcrumbs,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  Autocomplete,
+  TextField,
 } from "@mui/material";
 import { Add } from "@mui/icons-material";
-import PictureAsPdfIcon from "@mui/icons-material/PictureAsPdf";
 import HomeIcon from "@mui/icons-material/Home";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
-import { useQuery, useLazyQuery, useBackgroundQuery } from "@apollo/client/react";
+import { useQuery, useLazyQuery } from "@apollo/client/react";
 import { useAuth } from "../../../hooks/AuthContext";
 import { GET_REPORTS_BY_MODEL } from "../../../graphql/reportsQueries";
+import { GET_CLIENTES_BY_EMPRESA } from "../../../graphql/clientesQueries";
 import Notification from "../../../components/Notification";
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
 import LoadingAnimation from "../../../components/LoadingAnimation";
-import autoTable from "jspdf-autotable";
-import jsPDF from "jspdf";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
 
-declare var grecaptcha: any; // reCAPTCHA global (injetado no window)
+// Declaração de tipo para File System Access API
+declare global {
+  interface Window {
+    showSaveFilePicker(options?: SaveFilePickerOptions): Promise<FileSystemFileHandle>;
+  }
+}
+
+interface SaveFilePickerOptions {
+  suggestedName?: string;
+  types?: Array<{
+    description: string;
+    accept: Record<string, string[]>;
+  }>;
+}
+
+interface FileSystemFileHandle {
+  createWritable(): Promise<FileSystemWritableFileStream>;
+}
+
+interface FileSystemWritableFileStream extends WritableStream<Uint8Array> {
+  write(data: Blob | Uint8Array | string): Promise<void>;
+  close(): Promise<void>;
+}
+
 
 /*
   Interface Report:
@@ -81,8 +101,10 @@ export default function ReportListPage() {
   }); // AdvancedSearchBar: campo + texto
   const [page, setPage] = useState(0); // página atual (0-index)
   const [alert, setAlert] = useState<{ message: string; isError: boolean } | null>(null); // notificações
-  const [loadingExportId, setLoadingExportId] = useState<string | null>(null); // id do relatório sendo exportado
   const [exportingAll, setExportingAll] = useState(false); // indicador de exportação em massa
+  const [exportDialogOpen, setExportDialogOpen] = useState(false); // dialog de exportação
+  const [selectedClienteForExport, setSelectedClienteForExport] = useState<any>(null); // cliente selecionado
+  const [clienteInputValue, setClienteInputValue] = useState(""); // input do autocomplete
   const rowsPerPage = 4; // número de linhas por página
   const navigate = useNavigate(); // navegação de rotas
   const theme = useTheme(); // tema MUI
@@ -109,14 +131,19 @@ export default function ReportListPage() {
     variables: {
       empresaId: empresa?.id,
       modeloId: location.state?.filter?.modeloId,
-      start: page * rowsPerPage, // Certifique-se de que isso está correto
+      start: page * rowsPerPage,
       filter: {},
     },
     fetchPolicy: "cache-and-network",
   });
 
   const [getReports] = useLazyQuery<returnedData>(GET_REPORTS_BY_MODEL, {
-    fetchPolicy: "cache-first", // sempre busca do servidor
+    fetchPolicy: "cache-first",
+  });
+
+  // Query para buscar clientes
+  const [getClientes, { data: clientesData, loading: clientesLoading }] = useLazyQuery(GET_CLIENTES_BY_EMPRESA, {
+    fetchPolicy: "cache-first",
   });
 
   // Atualiza busca quando o termo de pesquisa por número muda
@@ -285,200 +312,51 @@ export default function ReportListPage() {
     return String(val);
   };
 
-  const buildPdfTable = (reportsToExport: Report[]) => {
-    // constrói as duas linhas do header para o autoTable (suporta rowSpan/colSpan)
-    const headRow1: any[] = [];
-    const headRow2: any[] = [];
 
-    // colunas fixas (cada uma com rowSpan = 2)
-    ["Número", "Cliente", "NIF", "Modelo"].forEach((t) => headRow1.push({ content: t, rowSpan: 2 }));
+  const hardDeleteReport = async (report: Report) => {
+    try {
+      const data = await fetch("/backend/relatorio/", {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: report.id,
+          empresa_id: empresa?.id,
+        }),
+      });
 
-    // colunas dinâmicas (parent -> subs)
-    customFieldKeys.forEach((parentKey) => {
-      const displayParent = String(parentKey)
-        .replace(/^custom_/, "")
-        .replace(/_/g, " ");
-      const subs = parentSubKeys[parentKey] || [];
-      if (subs.length === 0) {
-        headRow1.push({ content: displayParent, rowSpan: 2 });
-        headRow2.push({ content: "Valor" });
-      } else {
-        headRow1.push({ content: displayParent, colSpan: subs.length });
-        subs.forEach((sk) => headRow2.push({ content: String(sk).replace(/_/g, " ") }));
-      }
-    });
+      if (data.ok) {
 
-    // data criação (rowSpan = 2)
-    headRow1.push({ content: "Data Criação", rowSpan: 2 });
-
-    // monta linhas do body respeitando a mesma ordem do header
-    const bodyRows = reportsToExport.map((r) => {
-      const row: (string | number)[] = [];
-      row.push(r.numero || "-");
-      row.push(r.clienteNome || "-");
-      row.push(r.clienteNif || "-");
-      row.push(r.modeloNome || "-");
-
-      customFieldKeys.forEach((parentKey) => {
-        const parentDisplay = String(parentKey).replace(/^custom_/, "");
-        const subs = parentSubKeys[parentKey] || [];
-        if (subs.length === 0) {
-          row.push(getCustomFieldValue(r, parentDisplay));
-        } else {
-          subs.forEach((sk) => row.push(getSubFieldValue(r, sk)));
+        console.log("Relatório eliminado com sucesso.");
+        setAlert({ message: "Relatório eliminado com sucesso.", isError: false });
+        // Refetch para atualizar a lista após exclusão
+        const result = await refetch({
+          empresaId: empresa?.id,
+          modeloId: location.state?.filter?.modeloId,
+          start: page * rowsPerPage,
+        });
+        if (result.data?.getRelatorios?.relatorios) {
+          setReports(result.data.getRelatorios.relatorios);
         }
-      });
-
-      row.push(r.createdAt ? new Date(r.createdAt).toLocaleDateString() : "-");
-      return row;
-    });
-
-    return { head: [headRow1, headRow2], body: bodyRows };
-  };
-
-  // helper: converte hex / rgb string para [r,g,b]
-  const hexToRgbArray = (hex?: string | number): [number, number, number] => {
-    if (!hex) return [0, 0, 0];
-    const s = String(hex).trim();
-    const rgbMatch = s.match(/rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
-    if (rgbMatch) return [Number(rgbMatch[1]), Number(rgbMatch[2]), Number(rgbMatch[3])];
-    const h = s.replace("#", "");
-    if (h.length === 3) {
-      return [parseInt(h[0] + h[0], 16), parseInt(h[1] + h[1], 16), parseInt(h[2] + h[2], 16)];
+      }
     }
-    if (h.length === 6) {
-      return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
-    }
-    return [0, 0, 0];
-  };
-
-  // gera PDF usando SEMPRE a estilização do modo "light"
-  const handleExportReport = async (report: Report) => {
-    try {
-      setLoadingExportId(report.id);
-      const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
-
-      // cores fixas (light mode)
-      const headerRgb = hexToRgbArray("#070707d4"); // header claro
-      const bodyRgb = hexToRgbArray(theme.palette.background?.paper || "#ffffff"); // fundo body branco
-      const headTextRgb: [number, number, number] = [255, 255, 255]; // texto do header branco
-      const bodyTextRgb: [number, number, number] = [0, 0, 0]; // texto do body preto
-      const altRowRgb: [number, number, number] = [245, 245, 245]; // linha alternada suave
-      const lineRgb = hexToRgbArray(theme.palette.divider || "#d0d0d0");
-
-      doc.setFontSize(16);
-      doc.setTextColor(...headTextRgb);
-      doc.text(`Relatório: ${report.numero}`, 14, 18);
-
-      const { head, body } = buildPdfTable([report]);
-
-      autoTable(doc, {
-        startY: 28,
-        head,
-        body,
-        margin: { left: 10, right: 10 },
-        styles: {
-          fontSize: 9,
-          textColor: bodyTextRgb,
-          fillColor: bodyRgb,
-          cellPadding: 4,
-        },
-        headStyles: {
-          fillColor: headerRgb,
-          textColor: headTextRgb,
-          fontStyle: "bold",
-        },
-        alternateRowStyles: {
-          fillColor: altRowRgb,
-        },
-        theme: "grid",
-        tableLineColor: lineRgb,
-        tableLineWidth: 0.2,
-        didParseCell: (data) => {
-          if (data.section === "body") {
-            const raw = data.cell?.raw;
-            if (typeof raw === "string" && /^\d{1,4}$/.test(raw)) data.cell.styles.halign = "center";
-            if (typeof raw === "string" && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(raw)) data.cell.styles.halign = "center";
-          }
-        },
-      });
-
-      doc.save(`${report.numero || "relatorio"}.pdf`);
-    } catch (err) {
-      setAlert({ message: "Erro ao exportar relatório.", isError: true });
-    } finally {
-      setLoadingExportId(null);
+    catch (err) {
+      console.error("Erro ao eliminar relatório:", err);
+      setAlert({ message: "Erro ao eliminar relatório.", isError: true });
     }
   };
 
-  // gera PDF de todos os relatórios usando SEMPRE a estilização do modo "light"
-  const handleExportAll = async () => {
-    if (reports.length === 0) {
-      setAlert({ message: "Nenhum relatório para exportar.", isError: true });
-      return;
-    }
-    try {
-      setExportingAll(true);
-      const doc = new jsPDF({ unit: "mm", format: "a4", orientation: "landscape" });
-
-      // cores fixas (light mode)
-      const headerRgb = hexToRgbArray("#070707d4");
-      const bodyRgb = hexToRgbArray(theme.palette.background?.paper || "#ffffff");
-      const headTextRgb: [number, number, number] = [255, 255, 255];
-      const bodyTextRgb: [number, number, number] = [0, 0, 0];
-      const altRowRgb: [number, number, number] = [245, 245, 245];
-      const lineRgb = hexToRgbArray(theme.palette.divider || "#d0d0d0");
-
-      doc.setFontSize(14);
-      doc.setTextColor(...headTextRgb);
-      doc.text(`Relatórios (${reports.length})`, 14, 14);
-
-      const { head, body } = buildPdfTable(reports);
-
-      autoTable(doc, {
-        startY: 20,
-        head,
-        body,
-        margin: { left: 10, right: 10 },
-        styles: {
-          fontSize: 8.5,
-          textColor: bodyTextRgb,
-          fillColor: bodyRgb,
-          cellPadding: 3,
-        },
-        headStyles: {
-          fillColor: headerRgb,
-          textColor: headTextRgb,
-          fontStyle: "bold",
-        },
-        alternateRowStyles: {
-          fillColor: altRowRgb,
-        },
-        theme: "grid",
-        tableLineColor: lineRgb,
-        tableLineWidth: 0.2,
-        didParseCell: (data) => {
-          if (data.section === "body") {
-            const raw = data.cell?.raw;
-            if (typeof raw === "string" && /^\d{1,4}$/.test(raw)) data.cell.styles.halign = "center";
-            if (typeof raw === "string" && /^\d{1,2}\/\d{1,2}\/\d{4}$/.test(raw)) data.cell.styles.halign = "center";
-          }
-        },
-      });
-
-      doc.save(`relatorios_${Date.now()}.pdf`);
-    } catch (err) {
-      setAlert({ message: "Erro ao exportar relatórios.", isError: true });
-    } finally {
-      setExportingAll(false);
+  const handleOpenExportDialog = () => {
+    setExportDialogOpen(true);
+    setSelectedClienteForExport(null);
+    setClienteInputValue("");
+    // Busca os primeiros clientes ao abrir
+    if (empresa?.id) {
+      getClientes({ variables: { empresaId: empresa.id, start: 0 } });
     }
   };
 
-  /*
-    handleApplyAdvanced:
-    - aplica filtro avançado vindo do AdvancedSearchBar (clienteNome ou clienteNif)
-    - faz refetch para obter resultados filtrados (reseta página para 0)
-  */
   const handleApplyAdvanced = async () => {
     setPage(0);
     const text = advFilter.text.trim();
@@ -505,6 +383,118 @@ export default function ReportListPage() {
       setReports(result.data.getRelatorios.relatorios);
     }
   };
+
+  const handleExportAll = async () => {
+    if (!empresa?.id || !location.state?.filter?.modeloId) {
+      setAlert({ message: "Empresa ou modelo não encontrado.", isError: true });
+      return;
+    }
+
+    if (!selectedClienteForExport) {
+      setAlert({ message: "Selecione um cliente para exportar.", isError: true });
+      return;
+    }
+
+    setExportingAll(true);
+    setExportDialogOpen(false);
+
+    try {
+      // Verificar se o browser suporta File System Access API
+      const supportsFileSystemAccess = "showSaveFilePicker" in window;
+
+      if (supportsFileSystemAccess) {
+        // CAMINHO 1: Chrome, Edge, Opera (com file picker)
+        const fileHandle = await window.showSaveFilePicker({
+          suggestedName: `relatorios_${selectedClienteForExport.nome}_${new Date().getTime()}.pdf`,
+          types: [
+            {
+              description: "PDF Files",
+              accept: { "application/pdf": [".pdf"] },
+            },
+          ],
+        });
+
+        // Chamar a API para obter o PDF
+        const response = await fetch("/backend/user/converter-pdf", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            empresa_id: empresa.id,
+            modelo_id: location.state.filter.modeloId,
+            cliente_id: selectedClienteForExport.id,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || "Erro ao exportar relatórios.");
+        }
+
+        // Escrever o blob no ficheiro escolhido
+        const blob = await response.blob();
+        const writable = await fileHandle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+
+        setAlert({ message: "PDF exportado com sucesso!", isError: false });
+      } else {
+        // CAMINHO 2: Firefox, Safari (download direto com nome sugerido)
+        // Nota: O user escolhe onde salvar no diálogo do browser (automático)
+        const response = await fetch("/backend/user/converter-pdf", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify({
+            empresa_id: empresa.id,
+            modelo_id: location.state.filter.modeloId,
+            cliente_id: selectedClienteForExport.id,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.detail || "Erro ao exportar relatórios.");
+        }
+
+        // Criar um blob e forçar download
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `relatorios_${selectedClienteForExport.nome}_${new Date().getTime()}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        setAlert({ message: "PDF exportado com sucesso!", isError: false });
+      }
+    } catch (err: any) {
+      if (err.name === "AbortError") {
+        setAlert({ message: "Exportação cancelada.", isError: false });
+      } else {
+        console.error("Erro ao exportar PDF:", err);
+        setAlert({ message: err.message || "Erro ao exportar relatórios.", isError: true });
+      }
+    } finally {
+      setExportingAll(false);
+      setSelectedClienteForExport(null);
+    }
+  };
+
+  // Atualiza lista de clientes ao mudar a página ou aplicar filtro
+  useEffect(() => {
+    if (empresa?.id) {
+      getClientes({ variables: { empresaId: empresa.id, start: 0 } });
+    }
+  }, [empresa, page, advFilter, getClientes]);
+
+  // Remover useEffect que atualiza clientes ao mudar a página (já está no acima)
 
   // Render do componente
   return (
@@ -572,14 +562,14 @@ export default function ReportListPage() {
             <Button
               variant="outlined"
               startIcon={<FileDownloadIcon sx={{ fontSize: 18 }} />}
-              onClick={handleExportAll}
+              onClick={handleOpenExportDialog}
               disabled={exportingAll}
               sx={{
                 maxWidth: { md: "250px" },
                 width: "100%",
                 minWidth: "150px",
                 backgroundColor: "#ffffffff",
-                borderColor: "#b8b8b8ff", // Laranja escuro
+                borderColor: "#b8b8b8ff",
                 color: "#000000ff",
               }}
             >
@@ -683,7 +673,11 @@ export default function ReportListPage() {
                   <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }}>
                     Data Criação
                   </TableCell>
-                  <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }}>
+                  <TableCell
+                    rowSpan={2}
+                    sx={{ ...headerCell, color: theme.palette.common.white }}
+                    align="center"
+                  >
                     Ações
                   </TableCell>
                 </TableRow>
@@ -739,39 +733,18 @@ export default function ReportListPage() {
                     <TableCell sx={cellBorders}>
                       {report.createdAt ? new Date(report.createdAt).toLocaleDateString() : "-"}
                     </TableCell>
-
-                    <TableCell sx={cellBorders}>
-                      <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-                        <Tooltip title="Exportar PDF" placement="top">
-                          <IconButton
-                            aria-label="Exportar PDF"
-                            onClick={() => handleExportReport(report)}
-                            disabled={loadingExportId === report.id}
-                            sx={{
-                              width: 40,
-                              height: 40,
-                              minWidth: 40,
-                              minHeight: 40,
-                              p: 0,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              backgroundColor:
-                                loadingExportId === report.id ? "action.disabledBackground" : "primary.main",
-                              color: "#fff",
-                              border: "1px solid",
-                              borderColor: "primary.main",
-                              "&:hover": { backgroundColor: "primary.dark" },
-                            }}
-                          >
-                            {loadingExportId === report.id ? (
-                              <CircularProgress size={20} sx={{ color: "#fff" }} />
-                            ) : (
-                              <PictureAsPdfIcon sx={{ fontSize: 20, color: "#fff" }} />
-                            )}
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
+                    <TableCell sx={{ ...cellBorders, textAlign: "center" }}>
+                      <Button
+                        variant="contained"
+                        color="error"
+                        size="small"
+                        onClick={() => {
+                          setSelectedReport(report);
+                          setDeleteDialogOpen(true);
+                        }}
+                      >
+                        Apagar
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -803,8 +776,97 @@ export default function ReportListPage() {
         )}
       </Paper>
 
-      {/* Dialog de confirmação para apagar relatório permanentemente.
-          - usa selectedReport para saber qual relatório deletar. */}
+      {/* Dialog de seleção de cliente para exportação */}
+      <Dialog 
+        open={exportDialogOpen} 
+        onClose={() => setExportDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: "bold" }}>Selecionar Cliente para Exportação</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 2 }}>
+            Selecione o cliente cujos relatórios deseja exportar para PDF.
+          </Typography>
+          <Autocomplete
+            fullWidth
+            options={clientesData?.getClientes?.clientes || []}
+            getOptionLabel={(option) => option.nome}
+            value={selectedClienteForExport}
+            onChange={(_, newValue) => {
+              setSelectedClienteForExport(newValue);
+              setClienteInputValue(newValue ? newValue.nome : "");
+            }}
+            isOptionEqualToValue={(option, value) => option.id === value.id}
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Selecione um Cliente"
+                fullWidth
+                sx={{ mt: 2 }}
+              />
+            )}
+            loading={clientesLoading}
+            openOnFocus
+            autoHighlight
+            inputValue={clienteInputValue}
+            onInputChange={(_, newInputValue, reason) => {
+              setClienteInputValue(newInputValue);
+              if (reason === "input" && empresa?.id) {
+                getClientes({ 
+                  variables: { 
+                    empresaId: empresa.id, 
+                    start: 0,
+                    filter: newInputValue ? { nome: newInputValue } : {}
+                  } 
+                });
+              }
+            }}
+            onOpen={() => {
+              if (empresa?.id) {
+                getClientes({ variables: { empresaId: empresa.id, start: 0 } });
+              }
+            }}
+            slotProps={{
+              clearIndicator: {
+                sx: {
+                  background: "none",
+                  color: "inherit",
+                  boxShadow: "none",
+                  "&:hover": {
+                    background: "none",
+                  },
+                },
+              },
+              popupIndicator: {
+                sx: {
+                  background: "none",
+                  color: "inherit",
+                  boxShadow: "none",
+                  "&:hover": {
+                    background: "none",
+                  },
+                },
+              },
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setExportDialogOpen(false)} variant="outlined">
+            Cancelar
+          </Button>
+          <Button
+            onClick={handleExportAll}
+            color="primary"
+            variant="contained"
+            disabled={!selectedClienteForExport}
+          >
+            Exportar PDF
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog de confirmação para apagar relatório permanentemente. */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <DialogTitle sx={{ fontWeight: "bold" }}>Eliminar relatório permanentemente!</DialogTitle>
         <DialogContent>

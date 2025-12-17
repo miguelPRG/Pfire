@@ -1,6 +1,7 @@
+from routes.Rest.services import userServices
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from routes.Rest.services import usersServices, userEmpresaServices, modelosCamposServices, globalIdsServices
+from routes.Rest.services import userEmpresaServices, modelosCamposServices, globalIdsServices
 from routes.Rest.CRUD import userCRUD, empresaCRUD, clienteCRUD, modelosCRUD, relatorioCRUD, criteriosCRUD
 from routes.graphQL.schema import graphql_router
 from controller.jwtValidation import verify_jwt  # Função para verificar o JWT
@@ -91,7 +92,7 @@ async def fast_api_http_middleware(request: Request, call_next):
 database_cleaner_scheduler()
 
 # Rotas de serviços do usuário (REST)
-app.include_router(usersServices.routerUser)
+app.include_router(userServices.routerUser)
 app.include_router(globalIdsServices.routerUser)
 app.include_router(modelosCamposServices.routerModelo)
 app.include_router(userEmpresaServices.routerUserEmpresa)

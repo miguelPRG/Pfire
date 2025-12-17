@@ -1,5 +1,5 @@
 from os import getenv
-import jwt
+from jwt import encode, decode, InvalidTokenError, ExpiredSignatureError, DecodeError
 from pathlib import Path
 from fastapi import HTTPException
 from datetime import datetime
@@ -78,7 +78,7 @@ def generate_jwt(id: str, user_name: str, user_email: str, is_super_admin: bool,
     if firebase_uid:
         to_encode["firebaseUID"] = firebase_uid
 
-    encoded_jwt = jwt.encode(to_encode, private_key, algorithm=ALGORITHM)
+    encoded_jwt = encode(to_encode, private_key, algorithm=ALGORITHM)
     return encoded_jwt
 
 
@@ -92,16 +92,16 @@ def verify_jwt(token):
             print(TOKEN_BLACKLIST)
             raise HTTPException(status_code=400, detail="Token inválido!")
 
-        payload = jwt.decode(token, public_key, algorithms=[ALGORITHM])
+        payload = decode(token, public_key, algorithms=[ALGORITHM])
         return payload
 
-    except jwt.InvalidTokenError:
+    except InvalidTokenError:
         raise HTTPException(status_code=400, detail="Token inválido!")
 
-    except jwt.ExpiredSignatureError:
+    except ExpiredSignatureError:
         raise HTTPException(status_code=400, detail="A sua sessão foi expirada, faça login novamente.")
 
-    except jwt.DecodeError:
+    except DecodeError:
         raise HTTPException(status_code=400, detail="Erro de decodificação!")
 
     except Exception as e:

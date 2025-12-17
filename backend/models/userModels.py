@@ -146,7 +146,9 @@ class UserForgotPassword(BaseModel):
 # classe para trocar password depois do email de recuperação ser enviado
 class UserChangePassword(BaseModel):
     password: str = Field(..., min_length=9, max_length=100, description="A senha deve ter pelo menos 9 caracteres.")
-    confirmPassword: str = Field(..., min_length=9, max_length=100, description="A confirmação da senha deve ter pelo menos 9 caracteres.")
+    confirmPassword: str = Field(
+        ..., min_length=9, max_length=100, description="A confirmação da senha deve ter pelo menos 9 caracteres."
+    )
     global_id: str = Field(
         ...,
         min_length=36,
@@ -181,4 +183,28 @@ class UserInvitation(BaseModel):
 
     @field_validator("email", mode="before")
     def strip_email(cls, v):
+        return v.strip()
+
+
+class UserConverterPDF(BaseModel):
+    modelo_id: str = Field(
+        min_length=24,
+        max_length=24,
+        description="O ID do modelo a ser convertido em PDF.",
+    )
+    empresa_id: str = Field(
+        min_length=24,
+        max_length=24,
+        description="O ID do modelo a ser convertido em PDF.",
+    )
+    cliente_id: str = Field(
+        min_length=24,
+        max_length=24,
+        description="O ID do cliente a ser filtrado.",
+    )
+
+    @field_validator("modelo_id","cliente_id", mode="before")
+    def validate_id(cls, v):
+        if v and not ObjectId.is_valid(v):
+            raise HTTPException(status_code=400, detail="ID inválido.")
         return v.strip()

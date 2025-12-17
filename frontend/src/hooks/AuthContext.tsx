@@ -222,6 +222,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         assinatura: data.assinatura,
         isSuperAdmin: data.isSuperAdmin,
         firebaseUID: data.firebaseUID,
+        assignatura: data.assinatura,
       });
     } catch (error) {
       console.error("Erro no login:", error);

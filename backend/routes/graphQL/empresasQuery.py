@@ -31,7 +31,9 @@ class EmpresaQuery:
             if jwt.get("isSuperAdmin", False):
                 is_admin = True
             else:
-                user_empresa = await users_empresas_collection.find_one({"user_id": ObjectId(jwt["user_id"]), "empresa_id": empresa["_id"]})
+                user_empresa = await users_empresas_collection.find_one(
+                    {"user_id": ObjectId(jwt["user_id"]), "empresa_id": empresa["_id"]}
+                )
                 if not user_empresa or not user_empresa.get("isAdmin", False):
                     raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para ver esta empresa.")
                 is_admin = user_empresa.get("isAdmin", False)
@@ -79,7 +81,9 @@ class EmpresaQuery:
                 if jwt.get("isSuperAdmin", False):
                     is_admin = True
                 else:
-                    user_empresa = await users_empresas_collection.find_one({"user_id": ObjectId(jwt["user_id"]), "empresa_id": empresa["_id"]})
+                    user_empresa = await users_empresas_collection.find_one(
+                        {"user_id": ObjectId(jwt["user_id"]), "empresa_id": empresa["_id"]}
+                    )
                     if not user_empresa or not user_empresa.get("isAdmin", False):
                         continue  # Ignora empresas sem permissão
                     is_admin = user_empresa.get("isAdmin", False)
@@ -138,7 +142,8 @@ class EmpresaQuery:
                 empresa_data["isAdmin"] = True
             else:
                 empresa_data["isAdmin"] = any(
-                    user_empresa["empresa_id"] == empresa["_id"] and user_empresa.get("isAdmin", False) for user_empresa in user_empresas
+                    user_empresa["empresa_id"] == empresa["_id"] and user_empresa.get("isAdmin", False)
+                    for user_empresa in user_empresas
                 )
 
             empresas.append(Empresa(**filter_null_fields(empresa_data)))

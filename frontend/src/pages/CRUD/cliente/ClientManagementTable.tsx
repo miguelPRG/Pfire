@@ -130,6 +130,11 @@ export default function ClientManagementTable() {
 
   // Paginação
   useEffect(() => {
+
+    if(page == 0){
+      return;
+    }
+
     fetchClientes({
       variables: {
         empresaId: empresa?.id,

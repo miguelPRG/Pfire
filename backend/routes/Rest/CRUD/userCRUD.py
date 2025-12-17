@@ -110,35 +110,8 @@ async def activate_user(request: Request, user: UserActivation):
     result = await users_collection.update_one({"_id": ObjectId(user.id)}, {"$set": updated_fields})
 
     if not result.modified_count:
-        raise HTTPException(status_code=409, detail="Erro ao ativar utilizador. Verifica se o utilizador existe ou se já foi ativado.")
+        raise HTTPException(
+            status_code=409, detail="Erro ao ativar utilizador. Verifica se o utilizador existe ou se já foi ativado."
+        )
 
     return {"message": "Utilizador ativado com sucesso!"}
-
-
-@routerUser.patch("/deactivate")
-async def deactivate_me(request: Request):
-    """
-    Desactiva la cuenta del usuario autenticado (self-service).
-    Requiere cookie _fp válida (middleware ya la valida e inyecta request.state.jwt).
-    """
-    jwt = getattr(request.state, "jwt", None)
-    if not jwt:
-        # Si no hay cookie _fp o no es válida, tu middleware devuelve 401 antes de entrar aquí
-        raise HTTPException(status_code=401, detail="Não autenticado")
-
-    email = jwt.get("email")
-    if not email:
-        raise HTTPException(status_code=400, detail="Token inválido (sem email)")
-
-    result = await users_collection.update_one({"email": email}, {"$set": {"isActive": False, "updated_at": datetime.now()}})
-
-    resp = JSONResponse({"ok": True, "message": "Conta desativada"})
-    # Borra la cookie con las mismas propiedades de path que usas al setearla
-    resp.delete_cookie("_fp", path="/")
-    return resp
-
-    # if not result.modified_count:
-    # O no existe o ya estaba desactivado; lo tratamos como idempotente
-    #    return {"ok": True, "message": "Conta já estava desativada"}
-
-    # return {"ok": True, "message": "Conta desativada"}
