@@ -73,16 +73,22 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str):
     user_id = ObjectId(jwt["user_id"])
     id = ObjectId(id)
 
-    if empresa.logo:
-        # Converter string base 64 para BinaryData do mongoDB
-        try:
-            empresa.logo = b64decode(empresa.logo)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail="Erro ao decodificar a imagem. Verifica se a imagem está em base64.")
+    delete_logo = False
 
-        tipo = what(None, empresa.logo)
-        if tipo not in ["jpeg", "jpg", "png"]:
-            raise HTTPException(status_code=404, detail="Tipo de imagem não permitido. Apenas JPEG e PNG são aceitos.")
+    if empresa.logo:
+        # Se o cliente enviar a string especial "apagar", vamos remover o logo
+        if isinstance(empresa.logo, str) and empresa.logo.lower() == "apagar":
+            delete_logo = True
+        else:
+            # Converter string base 64 para BinaryData do mongoDB
+            try:
+                empresa.logo = b64decode(empresa.logo)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail="Erro ao decodificar a imagem. Verifica se a imagem está em base64.")
+
+            tipo = what(None, empresa.logo)
+            if tipo not in ["jpeg", "jpg", "png"]:
+                raise HTTPException(status_code=404, detail="Tipo de imagem não permitido. Apenas JPEG e PNG são aceitos.")
 
     # Se o utilizador não for super admin, verificar se ele é admin da empresa que quer atualizar
     if not jwt.get("isSuperAdmin", False):
@@ -97,7 +103,13 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str):
     empresa_data["updated_at"] = datetime.now()
     del empresa_data["recaptchaToken"]
 
-    result = await empresas_collection.update_one({"_id": ObjectId(id)}, {"$set": empresa_data})
+    # Construir operações de update: $set e opcionalmente $unset
+    update_ops = {"$set": empresa_data}
+    if delete_logo:
+        update_ops["$set"].pop("logo", None)
+        update_ops["$unset"] = {"logo": ""}
+
+    result = await empresas_collection.update_one({"_id": ObjectId(id)}, update_ops)
 
     if not result.modified_count:
         raise HTTPException(status_code=400, detail="Erro ao atualizar empresa. Verifica se a empresa existe.")

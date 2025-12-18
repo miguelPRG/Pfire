@@ -271,6 +271,33 @@ function EditProfilePage() {
     }
   };
 
+  // Adicionar handlers para apagar assinatura e logo
+  const handleDeleteSignature = async () => {
+    setSubmitting((s) => ({ ...s, info: true }));
+    try {
+      await updateUser({ assinatura: "apagar" }); // backend espera "apagar"
+      userInfoForm.setValue("assinatura", "", { shouldDirty: true, shouldValidate: false });
+      setGlobalMessage({ error: false, message: "Assinatura apagada com sucesso" });
+    } catch (err: any) {
+      setGlobalMessage({ error: true, message: err?.message || "Erro ao apagar assinatura" });
+    } finally {
+      setSubmitting((s) => ({ ...s, info: false }));
+    }
+  };
+
+  const handleDeleteLogo = async () => {
+    setSubmitting((s) => ({ ...s, company: true }));
+    try {
+      await updateCompany({ logo: "apagar" }, empresa?.id || "");
+      companyForm.setValue("logo", "", { shouldDirty: true, shouldValidate: false });
+      setGlobalMessage({ error: false, message: "Logotipo apagado com sucesso" });
+    } catch (err: any) {
+      setGlobalMessage({ error: true, message: err?.message || "Erro ao apagar logotipo" });
+    } finally {
+      setSubmitting((s) => ({ ...s, company: false }));
+    }
+  };
+
   return (
     <Container maxWidth={false} sx={{ mt: 5 }}>
       <div ref={topRef} />
@@ -407,6 +434,18 @@ function EditProfilePage() {
                   }}
                 />
               </Paper>
+            </Box>
+
+            {/* Botão vermelho para apagar assinatura */}
+            <Box display="flex" justifyContent="center" mt={5}>
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={handleDeleteSignature}
+                disabled={submitting.info || !(userInfoForm.watch("assinatura") || user?.assinatura)}
+              >
+                Apagar assinatura
+              </Button>
             </Box>
           </Grid>
 
@@ -596,6 +635,18 @@ function EditProfilePage() {
                     }}
                   />
                 </Paper>
+              </Box>
+
+              {/* Botão vermelho para apagar logotipo */}
+              <Box display="flex" justifyContent="center" mt={12}>
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={handleDeleteLogo}
+                  disabled={submitting.company || !(companyForm.watch("logo") || empresa?.logo)}
+                >
+                  Apagar logotipo
+                </Button>
               </Box>
             </Grid>
             <Grid size={{ xs: 12, sm: 6 }}>

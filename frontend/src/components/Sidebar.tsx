@@ -4,6 +4,7 @@ import {
   Description as DescriptionIcon,
   Layers as LayersIcon,
   Engineering as EngineeringIcon,
+  CardMembership as CardMembershipIcon,
 } from "@mui/icons-material";
 import GroupIcon from "@mui/icons-material/Group";
 import { useAuth } from "../hooks/AuthContext";
@@ -61,6 +62,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
             </ListItemButton>
           </ListItem>
         )}
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => handleNavigation("/pricing")}>
+            <ListItemIcon>
+              <CardMembershipIcon />
+            </ListItemIcon>
+            <ListItemText primary="Planos" />
+          </ListItemButton>
+        </ListItem>
       </List>
     </Box>
   );

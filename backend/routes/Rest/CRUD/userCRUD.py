@@ -9,7 +9,7 @@ from passlib.context import CryptContext
 from models.userModels import UserUpdate, UserActivation
 from datetime import datetime
 from database import users_collection
-from controller.token_blacklist import add_token_to_blacklist  # Nueva función para usar Redis
+from controller.token_blacklist import add_token_to_blacklist  # Nova função para usar Redis
 
 
 routerUser = APIRouter(prefix="/user")
@@ -32,22 +32,36 @@ async def update_user(user: UserUpdate, request: Request):
     jwt = getattr(request.state, "jwt", None)
     user_id = ObjectId(jwt["user_id"])
 
-    if user.assinatura:
-        # Converter string base 64 para BinaryData do mongoDB
-        try:
-            user.assinatura = b64decode(user.assinatura)
-        except Exception as e:
-            raise HTTPException(status_code=400, detail="Erro ao decodificar a imagem. Verifica se a imagem está em base64.")
+    delete_signature = False
 
-        tipo = what(None, user.assinatura)
-        if tipo not in ["jpeg", "jpg", "png"]:
-            raise HTTPException(status_code=404, detail="Tipo de imagem não permitido. Apenas JPEG e PNG são aceitos.")
+    if user.assinatura:
+        # Se o cliente enviar a string especial "apagar", vamos remover a assinatura
+        if isinstance(user.assinatura, str) and user.assinatura.lower() == "apagar":
+            delete_signature = True
+        else:
+            # Converter string base 64 para BinaryData do mongoDB            
+            try:
+                user.assinatura = b64decode(user.assinatura)
+            except Exception as e:
+                raise HTTPException(status_code=400, detail="Erro ao decodificar a imagem. Verifica se a imagem está em base64.")
+
+            tipo = what(None, user.assinatura)
+            if tipo not in ["jpeg", "jpg", "png"]:
+                raise HTTPException(status_code=404, detail="Tipo de imagem não permitido. Apenas JPEG e PNG são aceitos.")
 
     update_data = user.model_dump(exclude_unset=True)
     update_data["updated_at"] = datetime.now()
     update_data["updated_by"] = user_id
 
-    result = await users_collection.update_one({"_id": user_id, "isActive": True}, {"$set": update_data})
+    # Construir operações de update: $set e opcionalmente $unset
+    update_ops = {"$set": update_data}
+
+    if delete_signature:
+        # Garantir que assinatura não seja colocada em $set e adicionar $unset
+        update_ops["$set"].pop("assinatura", None)
+        update_ops["$unset"] = {"assinatura": ""}
+
+    result = await users_collection.update_one({"_id": user_id, "isActive": True}, update_ops)
 
     if not result.modified_count:
         raise HTTPException(status_code=400, detail="Erro ao atualizar. O utilizador não foi encontrado ou não está ativo.")

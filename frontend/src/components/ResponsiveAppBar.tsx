@@ -11,6 +11,7 @@ import {
   Tooltip,
   MenuItem,
   Typography,
+  Badge,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import { useAuth } from "../hooks/AuthContext";
@@ -22,8 +23,31 @@ import BusinessIcon from "@mui/icons-material/Business";
 import LogoutIcon from "@mui/icons-material/Logout";
 import "../assets/styles/ResponsiveAppBar.css";
 
+interface NavLinkProps {
+  onClick: () => void;
+  children: React.ReactNode;
+  sx?: object;
+}
+
+const NavLink = ({ onClick, children, sx = {} }: NavLinkProps) => (
+  <Typography
+    variant="body1"
+    sx={{
+      cursor: "pointer",
+      color: "inherit",
+      textDecoration: "none",
+      fontWeight: 500,
+      "&:hover": { textDecoration: "underline" },
+      ...sx,
+    }}
+    onClick={onClick}
+  >
+    {children}
+  </Typography>
+);
+
 function ResponsiveAppBar() {
-  const { logout, empresa } = useAuth();
+  const { logout, empresa, user } = useAuth();
   const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const theme = useTheme();
@@ -65,9 +89,8 @@ function ResponsiveAppBar() {
   ];
 
   return (
-    <Box>
+    <Box component={"header"}>
       <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
-
       <AppBar
         position="fixed"
         elevation={trigger ? 4 : 0}
@@ -138,110 +161,87 @@ function ResponsiveAppBar() {
                 justifyContent: "center",
                 ml: 2,
                 mr: 2,
-                gap: 5.5, // deixa os links mais próximos
+                gap: 5.5,
               }}
             >
-              <Typography
-                variant="body1"
-                sx={{
-                  cursor: "pointer",
-                  color: "inherit",
-                  textDecoration: "none",
-                  ml: 2,
-                  fontWeight: 500,
-                  "&:hover": { textDecoration: "underline" },
-                }}
-                onClick={() => navigate("/report-models")}
-              >
+              <NavLink onClick={() => navigate("/report-models")} sx={{ ml: 2 }}>
                 Modelos
-              </Typography>
-              <Typography
-                variant="body1"
-                sx={{
-                  cursor: "pointer",
-                  color: "inherit",
-                  textDecoration: "none",
-                  fontWeight: 500,
-                  "&:hover": { textDecoration: "underline" },
-                }}
-                onClick={() => navigate("/clients-list")}
-              >
+              </NavLink>
+              <NavLink onClick={() => navigate("/clients-list")}>
                 Clientes
-              </Typography>
+              </NavLink>
+              <NavLink onClick={() => navigate("/plans")}>
+                Planos
+              </NavLink>
               {empresa?.isAdmin && (
-                <Typography
-                  variant="body1"
-                  sx={{
-                    cursor: "pointer",
-                    color: "inherit",
-                    textDecoration: "none",
-                    fontWeight: 500,
-                    "&:hover": { textDecoration: "underline" },
-                  }}
-                  onClick={() => navigate("/users-list")}
-                >
+                <NavLink onClick={() => navigate("/users-list")}>
                   Funcionários
-                </Typography>
+                </NavLink>
               )}
             </Box>
           </div>
 
-          {/* Box 3: User + Dropdown */}
+          {/* Box 3: Assinatura (base64 circular) + Nome do usuário, alinhados à direita */}
           <Box sx={{ display: "flex", alignItems: "center", flex: "0 0 auto" }}>
-            <Tooltip title="Open settings">
-              <IconButton
-                onClick={openUserMenu}
+            <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 5 }}>
+              <Typography
+                variant="body2"
                 sx={{
-                  p: 0,
+                  color: "inherit",
+                  fontWeight: 500,
+                  textAlign: "right",
+                  display: { xs: "none", lg: "block" },
                 }}
               >
-                <Avatar alt="User Avatar" src="/static/images/avatar/2.jpg" />
-              </IconButton>
-            </Tooltip>
-            <Menu
-              anchorEl={anchorElUser}
-              open={Boolean(anchorElUser)}
-              onClose={closeUserMenu}
-              anchorOrigin={{
-                vertical: "bottom",
-                horizontal: "left",
-              }}
-              transformOrigin={{
-                vertical: "top",
-                horizontal: "left",
-              }}
-              slotProps={{
-                paper: {
-                  sx: {
-                    mt: 3,
-                    minWidth: 140,
-                    maxWidth: 200,
-                    boxShadow: 3,
-                  },
-                },
-              }}
-            >
-              {userSettings.map(({ label, icon, action }) => (
-                <MenuItem
-                  key={label}
-                  onClick={() => {
-                    closeUserMenu();
-                    action();
-                  }}
+                {user?.nome}
+              </Typography>
+              <Tooltip title="Abrir configurações">
+                <IconButton
+                  onClick={openUserMenu}
+                  sx={{ p: 0 }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    {icon}
-                    <Typography variant="body2" textAlign="left" width="100%">
-                      {label}
-                    </Typography>
-                  </Box>
-                </MenuItem>
-              ))}
-            </Menu>
+                  <Avatar
+                    alt={user?.nome || "User"}
+                    src={user?.assinatura ? `data:image/png;base64,${user.assinatura}` : "/static/images/avatar/2.jpg"}
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      border: "2px solid white",
+                    }}
+                  >
+                    {!user?.assinatura && user?.nome?.charAt(0).toUpperCase()}
+                  </Avatar>
+                </IconButton>
+              </Tooltip>
+            </Box>
           </Box>
+          <Menu
+            anchorEl={anchorElUser}
+            open={Boolean(anchorElUser)}
+            onClose={closeUserMenu}
+            anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+            transformOrigin={{ vertical: "top", horizontal: "left" }}
+            slotProps={{ paper: { sx: { mt: 3, minWidth: 140, maxWidth: 200, boxShadow: 3 } } }}
+          >
+            {userSettings.map(({ label, icon, action }) => (
+              <MenuItem
+                key={label}
+                onClick={() => {
+                  closeUserMenu();
+                  action();
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  {icon}
+                  <Typography variant="body2" textAlign="left" width="100%">
+                    {label}
+                  </Typography>
+                </Box>
+              </MenuItem>
+            ))}
+          </Menu>
         </Toolbar>
       </AppBar>
-
       <Box sx={{ height: 100 }} />
     </Box>
   );
