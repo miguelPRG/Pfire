@@ -27,7 +27,7 @@ from database import (
     relatorios_collection,
     modelos_collection,
     clientes_collection,
-    criterios_collection
+    criterios_collection,
 )
 from uuid import uuid4
 from bson import ObjectId
@@ -591,9 +591,7 @@ async def converter_relatorio_pdf(request: Request, user: UserConverterPDF):
     relatorios_para_pdf = []
 
     try:
-        cursor = relatorios_collection.find(
-            {"modelo_id": modelo_id, "empresa_id": empresa_id, "cliente_id": cliente_id}
-        ).sort("created_at", -1)
+        cursor = relatorios_collection.find({"modelo_id": modelo_id, "empresa_id": empresa_id, "cliente_id": cliente_id}).sort("created_at", -1)
 
         async for rel in cursor:
             relatorios_para_pdf.append(rel)
@@ -606,15 +604,14 @@ async def converter_relatorio_pdf(request: Request, user: UserConverterPDF):
             empresa_logo = b64encode(empresa_logo).decode("utf-8")
 
         # gerar_pdf deve retornar um BytesIO
-        final_pdf = gerar_pdf(relatorios_para_pdf, modelo_doc, cliente_doc, empresa_logo, criterios=await criterios_collection.find_one({"modelo_id": modelo_id}))
+        final_pdf = gerar_pdf(
+            relatorios_para_pdf, modelo_doc, cliente_doc, empresa_logo, criterios=await criterios_collection.find_one({"modelo_id": modelo_id})
+        )
         final_pdf.seek(0)
 
         pdf_size = len(final_pdf.getvalue())
         if pdf_size > SIZE_20_MB:
-            raise HTTPException(
-                status_code=413,
-                detail=f"PDF demasiado pesado: {pdf_size/(1024*1024):.2f} MB (máx 20 MB)"
-            )
+            raise HTTPException(status_code=413, detail=f"PDF demasiado pesado: {pdf_size/(1024*1024):.2f} MB (máx 20 MB)")
 
         return StreamingResponse(
             final_pdf,

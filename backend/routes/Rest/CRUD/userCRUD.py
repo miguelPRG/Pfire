@@ -39,7 +39,7 @@ async def update_user(user: UserUpdate, request: Request):
         if isinstance(user.assinatura, str) and user.assinatura.lower() == "apagar":
             delete_signature = True
         else:
-            # Converter string base 64 para BinaryData do mongoDB            
+            # Converter string base 64 para BinaryData do mongoDB
             try:
                 user.assinatura = b64decode(user.assinatura)
             except Exception as e:
@@ -124,8 +124,6 @@ async def activate_user(request: Request, user: UserActivation):
     result = await users_collection.update_one({"_id": ObjectId(user.id)}, {"$set": updated_fields})
 
     if not result.modified_count:
-        raise HTTPException(
-            status_code=409, detail="Erro ao ativar utilizador. Verifica se o utilizador existe ou se já foi ativado."
-        )
+        raise HTTPException(status_code=409, detail="Erro ao ativar utilizador. Verifica se o utilizador existe ou se já foi ativado.")
 
     return {"message": "Utilizador ativado com sucesso!"}

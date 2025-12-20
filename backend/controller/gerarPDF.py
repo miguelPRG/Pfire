@@ -2,6 +2,7 @@ from weasyprint import HTML
 from io import BytesIO
 from typing import Any
 
+
 def gerar_pdf(relatorios: list[dict], modelo: dict, cliente: dict, empresa_logo: str | None, criterios: dict) -> BytesIO:
     styles = """
     <style>
@@ -199,11 +200,11 @@ def gerar_pdf(relatorios: list[dict], modelo: dict, cliente: dict, empresa_logo:
         criterios_list = criterios
     elif isinstance(criterios, dict):
         # Caso seja um único critério (com chaves 'nome'/'options'), embrulha
-        if 'nome' in criterios or 'options' in criterios:
+        if "nome" in criterios or "options" in criterios:
             criterios_list = [criterios]
         # Se tiver uma chave que contenha a lista de critérios
-        elif isinstance(criterios.get('criterios'), list):
-            criterios_list = criterios.get('criterios')
+        elif isinstance(criterios.get("criterios"), list):
+            criterios_list = criterios.get("criterios")
         else:
             # Caso seja um dict id->criterio, iteramos pelos valores
             criterios_list = [v for v in criterios.values() if isinstance(v, dict)]
@@ -213,14 +214,14 @@ def gerar_pdf(relatorios: list[dict], modelo: dict, cliente: dict, empresa_logo:
 
     if criterios_list:
         for criterio in criterios_list:
-            nome = criterio.get('nome', 'N/A')
-            options = criterio.get('options', []) or []
+            nome = criterio.get("nome", "N/A")
+            options = criterio.get("options", []) or []
             # tabela por critério: cabeçalho com nome do critério e linhas key/value
             html += f"<table class='criterio-table' role='table'><thead><tr><th colspan='2'>{nome}</th></tr></thead><tbody>"
             if options:
                 for opt in options:
-                    key = opt.get('key', 'N/A')
-                    val = opt.get('value', 'N/A')
+                    key = opt.get("key", "N/A")
+                    val = opt.get("value", "N/A")
                     html += f"<tr><td class='criterio-key'>{key}</td><td class='criterio-value'>{val}</td></tr>"
             else:
                 html += "<tr><td colspan='2'>Nenhuma opção disponível</td></tr>"

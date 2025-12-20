@@ -167,17 +167,9 @@ function ResponsiveAppBar() {
               <NavLink onClick={() => navigate("/report-models")} sx={{ ml: 2 }}>
                 Modelos
               </NavLink>
-              <NavLink onClick={() => navigate("/clients-list")}>
-                Clientes
-              </NavLink>
-              <NavLink onClick={() => navigate("/plans")}>
-                Planos
-              </NavLink>
-              {empresa?.isAdmin && (
-                <NavLink onClick={() => navigate("/users-list")}>
-                  Funcionários
-                </NavLink>
-              )}
+              <NavLink onClick={() => navigate("/clients-list")}>Clientes</NavLink>
+              <NavLink onClick={() => navigate("/plans")}>Planos</NavLink>
+              {empresa?.isAdmin && <NavLink onClick={() => navigate("/users-list")}>Funcionários</NavLink>}
             </Box>
           </div>
 
@@ -196,10 +188,7 @@ function ResponsiveAppBar() {
                 {user?.nome}
               </Typography>
               <Tooltip title="Abrir configurações">
-                <IconButton
-                  onClick={openUserMenu}
-                  sx={{ p: 0 }}
-                >
+                <IconButton onClick={openUserMenu} sx={{ p: 0 }}>
                   <Avatar
                     alt={user?.nome || "User"}
                     src={user?.assinatura ? `data:image/png;base64,${user.assinatura}` : "/static/images/avatar/2.jpg"}

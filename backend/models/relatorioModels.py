@@ -53,9 +53,7 @@ class RelatorioCreate(BaseModel):
             if key in MAIN_FIELDS:
                 continue
             if not key.startswith("custom_"):
-                raise HTTPException(
-                    status_code=400, detail=f"Nome de campo inválido: {key}. Os campos personalizados devem começar com 'custom_'"
-                )
+                raise HTTPException(status_code=400, detail=f"Nome de campo inválido: {key}. Os campos personalizados devem começar com 'custom_'")
 
         return values
 

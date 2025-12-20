@@ -32,7 +32,7 @@ app = FastAPI(lifespan=lifespan)
 # Configuração de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "https://pfirefront.netlify.app/"],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],  # Inclua OPTIONS
     allow_headers=["Content-Type", "Host", "Cookie"],

@@ -143,7 +143,7 @@ export default function ReportModelListPage() {
   // Pesquisa remota: a execução da busca avançada é controlada pelo AdvancedSearchBar (sem debounce).
   useEffect(() => {
     // quando pagina muda e não estamos em modo avançado, refaz a query padrão
-    
+
     if (!isAdvancedActive) {
       refetch?.({ empresaId: empresa?.id, start: page * rowsPerPage, name: undefined });
     } else {

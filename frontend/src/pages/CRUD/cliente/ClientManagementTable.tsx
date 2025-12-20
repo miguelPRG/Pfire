@@ -130,8 +130,7 @@ export default function ClientManagementTable() {
 
   // Paginação
   useEffect(() => {
-
-    if(page == 0){
+    if (page == 0) {
       return;
     }
 

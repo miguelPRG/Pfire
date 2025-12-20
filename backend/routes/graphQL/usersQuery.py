@@ -29,13 +29,9 @@ class UserQuery:
             raise HTTPException(status_code=404, detail="Empresa não encontrada.")
 
         if not jwt.get("isSuperAdmin", False):
-            user_empresa = await users_empresas_collection.find_one(
-                {"user_id": ObjectId(jwt["user_id"]), "empresa_id": empresa_id, "isAdmin": True}
-            )
+            user_empresa = await users_empresas_collection.find_one({"user_id": ObjectId(jwt["user_id"]), "empresa_id": empresa_id, "isAdmin": True})
             if not user_empresa:
-                raise HTTPException(
-                    status_code=403, detail="Acesso negado. Apenas administradores podem visualizar os utilizadores."
-                )
+                raise HTTPException(status_code=403, detail="Acesso negado. Apenas administradores podem visualizar os utilizadores.")
 
         filtro_users_empresas = {"empresa_id": empresa_id}
         filtro_users = {}

@@ -73,7 +73,7 @@ export default function PricingPage() {
               {plan.name}
             </Typography>
 
-            <Box sx={{ mb:5 }}>
+            <Box sx={{ mb: 5 }}>
               <Typography variant="h1" component="span">
                 €{plan.price}/mês
               </Typography>
@@ -90,18 +90,18 @@ export default function PricingPage() {
                     width: "100%",
                   }}
                 >
-                  
                   <Typography
                     variant="body1"
                     sx={{ width: "100%", textAlign: "center" }} // ocupa 100% e centraliza texto
                   >
-                    <CheckIcon sx={{ color: "#1976D2" }} />{feature}
+                    <CheckIcon sx={{ color: "#1976D2" }} />
+                    {feature}
                   </Typography>
                 </Box>
               ))}
             </Box>
 
-            <Button variant={"contained"} sx={{display: 'absolute', top: '20%'}}>
+            <Button variant={"contained"} sx={{ display: "absolute", top: "20%" }}>
               Selecionar {plan.name}
             </Button>
           </Paper>

@@ -163,7 +163,7 @@ function App() {
             <Route path="/editar-criterio" element={<ProtectedRoute element={<CreateCriteriaPage />} />} />
             {/* Rota de fallback para redirecionar usuários não autenticados */}
             <Route path="/add-new-report" element={<ProtectedRoute element={<AddNewReportPage />} />} />
-            <Route path="/plans" element={<ProtectedRoute element={<PricingPage/>}/>}/>
+            <Route path="/plans" element={<ProtectedRoute element={<PricingPage />} />} />
             {/* Rota de fallback para redirecionar usuários não autenticados */}
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

@@ -57,7 +57,6 @@ interface FileSystemWritableFileStream extends WritableStream<Uint8Array> {
   close(): Promise<void>;
 }
 
-
 /*
   Interface Report:
   - descreve o formato esperado de cada relatório recebido da API.
@@ -312,7 +311,6 @@ export default function ReportListPage() {
     return String(val);
   };
 
-
   const hardDeleteReport = async (report: Report) => {
     try {
       const data = await fetch("/backend/relatorio/", {
@@ -327,7 +325,6 @@ export default function ReportListPage() {
       });
 
       if (data.ok) {
-
         console.log("Relatório eliminado com sucesso.");
         setAlert({ message: "Relatório eliminado com sucesso.", isError: false });
         // Refetch para atualizar a lista após exclusão
@@ -340,8 +337,7 @@ export default function ReportListPage() {
           setReports(result.data.getRelatorios.relatorios);
         }
       }
-    }
-    catch (err) {
+    } catch (err) {
       console.error("Erro ao eliminar relatório:", err);
       setAlert({ message: "Erro ao eliminar relatório.", isError: true });
     }
@@ -673,11 +669,7 @@ export default function ReportListPage() {
                   <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }}>
                     Data Criação
                   </TableCell>
-                  <TableCell
-                    rowSpan={2}
-                    sx={{ ...headerCell, color: theme.palette.common.white }}
-                    align="center"
-                  >
+                  <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }} align="center">
                     Ações
                   </TableCell>
                 </TableRow>
@@ -777,17 +769,10 @@ export default function ReportListPage() {
       </Paper>
 
       {/* Dialog de seleção de cliente para exportação */}
-      <Dialog 
-        open={exportDialogOpen} 
-        onClose={() => setExportDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
+      <Dialog open={exportDialogOpen} onClose={() => setExportDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: "bold" }}>Selecionar Cliente para Exportação</DialogTitle>
         <DialogContent>
-          <Typography sx={{ mb: 2 }}>
-            Selecione o cliente cujos relatórios deseja exportar para PDF.
-          </Typography>
+          <Typography sx={{ mb: 2 }}>Selecione o cliente cujos relatórios deseja exportar para PDF.</Typography>
           <Autocomplete
             fullWidth
             options={clientesData?.getClientes?.clientes || []}
@@ -798,14 +783,7 @@ export default function ReportListPage() {
               setClienteInputValue(newValue ? newValue.nome : "");
             }}
             isOptionEqualToValue={(option, value) => option.id === value.id}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Selecione um Cliente"
-                fullWidth
-                sx={{ mt: 2 }}
-              />
-            )}
+            renderInput={(params) => <TextField {...params} label="Selecione um Cliente" fullWidth sx={{ mt: 2 }} />}
             loading={clientesLoading}
             openOnFocus
             autoHighlight
@@ -813,12 +791,12 @@ export default function ReportListPage() {
             onInputChange={(_, newInputValue, reason) => {
               setClienteInputValue(newInputValue);
               if (reason === "input" && empresa?.id) {
-                getClientes({ 
-                  variables: { 
-                    empresaId: empresa.id, 
+                getClientes({
+                  variables: {
+                    empresaId: empresa.id,
                     start: 0,
-                    filter: newInputValue ? { nome: newInputValue } : {}
-                  } 
+                    filter: newInputValue ? { nome: newInputValue } : {},
+                  },
                 });
               }
             }}
@@ -855,12 +833,7 @@ export default function ReportListPage() {
           <Button onClick={() => setExportDialogOpen(false)} variant="outlined">
             Cancelar
           </Button>
-          <Button
-            onClick={handleExportAll}
-            color="primary"
-            variant="contained"
-            disabled={!selectedClienteForExport}
-          >
+          <Button onClick={handleExportAll} color="primary" variant="contained" disabled={!selectedClienteForExport}>
             Exportar PDF
           </Button>
         </DialogActions>
