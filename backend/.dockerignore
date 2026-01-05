@@ -4,6 +4,7 @@ __pycache__/
 *.db
 .python*
 .env
+*.sh
 .git/
 .DS_Store
 .dockerignore
