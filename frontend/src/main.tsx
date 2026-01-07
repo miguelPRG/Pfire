@@ -7,6 +7,23 @@ import { RecaptchaProvider } from "./hooks/RecaptchaContext";
 import App from "./App";
 import client from "./graphql/apolloClient";
 
+function loadRecaptcha(siteKey: string) {
+  const id = 'recaptcha-enterprise';
+  if (document.getElementById(id)) return;
+
+  const script = document.createElement('script');
+  script.id = id;
+  script.async = true;
+  script.defer = true;
+  script.src = `https://www.google.com/recaptcha/enterprise.js?render=${siteKey}`;
+  document.head.appendChild(script);
+}
+
+const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
+if (siteKey) {
+  loadRecaptcha(siteKey);
+}
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
     <TemaProvider>

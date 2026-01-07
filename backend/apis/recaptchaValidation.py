@@ -5,6 +5,7 @@ from os import getenv
 # Substitua pelos seus dados do Google Cloud
 PROJECT_ID = getenv("GOOGLE_CLOUD_PROJECT_ID")  # ID do seu projeto no Google Cloud
 GOOGLE_CLOUD_API_KEY = getenv("GOOGLE_CLOUD_API_KEY")  # Chave da API do Google Cloud
+SITE_KEY= getenv("SITE_KEY")
 
 
 async def validar_recaptcha_token(token: str, action: str):
@@ -16,7 +17,7 @@ async def validar_recaptcha_token(token: str, action: str):
     payload = {
         "event": {
             "token": token,
-            "siteKey": "6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4",  # Chave do site (frontend)
+            "siteKey": SITE_KEY,  # Chave do site (frontend)
             "expectedAction": action,  # Nome da ação definida no frontend
         }
     }
