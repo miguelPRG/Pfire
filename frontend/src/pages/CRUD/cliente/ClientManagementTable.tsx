@@ -2,9 +2,24 @@
 import { useState, useEffect } from "react";
 import { useLazyQuery } from "@apollo/client/react";
 import {
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-  Paper, Box, Pagination, Typography, Button, Link, Dialog,
-  DialogTitle, DialogContent, DialogActions, Breadcrumbs, Tooltip,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Box,
+  Pagination,
+  Typography,
+  Button,
+  Link,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Breadcrumbs,
+  Tooltip,
 } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { GET_CLIENTES_BY_EMPRESA } from "../../../graphql/clientesQueries";

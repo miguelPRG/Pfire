@@ -843,7 +843,9 @@ export default function ReportListPage() {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} variant="outlined">Cancelar</Button>
+          <Button onClick={() => setDeleteDialogOpen(false)} variant="outlined">
+            Cancelar
+          </Button>
           <Button
             onClick={async () => {
               if (selectedReport) {

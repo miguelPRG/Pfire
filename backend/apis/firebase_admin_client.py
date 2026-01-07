@@ -1,7 +1,7 @@
 from firebase_admin import auth as firebase_auth
 from pathlib import Path
 
-SERVICE_ACCOUNT_PATH = Path(__file__).parent / "../chaves/serviceAccountKey.json"
+SERVICE_ACCOUNT_PATH = Path("/etc/secrets/serviceAccountKey.json")
 
 
 async def verify_firebase_token(id_token: str) -> dict:

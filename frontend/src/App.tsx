@@ -64,9 +64,13 @@ const ProtectedRoute = ({ element }: { element: ReactElement }) => {
 const PublicRoute = ({ element }: { element: ReactElement }) => {
   const { user } = useAuth();
 
-  console.log("Verificando rota pública para usuário:", user ? user.id : "Nenhum usuário");
+  // Only log if user is not authenticated
+  if (!user) {
+    console.log("Verificando rota pública para usuário: Nenhum usuário");
+    return element;
+  }
 
-  return user ? <Navigate to="/" /> : element;
+  return <Navigate to="/" />; // Redirect authenticated users
 };
 
 const ChooseCompanyRoute = () => {

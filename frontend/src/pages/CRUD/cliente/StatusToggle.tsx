@@ -9,12 +9,7 @@ type StatusToggleProps = {
   size?: "small" | "medium" | "large";
 };
 
-export default function StatusToggle({
-  active,
-  loading,
-  onToggle,
-  size = "medium",
-}: StatusToggleProps) {
+export default function StatusToggle({ active, loading, onToggle, size = "medium" }: StatusToggleProps) {
   const theme = useTheme();
 
   return (
@@ -44,13 +39,7 @@ export default function StatusToggle({
         if (!loading) onToggle();
       }}
     >
-      {loading ? (
-        <CircularProgress size={28} sx={{ color: "#fff" }} />
-      ) : active ? (
-        "Ativo"
-      ) : (
-        "Inativo"
-      )}
+      {loading ? <CircularProgress size={28} sx={{ color: "#fff" }} /> : active ? "Ativo" : "Inativo"}
     </Button>
   );
 }

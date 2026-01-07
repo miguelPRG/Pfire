@@ -83,12 +83,12 @@ interface AuthContextType {
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
-// Para salir del contexto y eliminar la cookie de autenticación
+// Para salir del contexto e eliminar a cookie de autenticação
 export function killAuthCookie() {
   try {
     document.cookie = `_fp=; Max-Age=0; path=/`;
     document.cookie = `_fp=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-    // Si tu login seteó domain, repite con domain explícito:
+    // Se o teu login setou domain, repete com domain explícito:
     document.cookie = `_fp=; Max-Age=0; path=/; domain=${location.hostname}`;
   } catch {}
 }
@@ -97,7 +97,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserLoggedIn | null>(null);
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [loading, setLoading] = useState(true);
-
+  const [authError, setAuthError] = useState<string | null>(null); // Add state for authentication error
 
   // Hook para usar o reCAPTCHA
   const { generateToken } = useRecaptcha();
@@ -132,16 +132,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isSuperAdmin: userData.isSuperAdmin,
             firebaseUID: userData.firebaseUID,
           });
+          setLoading(false); // Set loading to false on successful auth
         } else {
-          setLoading(false); // <--- indica que o carregamento falhou
-          throw new Error(userData.detail || "Erro ao autenticar utilizador");
+          setAuthError(userData.detail || "Erro ao autenticar utilizador");
+          setLoading(false); // Set loading to false on error
         }
       } catch (error) {
         console.error("Erro ao verificar autenticação:", error);
+        setAuthError("Erro ao verificar autenticação");
+        setLoading(false); // Set loading to false on error
       }
     }
     checkAuth();
-  }, []);
+  }, []); // Ensure this effect runs only once
 
   useEffect(() => {
     if (!user) {
@@ -340,7 +343,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false); // <--- indica que o logout foi concluído
     }
-
   }
 
   function chooseCompany(empresa: Empresa) {

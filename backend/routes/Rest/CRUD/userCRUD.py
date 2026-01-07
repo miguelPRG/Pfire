@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse
 from apis.recaptchaValidation import validar_recaptcha_token
 from controller.jwtValidation import generate_jwt
 from base64 import b64decode
-from imghdr import what
+from filetype import guess
 from bson import ObjectId
 from passlib.context import CryptContext
 from models.userModels import UserUpdate, UserActivation
@@ -45,8 +45,8 @@ async def update_user(user: UserUpdate, request: Request):
             except Exception as e:
                 raise HTTPException(status_code=400, detail="Erro ao decodificar a imagem. Verifica se a imagem está em base64.")
 
-            tipo = what(None, user.assinatura)
-            if tipo not in ["jpeg", "jpg", "png"]:
+            tipo = guess(user.assinatura)
+            if not tipo or tipo.extension not in ["jpeg", "jpg", "png"]:
                 raise HTTPException(status_code=404, detail="Tipo de imagem não permitido. Apenas JPEG e PNG são aceitos.")
 
     update_data = user.model_dump(exclude_unset=True)

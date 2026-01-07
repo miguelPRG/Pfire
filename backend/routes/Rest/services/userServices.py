@@ -45,8 +45,7 @@ pwd_context = CryptContext(
     argon2__time_cost=3,
 )
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent.parent
-SERVICE_ACCOUNT_PATH = BASE_DIR / "chaves" / "serviceAccountKey.json"  # Camino correcto
+SERVICE_ACCOUNT_PATH = Path("/etc/secrets/serviceAccountKey.json")
 
 # Inicializa el Firebase usando el archivo de chaves
 cred = credentials.Certificate(str(SERVICE_ACCOUNT_PATH))
@@ -182,7 +181,7 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
         value=jwt_token,
         httponly=True,
         secure=True,
-        samesite="Strict",
+        samesite="None",
     )
     return response
 
@@ -191,7 +190,7 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
 @routerUser.post("/login")
 async def login(user: UserLogin, request: Request):
     # Validar el token reCAPTCHA (se descomenta según necesidad)
-    # await validar_recaptcha_token(user.recaptchaToken, "login")
+    await validar_recaptcha_token(user.recaptchaToken, "login")
 
     db_user = await users_collection.find_one({"email": user.email})
 
@@ -222,7 +221,7 @@ async def login(user: UserLogin, request: Request):
             "assinatura": assinatura_b64,  # <- vai apenas no corpo da resposta
         }
     )
-    response.set_cookie(key="_fp", value=token, httponly=True, samesite="Strict", secure=True)
+    response.set_cookie(key="_fp", value=token, httponly=True, samesite="None", secure=True)
 
     return response
 

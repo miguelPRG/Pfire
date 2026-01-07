@@ -17,10 +17,10 @@ merge_develop:
     - git config --global user.name "miguelgoncalves2024"
     - git fetch --unshallow || true
     - >
-      if [ "$CI_COMMIT_REF_NAME" != "develop" ]; then
+      if [ "$CI_COMMIT_REF_NAME" != "develop" ] && [ "$CI_COMMIT_REF_NAME" != "main" ]; then
         git merge origin/develop || exit 1;
       else
-        echo "Já estamos na branch develop. Nenhum merge necessário.";
+        echo "Estamos na branch $CI_COMMIT_REF_NAME. Nenhum merge necessário.";
       fi
 
 # Backend Security Check

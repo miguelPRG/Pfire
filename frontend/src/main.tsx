@@ -8,19 +8,19 @@ import App from "./App";
 import client from "./graphql/apolloClient";
 
 function loadRecaptcha(siteKey: string) {
-  const id = 'recaptcha-enterprise';
+  const id = "recaptcha-v3";
   if (document.getElementById(id)) return;
-
-  const script = document.createElement('script');
+  const script = document.createElement("script");
   script.id = id;
   script.async = true;
   script.defer = true;
-  script.src = `https://www.google.com/recaptcha/enterprise.js?render=${siteKey}`;
+  script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`;
   document.head.appendChild(script);
 }
 
 const siteKey = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string | undefined;
 if (siteKey) {
+  console.log("Carregando reCAPTCHA v3 com a chave do site: ", siteKey);
   loadRecaptcha(siteKey);
 }
 

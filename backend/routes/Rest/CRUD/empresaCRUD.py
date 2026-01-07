@@ -7,7 +7,7 @@ from database import empresas_collection, users_empresas_collection
 from bson import ObjectId
 from datetime import datetime
 from base64 import b64decode
-from imghdr import what
+from filetype import guess
 from pymongo.errors import DuplicateKeyError
 
 routerEmpresa = APIRouter(prefix="/empresa")
@@ -86,8 +86,8 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str):
             except Exception as e:
                 raise HTTPException(status_code=400, detail="Erro ao decodificar a imagem. Verifica se a imagem está em base64.")
 
-            tipo = what(None, empresa.logo)
-            if tipo not in ["jpeg", "jpg", "png"]:
+            tipo = guess(empresa.logo)
+            if tipo.mime not in ["image/jpeg", "image/png"]:
                 raise HTTPException(status_code=404, detail="Tipo de imagem não permitido. Apenas JPEG e PNG são aceitos.")
 
     # Se o utilizador não for super admin, verificar se ele é admin da empresa que quer atualizar

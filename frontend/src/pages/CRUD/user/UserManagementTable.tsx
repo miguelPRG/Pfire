@@ -1,8 +1,24 @@
 // src/pages/CRUD/user/UserManagementTable.tsx
 import { useState, useEffect } from "react";
 import {
-  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Box, Pagination,
-  TableSortLabel, Typography, Button, Container, Dialog, DialogTitle, DialogContent, DialogActions,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  TextField,
+  Box,
+  Pagination,
+  TableSortLabel,
+  Typography,
+  Button,
+  Container,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
   Breadcrumbs,
 } from "@mui/material";
 import { Delete } from "@mui/icons-material";
@@ -158,7 +174,9 @@ export default function UserManagementTable() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.detail || "Erro ao alterar papel.");
-      setUsers((prev) => prev.map((u) => (u.id === usr.id ? { ...u, role: usr.role === "Admin" ? "Técnico" : "Admin" } : u)));
+      setUsers((prev) =>
+        prev.map((u) => (u.id === usr.id ? { ...u, role: usr.role === "Admin" ? "Técnico" : "Admin" } : u))
+      );
       setAlert({ message: "Papel alterado com sucesso!", isError: false });
     } catch (err) {
       setAlert({ message: err instanceof Error ? err.message : "Erro ao alterar papel.", isError: true });
@@ -472,7 +490,15 @@ export default function UserManagementTable() {
               {...register("email")}
             />
             <DialogActions>
-              <Button variant="outlined" onClick={() => { setInviteOpen(false); reset(); }}>Cancelar</Button>
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  setInviteOpen(false);
+                  reset();
+                }}
+              >
+                Cancelar
+              </Button>
               <Button type="submit" color="success" variant="contained">
                 {isSubmitting ? "A enviar..." : "Enviar convite"}
               </Button>
@@ -486,8 +512,12 @@ export default function UserManagementTable() {
         <DialogTitle>Excluir Utilizador!</DialogTitle>
         <DialogContent>Tem certeza que deseja excluir este utilizador?</DialogContent>
         <DialogActions>
-          <Button onClick={handleCancelDelete} variant="outlined">Cancelar</Button>
-          <Button onClick={handleConfirmDelete} color="error" variant="contained">Eliminar</Button>
+          <Button onClick={handleCancelDelete} variant="outlined">
+            Cancelar
+          </Button>
+          <Button onClick={handleConfirmDelete} color="error" variant="contained">
+            Eliminar
+          </Button>
         </DialogActions>
       </Dialog>
 
