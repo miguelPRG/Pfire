@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+*.pyo
+*.db
+.python*
+.env
+*.sh
+.git/
+.DS_Store
+.dockerignore
+Dockerfile
+.gitignore
+venv/

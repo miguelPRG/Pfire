@@ -5,6 +5,7 @@ __pycache__/
 *.db
 .env
 .python*
+secrets/
 
 # Frontend
 node_modules/
@@ -46,3 +47,6 @@ dist-ssr/
 *.njsproj
 *.sln
 *.sw?
+
+#Chaves criptográficas
+chaves

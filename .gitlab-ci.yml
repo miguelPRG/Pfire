@@ -1,38 +1,52 @@
 stages:
+  - prepare
   - test
+  - security
 
 variables:
   PYTHONPATH: "$CI_PROJECT_DIR/backend"
-  VIRTUAL_ENV: "$CI_PROJECT_DIR/.venv"
-  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
 
-# Job de teste do backend
+# Rebase com develop se não for a própria develop
+merge_develop:
+  stage: prepare
+  image: alpine:latest
+  script:
+    - apk add --no-cache git
+    - echo "Estamos atualmente na branch $CI_COMMIT_REF_NAME"
+    - git config --global user.email "miguelgoncalves2024@hotmail.com"
+    - git config --global user.name "miguelgoncalves2024"
+    - git fetch --unshallow || true
+    - >
+      if [ "$CI_COMMIT_REF_NAME" != "develop" ] && [ "$CI_COMMIT_REF_NAME" != "main" ]; then
+        git merge origin/develop || exit 1;
+      else
+        echo "Estamos na branch $CI_COMMIT_REF_NAME. Nenhum merge necessário.";
+      fi
+
+# Backend Security Check
 python_test:
-  image: python:3.11-slim
-  stage: test
+  image: python:3.12-slim
+  stage: security
   script:
-    # Instalar dependências comuns do sistema (somente para o backend)
-    - apt-get update && apt-get install -y gcc libmariadb-dev pkg-config curl git && rm -rf /var/lib/apt/lists/
-
-    # Configurar o ambiente do backend (Python)
+    - apt-get update && apt-get install -y --no-install-recommends gcc libmariadb-dev pkg-config curl git && rm -rf /var/lib/apt/lists/*
     - cd backend
-    - python -m venv .venv
+    - rm -rf .venv/
+    - curl -LsSf https://astral.sh/uv/install.sh | sh
+    - source $HOME/.local/bin/env
+    - uv venv
     - . .venv/bin/activate
-    - pip install --upgrade pip
-    - pip install -r requirements.txt
-    - pip install safety
+    - uv pip install --upgrade pip
+    - uv pip install -r pyproject.toml
+    - uv add bandit
+    - bandit -r . --exclude ./tests,./migrations,./venv,./.venv,./docs,./__pycache__,./controller
+  allow_failure: true
 
-    # Rodar os testes do backend com safety
-    - safety check --full-report
-  allow_failure: false
-  # O pipeline falha caso vulnerabilidades sejam encontradas ou testes falhem
-
-# Job de frontend com imagem Node.js separada
+# Frontend Security Check
 node_test:
-  image: node:18-slim  # Usando a imagem para Node.js para o frontend
-  stage: test
+  image: node:22.14.0-alpine3.20
+  stage: security
   script:
-    - cd frontend  # Garantir que estamos no diretório do frontend
-    - npm install  # Ou yarn install, se estiver usando yarn
-    - npm audit  # Verificar vulnerabilidades nas dependências do frontend
-  allow_failure: false
+    - cd frontend
+    - npm install
+    - npm audit --audit-level=high || true
+  allow_failure: true

@@ -1,0 +1,36 @@
+import strawberry
+from datetime import datetime
+from typing import Optional
+
+
+@strawberry.input
+class EmpresaFilter:
+    nome: Optional[str] = None
+    nif: Optional[str] = None
+    localidade: Optional[str] = None
+    morada: Optional[str] = None
+    codigo_postal: Optional[str] = None
+    telefone: Optional[str] = None
+
+
+@strawberry.type
+class Empresa:
+    id: str
+    nome: str
+    nif: str
+    telefone: str
+    morada: str
+    localidade: str
+    codigo_postal: str
+    logo: Optional[str] = None  # Use Base64-encoded string for the logo
+    isAdmin: bool
+    created_at: datetime
+    created_by: Optional[str] = None
+    updated_by: Optional[str] = None
+    updated_at: Optional[datetime] = None
+
+
+@strawberry.type
+class EmpresaList:
+    empresas: list[Empresa]
+    totalEmpresas: int
