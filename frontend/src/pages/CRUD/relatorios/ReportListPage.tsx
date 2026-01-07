@@ -23,7 +23,7 @@ import { Add } from "@mui/icons-material";
 import HomeIcon from "@mui/icons-material/Home";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
-import { useQuery, useLazyQuery } from "@apollo/client/react";
+import { useQuery } from "@apollo/client/react";
 import { useAuth } from "../../../hooks/AuthContext";
 import { GET_REPORTS_BY_MODEL } from "../../../graphql/reportsQueries";
 import { GET_CLIENTES_BY_EMPRESA } from "../../../graphql/clientesQueries";
@@ -506,13 +506,7 @@ export default function ReportListPage() {
         {/* Breadcrumbs: navegação secundária */}
         <Breadcrumbs
           aria-label="breadcrumb"
-          sx={{
-            mb: 3,
-            backgroundColor: "background.paper",
-            maxWidth: "200px",
-            borderRadius: 5,
-            padding: 0.5,
-          }}
+          sx={{ mb: 3, backgroundColor: "background.paper", maxWidth: "200px", borderRadius: 5, padding: 0.5 }}
         >
           <StyledBreadcrumb
             sx={{ cursor: "pointer" }}
@@ -849,9 +843,7 @@ export default function ReportListPage() {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} variant="outlined">
-            Cancelar
-          </Button>
+          <Button onClick={() => setDeleteDialogOpen(false)} variant="outlined">Cancelar</Button>
           <Button
             onClick={async () => {
               if (selectedReport) {

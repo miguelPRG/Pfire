@@ -1,25 +1,10 @@
+// src/pages/CRUD/cliente/ClientManagementTable.tsx
 import { useState, useEffect } from "react";
 import { useLazyQuery } from "@apollo/client/react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Box,
-  Pagination,
-  Typography,
-  Button,
-  Link,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Breadcrumbs,
-  CircularProgress,
-  Tooltip,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
+  Paper, Box, Pagination, Typography, Button, Link, Dialog,
+  DialogTitle, DialogContent, DialogActions, Breadcrumbs, Tooltip,
 } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { GET_CLIENTES_BY_EMPRESA } from "../../../graphql/clientesQueries";
@@ -34,6 +19,7 @@ import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
 import { useRecaptcha } from "../../../hooks/RecaptchaContext";
 import { RecaptchaAction } from "../../../hooks/RecaptchaContext";
 import client from "../../../graphql/apolloClient";
+import StatusToggle from "./StatusToggle";
 
 export interface Cliente {
   id: string;
@@ -45,7 +31,7 @@ export interface Cliente {
   morada?: string;
   codigoPostal?: string;
   isActive?: boolean;
-  createdAt?: string; // novo campo
+  createdAt?: string;
 }
 
 interface returnedData {
@@ -53,14 +39,10 @@ interface returnedData {
     clientes: Cliente[];
     totalClientes: number;
   };
-
-  totalClientes: number;
 }
 
 export default function ClientManagementTable() {
-  // Todos os hooks no topo!
   const [page, setPage] = useState(0);
-  // flag para que solo muestre loading en la primera carga
   const [initialLoaded, setInitialLoaded] = useState(false);
   const [orderBy, setOrderBy] = useState<keyof Cliente | null>(null);
   const [order, setOrder] = useState<"asc" | "desc">("asc");
@@ -69,7 +51,6 @@ export default function ClientManagementTable() {
   const [selectedCliente, setSelectedCliente] = useState<Cliente | null>(null);
   const [loadingClienteId, setLoadingClienteId] = useState<string | null>(null);
 
-  // Advanced search state
   const [advValue, setAdvValue] = useState<{ field: string; text: string }>({ field: "", text: "" });
   const advFields = [
     { value: "nome", label: "Nome" },
@@ -86,38 +67,29 @@ export default function ClientManagementTable() {
   const { empresa } = useAuth();
   const { generateToken } = useRecaptcha();
 
-  // Estado único para fonte dos clientes e total
   const [clientes, setClientes] = useState<Cliente[]>([]);
-  const [totalClientes, setTotalClientes] = useState(0); // valor inicial
+  const [totalClientes, setTotalClientes] = useState(0);
 
   const [fetchClientes, { data, loading, error }] = useLazyQuery<returnedData>(GET_CLIENTES_BY_EMPRESA);
-
-  // Adicione um estado para saber se está em busca avançada
   const [isAdvancedSearch, setIsAdvancedSearch] = useState(false);
 
-  // Atualiza clientes quando data ou dadosFiltrados mudam
   useEffect(() => {
     const run = async () => {
-      //limpar a cache de consultas anteriores
       await client.clearStore();
-
       if (location.state?.message) {
         setAlert({
           message: location.state.message.text,
           isError: location.state.message.error,
         });
-        // Remove o estado da localização
         window.history.replaceState({}, document.title);
       }
-
       fetchClientes({
         variables: { empresaId: empresa?.id, start: 0 },
         fetchPolicy: "network-only",
       });
     };
-
     run();
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -126,9 +98,8 @@ export default function ClientManagementTable() {
       setTotalClientes(data.getClientes.totalClientes);
       if (!initialLoaded) setInitialLoaded(true);
     }
-  }, [data]);
+  }, [data, initialLoaded]);
 
-  // Paginação
   useEffect(() => {
     if (page == 0) {
       return;
@@ -142,12 +113,10 @@ export default function ClientManagementTable() {
       },
       fetchPolicy: "cache-first",
     });
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
-  // Função para aplicar consulta avançada
   const applyAdvancedFilter = () => {
-    totalClientes;
     setIsAdvancedSearch(true);
     setPage(0);
     fetchClientes({
@@ -160,16 +129,12 @@ export default function ClientManagementTable() {
     });
   };
 
-  // Função para limpar filtro avançado
   const clearAdvancedFilter = async () => {
     setIsAdvancedSearch(false);
     setAdvValue({ field: "", text: "" });
     setPage(0);
     const result = await fetchClientes({
-      variables: {
-        empresaId: empresa?.id,
-        start: 0,
-      },
+      variables: { empresaId: empresa?.id, start: 0 },
       fetchPolicy: "cache-first",
     });
     setClientes(result?.data.getClientes.clientes || []);
@@ -186,7 +151,6 @@ export default function ClientManagementTable() {
 
   const backgroundColor = theme.palette.mode === "dark" ? "rgb(12,12,12)" : "#f0f0f0";
 
-  // ahora usamos solo `clientes` (localClientes / resultados remotos) e ordenamos
   const filteredRows = Array.from(clientes).sort((a, b) => {
     if (!orderBy) return 0;
     const aValue = a[orderBy]?.toString() || "";
@@ -194,11 +158,9 @@ export default function ClientManagementTable() {
     return order === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
   });
 
-  // Função para apagar cliente
   const apagarCliente = async (cliente: Cliente) => {
     try {
       const recaptchaToken = await generateToken("update");
-
       const res = await fetch("/backend/cliente/hard-delete", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
@@ -225,7 +187,6 @@ export default function ClientManagementTable() {
     }
   };
 
-  // Função para ativar/desativar cliente (sem refresh)
   const toggleClienteStatus = async (clienteId: string, currentStatus: boolean | undefined) => {
     try {
       let endpoint = "";
@@ -233,7 +194,7 @@ export default function ClientManagementTable() {
       let action: RecaptchaAction = "update";
 
       if (currentStatus) {
-        // DESATIVAR: muda localmente antes do await
+        // Desativar (optimistic)
         setClientes((prev) => prev.map((c) => (c.id === clienteId ? { ...c, isActive: false } : c)));
         endpoint = "/backend/cliente/";
         method = "DELETE";
@@ -258,7 +219,7 @@ export default function ClientManagementTable() {
       const json = await response.json();
 
       if (!response.ok) {
-        // Se falhar ao desativar, volta ao estado anterior
+        // revert se falha desativação
         if (currentStatus) {
           setClientes((prev) => prev.map((c) => (c.id === clienteId ? { ...c, isActive: true } : c)));
         }
@@ -270,7 +231,7 @@ export default function ClientManagementTable() {
         isError: false,
       });
 
-      // ATIVAR: só muda localmente depois do sucesso
+      // ativar após sucesso
       if (!currentStatus) {
         setClientes((prev) => prev.map((c) => (c.id === clienteId ? { ...c, isActive: true } : c)));
       }
@@ -282,7 +243,6 @@ export default function ClientManagementTable() {
     }
   };
 
-  // Mostrar loading solo en la primera carga; búsquedas posteriores no muestran animación completa
   if (!initialLoaded && loading) return <LoadingAnimation />;
   if (error) return <Typography>Erro ao carregar clientes: {error.message}</Typography>;
 
@@ -300,33 +260,16 @@ export default function ClientManagementTable() {
           />
           <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} label="Clientes" />
         </Breadcrumbs>
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            mb: 2,
-            gap: 10,
-          }}
-        >
-          <Typography
-            variant="h5"
-            sx={{
-              fontWeight: "bold",
-              fontSize: 30,
-            }}
-          >
+
+        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 10 }}>
+          <Typography variant="h5" sx={{ fontWeight: "bold", fontSize: 30 }}>
             Clientes
           </Typography>
           <Button
             variant="contained"
             color="primary"
             onClick={() => navigate("/add-client")}
-            sx={{
-              textTransform: "none",
-              height: "40px",
-              width: "180px",
-              padding: "5px",
-            }}
+            sx={{ textTransform: "none", height: 40, width: 180, p: "5px" }}
           >
             Adicionar novo Cliente
           </Button>
@@ -543,17 +486,16 @@ export default function ClientManagementTable() {
             <Pagination
               count={pageCount}
               page={page + 1}
-              onChange={(e, val) => {
-                setPage(val - 1);
-              }}
+              onChange={(e, val) => setPage(val - 1)}
               color="primary"
               shape="rounded"
             />
           )}
         </Box>
       </Paper>
+
       <Notification alert={alert} setAlert={setAlert} />
-      {/* Dialog de confirmação para apagar permanentemente */}
+
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <DialogTitle sx={{ fontWeight: "bold" }}>Eliminar cliente permanentemente!</DialogTitle>
         <DialogContent>
@@ -569,7 +511,6 @@ export default function ClientManagementTable() {
           <Button
             onClick={async () => {
               if (selectedCliente) {
-                // Aqui chama a API para apagar permanentemente (hard delete)
                 await apagarCliente(selectedCliente);
                 setDeleteDialogOpen(false);
                 setSelectedCliente(null);

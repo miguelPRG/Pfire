@@ -12,6 +12,12 @@ load_dotenv()
 # Caminhos para as chaves RSA
 PUBLIC_KEY = Path(__file__).parent / "../chaves/publica.pem"
 PRIVATE_KEY = Path(__file__).parent / "../chaves/privada.pem"
+PUBLIC_KEY_PATH = getenv("PUBLIC_KEY_PATH")
+PRIVATE_KEY_PATH = getenv("PRIVATE_KEY_PATH")
+
+# Conteudo PEM opcional via variaveis de ambiente
+PUBLIC_KEY_PEM = getenv("PUBLIC_KEY_PEM")
+PRIVATE_KEY_PEM = getenv("PRIVATE_KEY_PEM")
 
 # Senha opcional para a chave privada, obtida do ambiente por segurança
 PRIVATE_KEY_PASSWORD = getenv("PRIVATE_KEY_PASSWORD")
@@ -31,20 +37,32 @@ TOKEN_BLACKLIST = set()
 
 # Função para carregar a chave pública
 def load_public_key():
-    with open(PUBLIC_KEY, "rb") as key_file:
-        public_key = serialization.load_pem_public_key(key_file.read(), backend=default_backend())
-    return public_key
+    if PUBLIC_KEY_PEM:
+        pem_value = PUBLIC_KEY_PEM.replace("\\n", "\n")
+        return serialization.load_pem_public_key(pem_value.encode(), backend=default_backend())
+
+    public_key_path = Path(PUBLIC_KEY_PATH) if PUBLIC_KEY_PATH else PUBLIC_KEY
+    with open(public_key_path, "rb") as key_file:
+        return serialization.load_pem_public_key(key_file.read(), backend=default_backend())
 
 
 # Função para carregar a chave privada
 def load_private_key():
-    with open(PRIVATE_KEY, "rb") as key_file:
-        private_key = serialization.load_pem_private_key(
+    if PRIVATE_KEY_PEM:
+        pem_value = PRIVATE_KEY_PEM.replace("\\n", "\n")
+        return serialization.load_pem_private_key(
+            pem_value.encode(),
+            password=PRIVATE_KEY_PASSWORD.encode() if PRIVATE_KEY_PASSWORD else None,
+            backend=default_backend(),
+        )
+
+    private_key_path = Path(PRIVATE_KEY_PATH) if PRIVATE_KEY_PATH else PRIVATE_KEY
+    with open(private_key_path, "rb") as key_file:
+        return serialization.load_pem_private_key(
             key_file.read(),
             password=PRIVATE_KEY_PASSWORD.encode() if PRIVATE_KEY_PASSWORD else None,
             backend=default_backend(),
         )
-    return private_key
 
 
 # Carregar as chaves uma única vez

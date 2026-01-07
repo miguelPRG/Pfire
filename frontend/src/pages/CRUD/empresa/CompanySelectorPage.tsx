@@ -171,10 +171,10 @@ export default function CompanySelectorPage() {
               component="img"
               src={`data:image/png;base64,${emp.logo}`}
               alt={`Logo de ${emp.nome}`}
-              sx={{ width: 100, height: 100, objectFit: "cover", borderRadius: "50%" }}
+              sx={{ width: 100, height: 100, objectFit: "cover", borderRadius: "50%"}}
             />
           ) : (
-            <Box sx={{ width: 100, height: 100, color: theme.palette.text.disabled, fontSize: 48 }}>🏢</Box>
+            <Box sx={{ width: 100, height: 100, color: theme.palette.text.disabled, fontSize: 48 ,textAlign: "center"}}>🏢</Box>
           )}
         </Box>
 

@@ -1,6 +1,8 @@
-import { Box, Button, TextField, Typography, Paper, Alert, Breadcrumbs } from "@mui/material";
+// src/pages/CRUD/cliente/AddNewClientPage.tsx
+import { Box, TextField, Alert, Breadcrumbs } from "@mui/material";
+import HomeIcon from "@mui/icons-material/Home";
+import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useTheme } from "@mui/material/styles";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -8,13 +10,11 @@ import { useAuth } from "../../../hooks/AuthContext";
 import { useState } from "react";
 import GlobalPhone from "../../../components/GlobalPhone";
 import validarNIF from "../../utils/isValidNIF";
-import HomeIcon from "@mui/icons-material/Home"; // Adicione esta linha
-import StyledBreadcrumb from "../../../components/StyledBreadCrumbs"; // Adicione esta linha
+import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
 import { useRecaptcha } from "../../../hooks/RecaptchaContext";
+import SaveCancelBar from "../../../components/SaveCancelBar";
+import FormLayout from "../../../components/FormLayout";
 
-declare var grecaptcha: any;
-
-// Esquema de validação com Zod
 const addClientSchema = z.object({
   nome: z.string().nonempty("O nome é obrigatório").trim(),
   email: z.email("Email inválido").nonempty("O email é obrigatório").trim(),
@@ -22,9 +22,7 @@ const addClientSchema = z.object({
     .string()
     .nonempty("O telefone é obrigatório")
     .trim()
-    .refine((val) => val?.startsWith("+") && val.length >= 10, {
-      message: "Número de telefone internacional inválido",
-    }),
+    .refine((val) => val?.startsWith("+") && val.length >= 10, { message: "Número de telefone internacional inválido" }),
   nif: z.string().nonempty("O NIF é obrigatório").trim().refine(validarNIF, "O NIF é inválido"),
   localidade: z.string().nonempty("A localidade é obrigatória").trim(),
   morada: z.string().nonempty("A morada é obrigatória").trim(),
@@ -32,30 +30,26 @@ const addClientSchema = z.object({
     .string()
     .nonempty("O código postal é obrigatório")
     .trim()
-    .regex(/^\d{4}-\d{3}$/, "Número de telefone inválido"),
+    .regex(/^\d{4}-\d{3}$/, "Código postal no formato 1234-567"),
 });
 
-// Define o tipo dos inputs do formulário, omitindo recaptchaToken
 type AddClientFormInputs = Omit<z.infer<typeof addClientSchema>, "recaptchaToken">;
 
-// Componente principal da página
 export default function AddNewClientPage() {
-  const location = useLocation(); // Hook para acessar o estado de navegação
-  const cliente = location.state?.cliente; // Recupera cliente do estado, se existir (edição)
-  const { empresa } = useAuth(); // Recupera dados da empresa do contexto de autenticação
-  const navigate = useNavigate(); // Hook para navegação programática
-  const theme = useTheme(); // Acessa o tema do Material UI
-  const [errorMessage, setErrorMessage] = useState<string | null>(null); // Estado para mensagens de erro
+  const location = useLocation();
+  const cliente = (location as any).state?.cliente;
+  const { empresa } = useAuth();
+  const navigate = useNavigate();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { generateToken } = useRecaptcha();
 
-  // Inicializa o formulário com react-hook-form e zodResolver
   const {
-    register, // Função para registrar campos
-    handleSubmit, // Função para lidar com submit
-    control, // Controle para campos customizados
-    formState: { errors, isSubmitting }, // Estado do formulário (erros e status de envio)
+    register,
+    handleSubmit,
+    control,
+    formState: { errors, isSubmitting },
   } = useForm<AddClientFormInputs>({
-    resolver: zodResolver(addClientSchema), // Usa o esquema Zod para validação
+    resolver: zodResolver(addClientSchema),
     defaultValues: cliente
       ? {
           nome: cliente.nome || "",
@@ -66,260 +60,91 @@ export default function AddNewClientPage() {
           morada: cliente.morada || "",
           codigo_postal: cliente.codigoPostal || "",
         }
-      : {}, // Se estiver editando, preenche os campos com os dados do cliente
+      : {},
   });
 
-  // Função para enviar novo cliente ao backend
   const enviarNovoCliente = async (dados: AddClientFormInputs, recaptchaToken: string) => {
-    try {
-      if (!empresa?.id || !/^[a-f\d]{24}$/i.test(empresa.id)) {
-        throw new Error("ID da empresa inválido ou não fornecido."); // Valida o ID da empresa
-      }
-
-      // O backend espera recaptchaToken e empresa_id no corpo
-      const response = await fetch(`/backend/cliente`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Inclui cookies na requisição
-        body: JSON.stringify({
-          ...dados,
-          empresa_id: empresa.id,
-          recaptchaToken,
-        }),
-      });
-
-      const data = await response.json(); // Lê resposta do backend
-
-      if (!response.ok) {
-        alert(data.detail || "Erro ao criar cliente"); // Mostra erro se houver
-      } else {
-        navigate("/clients-list", {
-          state: { message: { error: false, text: "Novo cliente adicionado com sucesso!" } },
-        });
-      }
-    } catch (error) {
-      throw error; // Propaga erro para tratamento externo
+    if (!empresa?.id || !/^[a-f\\d]{24}$/i.test(empresa.id)) {
+      throw new Error("ID da empresa inválido ou não fornecido.");
     }
+    const response = await fetch(`/backend/cliente`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ ...dados, empresa_id: empresa.id, recaptchaToken }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Erro ao criar cliente");
+    navigate("/clients-list", { state: { message: { error: false, text: "Novo cliente adicionado com sucesso!" } } });
   };
 
-  // Função para atualizar cliente existente
   const atualizarCliente = async (dados: AddClientFormInputs & { id: string }, recaptchaToken: string) => {
-    try {
-      if (!empresa?.id || !/^[a-f\d]{24}$/i.test(empresa.id)) {
-        throw new Error("ID da empresa inválido ou não fornecido."); // Valida ID da empresa
-      }
-      if (!dados.id || !/^[a-f\d]{24}$/i.test(dados.id)) {
-        throw new Error("ID do cliente inválido ou não fornecido."); // Valida ID do cliente
-      }
+    if (!empresa?.id || !/^[a-f\\d]{24}$/i.test(empresa.id)) throw new Error("ID da empresa inválido ou não fornecido.");
+    if (!dados.id || !/^[a-f\\d]{24}$/i.test(dados.id)) throw new Error("ID do cliente inválido ou não fornecido.");
 
-      var body = JSON.stringify({
-        ...dados,
-        empresa_id: empresa.id,
-        recaptchaToken,
-      });
-
-      // O backend espera recaptchaToken e empresa_id no corpo
-      const response = await fetch(`/backend/cliente/update/${dados.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body,
-      });
-
-      const data = await response.json(); // Lê resposta do backend
-
-      if (!response.ok) {
-        alert(data.detail || "Erro ao atualizar cliente"); // Mostra erro se houver
-      } else {
-        navigate("/clients-list", {
-          state: { message: { error: false, text: "Cliente atualizado com sucesso!" } },
-        });
-      }
-    } catch (error) {
-      throw error; // Propaga erro para tratamento externo
-    }
+    const response = await fetch(`/backend/cliente/update/${dados.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ ...dados, empresa_id: empresa.id, recaptchaToken }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.detail || "Erro ao atualizar cliente");
+    navigate("/clients-list", { state: { message: { error: false, text: "Cliente atualizado com sucesso!" } } });
   };
 
-  // Função chamada ao submeter o formulário
   const onSubmit = async (formData: AddClientFormInputs) => {
-    setErrorMessage(null); // Limpa mensagem de erro
+    setErrorMessage(null);
     try {
       const recaptchaToken = await generateToken("register");
-
       if (!empresa?.id) {
-        setErrorMessage("Empresa não encontrada."); // Verifica se empresa existe
+        setErrorMessage("Empresa não encontrada.");
         return;
       }
-
-      if (cliente) {
-        // Se for edição, atualiza cliente
-        await atualizarCliente({ ...formData, id: cliente.id }, recaptchaToken);
-      } else {
-        // Se for novo, envia novo cliente
-        await enviarNovoCliente(formData, recaptchaToken);
-      }
+      if (cliente) await atualizarCliente({ ...formData, id: cliente.id }, recaptchaToken);
+      else await enviarNovoCliente(formData, recaptchaToken);
     } catch (error: any) {
-      setErrorMessage(
-        cliente ? error?.message || "Erro ao atualizar cliente." : error?.message || "Erro ao adicionar cliente."
-      ); // Mostra mensagem de erro apropriada
+      setErrorMessage(cliente ? error?.message || "Erro ao atualizar cliente." : error?.message || "Erro ao adicionar cliente.");
     }
   };
 
-  // Função para cancelar e voltar à lista de clientes
-  const handleCancel = () => {
-    navigate(-1);
-  };
+  const handleCancel = () => navigate(-1);
 
-  // Renderização do componente
+  const breadcrumbs = (
+    <Breadcrumbs aria-label="breadcrumb" sx={{ mr: "auto", backgroundColor: "background.paper", borderRadius: 5, p: 0.5, boxShadow: 1, maxWidth: 320 }}>
+      <StyledBreadcrumb component="a" sx={{ cursor: "pointer" }} onClick={() => navigate("/")} icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />} />
+      <StyledBreadcrumb component="a" sx={{ cursor: "pointer", fontSize: "0.9rem" }} label="Clientes" onClick={() => navigate("/clients-list")} />
+      <StyledBreadcrumb component="span" sx={{ fontSize: "0.9rem" }} label={cliente ? "Editar Cliente" : "Novo Cliente"} />
+    </Breadcrumbs>
+  );
+
   return (
-    <Box sx={{ width: "100%", display: "flex", flexDirection: "column", padding: 2 }}>
-      <Breadcrumbs
-        aria-label="breadcrumb"
-        sx={{
-          mr: "auto", // EMPURRA para a direita
-          backgroundColor: "background.paper",
-          borderRadius: 5,
-          p: 0.5,
-          boxShadow: 1,
-          // opcional: mantém largura máxima da “pílula”
-          maxWidth: 320,
-        }}
-      >
-        <StyledBreadcrumb
-          component="a"
-          sx={{ cursor: "pointer" }}
-          onClick={() => navigate("/")}
-          icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
-        />
-        <StyledBreadcrumb
-          sx={{ cursor: "pointer", fontSize: "0.9rem" }}
-          component="a"
-          label="Clientes"
-          onClick={() => navigate("/clients-list")}
-        />
-        <StyledBreadcrumb
-          sx={{ fontSize: "0.9rem" }}
-          component="span"
-          label={cliente ? "Editar Cliente" : "Novo Cliente"}
-        />
-      </Breadcrumbs>
-      <Paper sx={{ maxWidth: 600, mx: "auto", mt: 5, p: 4 }}>
-        {errorMessage && (
-          <Box mb={2}>
-            <Alert severity="error" variant="filled" onClose={() => setErrorMessage(null)}>
-              {errorMessage}
-            </Alert>
-          </Box>
-        )}
-        <Typography
-          variant="h5"
-          sx={{
-            fontWeight: "bold",
-            fontSize: 30,
-            textAlign: "center",
-          }}
-        >
-          {cliente ? "Editar Cliente" : "Adicionar novo Cliente"} {/* Título dinâmico */}
-        </Typography>
-
-        <Box
-          component="form"
-          onSubmit={handleSubmit(onSubmit)} // Lida com submit do formulário
-          sx={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 2,
-          }}
-        >
-          <TextField
-            {...register("nome")} // Campo nome
-            label="Nome"
-            error={!!errors.nome}
-            helperText={errors.nome?.message}
-            fullWidth
-          />
-          <TextField
-            {...register("email")} // Campo email
-            label="Email"
-            type="email"
-            error={!!errors.email}
-            helperText={errors.email?.message}
-            fullWidth
-          />
-          <GlobalPhone fieldName="telefone" control={control} errors={errors} />
-          <TextField {...register("nif")} label="NIF" error={!!errors.nif} helperText={errors.nif?.message} fullWidth />
-          <TextField
-            {...register("localidade")} // Campo localidade
-            label="Localidade"
-            error={!!errors.localidade}
-            helperText={errors.localidade?.message}
-            fullWidth
-          />
-          <TextField
-            {...register("morada")} // Campo morada
-            label="Morada"
-            error={!!errors.morada}
-            helperText={errors.morada?.message}
-            fullWidth
-          />
-          <TextField
-            {...register("codigo_postal")} // Campo código postal
-            label="Código Postal"
-            error={!!errors.codigo_postal}
-            helperText={errors.codigo_postal?.message}
-            fullWidth
-          />
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "flex-end",
-              gap: 2,
-              mt: 2,
-              width: "100%",
-            }}
-          >
-            <Button
-              variant="outlined"
-              onClick={handleCancel} // Botão cancelar
-              sx={{
-                flex: 1,
-
-                "&:hover": {
-                  bgcolor: "grey.300",
-                },
-              }}
-            >
-              Cancelar
-            </Button>
-            <Button
-              type="submit"
-              variant="contained"
-              sx={{
-                flex: 1,
-                backgroundColor: theme.palette.success.main,
-                color: "white",
-                "&:hover": {
-                  backgroundColor: theme.palette.success.dark,
-                },
-                minWidth: 0,
-              }}
-              disabled={isSubmitting} // Desabilita enquanto está enviando
-            >
-              {isSubmitting
-                ? cliente
-                  ? "Atualizando..."
-                  : "A adicionar..."
-                : cliente
-                  ? "Atualizar dados do cliente"
-                  : "Salvar"}
-            </Button>
-          </Box>
+    <FormLayout
+      title={cliente ? "Editar Cliente" : "Adicionar novo Cliente"}
+      subtitle="Preencha os campos para gerir os dados do cliente."
+      icon={<PeopleAltOutlinedIcon color="primary" sx={{ fontSize: 48 }} />}
+      breadcrumbs={breadcrumbs}
+      maxWidth={760}
+    >
+      {errorMessage && (
+        <Box mb={1}>
+          <Alert severity="error" variant="filled" onClose={() => setErrorMessage(null)}>
+            {errorMessage}
+          </Alert>
         </Box>
-      </Paper>
-    </Box>
+      )}
+
+      <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <TextField {...register("nome")} label="Nome" error={!!errors.nome} helperText={errors.nome?.message} fullWidth />
+        <TextField {...register("email")} label="Email" type="email" error={!!errors.email} helperText={errors.email?.message} fullWidth />
+        <GlobalPhone fieldName="telefone" control={control} errors={errors} />
+        <TextField {...register("nif")} label="NIF" error={!!errors.nif} helperText={errors.nif?.message} fullWidth />
+        <TextField {...register("localidade")} label="Localidade" error={!!errors.localidade} helperText={errors.localidade?.message} fullWidth />
+        <TextField {...register("morada")} label="Morada" error={!!errors.morada} helperText={errors.morada?.message} fullWidth />
+        <TextField {...register("codigo_postal")} label="Código Postal" error={!!errors.codigo_postal} helperText={errors.codigo_postal?.message} fullWidth />
+
+        <SaveCancelBar onCancel={handleCancel} loading={isSubmitting} saveText={cliente ? "Atualizar dados do cliente" : "Salvar"} />
+      </Box>
+    </FormLayout>
   );
 }

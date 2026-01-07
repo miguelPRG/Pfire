@@ -1,23 +1,8 @@
+// src/pages/CRUD/user/UserManagementTable.tsx
 import { useState, useEffect } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  TextField,
-  Box,
-  Pagination,
-  TableSortLabel,
-  Typography,
-  Button,
-  Container,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, Box, Pagination,
+  TableSortLabel, Typography, Button, Container, Dialog, DialogTitle, DialogContent, DialogActions,
   Breadcrumbs,
 } from "@mui/material";
 import { Delete } from "@mui/icons-material";
@@ -79,7 +64,6 @@ export default function UserManagementTable() {
   const navigate = useNavigate();
   const { generateToken } = useRecaptcha();
 
-  // Advanced search state
   const [advValue, setAdvValue] = useState<{ field: string; text: string }>({ field: "", text: "" });
   const advFields = [
     { value: "nome", label: "Nome" },
@@ -93,25 +77,20 @@ export default function UserManagementTable() {
   const [users, setUsers] = useState<User[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
 
-  // Apenas um useLazyQuery
   const [fetchUsers, { data, loading }] = useLazyQuery<returnedData>(GET_USERS);
 
-  // Carregamento inicial
   useEffect(() => {
     const run = async () => {
-      //limpar a cache de consultas anteriores
       await client.clearStore();
-
       fetchUsers({
         variables: { empresaId: empresa?.id, start: 0 },
         fetchPolicy: "network-only",
       });
     };
-
     run();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Atualiza users quando data muda
   useEffect(() => {
     if (data) {
       setUsers(data.getUsers.users || []);
@@ -119,7 +98,6 @@ export default function UserManagementTable() {
     }
   }, [data]);
 
-  // Paginação
   useEffect(() => {
     fetchUsers({
       variables: {
@@ -129,10 +107,9 @@ export default function UserManagementTable() {
       },
       fetchPolicy: "cache-first",
     });
-    // eslint-disable-next-line
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
 
-  // Função para aplicar filtro avançado
   const applyAdvancedFilterUsers = () => {
     setIsAdvancedSearch(true);
     setPage(0);
@@ -146,12 +123,10 @@ export default function UserManagementTable() {
     });
   };
 
-  // Função para limpar filtro avançado
   const clearAdvancedFilter = async () => {
     setIsAdvancedSearch(false);
     setAdvValue({ field: "", text: "" });
     setPage(0);
-
     try {
       const result = await fetchUsers({
         variables: { empresaId: empresa?.id, start: 0 },
@@ -166,46 +141,32 @@ export default function UserManagementTable() {
 
   const pageCount = Math.ceil(totalUsers / rowsPerPage);
 
-  const handleToggleAdmin = async (user: User) => {
-    setRoleLoading((prev) => ({ ...prev, [user.id]: true }));
-    const endpoint = user.role == "Admin" ? "/backend/user/revoke_admin" : "/backend/user/set_admin";
+  const handleToggleAdmin = async (usr: User) => {
+    setRoleLoading((prev) => ({ ...prev, [usr.id]: true }));
+    const endpoint = usr.role == "Admin" ? "/backend/user/revoke_admin" : "/backend/user/set_admin";
     try {
       const recaptchaToken = await generateToken("update");
-
       const res = await fetch(endpoint, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          user_id: user.id,
+          user_id: usr.id,
           empresa_id: empresa?.id,
           recaptchaToken,
         }),
       });
-
       const json = await res.json();
       if (!res.ok) throw new Error(json.detail || "Erro ao alterar papel.");
-
-      // Atualiza localmente o papel do user só após sucesso
-      setUsers((prev) =>
-        prev.map((u) => (u.id === user.id ? { ...u, role: user.role === "Admin" ? "Técnico" : "Admin" } : u))
-      );
-
-      setAlert({
-        message: "Papel alterado com sucesso!",
-        isError: false,
-      });
+      setUsers((prev) => prev.map((u) => (u.id === usr.id ? { ...u, role: usr.role === "Admin" ? "Técnico" : "Admin" } : u)));
+      setAlert({ message: "Papel alterado com sucesso!", isError: false });
     } catch (err) {
-      setAlert({
-        message: err instanceof Error ? err.message : "Erro ao alterar papel.",
-        isError: true,
-      });
+      setAlert({ message: err instanceof Error ? err.message : "Erro ao alterar papel.", isError: true });
     } finally {
-      setRoleLoading((prev) => ({ ...prev, [user.id]: false }));
+      setRoleLoading((prev) => ({ ...prev, [usr.id]: false }));
     }
   };
 
-  // Função para lidar com a ordenação
   const handleSort = (property: keyof User) => {
     const isAsc = orderBy === property && order === "asc";
     setOrder(isAsc ? "desc" : "asc");
@@ -229,37 +190,28 @@ export default function UserManagementTable() {
     telefone: "Telefone",
     isActive: "Status",
     email: "Email",
-    isAdmin: "Papel",
-    isSuperAdmin: "Super Admin",
     role: "Papel",
     acao: "Ação",
   };
 
   const columns: (keyof User)[] = ["nome", "telefone", "isActive", "email", "role", "acao"];
 
-  // React Hook Form para o convite
   const {
     register,
     handleSubmit,
     reset,
     setError,
     formState: { errors, isSubmitting },
-  } = useForm<{ email: string }>({
-    resolver: zodResolver(inviteSchema),
-  });
+  } = useForm<{ email: string }>({ resolver: zodResolver(inviteSchema) });
 
-  // Função para enviar convite (ajuste para sua API)
   const handleInvite = async (values: { email: string }) => {
-    const recaptchaToken = await generateToken("invite");
-
-    // Validação Zod
     const validation = inviteSchema.safeParse({ email: values.email.trim() });
     if (!validation.success) {
       setError("email", { message: validation.error.issues[0].message });
       return;
     }
-
     try {
+      const recaptchaToken = await generateToken("invite");
       const res = await fetch("/backend/user/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -273,44 +225,27 @@ export default function UserManagementTable() {
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.detail || "Erro ao enviar convite.");
-      setAlert({
-        message: "Convite enviado com sucesso!",
-        isError: false,
-      });
-      reset(); // Limpa o formulário
+      setAlert({ message: "Convite enviado com sucesso!", isError: false });
+      reset();
     } catch (err: any) {
-      setAlert({
-        message: err.message || "Erro ao enviar convite.",
-        isError: true,
-      });
+      setAlert({ message: err.message || "Erro ao enviar convite.", isError: true });
     } finally {
-      setInviteOpen(false); // Fecha o diálogo após enviar o convite
+      setInviteOpen(false);
     }
   };
 
   const handleDelete = async (id: string) => {
     try {
       const recaptchaToken = await generateToken("delete");
-
       const res = await fetch("/backend/user/expel", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          user_id: id,
-          empresa_id: empresa?.id,
-          recaptchaToken,
-        }),
+        body: JSON.stringify({ user_id: id, empresa_id: empresa?.id, recaptchaToken }),
       });
-
       const json = await res.json();
       if (!res.ok) throw new Error(json.detail || "Erro ao expulsar utilizador.");
-      setAlert({
-        message: json.detail || "Utilizador expulso com sucesso.",
-        isError: false,
-      });
-
-      // Apenas chama fetchUsers, não atualize o estado manualmente!
+      setAlert({ message: json.detail || "Utilizador expulso com sucesso.", isError: false });
       await fetchUsers({
         variables: {
           empresaId: empresa?.id,
@@ -320,10 +255,7 @@ export default function UserManagementTable() {
         fetchPolicy: "network-only",
       });
     } catch (err: any) {
-      setAlert({
-        message: err.message || "Erro ao eliminar utilizador.",
-        isError: true,
-      });
+      setAlert({ message: err.message || "Erro ao eliminar utilizador.", isError: true });
     }
   };
 
@@ -346,6 +278,7 @@ export default function UserManagementTable() {
   };
 
   if (loading) return <LoadingAnimation />;
+
   return (
     <Paper sx={{ width: "100%", p: 2, boxShadow: "none", backgroundColor: theme.palette.background.default }}>
       <Breadcrumbs
@@ -506,13 +439,7 @@ export default function UserManagementTable() {
         </TableContainer>
       </div>
 
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          mt: 2,
-        }}
-      >
+      <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
         {pageCount > 1 && (
           <Pagination
             count={pageCount}
@@ -524,7 +451,7 @@ export default function UserManagementTable() {
         )}
       </Box>
 
-      {/* Dialog de convite */}
+      {/* Invite dialog */}
       <Dialog
         open={inviteOpen}
         onClose={() => {
@@ -545,15 +472,7 @@ export default function UserManagementTable() {
               {...register("email")}
             />
             <DialogActions>
-              <Button
-                variant="outlined"
-                onClick={() => {
-                  setInviteOpen(false);
-                  reset();
-                }}
-              >
-                Cancelar
-              </Button>
+              <Button variant="outlined" onClick={() => { setInviteOpen(false); reset(); }}>Cancelar</Button>
               <Button type="submit" color="success" variant="contained">
                 {isSubmitting ? "A enviar..." : "Enviar convite"}
               </Button>
@@ -562,17 +481,13 @@ export default function UserManagementTable() {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de confirmação de exclusão */}
+      {/* Delete dialog */}
       <Dialog open={deleteDialogOpen} onClose={handleCancelDelete}>
         <DialogTitle>Excluir Utilizador!</DialogTitle>
         <DialogContent>Tem certeza que deseja excluir este utilizador?</DialogContent>
         <DialogActions>
-          <Button onClick={handleCancelDelete} variant="outlined">
-            Cancelar
-          </Button>
-          <Button onClick={handleConfirmDelete} color="error" variant="contained">
-            Eliminar
-          </Button>
+          <Button onClick={handleCancelDelete} variant="outlined">Cancelar</Button>
+          <Button onClick={handleConfirmDelete} color="error" variant="contained">Eliminar</Button>
         </DialogActions>
       </Dialog>
 

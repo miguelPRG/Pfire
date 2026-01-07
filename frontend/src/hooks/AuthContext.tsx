@@ -98,6 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [loading, setLoading] = useState(true);
 
+
   // Hook para usar o reCAPTCHA
   const { generateToken } = useRecaptcha();
 
@@ -339,6 +340,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false); // <--- indica que o logout foi concluído
     }
+
   }
 
   function chooseCompany(empresa: Empresa) {

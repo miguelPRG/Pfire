@@ -77,7 +77,8 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
     # Verificamos se este user já existe no MongoDB
     user_doc = await users_collection.find_one({"email": email})
 
-    print("Esta gajo foi convidado: ", user.global_id) if user.global_id else print("Este gajo não foi convidado")
+    if user_doc and user_doc.get("isActive") is False:
+        raise HTTPException(status_code=403, detail="Esta conta foi desativada.")
 
     # Variavel booleana que indicará para o front se o user é novo ou não
     new_user_flag = False
