@@ -2,14 +2,14 @@ import { initializeApp } from "firebase/app";
 import { getAuth, signInWithPopup, GoogleAuthProvider, OAuthProvider, signOut } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDzDDGXjyNXOzCT62GVL2kEwMBIrBCUJEM",
-  authDomain: "pfireteste-11849.firebaseapp.com",
-  projectId: "pfireteste-11849",
-  storageBucket: "pfireteste-11849.firebasestorage.app",
-  messagingSenderId: "97973330673",
-  appId: "1:97973330673:web:0893e5be3fdda19e42ff50",
-  measurementId: "G-WSHC314NCX",
+  apiKey: "AIzaSyCCKIqR_EjBgPMx-O_x6EezVQGzbhWkprY",
+  authDomain: "pfire-390df.firebaseapp.com",
+  projectId: "pfire-390df",
+  storageBucket: "pfire-390df.firebasestorage.app",
+  messagingSenderId: "267766735341",
+  appId: "1:267766735341:web:292af01d64f13561c087e4"
 };
+
 
 // Inicializa Firebase
 const app = initializeApp(firebaseConfig);

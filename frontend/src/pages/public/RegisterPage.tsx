@@ -171,19 +171,37 @@ export default function RegisterPage() {
         </Fade>
       )}
 
-      <Box sx={{ position: "relative", mt: 5, mb: 3 }}>
+      <Box
+        sx={{
+          position: "relative",
+          marginBottom: 8,
+        }}
+      >
         <Box
           sx={{
+            display: "flex",
             backgroundColor: "primary.main",
             borderRadius: "50%",
             width: 70,
             height: 70,
             position: "absolute",
             top: "-30px",
+            mx: "50%",
+            transform: "translateX(-50%)",
             zIndex: 1,
+            marginTop: 5,
+            alignItems: "center",
+            justifyContent: "center",
           }}
         >
-          <img src={logo} alt="Logo" style={{ width: "100px", height: "100px" }} />
+          <img
+            src={logo}
+            alt="Logo"
+            style={{
+              width: "105px",
+              height: "105px",
+            }}
+          />
         </Box>
       </Box>
 
@@ -370,7 +388,7 @@ export default function RegisterPage() {
           </DialogActions>
         </Dialog>
         {noCompany && (
-          <Typography variant="body2" sx={{ mt: 2 }}>
+          <Typography variant="body1" sx={{ mt: 2 }}>
             Já tem uma conta registada? <Link to="/login">Inicie sessão</Link>
           </Typography>
         )}

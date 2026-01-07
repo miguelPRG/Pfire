@@ -4,7 +4,7 @@
 
 [[redirects]]
   from = "/backend/*"
-  to = "https://pfire-r5lc.onrender.com/:splat"
+  to = "https://pfire-y89u.onrender.com/:splat"
   status = 200
 
 [[redirects]]
