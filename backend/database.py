@@ -96,7 +96,7 @@ async def apagar_empresas_vazias():
 def database_cleaner_scheduler():
     scheduler = AsyncIOScheduler()
 
-    # Agendar a execução da função `delete_inactive_documents` a cada 30 minutos
+    # Agendar a execução da função `delete_inactive_documents` a cada 30 dias
     scheduler.add_job(
         delete_documentos_inativos,
         IntervalTrigger(days=30),  # Intervalo de 30 dias

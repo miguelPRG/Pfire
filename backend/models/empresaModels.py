@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field, field_validator
 from fastapi import HTTPException
 from typing import Optional
+import re
 from models.utils.validarNIF import validar_nif
 
 
@@ -17,13 +18,20 @@ class EmpresaCreate(BaseModel):
     def __init__(self, **data):
         super().__init__(**{k: v.strip() if isinstance(v, str) else v for k, v in data.items()})
 
+    @field_validator("nif", mode="before")
+    @classmethod
+    def _sanitize_nif(cls, v):
+        if isinstance(v, str):
+            v = re.sub(r"\D", "", v)
+        return v
+
     @field_validator("nif")
     @classmethod
     def validar_nif_field(cls, v):
         if not validar_nif(v):
             raise HTTPException(
                 status_code=400,
-                detail="NIF inválido. Deve ter 9 dígitos e o último dígito deve ser o dígito de controle correto.",
+                detail="NIF inválido. Deve ter 9 dígitos e o último dígito deve ser o dígito de controlo correto.",
             )
         return v
 
@@ -51,12 +59,19 @@ class EmpresaUpdate(BaseModel):
     def __init__(self, **data):
         super().__init__(**{k: v.strip() if isinstance(v, str) else v for k, v in data.items()})
 
+    @field_validator("nif", mode="before")
+    @classmethod
+    def _sanitize_nif(cls, v):
+        if isinstance(v, str):
+            v = re.sub(r"\D", "", v)
+        return v
+
     @field_validator("nif")
     @classmethod
     def validar_nif_field(cls, v):
         if v is not None and not validar_nif(v):
             raise HTTPException(
                 status_code=400,
-                detail="NIF inválido. Deve ter 9 dígitos e o último dígito deve ser o dígito de controle correto.",
+                detail="NIF inválido. Deve ter 9 dígitos e o último dígito deve ser o dígito de controlo correto.",
             )
         return v

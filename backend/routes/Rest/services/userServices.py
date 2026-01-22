@@ -364,7 +364,7 @@ async def register_user(data: UserRegister, request: Request):
     if not global_id_insertion.inserted_id:
         raise HTTPException(status_code=409, detail="Erro na criação do ID global.")
 
-    enviar_email(user_doc["email"], user_doc["nome"], 4, global_id, "registo")
+    enviar_email(user_doc["email"], user_doc["nome"], global_id, 4, "registo")
 
     return {"message": "Conta criada! Verifique seu email para ativação."}
 
@@ -442,7 +442,7 @@ async def forgot_password(request: Request, user: UserForgotPassword):
         raise HTTPException(status_code=409, detail="Erro na criação do ID global.")
 
     # Envia o e-mail de recuperação
-    enviar_email(user.email, user_found["nome"], 5, global_id, "recuperarPassword")
+    enviar_email(user.email, user_found["nome"],global_id, 5, "recuperarPassword")
 
     return {"message": "E-mail de recuperação enviado!"}
 

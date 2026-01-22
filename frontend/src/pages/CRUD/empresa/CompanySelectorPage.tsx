@@ -369,17 +369,21 @@ export default function CompanySelectorPage() {
               const empresasPorLinha = larguraTela < 600 ? 1 : larguraTela < 900 ? 2 : 3;
               const empresasSlice = empresas.slice(start, start + empresasPorLinha);
               if (empresasSlice.length === 0) return null;
+
+              const colCount = Math.min(empresasSlice.length, empresasPorLinha);
+
               return (
                 <Box
                   key={start}
                   sx={{
                     display: "grid",
-                    gridTemplateColumns: `repeat(${empresasPorLinha}, 1fr)`,
+                    gridTemplateColumns: `repeat(${colCount}, 1fr)`,
                     gap: 4,
-                    width: "100%",
+                    width: colCount === 1 ? "min(520px, 100%)" : "100%",
                     mx: "auto",
                     minHeight: 400,
                     justifyItems: "center",
+                    justifyContent: colCount === 1 ? "center" : "stretch",
                     pb: 1,
                     mt: start === 0 ? 0 : 2,
                   }}
