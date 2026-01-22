@@ -27,7 +27,6 @@ import StyledBreadcrumb from "../components/StyledBreadCrumbs";
 import { useNavigate } from "react-router-dom";
 import HomeIcon from "@mui/icons-material/Home";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
-import { id } from "zod/v4/locales";
 
 // Schemas
 const userInfoSchema = z.object({
@@ -59,6 +58,8 @@ const companySchema = z.object({
   companyName: z.string().trim(),
   nif: z
     .string()
+    .min(9, "O NIF deve ter 9 caracteres")
+    .max(9, "O NIF deve ter 9 caracteres")
     .trim()
     .refine((nif) => isValidNIF(nif), { message: "NIF Inválido" }),
   address: z.string().trim(),
