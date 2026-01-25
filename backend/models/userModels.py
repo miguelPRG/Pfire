@@ -79,7 +79,6 @@ class UserUpdatePassword(BaseModel):
 
 class UserUpdateEmail(BaseModel):
     email: EmailStr = Field(max_length=254, description="O email deve ser um endereço de email válido.")
-    recaptchaToken: str
 
     @field_validator("email", mode="before")
     def strip_email(cls, v):
@@ -87,7 +86,6 @@ class UserUpdateEmail(BaseModel):
 
 
 class UserActivation(BaseModel):
-    recaptchaToken: Optional[str] = None
     id: str = Field(None, min_length=24, max_length=24, description="O ID do utilizador a ser ativado/desativado.")
 
     @field_validator("id", mode="before")
@@ -177,7 +175,7 @@ class UserInvitation(BaseModel):
         max_length=24,
         description="O ID da empresa para a qual o utilizador está a ser convidado.",
     )
-    recaptchaToken: str
+    # recaptchaToken removido
 
     @field_validator("email", mode="before")
     def strip_email(cls, v):

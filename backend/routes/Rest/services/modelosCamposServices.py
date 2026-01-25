@@ -3,15 +3,12 @@ from bson import ObjectId
 from datetime import datetime
 from database import modelos_collection, users_empresas_collection
 from models.modeloCamposModels import ModelosCamposClone
-from apis.recaptchaValidation import validar_recaptcha_token
 
 routerModelo = APIRouter(prefix="/modelo")
 
 
 @routerModelo.post("/clone")
 async def clone_report_template(request: Request, data: ModelosCamposClone):
-    # verificar o recaptcha
-    await validar_recaptcha_token(data.recaptchaToken, "clone")
     # 1) autenticação básica
     jwt = getattr(request.state, "jwt", {})
 

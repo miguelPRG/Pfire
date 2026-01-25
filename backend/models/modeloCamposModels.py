@@ -6,7 +6,6 @@ from bson import ObjectId
 MAIN_FIELDS = {
     "modelo_nome",
     "empresa_id",
-    "recaptchaToken",
 }
 
 ALLOWED_DATATYPES = {"number", "string", "bool", "object", "date", "array", "critério"}  # Tipos de dados permitidos
@@ -92,7 +91,6 @@ def validate_field(key, value, indice=0):
 class ModelosCamposCreate(BaseModel):
     modelo_nome: str = Field(..., max_length=100, description="Nome do modelo. Deve ter no máximo 100 caracteres.")
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
-    recaptchaToken: str
     model_config = ConfigDict(extra="allow")  # Permite campos extras
 
     @field_validator("empresa_id", mode="before")
@@ -127,7 +125,6 @@ class ModelosCamposUpdate(BaseModel):
         None, max_length=100, description="Nome do modelo. Deve ter no máximo 100 caracteres."
     )  # Ex: "extintores", "para-raios", "bocas de incêndio"
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
-    recaptchaToken: str
     model_config = ConfigDict(extra="allow")  # Permite campos extras
 
     @field_validator("empresa_id", mode="before")
@@ -153,9 +150,7 @@ class ModelosCamposUpdate(BaseModel):
 class ModelosCamposDelete(BaseModel):
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
     id: str = Field(..., min_length=24, max_length=24, description="ID do modelo de campos a ser deletado.")
-    recaptchaToken: str
 
 
 class ModelosCamposClone(BaseModel):
     id: str = Field(..., min_length=24, max_length=24, description="ID do modelo de campos a ser clonado.")
-    recaptchaToken: str

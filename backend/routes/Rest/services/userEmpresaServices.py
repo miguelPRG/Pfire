@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, Request
-from apis.recaptchaValidation import validar_recaptcha_token
 from models.userEmpresaModels import UserRole, UserExpel
 from models.userModels import UserActivation
 from database import users_empresas_collection, users_collection
@@ -12,7 +11,6 @@ routerUserEmpresa = APIRouter(prefix="/user")
 # 🚀 Setar como Administrador
 @routerUserEmpresa.put("/set_admin")
 async def set_admin(user: UserRole, request: Request):
-    await validar_recaptcha_token(user.recaptchaToken, "set-admin")
     jwt = getattr(request.state, "jwt", None)
 
     user.user_id = ObjectId(user.user_id)
@@ -43,7 +41,7 @@ async def set_admin(user: UserRole, request: Request):
 # 🚫 Remover Admin
 @routerUserEmpresa.put("/revoke_admin")
 async def remoke_admin(user: UserRole, request: Request):
-    await validar_recaptcha_token(user.recaptchaToken, "revoke-admin")
+
     jwt = getattr(request.state, "jwt", None)
 
     user.user_id = ObjectId(user.user_id)
@@ -74,7 +72,6 @@ async def remoke_admin(user: UserRole, request: Request):
 # 🚀 Ativar utilizador
 @routerUserEmpresa.put("/activate")
 async def activate_user(user: UserActivation, request: Request):
-    await validar_recaptcha_token(user.recaptchaToken, "activate")
     jwt = getattr(request.state, "jwt", None)
 
     filtro = {}
@@ -99,13 +96,10 @@ async def activate_user(user: UserActivation, request: Request):
 # Expulsar utilizador de uma empresa
 @routerUserEmpresa.delete("/expel")
 async def expel_user(user: UserExpel, request: Request):
-    # Validar o recaptcha
-    await validar_recaptcha_token(user.recaptchaToken, "expel-user")
 
     jwt = getattr(request.state, "jwt", None)
 
     # Verificar se a tabela auxiliar do user e empresa existe
-
     user.user_id = ObjectId(user.user_id)
     user.empresa_id = ObjectId(user.empresa_id)
 

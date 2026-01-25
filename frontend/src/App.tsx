@@ -29,7 +29,7 @@ const NewPassword = lazy(() => import("./pages/public/NewPasswordPage"));
 const AddNewClient = lazy(() => import("./pages/CRUD/cliente/AddNewClientPage"));
 const EditProfilePage = lazy(() => import("./pages/EditProfilePage"));
 const ForgotPasswordPage = lazy(() => import("./pages/public/ForgotPasswordPage"));
-const ChooseCompany = lazy(() => import("./pages/CRUD/empresa/CompanySelectorPage"));
+const ChooseCompanyPage = lazy(() => import("./pages/CRUD/empresa/CompanySelectorPage"));
 const CreateCompanyPage = lazy(() => import("./pages/CRUD/empresa/CreateCompanyPage"));
 const ReportModelListPage = lazy(() => import("./pages/CRUD/modelo/ModelListPage"));
 const ReportTemplatesPage = lazy(() => import("./pages/CRUD/modelo/ModelEditPage"));
@@ -39,7 +39,6 @@ const PricingPage = lazy(() => import("./pages/CRUD/PricingPage"));
 // Rotas que podem ser utilizados apenas depois de autenticação
 const ProtectedRoute = ({ element }: { element: ReactElement }) => {
   const { user, empresa, loading } = useAuth();
-  const location = useLocation();
 
   if (loading) {
     return <LoadingAnimation />;
@@ -47,14 +46,12 @@ const ProtectedRoute = ({ element }: { element: ReactElement }) => {
 
   if (!user) {
     console.log("Usuário não autenticado, redirecionando para a página de login.");
-    return <Navigate to="/login" />;
+    return <Login />;
   }
 
-  const allowedWithoutEmpresa = ["/choose-company", "/criar-empresa"];
-
-  if (!empresa && !allowedWithoutEmpresa.includes(location.pathname)) {
-    console.log("Empresa não selecionada, redirecionando para a seleção de empresa.");
-    return <Navigate to="/choose-company" />;
+  if (!empresa) {
+    console.log("Usuário autenticado, mas sem empresa selecionada.");
+    return <ChooseCompanyPage />;
   }
 
   return element;
@@ -73,14 +70,12 @@ const PublicRoute = ({ element }: { element: ReactElement }) => {
   return <Navigate to="/" />; // Redirect authenticated users
 };
 
-const ChooseCompanyRoute = () => {
+const CompanyRoute = ({ element }: { element: ReactElement }) => {
   const { user } = useAuth();
 
-  if (user) {
-    return <ChooseCompany />;
-  }
+  if (!user) return <Login />;
 
-  return <Login />;
+  return element;
 };
 
 // Layout base
@@ -131,12 +126,8 @@ const ThemeToggleButton = () => {
 
 // 🚀 App principal
 function App() {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   let userId = user ? user.id : null;
-
-  if (loading) {
-    return <LoadingAnimation />;
-  }
 
   return (
     <Router>
@@ -158,8 +149,8 @@ function App() {
             <Route path="/clients-list" element={<ProtectedRoute element={<ClientManagementTable />} />} />
             <Route path="/add-client" element={<ProtectedRoute element={<AddNewClient />} />} />
             <Route path="/edit-profile" element={<ProtectedRoute element={<EditProfilePage />} />} />
-            <Route path="/choose-company" element={<ProtectedRoute element={<ChooseCompanyRoute />} />} />
-            <Route path="/create-company" element={<ProtectedRoute element={<CreateCompanyPage />} />} />
+            <Route path="/choose-company" element={<CompanyRoute element={<ChooseCompanyPage />} />} />
+            <Route path="/create-company" element={<CompanyRoute element={<CreateCompanyPage />} />} />
             <Route path="/report-models" element={<ProtectedRoute element={<ReportModelListPage />} />} />
             <Route path="/report-templates" element={<ProtectedRoute element={<ReportTemplatesPage />} />} />
             <Route path="/add-new-report" element={<ProtectedRoute element={<AddNewReportPage />} />} />

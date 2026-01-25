@@ -21,7 +21,6 @@ import { useState } from "react";
 import GlobalPhone from "../../../components/GlobalPhone";
 import validarNIF from "../../utils/isValidNIF";
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
-import { useRecaptcha } from "../../../hooks/RecaptchaContext";
 import SaveCancelBar from "../../../components/SaveCancelBar";
 
 const addClientSchema = z.object({
@@ -44,7 +43,7 @@ const addClientSchema = z.object({
     .regex(/^\d{4}-\d{3}$/, "Código postal no formato 1234-567"),
 });
 
-type AddClientFormInputs = Omit<z.infer<typeof addClientSchema>, "recaptchaToken">;
+type AddClientFormInputs = z.infer<typeof addClientSchema>;
 
 export default function AddNewClientPage() {
   const theme = useTheme();
@@ -54,7 +53,6 @@ export default function AddNewClientPage() {
   const { empresa } = useAuth();
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const { generateToken } = useRecaptcha();
 
   const {
     register,
@@ -76,22 +74,19 @@ export default function AddNewClientPage() {
       : {},
   });
 
-  const enviarNovoCliente = async (dados: AddClientFormInputs, recaptchaToken: string) => {
-    if (!empresa?.id || !/^[a-f\\d]{24}$/i.test(empresa.id)) {
-      throw new Error("ID da empresa inválido ou não fornecido.");
-    }
+  const enviarNovoCliente = async (dados: AddClientFormInputs) => {
     const response = await fetch(`/backend/cliente`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ ...dados, empresa_id: empresa.id, recaptchaToken }),
+      body: JSON.stringify({ ...dados, empresa_id: empresa?.id }),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || "Erro ao criar cliente");
     navigate("/clients-list", { state: { message: { error: false, text: "Novo cliente adicionado com sucesso!" } } });
   };
 
-  const atualizarCliente = async (dados: AddClientFormInputs & { id: string }, recaptchaToken: string) => {
+  const atualizarCliente = async (dados: AddClientFormInputs & { id: string }) => {
     if (!empresa?.id || !/^[a-f\\d]{24}$/i.test(empresa.id))
       throw new Error("ID da empresa inválido ou não fornecido.");
     if (!dados.id || !/^[a-f\\d]{24}$/i.test(dados.id)) throw new Error("ID do cliente inválido ou não fornecido.");
@@ -100,7 +95,7 @@ export default function AddNewClientPage() {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ ...dados, empresa_id: empresa.id, recaptchaToken }),
+      body: JSON.stringify({ ...dados, empresa_id: empresa.id }),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.detail || "Erro ao atualizar cliente");
@@ -110,13 +105,12 @@ export default function AddNewClientPage() {
   const onSubmit = async (formData: AddClientFormInputs) => {
     setErrorMessage(null);
     try {
-      const recaptchaToken = await generateToken("register");
       if (!empresa?.id) {
         setErrorMessage("Empresa não encontrada.");
         return;
       }
-      if (cliente) await atualizarCliente({ ...formData, id: cliente.id }, recaptchaToken);
-      else await enviarNovoCliente(formData, recaptchaToken);
+      if (cliente) await atualizarCliente({ ...formData, id: cliente.id });
+      else await enviarNovoCliente(formData);
     } catch (error: any) {
       setErrorMessage(
         cliente ? error?.message || "Erro ao atualizar cliente." : error?.message || "Erro ao adicionar cliente."

@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, Request
-from apis.recaptchaValidation import validar_recaptcha_token
 from models.clienteModels import ClienteCreate, ClienteUpdate, ClienteActivion
 from database import clientes_collection, users_empresas_collection
 from bson import ObjectId
@@ -12,10 +11,8 @@ routerCliente = APIRouter(prefix="/cliente")
 # Criar um novo cliente
 @routerCliente.post("/")
 async def criar_cliente(cliente: ClienteCreate, request: Request):
-    # 1) Validar reCAPTCHA token
-    await validar_recaptcha_token(cliente.recaptchaToken, "register")
 
-    # 2) Verificar permissões
+    # 1) Verificar permissões
     jwt = getattr(request.state, "jwt", None)
     user_id = ObjectId(jwt["user_id"])
 
@@ -27,7 +24,7 @@ async def criar_cliente(cliente: ClienteCreate, request: Request):
         if not user_empresa:
             raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para criar clientes nesta empresa.")
 
-    # 3) Preparar dados
+    # 2) Preparar dados
     cliente_data = cliente.model_dump(by_alias=True)
     cliente_data.update(
         {
@@ -39,9 +36,8 @@ async def criar_cliente(cliente: ClienteCreate, request: Request):
             "isActive": True,
         }
     )
-    del cliente_data["recaptchaToken"]
 
-    # 4) Inserir e capturar duplicados
+    # 3) Inserir e capturar duplicados
     try:
         result = await clientes_collection.insert_one(cliente_data)
     except DuplicateKeyError as e:
@@ -70,8 +66,6 @@ async def atualizar_cliente(cliente: ClienteUpdate, request: Request, id: str):
     except:
         raise HTTPException(400, detail="ID inválido. Deve ser um ObjectId válido.")
 
-    await validar_recaptcha_token(cliente.recaptchaToken, "update")
-
     if not jwt.get("isSuperAdmin", None):
         user_empresa = await users_empresas_collection.find_one({"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True})
         if not user_empresa:
@@ -99,8 +93,6 @@ async def apagar_cliente(cliente: ClienteActivion, request: Request):
     except:
         raise HTTPException(400, detail="ID ou NIF inválido.")
 
-    await validar_recaptcha_token(cliente.recaptchaToken, "delete")
-
     if not jwt.get("isSuperAdmin", None):
         user_empresa = await users_empresas_collection.find_one({"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True})
         if not user_empresa:
@@ -123,8 +115,6 @@ async def hard_delete_cliente(cliente: ClienteActivion, request: Request):
 
     jwt = getattr(request.state, "jwt", None)
     user_id = ObjectId(jwt["user_id"])
-
-    await validar_recaptcha_token(cliente.recaptchaToken, "delete")
 
     try:
         cliente.id = ObjectId(cliente.id)
@@ -157,8 +147,6 @@ async def reativar_cliente(cliente: ClienteActivion, request: Request):
         cliente.empresa_id = ObjectId(cliente.empresa_id)
     except:
         raise HTTPException(400, detail="ID inválido.")
-
-    await validar_recaptcha_token(cliente.recaptchaToken, "register")
 
     if not jwt.get("isSuperAdmin", None):
         user_empresa = await users_empresas_collection.find_one({"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True})

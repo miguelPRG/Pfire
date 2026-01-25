@@ -20,6 +20,7 @@ import {
   DialogActions,
   Breadcrumbs,
   Tooltip,
+  CircularProgress,
 } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { GET_CLIENTES_BY_EMPRESA } from "../../../graphql/clientesQueries";
@@ -31,10 +32,7 @@ import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
 import HomeIcon from "@mui/icons-material/Home";
 import NoDataMessage from "../../../components/NoDataMessage";
 import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
-import { useRecaptcha } from "../../../hooks/RecaptchaContext";
-import { RecaptchaAction } from "../../../hooks/RecaptchaContext";
 import client from "../../../graphql/apolloClient";
-import StatusToggle from "./StatusToggle";
 
 export interface Cliente {
   id: string;
@@ -80,7 +78,6 @@ export default function ClientManagementTable() {
   const navigate = useNavigate();
   const location = useLocation();
   const { empresa } = useAuth();
-  const { generateToken } = useRecaptcha();
 
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [totalClientes, setTotalClientes] = useState(0);
@@ -164,8 +161,6 @@ export default function ClientManagementTable() {
     setOrderBy(property);
   };
 
-  const backgroundColor = theme.palette.mode === "dark" ? "rgb(12,12,12)" : "#f0f0f0";
-
   const filteredRows = Array.from(clientes).sort((a, b) => {
     if (!orderBy) return 0;
     const aValue = a[orderBy]?.toString() || "";
@@ -175,7 +170,6 @@ export default function ClientManagementTable() {
 
   const apagarCliente = async (cliente: Cliente) => {
     try {
-      const recaptchaToken = await generateToken("update");
       const res = await fetch("/backend/cliente/hard-delete", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
@@ -183,17 +177,18 @@ export default function ClientManagementTable() {
         body: JSON.stringify({
           id: cliente.id,
           empresa_id: empresa?.id,
-          recaptchaToken,
         }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.detail || "Erro ao apagar cliente.");
       setAlert({ message: json.message || "Cliente apagado com sucesso!", isError: false });
+      setIsAdvancedSearch(false);
+      setAdvValue({ field: "", text: "" });
+      setPage(0);
       await fetchClientes({
         variables: {
           empresaId: empresa?.id,
-          start: page * rowsPerPage,
-          ...(isAdvancedSearch && advValue.text.trim() ? { filter: { [advValue.field]: advValue.text.trim() } } : {}),
+          start: 0,
         },
         fetchPolicy: "network-only",
       });
@@ -206,7 +201,6 @@ export default function ClientManagementTable() {
     try {
       let endpoint = "";
       let method: "PUT" | "DELETE";
-      let action: RecaptchaAction = "update";
 
       if (currentStatus) {
         // Desativar (optimistic)
@@ -218,8 +212,6 @@ export default function ClientManagementTable() {
         method = "PUT";
       }
 
-      const recaptchaToken = await generateToken(action);
-
       const response = await fetch(endpoint, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -227,7 +219,6 @@ export default function ClientManagementTable() {
         body: JSON.stringify({
           id: clienteId,
           empresa_id: empresa?.id,
-          recaptchaToken,
         }),
       });
 

@@ -1,6 +1,5 @@
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
-from apis.recaptchaValidation import validar_recaptcha_token
 from models.empresaModels import EmpresaUpdate, EmpresaCreateAsLoggedUser
 from models.userEmpresaModels import UserEmpresaCreate
 from database import empresas_collection, users_empresas_collection
@@ -16,7 +15,6 @@ routerEmpresa = APIRouter(prefix="/empresa")
 # Criar Empresa
 @routerEmpresa.post("/")
 async def create_empresa(payload: EmpresaCreateAsLoggedUser, request: Request):
-    await validar_recaptcha_token(payload.recaptchaToken, "create")
     jwt = getattr(request.state, "jwt", None)
     user_id = ObjectId(jwt["user_id"])
     date = datetime.now()
@@ -68,7 +66,7 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str):
     jwt = getattr(request.state, "jwt", None)
 
     # Validate the reCAPTCHA token
-    await validar_recaptcha_token(empresa.recaptchaToken, "update")
+    # await validar_recaptcha_token(empresa.recaptchaToken, "update")
 
     user_id = ObjectId(jwt["user_id"])
     id = ObjectId(id)

@@ -64,7 +64,13 @@ export default function RegisterPage() {
   // Schema da empresa
   const empresaSchema = z.object({
     nome: z.string().nonempty("O nome da empresa é obrigatório").trim(),
-    nif: z.string().min(9, "O NIF deve ter 9 caracteres").max(9, "O NIF deve ter 9 caracteres").nonempty("O NIF é obrigatório").trim().refine(isValidNIF, { message: "O NIF é inválido" }),
+    nif: z
+      .string()
+      .min(9, "O NIF deve ter 9 caracteres")
+      .max(9, "O NIF deve ter 9 caracteres")
+      .nonempty("O NIF é obrigatório")
+      .trim()
+      .refine(isValidNIF, { message: "O NIF é inválido" }),
     localidade: z.string().nonempty("A localidade é obrigatória").trim(),
     morada: z.string().nonempty("A morada é obrigatória").trim(),
     codigo_postal: z

@@ -14,7 +14,6 @@ import {
   TableSortLabel,
   Typography,
   Button,
-  Container,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -36,7 +35,6 @@ import HomeIcon from "@mui/icons-material/Home";
 import { useNavigate } from "react-router-dom";
 import NoDataMessage from "../../../components/NoDataMessage";
 import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
-import { useRecaptcha } from "../../../hooks/RecaptchaContext";
 import client from "../../../graphql/apolloClient";
 
 interface User {
@@ -78,7 +76,6 @@ export default function UserManagementTable() {
   const [roleLoading, setRoleLoading] = useState<{ [userId: string]: boolean }>({});
   const rowsPerPage = 10;
   const navigate = useNavigate();
-  const { generateToken } = useRecaptcha();
 
   const [advValue, setAdvValue] = useState<{ field: string; text: string }>({ field: "", text: "" });
   const advFields = [
@@ -161,7 +158,6 @@ export default function UserManagementTable() {
     setRoleLoading((prev) => ({ ...prev, [usr.id]: true }));
     const endpoint = usr.role == "Admin" ? "/backend/user/revoke_admin" : "/backend/user/set_admin";
     try {
-      const recaptchaToken = await generateToken("update");
       const res = await fetch(endpoint, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -169,7 +165,6 @@ export default function UserManagementTable() {
         body: JSON.stringify({
           user_id: usr.id,
           empresa_id: empresa?.id,
-          recaptchaToken,
         }),
       });
       const json = await res.json();
@@ -229,7 +224,6 @@ export default function UserManagementTable() {
       return;
     }
     try {
-      const recaptchaToken = await generateToken("invite");
       const res = await fetch("/backend/user/invite", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -238,7 +232,6 @@ export default function UserManagementTable() {
           email: values.email,
           empresa_nome: empresa?.nome,
           empresa_id: empresa?.id,
-          recaptchaToken,
         }),
       });
       const json = await res.json();
@@ -254,12 +247,11 @@ export default function UserManagementTable() {
 
   const handleDelete = async (id: string) => {
     try {
-      const recaptchaToken = await generateToken("delete");
       const res = await fetch("/backend/user/expel", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ user_id: id, empresa_id: empresa?.id, recaptchaToken }),
+        body: JSON.stringify({ user_id: id, empresa_id: empresa?.id }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.detail || "Erro ao expulsar utilizador.");

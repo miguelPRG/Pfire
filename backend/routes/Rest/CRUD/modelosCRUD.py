@@ -1,5 +1,4 @@
 from fastapi import APIRouter, HTTPException, Request
-from apis.recaptchaValidation import validar_recaptcha_token
 from models.modeloCamposModels import ModelosCamposCreate, ModelosCamposUpdate, ModelosCamposDelete
 from database import modelos_collection, users_empresas_collection, empresas_collection
 from bson import ObjectId
@@ -11,9 +10,6 @@ routerModelo = APIRouter(prefix="/modelo", tags=["modelo"])
 # Criar Modelo
 @routerModelo.post("/")
 async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
-    # 1) Validar token reCAPTCHA
-    await validar_recaptcha_token(modelo.recaptchaToken, "register")
-
     # Verificar se o user tem permissão para criar modelos nesta empresa
     jwt = getattr(request.state, "jwt", None)
     if not jwt:
@@ -59,9 +55,6 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
 
 @routerModelo.put("/{id}")
 async def update_modelo(request: Request, modelo: ModelosCamposUpdate, id: str):
-    # 1) Validar token reCAPTCHA
-    await validar_recaptcha_token(modelo.recaptchaToken, "register")
-
     id = ObjectId(id)
 
     # 2) Extrair payload JWT
@@ -133,8 +126,6 @@ async def update_modelo(request: Request, modelo: ModelosCamposUpdate, id: str):
 # Apagar Modelo
 @routerModelo.delete("/")
 async def apagar_modelo(request: Request, modelo: ModelosCamposDelete):
-
-    await validar_recaptcha_token(modelo.recaptchaToken, "delete")
 
     jwt = getattr(request.state, "jwt", None)
 

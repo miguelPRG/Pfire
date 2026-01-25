@@ -420,6 +420,10 @@ async def forgot_password(request: Request, user: UserForgotPassword):
     Endpoint para solicitar a recuperação da senha:
     - Envia um e-mail com um link para redefinir a senha.
     """
+
+    # Validar Recaptcha token
+    await validar_recaptcha_token(user.recaptchaToken, "forgot-password")
+
     # Verifica se o usuário existe
     user_found = await users_collection.find_one({"email": user.email, "isActive": True})
     if not user_found:
@@ -442,7 +446,7 @@ async def forgot_password(request: Request, user: UserForgotPassword):
         raise HTTPException(status_code=409, detail="Erro na criação do ID global.")
 
     # Envia o e-mail de recuperação
-    enviar_email(user.email, user_found["nome"],global_id, 5, "recuperarPassword")
+    enviar_email(user.email, user_found["nome"], global_id, 5, "recuperarPassword")
 
     return {"message": "E-mail de recuperação enviado!"}
 
@@ -450,9 +454,6 @@ async def forgot_password(request: Request, user: UserForgotPassword):
 # Atualiza a password de utilizadores já logados
 @routerUser.put("/update-password")
 async def update_password(user: UserUpdatePassword, request: Request):
-
-    # Validar o reCAPTCHA token
-    await validar_recaptcha_token(user.recaptchaToken, "update_password")
 
     jwt = getattr(request.state, "jwt", None)
 
@@ -486,9 +487,6 @@ async def update_password(user: UserUpdatePassword, request: Request):
 # Enviar convite para se juntar à empresa
 @routerUser.post("/invite")
 async def invite_user_to_empresa(request: Request, user: UserInvitation):
-
-    # Validar reCAPTCHA token
-    await validar_recaptcha_token(user.recaptchaToken, "invite")
 
     jwt = getattr(request.state, "jwt", None)
     user_id = ObjectId(jwt["user_id"])
@@ -552,6 +550,7 @@ async def invite_user_to_empresa(request: Request, user: UserInvitation):
 
 @routerUser.post("/converter-pdf")
 async def converter_relatorio_pdf(request: Request, user: UserConverterPDF):
+
     jwt = getattr(request.state, "jwt", None)
     if not jwt:
         raise HTTPException(status_code=401, detail="Token JWT ausente")

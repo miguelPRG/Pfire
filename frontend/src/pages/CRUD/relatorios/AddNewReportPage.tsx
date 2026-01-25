@@ -33,17 +33,12 @@ import ArrowCircleUpIcon from "@mui/icons-material/ArrowCircleUp"; // Ícone de 
 import { useTheme } from "@mui/material/styles"; // Tema do Material UI
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs"; // Componente de breadcrumb estilizado
 import CriteriaSelectField from "./CriteriaSelectField";
-import { useRecaptcha } from "../../../hooks/RecaptchaContext";
-
-// Declaração global para o objeto grecaptcha (Google reCAPTCHA)
-declare var grecaptcha: any;
 
 function buildZodSchema(model: any) {
   const shape: Record<string, any> = {
     modelo_id: z.string("ID inválido").min(24).max(24),
     cliente_id: z.string("Selecione um cliente").min(1),
     empresa_id: z.string("ID inválido").min(24),
-    recaptchaToken: z.string("Token obrigatório").min(1),
   };
 
   if (Array.isArray(model.customFields)) {
@@ -110,7 +105,6 @@ function AddNewReportPage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const formTopRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
-  const { generateToken } = useRecaptcha();
 
   // Executa a query GraphQL para buscar clientes da empresa
   const [getClientes, { data, loading }] = useLazyQuery(GET_CLIENTES_BY_EMPRESA, {
@@ -171,8 +165,6 @@ function AddNewReportPage() {
     setErrorMessage(null);
 
     try {
-      const recaptchaToken = await generateToken("register");
-
       // Garante que todos os campos booleanos estejam presentes no payload
       const booleanKeys: string[] = [];
       selectedModel.customFields.forEach((field: any) => {
@@ -205,7 +197,6 @@ function AddNewReportPage() {
         "modelo_id",
         "cliente_id",
         "empresa_id",
-        "recaptchaToken",
         // ...todos os custom_...
       ];
 
@@ -234,7 +225,6 @@ function AddNewReportPage() {
           ...groupedFormData,
           empresa_id: empresa?.id,
           modelo_id: selectedModel._id?.$oid || selectedModel.id,
-          recaptchaToken,
         }).filter(([key]) => allowedKeys.includes(key) || key.startsWith("custom_"))
       );
 

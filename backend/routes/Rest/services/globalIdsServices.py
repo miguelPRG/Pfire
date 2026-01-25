@@ -1,13 +1,15 @@
 from fastapi import APIRouter, HTTPException, Request
 from re import compile, IGNORECASE
 from datetime import datetime
-from models.userModels import UserChangePassword  # Ajuste o caminho conforme sua estrutura
-from models.userEmpresaModels import UserEmpresaCreate  # Ajuste o caminho conforme sua estrutura
+from models.userModels import UserChangePassword
+from models.userEmpresaModels import UserEmpresaCreate
+from models.globalIdModel import GlobalIdModel
 from database import (
     global_ids_collection,
     users_collection,
     users_empresas_collection,
-)  # Ajuste o caminho conforme sua estrutura
+)
+from apis.recaptchaValidation import validar_recaptcha_token
 from passlib.context import CryptContext
 from asyncio import gather
 from pymongo.errors import DuplicateKeyError
@@ -51,7 +53,9 @@ async def get_global_id(global_id: str, request: Request):
 
 # Ativar utilizador pós registo
 @routerUser.put("/email/activate/{global_id}")
-async def confirm_user(global_id: str, request: Request):
+async def confirm_user(global_id: str, request: Request, captcha_data: GlobalIdModel):
+
+    await validar_recaptcha_token(captcha_data.recaptchaToken, "register")
 
     UUID_V4_REGEX = compile(r"^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$", IGNORECASE)
 
@@ -87,6 +91,8 @@ async def confirm_user(global_id: str, request: Request):
 @routerUser.put("/email/change-password")
 async def reset_password(request: Request, user: UserChangePassword):
 
+    await validar_recaptcha_token(user.recaptchaToken, "update")
+
     # Encontrar o global_id na base de dados
     global_id_data = await global_ids_collection.find_one({"global_id": user.global_id, "operation": "recuperarPassword"})
     if not global_id_data or global_id_data["operation"] != "recuperarPassword":
@@ -117,7 +123,9 @@ async def reset_password(request: Request, user: UserChangePassword):
 
 # Aceitar convite para uma empresa
 @routerUser.put("/email/accept-invite/{global_id}")
-async def accept_invite(global_id: str, request: Request):
+async def accept_invite(global_id: str, request: Request, captcha_data: GlobalIdModel):
+
+    await validar_recaptcha_token(captcha_data.recaptchaToken, "register")
 
     print("Aceitar convite para empresa - Global ID:", global_id)
 
