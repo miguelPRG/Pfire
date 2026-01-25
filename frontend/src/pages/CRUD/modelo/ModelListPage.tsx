@@ -21,11 +21,9 @@ import {
 import {
   ExpandLess,
   ExpandMore,
-  Search,
   Delete,
   ContentCopy as ContentCopyIcon,
   Description as DescriptionIcon,
-  Height,
 } from "@mui/icons-material";
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -192,8 +190,6 @@ export default function ReportModelListPage() {
     setDeleteId(id);
 
     try {
-      const recaptchaToken = await generateToken("register");
-
       const res = await fetch(`/backend/modelo`, {
         method: "DELETE",
         credentials: "include",
@@ -203,7 +199,6 @@ export default function ReportModelListPage() {
         body: JSON.stringify({
           id,
           empresa_id: typeof empresa === "object" ? empresa?.id : empresa,
-          recaptchaToken,
         }),
       });
 
@@ -228,15 +223,12 @@ export default function ReportModelListPage() {
   const handleClone = async (modeloId: string) => {
     setCloningId(modeloId);
     try {
-      const recaptchaToken = await generateToken("register");
-
       const res = await fetch("/backend/modelo/clone", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
           id: modeloId,
-          recaptchaToken,
         }),
       });
 

@@ -112,9 +112,6 @@ async def soft_delete_user(request: Request, user: UserActivation):
 @routerUser.put("/activate")
 async def activate_user(request: Request, user: UserActivation):
 
-    # Validar o reCAPTCHA token
-    await validar_recaptcha_token(user.recaptchaToken, "activate")
-
     jwt = getattr(request.state, "jwt", None)
     updated_fields = {"isActive": True, "updated_at": datetime.now(), "updated_by": ObjectId(jwt["user_id"])}
 

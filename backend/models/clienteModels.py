@@ -14,7 +14,6 @@ class ClienteCreate(BaseModel):
     morada: str = Field(..., max_length=255, description="Morada do cliente. Deve ter no máximo 255 caracteres.")
     codigo_postal: str = Field(..., pattern=r"^\d{4}-\d{3}$")
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao cliente.")
-    recaptchaToken: str
 
     def __init__(self, **data):
         super().__init__(**{k: v.strip() if isinstance(v, str) else v for k, v in data.items()})
@@ -46,7 +45,6 @@ class ClienteUpdate(BaseModel):
     localidade: Optional[str] = Field(None, max_length=100, description="Cidade do cliente. Deve ter no máximo 100 caracteres.")
     morada: Optional[str] = Field(None, max_length=255, description="Morada do cliente. Deve ter no máximo 255 caracteres.")
     codigo_postal: Optional[str] = Field(None, pattern=r"^\d{4}-\d{3}$")
-    recaptchaToken: str
 
     def __init__(self, **data):
         super().__init__(**{k: v.strip() if isinstance(v, str) else v for k, v in data.items()})
@@ -72,4 +70,3 @@ class ClienteUpdate(BaseModel):
 class ClienteActivion(BaseModel):
     id: str = Field(None, min_length=24, max_length=24, description="ID do cliente a ser ativado/desativado.")
     empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao cliente.")
-    recaptchaToken: str

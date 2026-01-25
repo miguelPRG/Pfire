@@ -8,13 +8,10 @@ class OptionItem(BaseModel):
     key: str
     value: str
 
-
 class CriterioCreate(BaseModel):
-
     nome: str = Field(..., min_length=1, max_length=100)
     modelo_id: str
     options: List[OptionItem]
-    recaptcha_token: str
 
     @field_validator("nome")
     @classmethod
@@ -48,7 +45,6 @@ class CriterioCreate(BaseModel):
 class CriterioUpdate(BaseModel):
     nome: str | None = Field(None, min_length=1, max_length=100)
     options: List[OptionItem] | None
-    recaptcha_token: str
 
     @field_validator("nome")
     @classmethod

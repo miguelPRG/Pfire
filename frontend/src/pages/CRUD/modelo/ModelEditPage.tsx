@@ -28,7 +28,6 @@ import ArrowCircleUpIcon from "@mui/icons-material/ArrowCircleUp"; // Ícone de 
 import HomeIcon from "@mui/icons-material/Home"; // <--- adicionado
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs"; // <--- adicionado
 import Notification from "../../../components/Notification";
-import { useRecaptcha } from "../../../hooks/RecaptchaContext";
 
 // Esquema de validação para um subcampo personalizado
 const subfieldSchema = z.object({
@@ -241,15 +240,11 @@ export default function ReportTemplatePage() {
     }
   };
 
-  const { generateToken } = useRecaptcha();
-
   const onSubmit = async (data: FormSchema) => {
     try {
       if (fields.length === 0) {
         throw new Error("Adicione pelo menos um campo personalizado.");
       }
-
-      const recaptchaToken = await generateToken("register");
 
       // Monta o objeto de campos personalizados para o backend
       const customFields: Record<string, any> = {};
@@ -321,7 +316,6 @@ export default function ReportTemplatePage() {
       const payload = {
         modelo_nome: data.modeloNome,
         empresa_id: typeof empresa === "object" ? empresa?.id : empresa,
-        recaptchaToken,
         ...customFields,
       };
 

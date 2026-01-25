@@ -3,7 +3,7 @@ from fastapi import HTTPException
 from bson import ObjectId
 from typing import Any
 
-MAIN_FIELDS = {"modelo_id", "cliente_id", "empresa_id", "recaptchaToken"}
+MAIN_FIELDS = {"modelo_id", "cliente_id", "empresa_id"}
 
 
 def clean_payload(data: Any) -> Any:
@@ -31,7 +31,6 @@ class RelatorioCreate(BaseModel):
     modelo_id: str = Field(..., min_length=24, max_length=24)
     cliente_id: str = Field(..., min_length=24, max_length=24)
     empresa_id: str = Field(..., min_length=24, max_length=24)
-    recaptchaToken: str
     model_config = ConfigDict(extra="allow")
 
     @field_validator("modelo_id", "cliente_id", "empresa_id")
@@ -61,6 +60,7 @@ class RelatorioCreate(BaseModel):
 class RelatorioActivation(BaseModel):
     id: str = Field(..., min_length=24, max_length=24)
     empresa_id: str = Field(..., min_length=24, max_length=24)
+    recaptchaToken: str = Field(...)
 
     @field_validator("id", "empresa_id", mode="before")
     def validate_object_id(cls, v):

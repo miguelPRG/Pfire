@@ -132,7 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isSuperAdmin: userData.isSuperAdmin,
             firebaseUID: userData.firebaseUID,
           });
-          setLoading(false); // Set loading to false on successful auth
+          
         } else {
           setAuthError(userData.detail || "Erro ao autenticar utilizador");
           setLoading(false); // Set loading to false on error

@@ -2,7 +2,6 @@ from database import criterios_collection, users_empresas_collection
 from models.criteriosModels import CriterioCreate, CriterioUpdate
 from fastapi import APIRouter, HTTPException, Request
 from bson import ObjectId
-from apis.recaptchaValidation import validar_recaptcha_token
 from datetime import datetime
 from pymongo.errors import DuplicateKeyError
 
@@ -11,8 +10,6 @@ routerCriterio = APIRouter(prefix="/criterio")
 
 @routerCriterio.post("/")
 async def create_criterio(criterio: CriterioCreate, request: Request):
-
-    await validar_recaptcha_token(criterio.recaptcha_token, "register")
 
     jwt = getattr(request.state, "jwt", None)
 
@@ -47,8 +44,6 @@ async def create_criterio(criterio: CriterioCreate, request: Request):
 
 @routerCriterio.put("/{criterio_id}")
 async def update_criterio(criterio_id: str, criterio: CriterioUpdate, request: Request):
-
-    await validar_recaptcha_token(criterio.recaptcha_token, "update")
 
     jwt = getattr(request.state, "jwt", None)
 
@@ -85,9 +80,7 @@ async def update_criterio(criterio_id: str, criterio: CriterioUpdate, request: R
 
 
 @routerCriterio.delete("/{criterio_id}")
-async def delete_criterio(criterio_id: str, recaptcha_token: str, request: Request):
-
-    await validar_recaptcha_token(recaptcha_token, "delete")
+async def delete_criterio(criterio_id: str, request: Request):
 
     jwt = getattr(request.state, "jwt", None)
 

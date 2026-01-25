@@ -92,15 +92,10 @@ export default function CreateCriteriaPage() {
         throw new Error("Adicione pelo menos um critério");
       }
 
-      const recaptchaToken = await window.grecaptcha.enterprise.execute("6LdDN-kqAAAAAHYkxo-9PioMLoErWSv1vUvwdig4", {
-        action: criterioID ? "update" : "register",
-      });
-
       const payload = {
         nome: data.nome,
         modelo_id: modeloId,
         options: data.options,
-        recaptcha_token: recaptchaToken,
       };
 
       console.log("Payload to be sent:", payload);

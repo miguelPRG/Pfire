@@ -3,12 +3,10 @@ from pymongo.errors import DuplicateKeyError
 from bson import ObjectId
 from datetime import datetime
 from asyncio import gather
-from apis.recaptchaValidation import validar_recaptcha_token
 from models.relatorioModels import RelatorioCreate, RelatorioActivation
 from database import relatorios_collection, clientes_collection, modelos_collection, users_empresas_collection
 
 routerRelatorio = APIRouter(prefix="/relatorio")
-
 
 def validate_custom_fields(relatorio_data: dict, modelo: dict):
     """Valida se os campos custom_ do relatório respeitam o modelo, incluindo subcampos."""
@@ -77,7 +75,6 @@ def validate_custom_fields(relatorio_data: dict, modelo: dict):
 # Criar Relatório
 @routerRelatorio.post("/")
 async def create_relatorio(request: Request, relatorio: RelatorioCreate):
-    await validar_recaptcha_token(relatorio.recaptchaToken, "create")
 
     jwt = getattr(request.state, "jwt", None)
     if not jwt or "user_id" not in jwt:
@@ -169,7 +166,7 @@ async def delete_relatorio(relatorio: RelatorioActivation, request: Request):
 async def activate_relatorio(relatorio: RelatorioActivation, request: Request):
 
     # Validar o reCAPTCHA token
-    await validar_recaptcha_token(relatorio.recaptchaToken, "activate")
+    # await validar_recaptcha_token(relatorio.recaptchaToken, "activate")
 
     # Sacar jwt
     jwt = getattr(request.state, "jwt", None)
@@ -198,7 +195,7 @@ async def activate_relatorio(relatorio: RelatorioActivation, request: Request):
 async def hard_delete_relatorio(relatorio: RelatorioActivation, request: Request):
 
     # Validar reCAPTCHA token
-    await validar_recaptcha_token(relatorio.recaptchaToken, "hard_delete")
+    # await validar_recaptcha_token(relatorio.recaptchaToken, "hard_delete")
 
     # Sacar jwt
     jwt = getattr(request.state, "jwt", None)

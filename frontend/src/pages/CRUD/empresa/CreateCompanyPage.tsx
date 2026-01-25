@@ -8,7 +8,6 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import isValidNIF from "../../utils/isValidNIF";
 import GlobalPhone from "../../../components/GlobalPhone";
-import { useRecaptcha } from "../../../hooks/RecaptchaContext";
 import SaveCancelBar from "../../../components/SaveCancelBar";
 
 const empresaSchema = z.object({
@@ -36,7 +35,6 @@ export default function CreateCompanyPage() {
   const [alert, setAlert] = useState<{ message: string; isError: boolean } | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { generateToken } = useRecaptcha();
 
   const {
     register,
@@ -52,13 +50,11 @@ export default function CreateCompanyPage() {
   const onSubmit = async (data: EmpresaFormInputs) => {
     setLoading(true);
     try {
-      const recaptchaToken = await generateToken("register");
-      const payload = { ...data, recaptchaToken };
       const res = await fetch("/backend/empresa/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify(payload),
+        body: JSON.stringify(data),
       });
       if (!res.ok) {
         let err;
