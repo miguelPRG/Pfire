@@ -44,6 +44,7 @@ class EmpresaCreateAsLoggedUser(EmpresaCreate):
     codigo_postal: str = Field(..., pattern=r"^\d{4}-\d{3}$")
     telefone: str = Field(..., pattern=r"^\+?[0-9\s\-()]{7,15}$")  # Correção aqui
 
+
 class EmpresaUpdate(BaseModel):
     nome: Optional[str] = Field(None, max_length=100)
     nif: Optional[str] = Field(None, pattern=r"^[1235689]\d{8}$")

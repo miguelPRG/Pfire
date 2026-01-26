@@ -132,7 +132,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isSuperAdmin: userData.isSuperAdmin,
             firebaseUID: userData.firebaseUID,
           });
-          
         } else {
           setAuthError(userData.detail || "Erro ao autenticar utilizador");
           setLoading(false); // Set loading to false on error
@@ -316,9 +315,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error("Erro no login com OAuth:", error);
       setUser(null);
       // Não lançar erro se for popup fechado pelo utilizador
-      if (typeof error?.message === "string" && 
-          (error.message.includes("auth/popup-closed-by-user") || 
-           error.message.includes("auth/cancelled-popup-request"))) {
+      if (
+        typeof error?.message === "string" &&
+        (error.message.includes("auth/popup-closed-by-user") || error.message.includes("auth/cancelled-popup-request"))
+      ) {
         // Apenas loga, não lança
         return false;
       }

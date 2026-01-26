@@ -49,7 +49,7 @@ const ProtectedRoute = ({ element }: { element: ReactElement }) => {
     return <Login />;
   }
 
-  if(!empresa){
+  if (!empresa) {
     console.log("Usuário autenticado, mas sem empresa selecionada.");
     return <ChooseCompanyPage />;
   }
@@ -70,7 +70,7 @@ const PublicRoute = ({ element }: { element: ReactElement }) => {
   return <Navigate to="/" />; // Redirect authenticated users
 };
 
-const CompanyRoute = ({element}: {element: ReactElement}) => {
+const CompanyRoute = ({ element }: { element: ReactElement }) => {
   const { user } = useAuth();
 
   if (!user) return <Login />;

@@ -8,6 +8,7 @@ from database import relatorios_collection, clientes_collection, modelos_collect
 
 routerRelatorio = APIRouter(prefix="/relatorio")
 
+
 def validate_custom_fields(relatorio_data: dict, modelo: dict):
     """Valida se os campos custom_ do relatório respeitam o modelo, incluindo subcampos."""
     for key, field_def in modelo.items():

@@ -421,7 +421,7 @@ async def forgot_password(request: Request, user: UserForgotPassword):
     - Envia um e-mail com um link para redefinir a senha.
     """
 
-    #Validar Recaptcha token
+    # Validar Recaptcha token
     await validar_recaptcha_token(user.recaptchaToken, "forgot-password")
 
     # Verifica se o usuário existe
@@ -446,7 +446,7 @@ async def forgot_password(request: Request, user: UserForgotPassword):
         raise HTTPException(status_code=409, detail="Erro na criação do ID global.")
 
     # Envia o e-mail de recuperação
-    enviar_email(user.email, user_found["nome"],global_id, 5, "recuperarPassword")
+    enviar_email(user.email, user_found["nome"], global_id, 5, "recuperarPassword")
 
     return {"message": "E-mail de recuperação enviado!"}
 
@@ -550,7 +550,7 @@ async def invite_user_to_empresa(request: Request, user: UserInvitation):
 
 @routerUser.post("/converter-pdf")
 async def converter_relatorio_pdf(request: Request, user: UserConverterPDF):
-    
+
     jwt = getattr(request.state, "jwt", None)
     if not jwt:
         raise HTTPException(status_code=401, detail="Token JWT ausente")
