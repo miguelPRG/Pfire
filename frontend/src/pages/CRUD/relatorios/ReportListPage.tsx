@@ -18,12 +18,13 @@ import {
   DialogActions,
   Autocomplete,
   TextField,
+  CircularProgress,
 } from "@mui/material";
 import { Add } from "@mui/icons-material";
 import HomeIcon from "@mui/icons-material/Home";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
-import { useQuery } from "@apollo/client/react";
+import { useLazyQuery } from "@apollo/client/react";
 import { useAuth } from "../../../hooks/AuthContext";
 import { GET_REPORTS_BY_MODEL } from "../../../graphql/reportsQueries";
 import { GET_CLIENTES_BY_EMPRESA } from "../../../graphql/clientesQueries";
@@ -108,9 +109,10 @@ export default function ReportListPage() {
   const navigate = useNavigate(); // navegação de rotas
   const theme = useTheme(); // tema MUI
   const { empresa } = useAuth(); // contexto de autenticação/empresa
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false); // dialogo de delete
+  const [hardDeleteDialogOpen, setHardDeleteDialogOpen] = useState(false); // dialogo de hard delete
   const location = useLocation(); // leitura de estado passado pela navegação
   const [selectedReport, setSelectedReport] = useState<Report | null>(null); // relatório selecionado p/ delete
+  const [loadingReportId, setLoadingReportId] = useState<string | null>(null); // rastrear qual relatório está carregando
   // estilo reutilizável para linhas entre células (vertical + horizontal)
   // usa cor cinza no modo light para as linhas (mais visível), mantém o divider do tema no dark
   const dividerColor = theme.palette.mode === "light" ? "#bdbdbd" : theme.palette.divider;
@@ -126,24 +128,27 @@ export default function ReportListPage() {
   };
 
   // Query GraphQL: obtém relatórios por modelo (pode receber filtro e paginação)
-  const { data, loading, error, refetch } = useQuery<returnedData>(GET_REPORTS_BY_MODEL, {
-    variables: {
-      empresaId: empresa?.id,
-      modeloId: location.state?.filter?.modeloId,
-      start: page * rowsPerPage,
-      filter: {},
-    },
+  const [getReports, { data, loading, error }] = useLazyQuery<returnedData>(GET_REPORTS_BY_MODEL, {
     fetchPolicy: "cache-and-network",
-  });
-
-  const [getReports] = useLazyQuery<returnedData>(GET_REPORTS_BY_MODEL, {
-    fetchPolicy: "cache-first",
   });
 
   // Query para buscar clientes
   const [getClientes, { data: clientesData, loading: clientesLoading }] = useLazyQuery(GET_CLIENTES_BY_EMPRESA, {
     fetchPolicy: "cache-first",
   });
+
+  // Inicializa a query ao montar o componente
+  useEffect(() => {
+    getReports({
+      variables: {
+        empresaId: empresa?.id,
+        modeloId: location.state?.filter?.modeloId,
+        start: page * rowsPerPage,
+        filter: {},
+      },
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Atualiza busca quando o termo de pesquisa por número muda
   useEffect(() => {
@@ -178,10 +183,12 @@ export default function ReportListPage() {
 
   useEffect(() => {
     console.log("Mudando para a página:", page); // Log para verificar a mudança de página
-    refetch({
-      empresaId: empresa?.id,
-      modeloId: location.state?.filter?.modeloId,
-      start: page * rowsPerPage,
+    getReports({
+      variables: {
+        empresaId: empresa?.id,
+        modeloId: location.state?.filter?.modeloId,
+        start: page * rowsPerPage,
+      },
     })
       .then((response) => {
         console.log("Dados retornados:", response.data); // Log para verificar os dados retornados
@@ -190,7 +197,7 @@ export default function ReportListPage() {
         }
       })
       .catch((error) => {
-        console.error("Erro ao refetch:", error); // Log para verificar erros
+        console.error("Erro ao buscar:", error); // Log para verificar erros
       });
   }, [page]);
 
@@ -311,35 +318,93 @@ export default function ReportListPage() {
     return String(val);
   };
 
+  // Soft delete - desativar relatório
+  const toggleReportStatus = async (reportId: string, currentStatus: boolean | undefined) => {
+    try {
+      let endpoint = "";
+      let method: "PUT" | "DELETE";
+
+      if (currentStatus) {
+        // Desativar (soft delete)
+        setReports((prev) => prev.map((r) => (r.id === reportId ? { ...r, isActive: false } : r)));
+        endpoint = "/backend/relatorio/";
+        method = "DELETE";
+      } else {
+        // Reativar
+        endpoint = "/backend/relatorio/activate";
+        method = "PUT";
+      }
+
+      const response = await fetch(endpoint, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          id: reportId,
+          empresa_id: empresa?.id,
+          recaptchaToken: "",
+        }),
+      });
+
+      const json = await response.json();
+
+      if (!response.ok) {
+        // revert se falha desativação
+        if (currentStatus) {
+          setReports((prev) => prev.map((r) => (r.id === reportId ? { ...r, isActive: true } : r)));
+        }
+        throw new Error(json.detail || `Erro ao ${currentStatus ? "desativar" : "ativar"} relatório.`);
+      }
+
+      setAlert({
+        message: json.message || `Relatório ${currentStatus ? "desativado" : "ativado"} com sucesso!`,
+        isError: false,
+      });
+
+      // ativar após sucesso
+      if (!currentStatus) {
+        setReports((prev) => prev.map((r) => (r.id === reportId ? { ...r, isActive: true } : r)));
+      }
+    } catch (error: any) {
+      setAlert({
+        message: error.message || `Erro ao ${currentStatus ? "desativar" : "ativar"} relatório.`,
+        isError: true,
+      });
+    }
+  };
+
+  // Hard delete - apagar permanentemente
   const hardDeleteReport = async (report: Report) => {
     try {
-      const data = await fetch("/backend/relatorio/", {
+      const response = await fetch("/backend/relatorio/hard-delete", {
         method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           id: report.id,
           empresa_id: empresa?.id,
         }),
       });
-
-      if (data.ok) {
-        console.log("Relatório eliminado com sucesso.");
-        setAlert({ message: "Relatório eliminado com sucesso.", isError: false });
-        // Refetch para atualizar a lista após exclusão
-        const result = await refetch({
+      const json = await response.json();
+      if (!response.ok) throw new Error(json.detail || "Erro ao apagar relatório permanentemente.");
+      setAlert({ message: json.message || "Relatório apagado permanentemente com sucesso!", isError: false });
+      
+      // Recarregar a tabela após exclusão permanente
+      setPage(0);
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      const result = await getReports({
+        variables: {
           empresaId: empresa?.id,
           modeloId: location.state?.filter?.modeloId,
-          start: page * rowsPerPage,
-        });
-        if (result.data?.getRelatorios?.relatorios) {
-          setReports(result.data.getRelatorios.relatorios);
-        }
+          start: 0,
+          filter: {},
+        },
+      });
+      if (result.data?.getRelatorios?.relatorios) {
+        setReports(result.data.getRelatorios.relatorios);
       }
-    } catch (err) {
-      console.error("Erro ao eliminar relatório:", err);
-      setAlert({ message: "Erro ao eliminar relatório.", isError: true });
+    } catch (err: any) {
+      setAlert({ message: err.message || "Erro ao apagar relatório permanentemente.", isError: true });
     }
   };
 
@@ -369,11 +434,13 @@ export default function ReportListPage() {
         filterObj = { [advFilter.field]: text };
       }
     }
-    const result = await refetch({
-      empresaId: empresa?.id,
-      modeloId: location.state?.filter?.modeloId,
-      start: 0,
-      filter: filterObj,
+    const result = await getReports({
+      variables: {
+        empresaId: empresa?.id,
+        modeloId: location.state?.filter?.modeloId,
+        start: 0,
+        filter: filterObj,
+      },
     });
     if (result.data?.getRelatorios?.relatorios) {
       setReports(result.data.getRelatorios.relatorios);
@@ -664,6 +731,9 @@ export default function ReportListPage() {
                     Data Criação
                   </TableCell>
                   <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }} align="center">
+                    Estado
+                  </TableCell>
+                  <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }} align="center">
                     Ações
                   </TableCell>
                 </TableRow>
@@ -722,15 +792,58 @@ export default function ReportListPage() {
                     <TableCell sx={{ ...cellBorders, textAlign: "center" }}>
                       <Button
                         variant="contained"
-                        color="error"
                         size="small"
-                        onClick={() => {
-                          setSelectedReport(report);
-                          setDeleteDialogOpen(true);
+                        sx={{
+                          width: 55,
+                          height: 55,
+                          borderRadius: "50%",
+                          backgroundColor: report.isActive
+                            ? theme.palette.success.main
+                            : theme.palette.error.main,
+                          color: "#fff",
+                          fontWeight: "bold",
+                          fontSize: 12,
+                          minWidth: 0,
+                          px: 0,
+                          position: "relative",
+                        }}
+                        disabled={loadingReportId === report.id}
+                        onClick={async () => {
+                          setLoadingReportId(report.id);
+                          await toggleReportStatus(report.id, report.isActive);
+                          setLoadingReportId(null);
                         }}
                       >
-                        Apagar
+                        {loadingReportId === report.id ? (
+                          <CircularProgress size={28} sx={{ color: "#fff" }} />
+                        ) : report.isActive ? (
+                          "Ativo"
+                        ) : (
+                          "Inativo"
+                        )}
                       </Button>
+                    </TableCell>
+                    <TableCell sx={{ ...cellBorders, textAlign: "center" }}>
+                      {!report.isActive && loadingReportId !== report.id && (
+                        <Button
+                          variant="contained"
+                          color="error"
+                          size="small"
+                          sx={{
+                            borderRadius: "20px",
+                            minWidth: 0,
+                            px: 1.5,
+                            width: "auto",
+                            textTransform: "none",
+                          }}
+                          onClick={() => {
+                            setSelectedReport(report);
+                            setHardDeleteDialogOpen(true);
+                          }}
+                        >
+                          Apagar Permanentemente
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
@@ -834,7 +947,7 @@ export default function ReportListPage() {
       </Dialog>
 
       {/* Dialog de confirmação para apagar relatório permanentemente. */}
-      <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
+      <Dialog open={hardDeleteDialogOpen} onClose={() => setHardDeleteDialogOpen(false)}>
         <DialogTitle sx={{ fontWeight: "bold" }}>Eliminar relatório permanentemente!</DialogTitle>
         <DialogContent>
           <Typography>
@@ -843,14 +956,14 @@ export default function ReportListPage() {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteDialogOpen(false)} variant="outlined">
+          <Button onClick={() => setHardDeleteDialogOpen(false)} variant="outlined">
             Cancelar
           </Button>
           <Button
             onClick={async () => {
               if (selectedReport) {
                 await hardDeleteReport(selectedReport);
-                setDeleteDialogOpen(false);
+                setHardDeleteDialogOpen(false);
                 setSelectedReport(null);
               }
             }}

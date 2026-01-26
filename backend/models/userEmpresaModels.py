@@ -17,7 +17,6 @@ class UserRole(BaseModel):
     user_id: str
     empresa_id: str
 
-
 class UserExpel(BaseModel):
     user_id: str
     empresa_id: str

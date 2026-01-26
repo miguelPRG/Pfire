@@ -60,7 +60,6 @@ class RelatorioCreate(BaseModel):
 class RelatorioActivation(BaseModel):
     id: str = Field(..., min_length=24, max_length=24)
     empresa_id: str = Field(..., min_length=24, max_length=24)
-    recaptchaToken: str = Field(...)
 
     @field_validator("id", "empresa_id", mode="before")
     def validate_object_id(cls, v):

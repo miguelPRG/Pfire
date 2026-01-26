@@ -82,7 +82,9 @@ export default function ClientManagementTable() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [totalClientes, setTotalClientes] = useState(0);
 
-  const [fetchClientes, { data, loading, error }] = useLazyQuery<returnedData>(GET_CLIENTES_BY_EMPRESA);
+  const [fetchClientes, { data, loading, error }] = useLazyQuery<returnedData>(GET_CLIENTES_BY_EMPRESA , {
+    fetchPolicy: "cache-and-network",
+  });
   const [isAdvancedSearch, setIsAdvancedSearch] = useState(false);
 
   useEffect(() => {
@@ -97,7 +99,6 @@ export default function ClientManagementTable() {
       }
       fetchClientes({
         variables: { empresaId: empresa?.id, start: 0 },
-        fetchPolicy: "network-only",
       });
     };
     run();
@@ -123,7 +124,6 @@ export default function ClientManagementTable() {
         start: page * rowsPerPage,
         ...(isAdvancedSearch && advValue.text.trim() ? { filter: { [advValue.field]: advValue.text.trim() } } : {}),
       },
-      fetchPolicy: "cache-first",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page]);
@@ -137,7 +137,6 @@ export default function ClientManagementTable() {
         start: 0,
         filter: advValue.text.trim() ? { [advValue.field]: advValue.text.trim() } : {},
       },
-      fetchPolicy: "cache-first",
     });
   };
 
@@ -147,7 +146,6 @@ export default function ClientManagementTable() {
     setPage(0);
     const result = await fetchClientes({
       variables: { empresaId: empresa?.id, start: 0 },
-      fetchPolicy: "cache-first",
     });
     setClientes(result?.data.getClientes.clientes || []);
     setTotalClientes(result?.data.getClientes.totalClientes || 0);
@@ -185,13 +183,22 @@ export default function ClientManagementTable() {
       setIsAdvancedSearch(false);
       setAdvValue({ field: "", text: "" });
       setPage(0);
-      await fetchClientes({
+      
+      // Pequeno delay para garantir sincronização com a base de dados
+      await new Promise((resolve) => setTimeout(resolve, 500));
+      
+      const result = await fetchClientes({
         variables: {
           empresaId: empresa?.id,
           start: 0,
         },
-        fetchPolicy: "network-only",
       });
+      
+      // Atualizar o estado com os dados retornados
+      if (result?.data?.getClientes) {
+        setClientes(result.data.getClientes.clientes);
+        setTotalClientes(result.data.getClientes.totalClientes);
+      }
     } catch (err: any) {
       setAlert({ message: err.message || "Erro ao apagar cliente.", isError: true });
     }
