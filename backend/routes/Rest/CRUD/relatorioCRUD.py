@@ -124,7 +124,6 @@ async def create_relatorio(request: Request, relatorio: RelatorioCreate):
     relatorio_data["created_at"] = data
     relatorio_data["updated_at"] = data
     relatorio_data["isActive"] = True
-    del relatorio_data["recaptchaToken"]
 
     try:
         await relatorios_collection.insert_one(relatorio_data)
@@ -194,9 +193,6 @@ async def activate_relatorio(relatorio: RelatorioActivation, request: Request):
 # Hard delete – sem alterações
 @routerRelatorio.delete("/hard-delete")
 async def hard_delete_relatorio(relatorio: RelatorioActivation, request: Request):
-
-    # Validar reCAPTCHA token
-    # await validar_recaptcha_token(relatorio.recaptchaToken, "hard_delete")
 
     # Sacar jwt
     jwt = getattr(request.state, "jwt", None)

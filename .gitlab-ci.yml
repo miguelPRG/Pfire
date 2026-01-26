@@ -25,7 +25,7 @@ merge_develop:
 
 # Backend Security Check
 python_test:
-  image: python:3.12-slim
+  image: python:3.14-slim
   stage: security
   script:
     - apt-get update && apt-get install -y --no-install-recommends gcc libmariadb-dev pkg-config curl git && rm -rf /var/lib/apt/lists/*
@@ -43,7 +43,7 @@ python_test:
 
 # Frontend Security Check
 node_test:
-  image: node:22.14.0-alpine3.20
+  image: node:24-alpine
   stage: security
   script:
     - cd frontend
