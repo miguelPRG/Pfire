@@ -314,7 +314,6 @@ export default function ClientManagementTable() {
               width: "100%",
               boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
               borderRadius: 2,
-              overflow: "hidden",
               border: "1px solid rgba(0,0,0,0.06)",
               overflow: "auto", // permite scroll X e Y quando necessário
               WebkitOverflowScrolling: "touch",
