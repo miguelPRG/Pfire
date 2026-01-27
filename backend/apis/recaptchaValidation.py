@@ -22,13 +22,33 @@ async def validar_recaptcha_token(token: str, action: str):
         raise HTTPException(status_code=400, detail="Erro na API do reCAPTCHA.")
 
     result = response.json()
+
+    # Validações mais rigorosas
     if not result.get("success", False):
         raise HTTPException(status_code=400, detail="reCAPTCHA validation failed.")
 
     if result.get("action") != action:
         raise HTTPException(status_code=400, detail="Ação reCAPTCHA não corresponde.")
 
-    if result.get("score", 0.0) < 0.5:
-        raise HTTPException(status_code=400, detail="reCAPTCHA score muito baixo: interação suspeita.")
+    score = result.get("score", 0.0)
+
+    # Log para debug
+    print(f"reCAPTCHA Score: {score} | Action: {action}")
+
+    # Thresholds diferentes por ação
+    thresholds = {
+        "login": 0.5,
+        "register": 0.7,
+        "forgot-password": 0.6,
+        "update": 0.5,
+    }
+
+    min_score = thresholds.get(action, 0.5)
+
+    if score < min_score:
+        raise HTTPException(
+            status_code=400,
+            detail=f"reCAPTCHA score ({score}) abaixo do limite ({min_score}): interação suspeita.",
+        )
 
     print("reCAPTCHA Válido!")
