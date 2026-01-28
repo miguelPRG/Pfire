@@ -2,6 +2,7 @@ from typing import Union
 
 ALLOWED_PREFIXES = set("1235689")
 
+
 def validar_nif(nif: Union[str, int]) -> bool:
     """
     Valida NIF português:

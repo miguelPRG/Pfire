@@ -82,7 +82,7 @@ export default function ClientManagementTable() {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [totalClientes, setTotalClientes] = useState(0);
 
-  const [fetchClientes, { data, loading, error }] = useLazyQuery<returnedData>(GET_CLIENTES_BY_EMPRESA , {
+  const [fetchClientes, { data, loading, error }] = useLazyQuery<returnedData>(GET_CLIENTES_BY_EMPRESA, {
     fetchPolicy: "cache-and-network",
   });
   const [isAdvancedSearch, setIsAdvancedSearch] = useState(false);
@@ -183,17 +183,17 @@ export default function ClientManagementTable() {
       setIsAdvancedSearch(false);
       setAdvValue({ field: "", text: "" });
       setPage(0);
-      
+
       // Pequeno delay para garantir sincronização com a base de dados
       await new Promise((resolve) => setTimeout(resolve, 500));
-      
+
       const result = await fetchClientes({
         variables: {
           empresaId: empresa?.id,
           start: 0,
         },
       });
-      
+
       // Atualizar o estado com os dados retornados
       if (result?.data?.getClientes) {
         setClientes(result.data.getClientes.clientes);

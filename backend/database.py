@@ -43,53 +43,65 @@ contadores_collection = db.contadores
 
 
 async def delete_documentos_inativos():
-    # Buscar utilizadores inativos
-    inactive_users_cursor = users_collection.find({"isActive": False}, {"_id": 1, "firebaseUID": 1})
-    inactive_users = [doc async for doc in inactive_users_cursor]
-    inactive_user_ids = [doc["_id"] for doc in inactive_users]
-    firebase_uids = [doc["firebaseUID"] for doc in inactive_users if "firebaseUID" in doc]
+    """
+    Apaga utilizadores inativos e todas as suas associações.
+    Ordem: Firebase → users_empresas → users
+    """
+    try:
+        # 1) Buscar utilizadores inativos
+        inactive_users_cursor = users_collection.find({"isActive": False}, {"_id": 1, "firebaseUID": 1})
+        inactive_users = [doc async for doc in inactive_users_cursor]
 
-    # Função para apagar utilizador do Firebase
-    async def delete_firebase_user(uid):
-        try:
-            await to_thread(auth.delete_user, uid)
-            print(f"[DatabaseCleaner] Utilizador Firebase {uid} removido.")
-        except Exception as e:
-            print(f"[DatabaseCleaner] Erro ao remover utilizador Firebase {uid}: {e}")
+        if not inactive_users:
+            print("[DatabaseCleaner] Nenhum utilizador inativo encontrado.")
+            return
 
-    # Inicializar lista de tasks
-    tasks = []
-    # Adicione tasks de Firebase se houver uids
-    tasks += [delete_firebase_user(uid) for uid in firebase_uids]
-    # Adicione tasks de remoção de relações e utilizadores se houver ids
-    if inactive_user_ids:
-        tasks.append(users_empresas_collection.delete_many({"user_id": {"$in": inactive_user_ids}}))
-        tasks.append(users_collection.delete_many({"_id": {"$in": inactive_user_ids}}))
+        inactive_user_ids = [doc["_id"] for doc in inactive_users]
+        firebase_uids = [doc["firebaseUID"] for doc in inactive_users if "firebaseUID" in doc and doc["firebaseUID"]]
 
-    # Execute tudo em paralelo
-    results = await gather(*tasks)
+        # 2) Apagar do Firebase (em paralelo)
+        async def delete_firebase_user(uid):
+            try:
+                await to_thread(auth.delete_user, uid)
+                print(f"[DatabaseCleaner] Utilizador Firebase {uid} removido.")
+            except Exception as e:
+                print(f"[DatabaseCleaner] Erro ao remover Firebase {uid}: {e}")
 
-    # Firebase tasks não retornam nada, então os resultados de user_empresa e user estão no final
-    user_empresa_result = results[-2] if inactive_user_ids else None
-    user_result = results[-1] if inactive_user_ids else None
+        firebase_tasks = [delete_firebase_user(uid) for uid in firebase_uids]
 
-    if user_result and user_result.deleted_count > 0:
-        print(f"[DatabaseCleaner] {user_result.deleted_count} utilizador(es) inativo(s) removido(s).")
-    if user_empresa_result and user_empresa_result.deleted_count > 0:
-        print(f"[DatabaseCleaner] {user_empresa_result.deleted_count} relação(ões) user_empresa removida(s).")
+        # 3) Apagar relações user_empresa ANTES de apagar users
+        users_empresas_result = await users_empresas_collection.delete_many({"user_id": {"$in": inactive_user_ids}})
+
+        # 4) Apagar users inativos
+        users_result = await users_collection.delete_many({"_id": {"$in": inactive_user_ids}})
+
+        # 5) Executar tudo em paralelo (Firebase é o mais lento)
+        await gather(*firebase_tasks)
+
+        # Log dos resultados
+        if users_result.deleted_count > 0:
+            print(f"[DatabaseCleaner] {users_result.deleted_count} utilizador(es) inativo(s) removido(s).")
+        if users_empresas_result.deleted_count > 0:
+            print(f"[DatabaseCleaner] {users_empresas_result.deleted_count} relação(ões) user_empresa removida(s).")
+
+    except Exception as e:
+        print(f"[DatabaseCleaner] Erro crítico em delete_documentos_inativos: {e}")
 
 
 async def apagar_empresas_vazias():
+    """
+    Apaga empresas que não têm utilizadores associados.
+    """
+    try:
+        async for empresa in empresas_collection.find():
+            user_count = await users_empresas_collection.count_documents({"empresa_id": empresa["_id"]})
 
-    # Listar todas as empresas com pelo menos 24 horas
-    async for empresa in empresas_collection.find():
-        # Verificar se a empresa não tem utilizadores associados
-        user_count = await users_empresas_collection.count_documents({"empresa_id": empresa["_id"]})
+            if user_count == 0:
+                await empresas_collection.delete_one({"_id": empresa["_id"]})
+                print(f"[DatabaseCleaner] Empresa {empresa['_id']} removida (vazia).")
 
-        if user_count == 0:
-            # Deletar a empresa se não houver utilizadores associados
-            await empresas_collection.delete_one({"_id": empresa["_id"]})
-            print(f"[DatabaseCleaner] Empresa {empresa['_id']} removida por estar vazia.")
+    except Exception as e:
+        print(f"[DatabaseCleaner] Erro em apagar_empresas_vazias: {e}")
 
 
 # Configuração do agendador com APScheduler
@@ -106,7 +118,7 @@ def database_cleaner_scheduler():
 
     scheduler.add_job(
         apagar_empresas_vazias,
-        IntervalTrigger(days=30),  # Intervalo de 30 dia
+        IntervalTrigger(days=30),  # Intervalo de 30 dias
         id="apagar_empresas_vazias_job",  # Um ID único para o job
         replace_existing=True,  # Caso o job já exista, ele será substituído
     )

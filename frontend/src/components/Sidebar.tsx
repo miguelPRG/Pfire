@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from "@mui/material";
 import {
-  Description as DescriptionIcon,
   Layers as LayersIcon,
   Engineering as EngineeringIcon,
   CardMembership as CardMembershipIcon,
@@ -63,7 +62,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
           </ListItem>
         )}
         <ListItem disablePadding>
-          <ListItemButton onClick={() => handleNavigation("/pricing")}>
+          <ListItemButton onClick={() => handleNavigation("/plans")}>
             <ListItemIcon>
               <CardMembershipIcon />
             </ListItemIcon>

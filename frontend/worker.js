@@ -1,8 +1,8 @@
-addEventListener("fetch", event => {
+addEventListener("fetch", (event) => {
   event.respondWith(handleRequest(event.request));
 });
 
-const BACKEND_URL = "https://pfire-backend.onrender.com"; // muda para o teu backend
+const BACKEND_URL = "https://pfire-backend-h6xy.onrender.com";
 
 export default {
   async fetch(request, env, ctx) {
@@ -20,5 +20,5 @@ export default {
 
     // Serve os assets (./dist) pelo binding de assets do Wrangler v4
     return env.ASSETS.fetch(request);
-  }
+  },
 };
