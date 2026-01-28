@@ -11,7 +11,6 @@ import {
   Tooltip,
   MenuItem,
   Typography,
-  Badge,
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import { useAuth } from "../hooks/AuthContext";
