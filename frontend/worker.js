@@ -2,7 +2,7 @@ addEventListener("fetch", event => {
   event.respondWith(handleRequest(event.request));
 });
 
-const BACKEND_URL = "https://pfire-backend.onrender.com"; // muda para o teu backend
+const BACKEND_URL = "https://pfire-backend-h6xy.onrender.com"; 
 
 export default {
   async fetch(request, env, ctx) {
