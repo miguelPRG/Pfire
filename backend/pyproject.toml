@@ -16,9 +16,9 @@ dependencies = [
     "motor>=3.7.1",
     "passlib>=1.7.4",
     "pydantic[email]>=2.12.5",
-    "pyjwt>=2.10.1",
+    "pyjwt>=2.11.0",
     "redis>=7.1.0",
-    "strawberry-graphql>=0.289.5",
+    "strawberry-graphql>=0.290.0",
     "uvicorn>=0.40.0",
     "weasyprint>=68.0",
 ]

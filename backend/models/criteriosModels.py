@@ -8,6 +8,7 @@ class OptionItem(BaseModel):
     key: str
     value: str
 
+
 class CriterioCreate(BaseModel):
     nome: str = Field(..., min_length=1, max_length=100)
     modelo_id: str

@@ -388,7 +388,7 @@ export default function ReportListPage() {
       const json = await response.json();
       if (!response.ok) throw new Error(json.detail || "Erro ao apagar relatório permanentemente.");
       setAlert({ message: json.message || "Relatório apagado permanentemente com sucesso!", isError: false });
-      
+
       // Recarregar a tabela após exclusão permanente
       setPage(0);
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -797,9 +797,7 @@ export default function ReportListPage() {
                           width: 55,
                           height: 55,
                           borderRadius: "50%",
-                          backgroundColor: report.isActive
-                            ? theme.palette.success.main
-                            : theme.palette.error.main,
+                          backgroundColor: report.isActive ? theme.palette.success.main : theme.palette.error.main,
                           color: "#fff",
                           fontWeight: "bold",
                           fontSize: 12,
