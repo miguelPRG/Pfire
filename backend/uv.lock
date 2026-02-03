@@ -112,6 +112,7 @@ dependencies = [
     { name = "pyjwt" },
     { name = "redis" },
     { name = "strawberry-graphql" },
+    { name = "stripe" },
     { name = "uvicorn" },
     { name = "weasyprint" },
 ]
@@ -132,6 +133,7 @@ requires-dist = [
     { name = "pyjwt", specifier = ">=2.11.0" },
     { name = "redis", specifier = ">=7.1.0" },
     { name = "strawberry-graphql", specifier = ">=0.290.0" },
+    { name = "stripe", specifier = ">=14.3.0" },
     { name = "uvicorn", specifier = ">=0.40.0" },
     { name = "weasyprint", specifier = ">=68.0" },
 ]
@@ -1301,6 +1303,19 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/68/0e/e9681de238cdbb712d3aabc1bd59898cc23cb9f6ff1da2af707a1098361f/strawberry_graphql-0.290.0.tar.gz", hash = "sha256:82f8e4792f8e3487fbf5136bc9e78631267efc3c538372da3ae4c7f021293495", size = 217617, upload-time = "2026-01-31T16:53:21.756Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/3a/46/c017f64d2b406642bdb15dbbff489d516a18b602d4df8aa3a7de2b5abaf3/strawberry_graphql-0.290.0-py3-none-any.whl", hash = "sha256:2298f825bc218e45070feee653149470b7f2d3b91b03a7c98e191aeaf13a7ad7", size = 316254, upload-time = "2026-01-31T16:53:23.189Z" },
+]
+
+[[package]]
+name = "stripe"
+version = "14.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "requests" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/49/67/8a38222a57fc2ba359c4dcb66528d94c00d803c7fde8f8d8470ad6bdccbb/stripe-14.3.0.tar.gz", hash = "sha256:4c76137d741bd43e8bb433a596c198ca20f4cdf17a8fe04604faf37c74b01978", size = 1463618, upload-time = "2026-01-28T21:20:29.856Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9e/4b/0b7d5920f2be5e42d72bdfc44a9fae57b422668bfc8dacdf2f74886f6daa/stripe-14.3.0-py3-none-any.whl", hash = "sha256:3e36b68b256c8970e99b703e195d947e2a2919095758788c7074ac4485ac255e", size = 2106980, upload-time = "2026-01-28T21:20:27.566Z" },
 ]
 
 [[package]]

@@ -65,8 +65,6 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str):
     # Sacar jwt
     jwt = getattr(request.state, "jwt", None)
 
-    # Validate the reCAPTCHA token
-    # await validar_recaptcha_token(empresa.recaptchaToken, "update")
 
     user_id = ObjectId(jwt["user_id"])
     id = ObjectId(id)

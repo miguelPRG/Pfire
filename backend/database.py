@@ -37,7 +37,6 @@ clientes_collection = db["clientes"]
 modelos_collection = db["modelos"]
 relatorios_collection = db["relatorios"]
 global_ids_collection = db["global_ids"]
-report_templates_collection = db["report_templates"]
 criterios_collection = db["criterios"]
 contadores_collection = db.contadores
 
