@@ -57,7 +57,6 @@ class UserUpdatePassword(BaseModel):
     password: str = Field(max_length=100, min_length=9)
     newPassword: str = Field(max_length=100, min_length=9)
     confirmPassword: str = Field(max_length=100, min_length=9)
-    recaptchaToken: str
 
     @model_validator(mode="after")
     def check_passwords_match(self):
@@ -152,6 +151,7 @@ class UserChangePassword(BaseModel):
         pattern=r"^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-4[a-fA-F0-9]{3}-[89abAB][a-fA-F0-9]{3}-[a-fA-F0-9]{12}$",
         description="O ID global do utilizador (UUID4).",
     )
+    recaptchaToken: str
 
     @model_validator(mode="before")
     @classmethod

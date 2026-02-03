@@ -143,7 +143,7 @@ async def delete_relatorio(relatorio: RelatorioActivation, request: Request):
     jwt = getattr(request.state, "jwt", None)
 
     # Verificar se o usuário é super admin
-    if not jwt.get("isSuperAdmin"):
+    if not jwt.get("isSuperAdmin", False):
         # Verificar se o usuário tem permissão para apagar relatórios para a empresa
 
         user_empresa = await users_empresas_collection.find_one({"user_id": jwt["user_id"], "empresa_id": ObjectId(relatorio.empresa_id)})
@@ -198,13 +198,13 @@ async def hard_delete_relatorio(relatorio: RelatorioActivation, request: Request
     jwt = getattr(request.state, "jwt", None)
 
     # Permissões iguais ao soft delete
-    if not jwt.get("isSuperAdmin"):
+    if not jwt.get("isSuperAdmin", False):
         user_empresa = await users_empresas_collection.find_one({"user_id": jwt["user_id"], "empresa_id": ObjectId(relatorio.empresa_id)})
         if not user_empresa:
             raise HTTPException(status_code=403, detail="Usuário não tem permissão para apagar relatórios para esta empresa")
 
     # Só apaga se já estiver inativo
-    result = await relatorios_collection.delete_one({"_id": ObjectId(relatorio.id), "empresa_id": ObjectId(relatorio.empresa_id), "isActive": False})
+    result = await relatorios_collection.delete_one({"_id": ObjectId(relatorio.id), "empresa_id": ObjectId(relatorio.empresa_id), "isActive": False, "updated_by": ObjectId(jwt["user_id"]), "updated_at": datetime.now()})
 
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Relatório não encontrado ou ainda está ativo.")

@@ -11,7 +11,8 @@ interface UserLoggedIn {
   telefone?: string;
   assinatura?: string;
   isSuperAdmin?: boolean;
-  firebaseUID?: string; // Adicionei este campo para armazenar o Firebase UID
+  stripeCustomerId?: string;
+  plano?: string;
 }
 
 interface UserRegistered {
@@ -122,6 +123,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         const userData = await response.json();
 
+        console.log("Dados de autenticação do utilizador:", userData);
+
         if (response.ok) {
           setUser({
             id: userData.id,
@@ -130,7 +133,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             telefone: userData.telefone,
             assinatura: userData.assinatura,
             isSuperAdmin: userData.isSuperAdmin,
-            firebaseUID: userData.firebaseUID,
+            stripeCustomerId: userData.stripeCustomerId,
+            plano: userData.plano,
           });
         } else {
           setAuthError(userData.detail || "Erro ao autenticar utilizador");
@@ -221,11 +225,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         id: data.id,
         nome: data.nome,
         email: data.email,
-        telefone: data.telefone,
         assinatura: data.assinatura,
+        telefone: data.telefone,
         isSuperAdmin: data.isSuperAdmin,
-        firebaseUID: data.firebaseUID,
-        assignatura: data.assinatura,
+        plano: data.plano,
+        stripeCustomerId: data.stripeCustomerId,
       });
     } catch (error) {
       console.error("Erro no login:", error);
@@ -274,7 +278,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw error;
     }
   }
-
+       
   async function loginWithOAuth(provider: "google" | "microsoft", global_id?: string): Promise<boolean> {
     try {
       const { idToken } = await FirebaseLogin(provider);
@@ -308,7 +312,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         telefone: data.telefone,
         assinatura: data.assinatura,
         isSuperAdmin: data.isSuperAdmin,
-        firebaseUID: data.firebaseUID,
+        plano: data.plano,
+        stripeCustomerId: data.stripeCustomerId,
       });
       return data.newUser as boolean;
     } catch (error: any) {
@@ -411,7 +416,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updatePassword = useCallback(
     async (passwordUpdate: PasswordUpdate) => {
-      const recaptchaToken = await generateToken("update");
 
       console.log(passwordUpdate);
 
@@ -426,7 +430,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             password: passwordUpdate.password,
             newPassword: passwordUpdate.newPassword,
             confirmPassword: passwordUpdate.confirmPassword,
-            recaptchaToken,
           }),
         });
 

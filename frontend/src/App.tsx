@@ -35,7 +35,9 @@ const ReportModelListPage = lazy(() => import("./pages/CRUD/modelo/ModelListPage
 const ReportTemplatesPage = lazy(() => import("./pages/CRUD/modelo/ModelEditPage"));
 const AddNewReportPage = lazy(() => import("./pages/CRUD/relatorios/AddNewReportPage"));
 const ReportListPage = lazy(() => import("./pages/CRUD/relatorios/ReportListPage"));
-const PricingPage = lazy(() => import("./pages/CRUD/PricingPage"));
+const PricingPage = lazy(() => import("./pages/PricingPage"));
+const SuccessPage = lazy(() => import("./pages/SuccessPage"));
+const CancelPage = lazy(() => import("./pages/CancelPage"));
 // Rotas que podem ser utilizados apenas depois de autenticação
 const ProtectedRoute = ({ element }: { element: ReactElement }) => {
   const { user, empresa, loading } = useAuth();
@@ -46,12 +48,12 @@ const ProtectedRoute = ({ element }: { element: ReactElement }) => {
 
   if (!user) {
     console.log("Usuário não autenticado, redirecionando para a página de login.");
-    return <Login />;
+    return <Navigate to="/login" />;
   }
 
   if (!empresa) {
     console.log("Usuário autenticado, mas sem empresa selecionada.");
-    return <ChooseCompanyPage />;
+    return <Navigate to="/choose-company" />;
   }
 
   return element;
@@ -73,7 +75,9 @@ const PublicRoute = ({ element }: { element: ReactElement }) => {
 const CompanyRoute = ({ element }: { element: ReactElement }) => {
   const { user } = useAuth();
 
-  if (!user) return <Login />;
+  if (!user){
+    return <Navigate to="/login" />;
+  }
 
   return element;
 };
@@ -160,6 +164,8 @@ function App() {
             <Route path="/add-new-report" element={<ProtectedRoute element={<AddNewReportPage />} />} />
             <Route path="/plans" element={<ProtectedRoute element={<PricingPage />} />} />
             {/* Rota de fallback para redirecionar usuários não autenticados */}
+            <Route path="/sucesso" element={ <ProtectedRoute element={<SuccessPage />} />} />
+            <Route path="/cancelado" element={<ProtectedRoute element={<CancelPage />} />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Layout>

@@ -35,6 +35,7 @@ from pymongo.errors import DuplicateKeyError
 from asyncio import gather
 from controller.gerarPDF import gerar_pdf
 from base64 import b64encode
+from apis.stripe_client import create_stripe_customer, create_checkout
 
 routerUser = APIRouter(prefix="/user")
 
@@ -97,7 +98,10 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
             "updated_at": data,
             "last_login": data,
             "firebaseUID": uid,
+            "plano": "free",  # Plano padrão
+            "stripe_customer_id": await create_stripe_customer(email, nome),
         }
+
         result = await users_collection.insert_one(insert_data)
         if not result.inserted_id:
             raise HTTPException(status_code=500, detail="Erro ao criar usuário no MongoDB.")
@@ -153,8 +157,6 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
         user_doc.get("nome", ""),
         user_doc.get("email", ""),
         user_doc.get("isSuperAdmin", False),
-        user_doc.get("telefone", ""),
-        uid,
     )
 
     # Converte a assinatura (se existir) para base64 para o corpo da resposta (não vai no cookie)
@@ -172,6 +174,8 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
         "newUser": new_user_flag,
         "firebaseUID": uid,
         "assinatura": assinatura_b64,  # <- vai apenas no corpo da resposta
+        "plano": user_doc.get("plano", "free"),
+        "stripeCustomerId": user_doc.get("stripe_customer_id", None),
     }
 
     response = JSONResponse(content=response_payload)
@@ -205,7 +209,7 @@ async def login(user: UserLogin, request: Request):
     if not atualizar_user.modified_count:
         raise HTTPException(status_code=500, detail="Erro ao atualizar o último login.")
 
-    token = generate_jwt(str(db_user["_id"]), db_user["nome"], db_user["email"], db_user["isSuperAdmin"], db_user.get("telefone"))
+    token = generate_jwt(str(db_user["_id"]), db_user["nome"], db_user["email"], db_user["isSuperAdmin"])
 
     # Converte a assinatura (se existir) para base64 para o corpo da resposta (não vai no cookie)
     assinatura_b64 = None
@@ -217,8 +221,11 @@ async def login(user: UserLogin, request: Request):
             "id": str(db_user["_id"]),
             "nome": db_user["nome"],
             "email": db_user["email"],
-            "isSuperAdmin": db_user.get("isSuperAdmin", False),
+            "telefone": db_user.get("telefone", None),
             "assinatura": assinatura_b64,  # <- vai apenas no corpo da resposta
+            "isSuperAdmin": db_user.get("isSuperAdmin", False),
+            "plano": db_user.get("plano", "free"),
+            "stripeCustomerId": db_user.get("stripe_customer_id", None),
         }
     )
     response.set_cookie(key="_fp", value=token, httponly=True, samesite="None", secure=True)
@@ -229,7 +236,6 @@ async def login(user: UserLogin, request: Request):
 # 🚀 Registar um novo User
 @routerUser.post("/register")
 async def register_user(data: UserRegister, request: Request):
-
     # Este if garante que o user será registo por uma das duas maneiras: "Registo Tradicional ou por Convite"
     if not data.global_id and not data.empresa:
         raise HTTPException(status_code=400, detail="Empresa ou global Id é obrigatória para registo.")
@@ -279,6 +285,8 @@ async def register_user(data: UserRegister, request: Request):
             "last_login": None,
             "isSuperAdmin": False,
             "isActive": data.global_id is not None,  # Se for convidado, não está ativo até ativar o convite
+            "plano": "free",  # Plano padrão
+            "stripe_customer_id": await create_stripe_customer(new_user.email, new_user.nome),
         }
     )
 
@@ -355,6 +363,8 @@ async def register_user(data: UserRegister, request: Request):
     global_id_insertion = await global_ids_collection.insert_one(
         {
             "global_id": global_id,
+            "email": user_doc["email"],
+            "name": user_doc["nome"],
             "user_id": res_user.inserted_id,
             "created_at": date,
             "operation": "registo",
@@ -375,7 +385,7 @@ async def auth_user(request: Request):
 
     jwt = getattr(request.state, "jwt", None)
 
-    assinatura_val = await users_collection.find_one({"_id": ObjectId(jwt["user_id"])}, {"assinatura": 1})
+    assinatura_val = await users_collection.find_one({"_id": ObjectId(jwt["user_id"])}, {"assinatura": 1, "plano": 1, "stripeCustomerId": 1})
 
     # converter para base64
     if isinstance(assinatura_val.get("assinatura"), (bytes, bytearray)):
@@ -388,6 +398,8 @@ async def auth_user(request: Request):
         "telefone": jwt.get("telefone", None),
         "assinatura": assinatura_val.get("assinatura", None),
         "isSuperAdmin": jwt.get("isSuperAdmin", False),
+        "stripeCustomerId": assinatura_val.get("stripeCustomerId", None),
+        "plano": assinatura_val.get("plano", "free"),
     }
 
 
@@ -457,8 +469,7 @@ async def update_password(user: UserUpdatePassword, request: Request):
 
     jwt = getattr(request.state, "jwt", None)
 
-    # Verificar se o user tem aquela password
-
+    #Pocurar user na base de dados
     db_user = await users_collection.find_one({"_id": ObjectId(jwt["user_id"]), "isActive": True})
 
     if not db_user:
@@ -621,3 +632,22 @@ async def converter_relatorio_pdf(request: Request, user: UserConverterPDF):
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro ao gerar PDF: {str(e)}")
+
+
+@routerUser.post("/checkout/{plan_id}")
+async def create_user_checkout(request: Request, plan_id: str):
+    """
+    Cria uma sessão de checkout para o user atual subscrever um plano.
+    """
+
+    jwt = getattr(request.state, "jwt", None)
+    if not jwt:
+        raise HTTPException(status_code=401, detail="Token JWT ausente")
+
+    user_id = str(jwt["user_id"])
+
+    try:
+        checkout_session = await create_checkout(user_id, plan_id)
+        return checkout_session
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao criar sessão de checkout: {str(e)}")
