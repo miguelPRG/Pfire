@@ -1,43 +1,29 @@
 from fastapi import APIRouter, HTTPException, Request, Response
-from fastapi.responses import JSONResponse, StreamingResponse
-from controller.jwtValidation import generate_jwt  # Se usa para generar el JWT
-from controller.token_blacklist import add_token_to_blacklist  # Nueva función para usar Redis
+from fastapi.responses import JSONResponse
+from controller.jwtValidation import generate_jwt
+from controller.token_blacklist import add_token_to_blacklist
 from apis.recaptchaValidation import validar_recaptcha_token
-from apis.brevo_client import enviar_email
-from apis.firebase_admin_client import verify_firebase_token  # Si se usa para verificar el token de Firebase
-from pathlib import Path
-from firebase_admin import initialize_app, credentials  # as chaves
+from apis.firebase_admin_client import verify_firebase_token
+from apis.stripe_client import create_stripe_customer
 from passlib.context import CryptContext
-from models.userModels import (
-    UserLogin,
-    UserLoginWithOAuth,
-    UserRegister,
-    UserForgotPassword,
-    UserUpdatePassword,
-    UserInvitation,
-    UserConverterPDF,
-)
+from models.userModels import UserForgotPassword, UserLogin, UserLoginWithOAuth, UserRegister, UserUpdatePassword
 from models.userEmpresaModels import UserEmpresaCreate
 from datetime import datetime
 from database import (
     users_collection,
-    empresas_collection,
     users_empresas_collection,
     global_ids_collection,
-    relatorios_collection,
-    modelos_collection,
-    clientes_collection,
-    criterios_collection,
+    empresas_collection
 )
-from uuid import uuid4
-from bson import ObjectId
-from pymongo.errors import DuplicateKeyError
 from asyncio import gather
-from controller.gerarPDF import gerar_pdf
+from bson import ObjectId
 from base64 import b64encode
-from apis.stripe_client import create_stripe_customer, create_checkout
+from uuid import uuid4
+from apis.brevo_client import enviar_email
+from pymongo.errors import DuplicateKeyError
 
-routerUser = APIRouter(prefix="/user")
+
+routerAuth = APIRouter(prefix="/user")
 
 pwd_context = CryptContext(
     schemes=["argon2"],
@@ -46,15 +32,9 @@ pwd_context = CryptContext(
     argon2__time_cost=3,
 )
 
-SERVICE_ACCOUNT_PATH = Path("/etc/secrets/serviceAccountKey.json")
-
-# Inicializa el Firebase usando el archivo de chaves
-cred = credentials.Certificate(str(SERVICE_ACCOUNT_PATH))
-initialize_app(cred)
-
 
 # 🚀 Login via Firebase OAuth
-@routerUser.post("/login-oauth")
+@routerAuth.post("/login-oauth")
 async def login_oauth(request: Request, user: UserLoginWithOAuth):
 
     # 1) Verifica ID Token no Firebase
@@ -191,7 +171,7 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
 
 
 # 🚀 Login via Email e Senha
-@routerUser.post("/login")
+@routerAuth.post("/login")
 async def login(user: UserLogin, request: Request):
     # Validar el token reCAPTCHA (se descomenta según necesidad)
     await validar_recaptcha_token(user.recaptchaToken, "login")
@@ -233,8 +213,53 @@ async def login(user: UserLogin, request: Request):
     return response
 
 
+# 🚀 Autenticação do Usuário (Verificar JWT)
+@routerAuth.get("/auth")
+async def auth_user(request: Request):
+
+    jwt = getattr(request.state, "jwt", None)
+
+    assinatura_val = await users_collection.find_one({"_id": ObjectId(jwt["user_id"])}, {"assinatura": 1, "plano": 1, "stripe_customer_id": 1})
+
+    # converter para base64
+    if isinstance(assinatura_val.get("assinatura"), (bytes, bytearray)):
+        assinatura_val["assinatura"] = b64encode(assinatura_val["assinatura"]).decode("utf-8")
+
+    return {
+        "id": jwt["user_id"],
+        "nome": jwt["nome"],
+        "email": jwt["email"],
+        "telefone": jwt.get("telefone", None),
+        "assinatura": assinatura_val.get("assinatura", None),
+        "isSuperAdmin": jwt.get("isSuperAdmin", False),
+        "stripeCustomerId": assinatura_val.get("stripe_customer_id", None),
+        "plano": assinatura_val.get("plano", "free"),
+    }
+
+
+# 🚀 Logout
+@routerAuth.post("/logout")
+async def logout_user(request: Request, response: Response):
+    """
+    Endpoint de logout: extrae el token JWT (guardado en la cookie "_fp"),
+    lo agrega a la blacklist en Redis y elimina la cookie.
+    """
+
+    token = request.cookies.get("_fp")
+    if not token:
+        raise HTTPException(status_code=401, detail="Token não encontrado.")
+
+    jwt = getattr(request.state, "jwt", None)
+
+    # Agrega el token a Redis con el TTL correspondiente (basado en su expiración)
+    await add_token_to_blacklist(token, jwt["exp"])
+
+    # Elimina la cookie del JWT
+    response.delete_cookie("_fp", httponly=True, samesite="Strict", secure=True)
+    return {"message": "Logout efetuado com sucesso!"}
+
 # 🚀 Registar um novo User
-@routerUser.post("/register")
+@routerAuth.post("/register")
 async def register_user(data: UserRegister, request: Request):
     # Este if garante que o user será registo por uma das duas maneiras: "Registo Tradicional ou por Convite"
     if not data.global_id and not data.empresa:
@@ -379,54 +404,8 @@ async def register_user(data: UserRegister, request: Request):
     return {"message": "Conta criada! Verifique seu email para ativação."}
 
 
-# 🚀 Autenticação do Usuário (Verificar JWT)
-@routerUser.get("/auth")
-async def auth_user(request: Request):
-
-    jwt = getattr(request.state, "jwt", None)
-
-    assinatura_val = await users_collection.find_one({"_id": ObjectId(jwt["user_id"])}, {"assinatura": 1, "plano": 1, "stripeCustomerId": 1})
-
-    # converter para base64
-    if isinstance(assinatura_val.get("assinatura"), (bytes, bytearray)):
-        assinatura_val["assinatura"] = b64encode(assinatura_val["assinatura"]).decode("utf-8")
-
-    return {
-        "id": jwt["user_id"],
-        "nome": jwt["nome"],
-        "email": jwt["email"],
-        "telefone": jwt.get("telefone", None),
-        "assinatura": assinatura_val.get("assinatura", None),
-        "isSuperAdmin": jwt.get("isSuperAdmin", False),
-        "stripeCustomerId": assinatura_val.get("stripeCustomerId", None),
-        "plano": assinatura_val.get("plano", "free"),
-    }
-
-
-# 🚀 Logout
-@routerUser.post("/logout")
-async def logout_user(request: Request, response: Response):
-    """
-    Endpoint de logout: extrae el token JWT (guardado en la cookie "_fp"),
-    lo agrega a la blacklist en Redis y elimina la cookie.
-    """
-
-    token = request.cookies.get("_fp")
-    if not token:
-        raise HTTPException(status_code=401, detail="Token não encontrado.")
-
-    jwt = getattr(request.state, "jwt", None)
-
-    # Agrega el token a Redis con el TTL correspondiente (basado en su expiración)
-    await add_token_to_blacklist(token, jwt["exp"])
-
-    # Elimina la cookie del JWT
-    response.delete_cookie("_fp", httponly=True, samesite="Strict", secure=True)
-    return {"message": "Logout efetuado com sucesso!"}
-
-
 # Pedido de recuperação da senha
-@routerUser.post("/forgot-password")
+@routerAuth.post("/forgot-password")
 async def forgot_password(request: Request, user: UserForgotPassword):
     """
     Endpoint para solicitar a recuperação da senha:
@@ -464,7 +443,7 @@ async def forgot_password(request: Request, user: UserForgotPassword):
 
 
 # Atualiza a password de utilizadores já logados
-@routerUser.put("/update-password")
+@routerAuth.put("/update-password")
 async def update_password(user: UserUpdatePassword, request: Request):
 
     jwt = getattr(request.state, "jwt", None)
@@ -490,164 +469,3 @@ async def update_password(user: UserUpdatePassword, request: Request):
         raise HTTPException(status_code=409, detail="Erro ao atualizar a senha.")
 
     return {"message": "Senha atualizada com sucesso!"}
-
-
-"""OPERAÇÕES COM GLOBAL ID"""
-
-
-# Enviar convite para se juntar à empresa
-@routerUser.post("/invite")
-async def invite_user_to_empresa(request: Request, user: UserInvitation):
-
-    jwt = getattr(request.state, "jwt", None)
-    user_id = ObjectId(jwt["user_id"])
-    empresa_id = ObjectId(user.empresa_id)
-
-    empresa_found = await empresas_collection.find_one({"_id": empresa_id})
-
-    if not empresa_found:
-        raise HTTPException(status_code=404, detail="Empresa não encontrada.")
-
-    # Se não for super administrador, verificar se o utilizador tem permissão para convidar
-    if not jwt.get("isSuperAdmin", False):
-        user_empresa = await users_empresas_collection.find_one({"user_id": user_id, "empresa_id": empresa_id, "isAdmin": True})
-
-        if not user_empresa:
-            raise HTTPException(status_code=403, detail="Você não tem permissão para convidar utilizadores para esta empresa.")
-
-    # Verificar se o utilizador já existe
-    existing_user = await users_collection.find_one({"email": user.email})
-
-    if existing_user:
-
-        user_in_empresa = await users_empresas_collection.find_one({"user_id": existing_user["_id"], "empresa_id": empresa_id})
-
-        if user_in_empresa:
-            raise HTTPException(status_code=409, detail="O utilizador já está associado a esta empresa.")
-
-        elif existing_user.get("isSuperAdmin", False):
-            raise HTTPException(status_code=403, detail="O utilizador é um super administrador. Logo não precisa de convite.")
-
-    # Criar o convite
-    global_id = str(uuid4())
-    print("Global ID gerado:", global_id)
-    # Este global_id tem 3 parametros adicionais para facilitar o convite: user_id, empresa_id e user_exists(boolean)
-
-    global_id_data = {
-        "global_id": global_id,
-        "host_user_id": user_id,
-        "empresa_id": empresa_id,
-        "operation": "convite",
-        "created_at": datetime.now(),
-        "created_by": user_id,
-    }
-
-    if existing_user:
-        global_id_data["guest_user_id"] = existing_user["_id"]
-
-    else:
-        global_id_data["email"] = user.email
-
-    global_id_insertion = await global_ids_collection.insert_one(global_id_data)
-
-    if not global_id_insertion.inserted_id:
-        raise HTTPException(status_code=500, detail="Erro na criação do ID global.")
-
-    # Enviar o convite por email
-    enviar_email(user.email, existing_user.get("nome") if existing_user else "", global_id, 6, "convite", user.empresa_nome)
-
-    return {"message": "Convite enviado com sucesso!"}
-
-
-@routerUser.post("/converter-pdf")
-async def converter_relatorio_pdf(request: Request, user: UserConverterPDF):
-
-    jwt = getattr(request.state, "jwt", None)
-    if not jwt:
-        raise HTTPException(status_code=401, detail="Token JWT ausente")
-
-    user_id = ObjectId(jwt["user_id"])
-    empresa_id = ObjectId(user.empresa_id)
-    modelo_id = ObjectId(user.modelo_id)
-    cliente_id = ObjectId(user.cliente_id)
-
-    # Busca user e empresa em paralelo
-    user_future = users_collection.find_one({"_id": user_id, "isActive": True})
-    empresa_future = empresas_collection.find_one({"_id": empresa_id})
-    user_doc, empresa_doc = await gather(user_future, empresa_future)
-
-    if not user_doc:
-        raise HTTPException(status_code=404, detail="Utilizador não encontrado ou inativo.")
-    if not empresa_doc:
-        raise HTTPException(status_code=404, detail="Empresa não encontrada ou inativa.")
-
-    # Busca modelo e cliente em paralelo
-    modelo_future = modelos_collection.find_one({"_id": modelo_id, "empresa_id": empresa_id})
-    cliente_future = clientes_collection.find_one({"_id": cliente_id, "empresa_id": empresa_id})
-    modelo_doc, cliente_doc = await gather(modelo_future, cliente_future)
-
-    if not modelo_doc:
-        raise HTTPException(status_code=404, detail="Modelo não encontrado para esta empresa.")
-    if not cliente_doc:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado para esta empresa.")
-
-    # Permissão
-    if not jwt.get("isSuperAdmin"):
-        permissao = await users_empresas_collection.find_one({"user_id": user_id, "empresa_id": empresa_id})
-        if not permissao:
-            raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para esta empresa.")
-
-    SIZE_20_MB = 20 * 1024 * 1024
-    relatorios_para_pdf = []
-
-    try:
-        cursor = relatorios_collection.find({"modelo_id": modelo_id, "empresa_id": empresa_id, "cliente_id": cliente_id}).sort("created_at", -1)
-
-        async for rel in cursor:
-            relatorios_para_pdf.append(rel)
-
-        if not relatorios_para_pdf:
-            raise HTTPException(status_code=404, detail="Nenhum relatório encontrado para conversão.")
-
-        empresa_logo = empresa_doc.get("logo")
-        if empresa_logo:
-            empresa_logo = b64encode(empresa_logo).decode("utf-8")
-
-        # gerar_pdf deve retornar um BytesIO
-        final_pdf = gerar_pdf(
-            relatorios_para_pdf, modelo_doc, cliente_doc, empresa_logo, criterios=await criterios_collection.find_one({"modelo_id": modelo_id})
-        )
-        final_pdf.seek(0)
-
-        pdf_size = len(final_pdf.getvalue())
-        if pdf_size > SIZE_20_MB:
-            raise HTTPException(status_code=413, detail=f"PDF demasiado pesado: {pdf_size/(1024*1024):.2f} MB (máx 20 MB)")
-
-        return StreamingResponse(
-            final_pdf,
-            media_type="application/pdf",
-            headers={"Content-Disposition": "attachment;"},
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao gerar PDF: {str(e)}")
-
-
-@routerUser.post("/checkout/{plan_id}")
-async def create_user_checkout(request: Request, plan_id: str):
-    """
-    Cria uma sessão de checkout para o user atual subscrever um plano.
-    """
-
-    jwt = getattr(request.state, "jwt", None)
-    if not jwt:
-        raise HTTPException(status_code=401, detail="Token JWT ausente")
-
-    user_id = str(jwt["user_id"])
-
-    try:
-        checkout_session = await create_checkout(user_id, plan_id)
-        return checkout_session
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao criar sessão de checkout: {str(e)}")

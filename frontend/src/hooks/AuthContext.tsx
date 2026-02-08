@@ -278,7 +278,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       throw error;
     }
   }
-       
+
   async function loginWithOAuth(provider: "google" | "microsoft", global_id?: string): Promise<boolean> {
     try {
       const { idToken } = await FirebaseLogin(provider);
@@ -416,7 +416,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updatePassword = useCallback(
     async (passwordUpdate: PasswordUpdate) => {
-
       console.log(passwordUpdate);
 
       try {
