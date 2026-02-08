@@ -60,6 +60,8 @@ Crie o ficheiro `.env` no diretório **backend** exatamente com esse nome. De se
 - `REDIS_HOST=host`
 - `REDIS_PORT=port`
 - `REDIS_PASSWORD=password`
+**Esta variavel é opcional, apenas obrigatório em produção, substituir localhost pelo dominio do frontend**
+- `SUCCESS_URL=localhost:3000`
 
 Os dados aqui indicados deverão ser substituidos pelos respetivos valores verdadeiros, acordados entre os desenvolvedores.
 
@@ -82,7 +84,7 @@ Este projeto utiliza um sistema de autenticação baseado em JWT no `backend`, t
 Depois de terminados estes passos será necessário incluir a chave de conta de serviço do **firebase** no diretório recém-criado com o seguinte nome: `serviceAccountKey.json`. Após isso: 
 
 6. `cd ..`
-7. `sudo cp secrets /etc/secrets`
+7. `sudo cp -r secrets /etc/secrets`
 
 ### Diagrama de Base de Dados
 
@@ -102,10 +104,10 @@ Caso esteja a rodar um terminal de linux numa máquina **Windows**, deverá ser 
 Se ainda não estiver instalado: `sudo apt install dos2unix`
 
 1. `cd /backend`
-2. `dos2unix startFrontend.sh` (Apenas necessário na primeira vez)
+2. `dos2unix startBackend.sh` (Apenas necessário na primeira vez)
 3. `sudo ./startBackend.sh` 
 
-Opcionalmente, também pode rodar o container do backend num container do **Docker**. Para tal, basta rodar os seguintes comandos no diretório do **backend**: 
+Opcionalmente, também pode rodar o backend num container do **Docker**. Para tal, basta rodar os seguintes comandos no diretório do **backend**: 
 
 1. `docker buildx build .`
 2. `docker image list --all` (este comando serve para listar as imagens que existem. Deverá copar o id daquela que foi criada no passo 1)

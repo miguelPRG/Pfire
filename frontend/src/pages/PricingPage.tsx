@@ -1,12 +1,13 @@
-import { Box, Container, Paper, Typography, Button } from "@mui/material";
+import { Box, Container, Paper, Typography, Button, CircularProgress } from "@mui/material";
 import CheckIcon from "@mui/icons-material/Check";
 import { useAuth } from "../hooks/AuthContext";
 import { useTheme } from "@mui/material/styles";
-
+import { useState } from "react";
 
 export default function PricingPage() {
   const theme = useTheme();
   const { user, empresa } = useAuth();
+  const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
   const plans = [
     {
       name: "Free",
@@ -25,39 +26,52 @@ export default function PricingPage() {
       highlight: true,
     },
   ];
-  
+
   const isCurrentPlan = (planName: string) => {
     return user?.plano?.toLowerCase() === planName.toLowerCase();
   };
 
   const handleClick = async (planName: string) => {
-  try {
-    // Mapear plano para priceId do Stripe
-    const priceMap: { [key: string]: string } = {
-      Pro: "prod_Th7a0Si19Ty7rb",       // substitui pelos IDs reais do Stripe
-      Premium: "prod_Th7d5psIusAZLA",
-    };
+    try {
+      setLoadingPlan(planName);
+      
+      // Mapear plano para priceId do Stripe
+      const priceMap: { [key: string]: string } = {
+        Pro: "prod_Th7a0Si19Ty7rb",
+        Premium: "prod_Th7d5psIusAZLA",
+      };
 
-    const priceId = priceMap[planName];
-    if (!priceId) return;
+      const priceId = priceMap[planName];
+      if (!priceId) return;
 
-    // Chamar backend para criar a sessão
-    const res = await fetch(`/backend/user/checkout/${priceId}`, {
-      method: "POST",
-    });
+      // Chamar backend para criar a sessão
+      const res = await fetch(`/backend/user/checkout/${priceId}`, {
+        method: "POST",
+        credentials: "include", // Importante para enviar o cookie de autenticação
+      });
 
-    const data = await res.json();
+      if (!res.ok) {
+        const errorData = await res.json();
+        alert(errorData.detail || "Erro ao criar a sessão de checkout.");
+        setLoadingPlan(null);
+        return;
+      }
 
-    // Redirecionar pro Stripe Checkout
-    if (data.id) {
-      window.location.href = `https://checkout.stripe.com/pay/${data.id}`;
-    } else {
-      alert("Erro ao criar a sessão de checkout.");
+      const data = await res.json();
+
+      // Redirecionar usando a URL completa retornada pelo Stripe
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert("Erro ao criar a sessão de checkout.");
+        setLoadingPlan(null);
+      }
+    } catch (err) {
+      console.error("Erro ao processar checkout:", err);
+      alert("Erro ao processar o checkout. Tente novamente.");
+      setLoadingPlan(null);
     }
-  } catch (err) {
-    console.error(err);
-  }
-};
+  };
 
   return (
     <Container maxWidth="md">
@@ -82,6 +96,8 @@ export default function PricingPage() {
         }}
       >
         {plans.map((plan) => {
+          console.log("Plano: ", plan.name);
+
           const isCurrent = isCurrentPlan(plan.name);
           return (
             <Paper
@@ -93,8 +109,8 @@ export default function PricingPage() {
                 border: isCurrent
                   ? `3px solid ${theme.palette.success.main}`
                   : plan.highlight
-                  ? `3px solid ${theme.palette.primary.main}`
-                  : `1.5px solid ${theme.palette.mode === "dark" ? theme.palette.divider : "#e0e0e0"}`,
+                    ? `3px solid ${theme.palette.primary.main}`
+                    : `1.5px solid ${theme.palette.mode === "dark" ? theme.palette.divider : "#e0e0e0"}`,
                 position: "relative",
                 textAlign: "center",
                 height: 550,
@@ -106,8 +122,8 @@ export default function PricingPage() {
                   borderColor: isCurrent
                     ? theme.palette.success.main
                     : plan.highlight
-                    ? theme.palette.primary.main
-                    : theme.palette.primary.main,
+                      ? theme.palette.primary.main
+                      : theme.palette.primary.main,
                   boxShadow:
                     theme.palette.mode === "dark" ? "0 10px 24px rgba(0,0,0,0.45)" : "0 10px 24px rgba(0,0,0,0.22)",
                 },
@@ -151,60 +167,63 @@ export default function PricingPage() {
                 </Box>
               )}
 
-            <Typography variant="h2" align="center" sx={{ mb: 2, mt: 5 }}>
-              {plan.name}
-            </Typography>
-
-            <Box sx={{ mb: 5 }}>
-              <Typography variant="h1" component="span">
-                €{plan.price}/mês
+              <Typography variant="h2" align="center" sx={{ mb: 2, mt: 5 }}>
+                {plan.name}
               </Typography>
-            </Box>
 
-            <Box sx={{ display: "flex", flexDirection: "column", alignItems: "stretch", width: "100%", gap: 1 }}>
-              {plan.features.map((feature, index) => (
-                <Box
-                  key={index}
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    width: "100%",
-                  }}
-                >
-                  <Typography
-                    variant="body1"
-                    sx={{ width: "100%", textAlign: "center" }}
+              <Box sx={{ mb: 5 }}>
+                <Typography variant="h1" component="span">
+                  €{plan.price}/mês
+                </Typography>
+              </Box>
+
+              <Box sx={{ display: "flex", flexDirection: "column", alignItems: "stretch", width: "100%", gap: 1 }}>
+                {plan.features.map((feature, index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      width: "100%",
+                    }}
                   >
-                    <CheckIcon sx={{ color: "#1976D2" }} />
-                    {feature}
-                  </Typography>
-                </Box>
-              ))}
-            </Box>
-            <Button
-              variant={"contained"}
-              sx={{
-              display: "absolute",
-              top: "20%",
-              backgroundColor: isCurrent ? theme.palette.success.main : theme.palette.primary.main,
-              pointerEvents: isCurrent ? "none" : "auto",
-              width: "calc(100% - 32px)",
-              mx: 2,
-              mt: 2,
-              fontWeight: "bold",
-              borderRadius: 3,
-              "&:hover": {
-                backgroundColor: isCurrent ? theme.palette.success.main : theme.palette.primary.dark,
-              },
-              }}
-             onClick={() => handleClick(plan.name)}
-             disabled={!isCurrent && plan.name === "free"}
-            >
-              {isCurrent ? `${plan.name} (Atual)` : `Selecionar ${plan.name}`}
-            </Button>
-          </Paper>
-        );
+                    <Typography variant="body1" sx={{ width: "100%", textAlign: "center" }}>
+                      <CheckIcon sx={{ color: "#1976D2" }} />
+                      {feature}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
+              <Button
+                variant={"contained"}
+                sx={{
+                  display: "absolute",
+                  top: "20%",
+                  backgroundColor: isCurrent ? theme.palette.success.main : theme.palette.primary.main,
+                  pointerEvents: isCurrent || loadingPlan === plan.name ? "none" : "auto",
+                  width: "calc(100% - 32px)",
+                  mx: 2,
+                  mt: 2,
+                  fontWeight: "bold",
+                  borderRadius: 3,
+                  "&:hover": {
+                    backgroundColor: isCurrent ? theme.palette.success.main : theme.palette.primary.dark,
+                  },
+                }}
+                onClick={() => handleClick(plan.name)}
+                disabled={plan.name.toLocaleLowerCase() === "free" && !isCurrent || loadingPlan === plan.name}
+              >
+                {loadingPlan === plan.name ? (
+                  <CircularProgress size={24} sx={{ color: "white" }} />
+                ) : isCurrent ? (
+                  `${plan.name} (Atual)`
+                ) : (
+                  `Selecionar ${plan.name}`
+                )}
+              </Button>
+            </Paper>
+          );
         })}
       </Box>
     </Container>

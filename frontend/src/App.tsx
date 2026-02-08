@@ -1,5 +1,5 @@
 import { lazy, ReactElement, Suspense, useEffect, memo } from "react";
-import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
 import { useAuth } from "./hooks/AuthContext";
 import { useTema } from "./hooks/TemaContext";
 import { Box, IconButton } from "@mui/material";
@@ -37,7 +37,6 @@ const AddNewReportPage = lazy(() => import("./pages/CRUD/relatorios/AddNewReport
 const ReportListPage = lazy(() => import("./pages/CRUD/relatorios/ReportListPage"));
 const PricingPage = lazy(() => import("./pages/PricingPage"));
 const SuccessPage = lazy(() => import("./pages/SuccessPage"));
-const CancelPage = lazy(() => import("./pages/CancelPage"));
 // Rotas que podem ser utilizados apenas depois de autenticação
 const ProtectedRoute = ({ element }: { element: ReactElement }) => {
   const { user, empresa, loading } = useAuth();
@@ -75,7 +74,7 @@ const PublicRoute = ({ element }: { element: ReactElement }) => {
 const CompanyRoute = ({ element }: { element: ReactElement }) => {
   const { user } = useAuth();
 
-  if (!user){
+  if (!user) {
     return <Navigate to="/login" />;
   }
 
@@ -164,8 +163,7 @@ function App() {
             <Route path="/add-new-report" element={<ProtectedRoute element={<AddNewReportPage />} />} />
             <Route path="/plans" element={<ProtectedRoute element={<PricingPage />} />} />
             {/* Rota de fallback para redirecionar usuários não autenticados */}
-            <Route path="/sucesso" element={ <ProtectedRoute element={<SuccessPage />} />} />
-            <Route path="/cancelado" element={<ProtectedRoute element={<CancelPage />} />} />
+            <Route path="/sucesso" element={<ProtectedRoute element={<SuccessPage />} />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Layout>

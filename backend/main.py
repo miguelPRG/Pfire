@@ -1,7 +1,9 @@
-from routes.Rest.services import userServices
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from routes.Rest.services import userEmpresaServices, modelosCamposServices, globalIdsServices
+from routes.Rest.services.userServices.auth import routerAuth
+from routes.Rest.services.userServices.payment import routerPayment
+from routes.Rest.services.userServices.pdf import routerPDF
 from routes.Rest.CRUD import userCRUD, empresaCRUD, clienteCRUD, modelosCRUD, relatorioCRUD, criteriosCRUD
 from routes.graphQL.schema import graphql_router
 from controller.jwtValidation import verify_jwt  # Função para verificar o JWT
@@ -13,6 +15,7 @@ from apis.redis_client import test_redis_connection
 from asyncio import gather
 from contextlib import asynccontextmanager
 from re import compile
+from firewall.clientIP import rate_limit
 
 
 @asynccontextmanager
@@ -32,7 +35,7 @@ app = FastAPI(lifespan=lifespan)
 # Configuração de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://pfire.miguelgoncalves2024.workers.dev"],
+    allow_origins=["http://localhost:3000", "https://pfire.miguelgoncalves2024.workers.dev",],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],  # Inclua OPTIONS
     allow_headers=["Content-Type", "Host", "Cookie"],
@@ -41,10 +44,14 @@ app.add_middleware(
 
 @app.middleware("http")
 async def fast_api_http_middleware(request: Request, call_next):
-    """Middleware para aplicar o limite de requisições a todas as rotas"""
+    """Middleware global: OPTIONS + rate limit + JWT"""
 
     if request.method == "OPTIONS":
         return await call_next(request)
+
+    blocked_response = await rate_limit(request)
+    if blocked_response:
+        return blocked_response
 
     path = request.url.path
 
@@ -53,6 +60,7 @@ async def fast_api_http_middleware(request: Request, call_next):
         "/user/register",
         "/user/login-oauth",
         "/user/forgot-password",
+        "/user/stripe/webhook",  # Webhook do Stripe não usa JWT
         # Estas rotas deveverão ser excluídas na versão de produção
         "/docs",
         "/openapi.json",
@@ -91,23 +99,21 @@ async def fast_api_http_middleware(request: Request, call_next):
 # Limpar base de dados
 database_cleaner_scheduler()
 
-# Rotas de serviços do usuário (REST)
-app.include_router(userServices.routerUser)
+# Rotas de serviços de utilizador
+app.include_router(routerAuth)
+app.include_router(routerPayment)
+app.include_router(routerPDF)
+# Rotas de outros serviços
 app.include_router(globalIdsServices.routerUser)
 app.include_router(modelosCamposServices.routerModelo)
 app.include_router(userEmpresaServices.routerUserEmpresa)
 
 # Rotas de CRUD
 app.include_router(userCRUD.routerUser)
-# Rotas da empresa (REST)
 app.include_router(empresaCRUD.routerEmpresa)
-# Rotas do cliente (REST)
 app.include_router(clienteCRUD.routerCliente)
-# Rotas dis modelos (REST)
 app.include_router(modelosCRUD.routerModelo)
-# Rotas de relatórios (REST)
 app.include_router(relatorioCRUD.routerRelatorio)
-# Rotas de critérios (REST)
 app.include_router(criteriosCRUD.routerCriterio)
 
 # Rota GraphQL
@@ -119,12 +125,3 @@ async def root(request: Request):
     """Rota de teste que retorna os dados do usuário autenticado"""
     jwt = getattr(request.state, "jwt", None)
     return {"message": "Bem-vindo ao backend com FastAPI e MongoDB!", "user": jwt["nome"] if jwt else None}
-
-
-@app.middleware("http")
-async def options_method_middleware(request: Request, call_next):
-    """Middleware para lidar especificamente com requisições OPTIONS."""
-    if request.method == "OPTIONS":
-        # Permite que requisições OPTIONS passem imediatamente
-        return await call_next(request)
-    return await call_next(request)
