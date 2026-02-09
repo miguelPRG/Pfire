@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Response
 from apis.stripe_client import create_checkout, create_stripe_customer
 from database import users_collection
 from bson import ObjectId
@@ -6,6 +6,7 @@ from stripe import Webhook, SignatureVerificationError
 from os import getenv
 from datetime import datetime
 import logging
+from controller.jwtValidation import generate_jwt
 
 logger = logging.getLogger(__name__)
 
@@ -127,7 +128,8 @@ async def stripe_webhook(request: Request):
                 "$set": {
                     "plano": plano,
                     "updated_at": datetime.now(),
-                    "stripe_customer_id": session.get("customer"),  # Guardar customer_id
+                    "stripe_customer_id": session.get("customer"),
+                    "needs_jwt_refresh": True,
                 }
             },
         )
@@ -139,3 +141,63 @@ async def stripe_webhook(request: Request):
             print(f"✅ Plano {plano} atualizado para user {user_id}")
 
     return {"status": "ok"}
+
+@routerPayment.post("/refresh-token-after-payment")
+async def refresh_token_after_payment(request: Request, response: Response):
+    """
+    ✅ Endpoint chamado pelo frontend após sucesso do pagamento
+    Valida o flag needs_jwt_refresh e gera novo JWT
+    """
+    jwt = getattr(request.state, "jwt", None)
+    if not jwt:
+        raise HTTPException(status_code=401, detail="Token JWT ausente")
+
+    user_id = str(jwt["user_id"])
+
+    try:
+        user = await users_collection.find_one({"_id": ObjectId(user_id)})
+        
+        if not user:
+            raise HTTPException(status_code=404, detail="User não encontrado")
+
+        # ✅ Verificar se user precisa de novo JWT
+        if not user.get("needs_jwt_refresh"):
+            return {"status": "ok", "message": "Nenhum refresh necessário"}
+
+        # ✅ Gerar novo JWT com o plano atualizado
+        new_jwt = generate_jwt(
+            str(user["_id"]),
+            user.get("nome", ""),
+            user.get("email", ""),
+            user.get("isSuperAdmin", False),
+            user.get("plano", "free")  # ✅ Novo plano
+        )
+
+        # ✅ Remover flag e guardar novo JWT no cookie
+        await users_collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$unset": {"needs_jwt_refresh": ""}}
+        )
+
+        # ✅ Enviar novo JWT no cookie HTTP-only secure
+        response.set_cookie(
+            key="_fp",
+            value=new_jwt,
+            httponly=True,
+            secure=True,
+            samesite="None",
+        )
+
+        logger.info(f"Novo JWT gerado para user {user_id} com plano {user.get('plano')}")
+
+        return {
+            "status": "ok",
+            "message": "JWT atualizado com sucesso",
+            "plano": user.get("plano")
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao refresh token: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
