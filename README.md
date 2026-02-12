@@ -60,8 +60,7 @@ Crie o ficheiro `.env` no diretório **backend** exatamente com esse nome. De se
 - `REDIS_HOST=host`
 - `REDIS_PORT=port`
 - `REDIS_PASSWORD=password`
-**Esta variavel é opcional, apenas obrigatório em produção, substituir localhost pelo dominio do frontend**
-- `SUCCESS_URL=localhost:3000`
+- `SUCCESS_URL=localhost:3000` **Esta variavel é opcional, apenas obrigatório em produção, substituir localhost pelo dominio do frontend**
 
 Os dados aqui indicados deverão ser substituidos pelos respetivos valores verdadeiros, acordados entre os desenvolvedores.
 
@@ -158,7 +157,8 @@ Por esta razão, recomenda-se a efetuação de uma análise de vulnerabilidades 
 - `vite.config.ts`
 - `.gitlab-ci.yml`
 - Ativadores **Shell Script** como `startBackend.sh` e `startFrontend.sh`
-- `netlify.toml`
+- `frontend/worker.js`
+- `frontend/wrangler.toml`
 
 ## Conclusão
 

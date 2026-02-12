@@ -1,7 +1,7 @@
 name = "pfire"
 main = "worker.js"
-compatibility_date = "2026-01-27"
+compatibility_date = "2026-02-15"
 
 [assets]
 directory = "./dist"
-
+not_found_handling = "single-page-application"

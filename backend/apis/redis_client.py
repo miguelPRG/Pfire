@@ -1,12 +1,6 @@
 import redis.asyncio as aioredis
 import os
 
-# As credencia da BD Redis
-# host='cunning-lamb-12871.upstash.io'
-# port=6379
-# password='ATJHAAIjcDE4OTIxZGI3NThjNzU0MjViOGI4OTM4YTM2MWJlODgyOHAxMA'
-# ssl=True
-
 # Credenciales en variables de entorno
 redis_host = os.getenv("REDIS_HOST")
 redis_port = int(os.getenv("REDIS_PORT"))
