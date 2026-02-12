@@ -12,8 +12,8 @@
   },
   "dependencies": {
     "@apollo/client": "^4.1.4",
-    "@mui/icons-material": "^7.3.7",
-    "@mui/material": "^7.3.7",
+    "@mui/icons-material": "^7.3.8",
+    "@mui/material": "^7.3.8",
     "@mui/x-charts": "^8.27.0",
     "@stripe/stripe-js": "^8.7.0",
     "@vitejs/plugin-react-swc": "^4.2.3",
