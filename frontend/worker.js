@@ -2,7 +2,7 @@ addEventListener("fetch", (event) => {
   event.respondWith(handleRequest(event.request));
 });
 
-const BACKEND_URL = "https://pfire-backend-h6xy.onrender.com";
+const BACKEND_URL = "https://pmedsys.com:10000";
 
 export default {
   async fetch(request, env, ctx) {
