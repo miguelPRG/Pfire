@@ -28,4 +28,4 @@ USER appuser
 
 EXPOSE 10000
 
-CMD ["sh", "-c", "uv run uvicorn main:app --host 0.0.0.0 --port 10000 --ssl-certfile /app/cert.pem --ssl-keyfile /app/key.pem"]
+CMD ["sh", "-c", "uv run uvicorn main:app --host 0.0.0.0 --port 10000"]

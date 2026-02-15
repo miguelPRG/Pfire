@@ -1,24 +1,23 @@
 services:
   backend:
-    build:
-      context: ./backend
+    build: .
     container_name: backend
+    restart: always
     env_file:
       - .env
-    networks:
-      - app_network # Backend está acessível apenas dentro da rede Docker
+    volumes:
+      - /etc/secrets/:/etc/secrets:ro
+    expose:
+      - "10000"
 
-  frontend:
-    build:
-      context: ./frontend
-    container_name: frontend
+  nginx:
+    image: nginx:stable
+    container_name: nginx
+    restart: always
     ports:
-      - "80:80" # Porta exposta para acessar o frontend
-    networks:
-      - app_network
-    depends_on:
-      - backend # Garante que o backend seja iniciado antes do frontend
-
-networks:
-  app_network:
-    driver: bridge # Rede bridge para comunicação interna
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf:/etc/nginx/conf.d
+      - ./certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
