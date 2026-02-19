@@ -334,23 +334,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function logout() {
-    // Função de logout que elimina cookie e estado = async () => {
+    setEmpresa(null);
+    setUser(null);
+    setLoading(false);
+
     try {
-      await fetch("backend/user/logout", {
+      await fetch("/backend/user/logout", {
         method: "POST",
         credentials: "include",
       }); // await fetch("/backend/user/logout", { method: "POST", credentials: "include" }).catch(() => {}); } catch {}
       killAuthCookie();
-      setEmpresa(null);
-      setUser(null);
-      try {
-        localStorage.removeItem("authUser");
-        sessionStorage.removeItem("authUser");
-      } catch {}
     } catch (error) {
       console.error("Erro ao fazer logout");
-    } finally {
-      setLoading(false); // <--- indica que o logout foi concluído
     }
   }
 

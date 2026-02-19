@@ -75,7 +75,7 @@ export default function AddNewClientPage() {
   });
 
   const enviarNovoCliente = async (dados: AddClientFormInputs) => {
-    const response = await fetch(`/backend/cliente`, {
+    const response = await fetch(`/backend/cliente/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",

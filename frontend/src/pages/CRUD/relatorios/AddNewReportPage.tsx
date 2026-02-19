@@ -233,7 +233,7 @@ function AddNewReportPage() {
 
       console.log("Payload final:", payload);
 
-      const response = await fetch("/backend/relatorio", {
+      const response = await fetch("/backend/relatorio/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
