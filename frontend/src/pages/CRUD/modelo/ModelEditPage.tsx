@@ -321,7 +321,7 @@ export default function ReportTemplatePage() {
 
       // Usa PUT para edição ou POST para criação
       const method = isEditing ? "PUT" : "POST";
-      const url = isEditing ? `/backend/modelo/${editingModel.id}` : "/backend/modelo";
+      const url = isEditing ? `/backend/modelo/${editingModel.id}` : "/backend/modelo/";
 
       console.log("Payload enviado:", payload);
 

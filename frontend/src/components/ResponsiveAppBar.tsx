@@ -12,7 +12,6 @@ import {
   MenuItem,
   Typography,
 } from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
 import { useAuth } from "../hooks/AuthContext";
 import { useNavigate } from "react-router-dom";
 import logo from "../assets/images/logo.png";
@@ -81,9 +80,9 @@ function ResponsiveAppBar() {
     {
       label: "Logout",
       icon: <LogoutIcon fontSize="small" sx={{ mr: 1 }} />,
-      action: () => {
-        logout();
-        navigate("/login");
+      action: async () => {
+        await logout();
+        navigate("/login", { replace: true });
       },
     },
   ];
@@ -110,11 +109,6 @@ function ResponsiveAppBar() {
         >
           {/* Box 1: Sidebar + Logo */}
           <Box sx={{ display: "flex", alignItems: "center", flex: "0 0 auto" }}>
-            {empresa && (
-              <IconButton onClick={toggleSidebar} color="inherit" sx={{ marginRight: 2 }}>
-                <MenuIcon />
-              </IconButton>
-            )}
             <Box sx={{ display: "flex", alignItems: "center" }}>
               <Box
                 component="img"
