@@ -4,9 +4,9 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 
 # Configurações de limitação
-LIMIT = 15 # Máximo de 15 requisições por TIME_FRAME
-TIME_FRAME = 30 # Tempo em segundos para contar as requisições (30 segundos)
-BLOCK_DURATION = 120 # Tempo em segundos para bloquear o IP (2 minutos)
+LIMIT = 15  # Máximo de 15 requisições por TIME_FRAME
+TIME_FRAME = 30  # Tempo em segundos para contar as requisições (30 segundos)
+BLOCK_DURATION = 120  # Tempo em segundos para bloquear o IP (2 minutos)
 
 rate_limiter = {}  # {ip: [timestamps]}
 blocked_ips = {}  # {ip: timestamp}
@@ -36,7 +36,7 @@ async def rate_limit(request: Request):
     # ✅ Ignorar rate limit para rotas específicas
     if request.url.path in EXCLUDED_PATHS:
         return None
-    
+
     client_ip = get_client_ip(request)
     current_time = int(time.time())
 

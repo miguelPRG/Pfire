@@ -8,6 +8,7 @@ class OptionItem(BaseModel):
     key: str
     value: str
 
+
 class CriterioCreate(BaseModel):
     nome: str = Field(..., min_length=1, max_length=100)
     modelo_id: str
@@ -68,6 +69,7 @@ class CriterioUpdate(BaseModel):
                 new_options.append(OptionItem(key=key.upper(), value=value.strip()))
             return new_options
         return v
+
 
 from typing import List
 from pydantic import BaseModel, field_validator, Field

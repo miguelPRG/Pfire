@@ -1,6 +1,7 @@
 from firebase_admin import auth as firebase_auth
 from pathlib import Path
 
+
 async def verify_firebase_token(id_token: str) -> dict:
     """
     Verifica o ID Token enviado pelo frontend (Firebase OAuth) e retorna um dict com:

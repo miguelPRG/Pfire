@@ -23,10 +23,8 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
 
         if not user_empresa:
             raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para criar modelos nesta empresa.")
-        
-        # Verificar se existem outros administradores que tenham plano premium
-        
 
+        # Verificar se existem outros administradores que tenham plano premium
 
     modelo.empresa_id = ObjectId(modelo.empresa_id)
 

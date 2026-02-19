@@ -9,12 +9,7 @@ from passlib.context import CryptContext
 from models.userModels import UserForgotPassword, UserLogin, UserLoginWithOAuth, UserRegister, UserUpdatePassword
 from models.userEmpresaModels import UserEmpresaCreate
 from datetime import datetime
-from database import (
-    users_collection,
-    users_empresas_collection,
-    global_ids_collection,
-    empresas_collection
-)
+from database import users_collection, users_empresas_collection, global_ids_collection, empresas_collection
 from asyncio import gather
 from bson import ObjectId
 from base64 import b64encode
@@ -190,7 +185,7 @@ async def login(user: UserLogin, request: Request):
     if not atualizar_user.modified_count:
         raise HTTPException(status_code=500, detail="Erro ao atualizar o último login.")
 
-    token = generate_jwt(str(db_user["_id"]), db_user["nome"], db_user["email"], db_user["isSuperAdmin"],db_user.get("plano"))
+    token = generate_jwt(str(db_user["_id"]), db_user["nome"], db_user["email"], db_user["isSuperAdmin"], db_user.get("plano"))
 
     # Converte a assinatura (se existir) para base64 para o corpo da resposta (não vai no cookie)
     assinatura_b64 = None
@@ -258,6 +253,7 @@ async def logout_user(request: Request, response: Response):
     # Elimina la cookie del JWT
     response.delete_cookie("_fp", httponly=True, samesite="None", secure=True)
     return {"message": "Logout efetuado com sucesso!"}
+
 
 # 🚀 Registar um novo User
 @routerAuth.post("/register")
@@ -449,7 +445,7 @@ async def update_password(user: UserUpdatePassword, request: Request):
 
     jwt = getattr(request.state, "jwt", None)
 
-    #Pocurar user na base de dados
+    # Pocurar user na base de dados
     db_user = await users_collection.find_one({"_id": ObjectId(jwt["user_id"]), "isActive": True})
 
     if not db_user:

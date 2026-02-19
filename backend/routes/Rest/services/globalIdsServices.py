@@ -73,13 +73,12 @@ async def confirm_user(global_id: str, request: Request, captcha_data: GlobalIdM
 
     if not user_id:
         raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
-    
-    stripe_customer_id = await create_stripe_customer(
-        email=global_id_data.get("email", ""),
-        name=global_id_data.get("name", "")
-    )
 
-    user_update = users_collection.update_one({"_id": user_id}, {"$set": {"isActive": True, "stripe_customer_id": stripe_customer_id, "updated_at": datetime.now()}})
+    stripe_customer_id = await create_stripe_customer(email=global_id_data.get("email", ""), name=global_id_data.get("name", ""))
+
+    user_update = users_collection.update_one(
+        {"_id": user_id}, {"$set": {"isActive": True, "stripe_customer_id": stripe_customer_id, "updated_at": datetime.now()}}
+    )
     global_id_data = global_ids_collection.delete_one({"global_id": global_id})
 
     user_update, global_id_data = await gather(user_update, global_id_data)

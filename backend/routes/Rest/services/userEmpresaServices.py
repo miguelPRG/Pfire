@@ -73,6 +73,7 @@ async def invite_user_to_empresa(request: Request, user: UserInvitation):
 
     return {"message": "Convite enviado com sucesso!"}
 
+
 # 🚀 Setar como Administrador
 @routerUserEmpresa.put("/set_admin")
 async def set_admin(user: UserRole, request: Request):

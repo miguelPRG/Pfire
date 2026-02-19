@@ -17,10 +17,10 @@ dependencies = [
     "passlib>=1.7.4",
     "pydantic[email]>=2.12.5",
     "pyjwt>=2.11.0",
-    "redis>=7.1.1",
-    "strawberry-graphql>=0.291.3",
+    "redis>=7.2.0",
+    "strawberry-graphql>=0.296.2",
     "stripe>=14.3.0",
-    "uvicorn>=0.40.0",
+    "uvicorn>=0.41.0",
     "weasyprint>=68.1",
 ]
 [tool.black]

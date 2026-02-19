@@ -11,7 +11,7 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@apollo/client": "^4.1.4",
+    "@apollo/client": "^4.1.5",
     "@hookform/resolvers": "^5.2.2",
     "@mui/icons-material": "^7.3.8",
     "@mui/material": "^7.3.8",
