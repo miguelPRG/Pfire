@@ -27,9 +27,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "https://pfire.miguelgoncalves2024.workers.dev",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://pfire.miguelgoncalves2024.workers.dev",],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Content-Type", "Host", "Cookie"],
@@ -39,6 +44,10 @@ app.add_middleware(
 @app.middleware("http")
 async def fast_api_http_middleware(request: Request, call_next):
     """Middleware global: OPTIONS + rate limit + JWT"""
+
+    origin = request.headers.get("origin")
+    if origin and origin not in ALLOWED_ORIGINS:
+        return JSONResponse(status_code=403, content={"message": "Origem não permitida!"})
 
     if request.method == "OPTIONS":
         return await call_next(request)
