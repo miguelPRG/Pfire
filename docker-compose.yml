@@ -1,23 +1,13 @@
 services:
   backend:
-    build: .
-    container_name: backend
-    restart: always
+    build:
+      context: ./backend
+    container_name: backend-container
     env_file:
-      - .env
-    volumes:
-      - /etc/secrets/:/etc/secrets:ro
-    expose:
-      - "10000"
-
-  nginx:
-    image: nginx:stable
-    container_name: nginx
-    restart: always
+      - ./backend/.env
     ports:
-      - "80:80"
-      - "443:443"
+      - "127.0.0.1:10000:10000"
     volumes:
-      - ./nginx/conf:/etc/nginx/conf.d
-      - ./certbot/www:/var/www/certbot
-      - ./certbot/conf:/etc/letsencrypt
+      - /etc/secrets:/etc/secrets:ro
+      - /var/log/pfire:/var/log/pfire
+    user: appuser

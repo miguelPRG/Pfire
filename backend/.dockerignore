@@ -12,3 +12,4 @@ Dockerfile
 .gitignore
 venv/
 .venv
+secrets/

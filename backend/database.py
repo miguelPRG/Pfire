@@ -104,22 +104,26 @@ async def apagar_empresas_vazias():
 
 
 # Configuração do agendador com APScheduler
+_scheduler = AsyncIOScheduler()
+
 def database_cleaner_scheduler():
-    scheduler = AsyncIOScheduler()
+    # Evita duplicar jobs se startup correr mais de uma vez
+    if not _scheduler.get_job("delete_inactive_documents_job"):
+        _scheduler.add_job(
+            delete_documentos_inativos,
+            IntervalTrigger(days=30),  # Intervalo de 30 dias
+            id="delete_inactive_documents_job",  # Um ID único para o job
+            replace_existing=True,  # Caso o job já exista, ele será substituído
+        )
 
-    # Agendar a execução da função `delete_inactive_documents` a cada 30 dias
-    scheduler.add_job(
-        delete_documentos_inativos,
-        IntervalTrigger(days=30),  # Intervalo de 30 dias
-        id="delete_inactive_documents_job",  # Um ID único para o job
-        replace_existing=True,  # Caso o job já exista, ele será substituído
-    )
+    if not _scheduler.get_job("apagar_empresas_vazias_job"):
+        _scheduler.add_job(
+            apagar_empresas_vazias,
+            IntervalTrigger(days=30),  # Intervalo de 30 dias
+            id="apagar_empresas_vazias_job",  # Um ID único para o job
+            replace_existing=True,  # Caso o job já exista, ele será substituído
+        )
 
-    scheduler.add_job(
-        apagar_empresas_vazias,
-        IntervalTrigger(days=30),  # Intervalo de 30 dias
-        id="apagar_empresas_vazias_job",  # Um ID único para o job
-        replace_existing=True,  # Caso o job já exista, ele será substituído
-    )
-
-    scheduler.start()
+def start_database_cleaner_scheduler():
+    if not _scheduler.running:
+        _scheduler.start()
