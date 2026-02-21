@@ -1,0 +1,13 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: backend-container
+    env_file:
+      - ./backend/.env
+    ports:
+      - "127.0.0.1:10000:10000"
+    volumes:
+      - /etc/secrets:/etc/secrets:ro
+      - /var/log/pfire:/var/log/pfire
+    user: appuser

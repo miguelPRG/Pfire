@@ -1,3 +1,7 @@
+import os
+import time
+import logging
+from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from routes.Rest.services import userEmpresaServices, modelosCamposServices, globalIdsServices
@@ -9,7 +13,7 @@ from routes.graphQL.schema import graphql_router
 from controller.jwtValidation import verify_jwt
 from fastapi.responses import JSONResponse
 from controller.token_blacklist import is_token_revoked
-from database import database_cleaner_scheduler, testar_database
+from database import database_cleaner_scheduler, start_database_cleaner_scheduler, testar_database
 from apis.brevo_client import test_brevo_connection
 from apis.redis_client import test_redis_connection
 from asyncio import gather
@@ -17,15 +21,20 @@ from contextlib import asynccontextmanager
 from re import compile
 from firewall.clientIP import rate_limit
 
-
+# Testar conexões com MongoDB, Redis e Brevo na inicialização do aplicativo
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await gather(testar_database(), test_redis_connection())
     test_brevo_connection()
     yield
 
-
+# Iniciar a aplciação FastAPI
 app = FastAPI(lifespan=lifespan)
+# Estas serão as origens permitidas tanto no CORS como na validação manual no middleware, 
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "https://pfire.miguelgoncalves2024.workers.dev",
+]
 
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
@@ -39,7 +48,6 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Content-Type", "Host", "Cookie"],
 )
-
 
 @app.middleware("http")
 async def fast_api_http_middleware(request: Request, call_next):
@@ -92,6 +100,12 @@ async def fast_api_http_middleware(request: Request, call_next):
 
     response = await call_next(request)
     return response
+
+
+@app.on_event("startup")
+async def startup_event():
+    database_cleaner_scheduler()
+    start_database_cleaner_scheduler()
 
 
 database_cleaner_scheduler()
