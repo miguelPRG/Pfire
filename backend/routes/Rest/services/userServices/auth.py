@@ -28,8 +28,8 @@ routerAuth = APIRouter(prefix="/user")
 pwd_context = CryptContext(
     schemes=["argon2"],
     deprecated="auto",
-    argon2__memory_cost=65536,
-    argon2__time_cost=3,
+    argon2__memory_cost=262144,
+    argon2__time_cost=5,
 )
 
 

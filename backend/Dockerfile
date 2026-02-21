@@ -1,5 +1,6 @@
 FROM python:3.14-slim
 
+# Forçar logs em tempo real
 ENV PYTHONUNBUFFERED=1
 
 RUN apt-get update \
@@ -17,15 +18,18 @@ COPY pyproject.toml uv.lock* ./
 
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir uv \
-    && uv sync --frozen
+    && uv pip install --system .
 
 COPY . .
 
+ENV LOG_DIR=/var/log/pfire
+
 RUN useradd -m appuser \
-    && chown -R appuser:appuser /app/
+    && mkdir -p ${LOG_DIR} \
+    && chown -R appuser:appuser /app/ ${LOG_DIR}
 
 USER appuser
 
 EXPOSE 10000
 
-CMD ["sh", "-c", "uv run uvicorn main:app --host 0.0.0.0 --port 10000"]
+CMD ["uv", "run", "fastapi", "run", "main.py", "--host", "0.0.0.0", "--port", "10000"]
