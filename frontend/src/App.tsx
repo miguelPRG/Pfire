@@ -60,32 +60,38 @@ const ProtectedRoute = ({ element }: { element: ReactElement }) => {
 
 // Rotas públicas, acessível sem autenticação
 const PublicRoute = ({ element }: { element: ReactElement }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
-  // Only log if user is not authenticated
+  if (loading) {
+    return <LoadingAnimation />;
+  }
+
   if (!user) {
-    console.log("Verificando rota pública para usuário: Nenhum usuário");
     return element;
   }
 
-  return <Navigate to="/" />; // Redirect authenticated users
+  return <Navigate to="/" replace />;
 };
 
 const CompanyRoute = ({ element }: { element: ReactElement }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingAnimation />;
+  }
 
   if (!user) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" replace />;
   }
 
   return element;
 };
 
 // Layout base
-const Layout = memo(({ userId, children }: { userId: string | null; children: React.ReactNode }) => {
+const Layout = memo(({ userId, empresaID, children }: { userId: string | null; empresaID: string | null; children: React.ReactNode }) => {
   return (
     <>
-      {userId && <ResponsiveAppBar />}
+      {userId && empresaID && <ResponsiveAppBar />}
       <Box component="main">{children}</Box>
     </>
   );
@@ -129,13 +135,14 @@ const ThemeToggleButton = () => {
 
 // 🚀 App principal
 function App() {
-  const { user } = useAuth();
+  const { user, empresa } = useAuth();
   let userId = user ? user.id : null;
+  let empresaID = empresa ? empresa.id : null;
 
   return (
     <Router>
       <Suspense fallback={<LoadingAnimation />}>
-        <Layout userId={userId}>
+        <Layout userId={userId} empresaID={empresaID}>
           <Routes>
             {/*Todas as confirmações de email*/}
             <Route path="/confirmation/:GLOBAL_ID/:OPERATION" element={<EmailOperation />} />
