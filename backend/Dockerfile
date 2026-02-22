@@ -24,9 +24,10 @@ COPY . .
 
 ENV LOG_DIR=/var/log/pfire
 
-RUN useradd -m appuser \
+RUN useradd -m -u 10000 appuser \
     && mkdir -p ${LOG_DIR} \
-    && chown -R appuser:appuser /app/ ${LOG_DIR}
+    && chown -R appuser:appuser /app/ ${LOG_DIR} \
+    && chmod 755 ${LOG_DIR}
 
 USER appuser
 

@@ -28,7 +28,10 @@ pwd_context = CryptContext(
 @routerUser.get("/get-global-id/{global_id}")
 async def get_global_id(global_id: str, request: Request):
 
-    UUID_V4_REGEX = compile(r"^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$", IGNORECASE)
+    UUID_V4_REGEX = compile(
+        r"^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$",
+        IGNORECASE,
+    )
 
     # Validar o global_id com padrão regex
     if not UUID_V4_REGEX.match(global_id):
@@ -40,11 +43,25 @@ async def get_global_id(global_id: str, request: Request):
 
     # Converte ObjectIds para strings
     global_id_data["_id"] = str(global_id_data["_id"])
-    global_id_data["host_user_id"] = str(global_id_data["host_user_id"]) if "host_user_id" in global_id_data else None
-    global_id_data["guest_user_id"] = str(global_id_data["guest_user_id"]) if "guest_user_id" in global_id_data else None
-    global_id_data["empresa_id"] = str(global_id_data["empresa_id"]) if "empresa_id" in global_id_data else None
-    global_id_data["user_id"] = str(global_id_data["user_id"]) if "user_id" in global_id_data else None
-    global_id_data["created_by"] = str(global_id_data["created_by"]) if "created_by" in global_id_data else None
+    global_id_data["host_user_id"] = (
+        str(global_id_data["host_user_id"])
+        if "host_user_id" in global_id_data
+        else None
+    )
+    global_id_data["guest_user_id"] = (
+        str(global_id_data["guest_user_id"])
+        if "guest_user_id" in global_id_data
+        else None
+    )
+    global_id_data["empresa_id"] = (
+        str(global_id_data["empresa_id"]) if "empresa_id" in global_id_data else None
+    )
+    global_id_data["user_id"] = (
+        str(global_id_data["user_id"]) if "user_id" in global_id_data else None
+    )
+    global_id_data["created_by"] = (
+        str(global_id_data["created_by"]) if "created_by" in global_id_data else None
+    )
 
     # Remover campos com valor nulo
     global_id_data = {k: v for k, v in global_id_data.items() if v is not None}
@@ -58,14 +75,19 @@ async def confirm_user(global_id: str, request: Request, captcha_data: GlobalIdM
 
     await validar_recaptcha_token(captcha_data.recaptchaToken, "register")
 
-    UUID_V4_REGEX = compile(r"^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$", IGNORECASE)
+    UUID_V4_REGEX = compile(
+        r"^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$",
+        IGNORECASE,
+    )
 
     # Validar o global_id com padrão regex
     if not UUID_V4_REGEX.match(global_id):
         raise HTTPException(status_code=400, detail="Formato de global_id inválido.")
 
     # Encontrar o global_id na base de dados
-    global_id_data = await global_ids_collection.find_one({"global_id": global_id, "operation": "registo"})
+    global_id_data = await global_ids_collection.find_one(
+        {"global_id": global_id, "operation": "registo"}
+    )
     if not global_id_data:
         raise HTTPException(status_code=404, detail="Global ID inválido.")
 
@@ -73,13 +95,21 @@ async def confirm_user(global_id: str, request: Request, captcha_data: GlobalIdM
 
     if not user_id:
         raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
-    
+
     stripe_customer_id = await create_stripe_customer(
-        email=global_id_data.get("email", ""),
-        name=global_id_data.get("name", "")
+        email=global_id_data.get("email", ""), name=global_id_data.get("name", "")
     )
 
-    user_update = users_collection.update_one({"_id": user_id}, {"$set": {"isActive": True, "stripe_customer_id": stripe_customer_id, "updated_at": datetime.now()}})
+    user_update = users_collection.update_one(
+        {"_id": user_id},
+        {
+            "$set": {
+                "isActive": True,
+                "stripe_customer_id": stripe_customer_id,
+                "updated_at": datetime.now(),
+            }
+        },
+    )
     global_id_data = global_ids_collection.delete_one({"global_id": global_id})
 
     user_update, global_id_data = await gather(user_update, global_id_data)
@@ -88,7 +118,9 @@ async def confirm_user(global_id: str, request: Request, captcha_data: GlobalIdM
         raise HTTPException(status_code=409, detail="Erro ao ativar o utilizador.")
 
     if global_id_data.deleted_count == 0:
-        raise HTTPException(status_code=500, detail="Erro ao remover o global ID após ativação.")
+        raise HTTPException(
+            status_code=500, detail="Erro ao remover o global ID após ativação."
+        )
 
     return {"message": "Utilizador ativado com sucesso!"}
 
@@ -100,7 +132,9 @@ async def reset_password(request: Request, user: UserChangePassword):
     await validar_recaptcha_token(user.recaptchaToken, "update")
 
     # Encontrar o global_id na base de dados
-    global_id_data = await global_ids_collection.find_one({"global_id": user.global_id, "operation": "recuperarPassword"})
+    global_id_data = await global_ids_collection.find_one(
+        {"global_id": user.global_id, "operation": "recuperarPassword"}
+    )
     if not global_id_data or global_id_data["operation"] != "recuperarPassword":
         raise HTTPException(status_code=404, detail="Global ID não encontrado.")
 
@@ -112,17 +146,25 @@ async def reset_password(request: Request, user: UserChangePassword):
 
     # Atualizar a password do utilizador
     new_password_hashed = pwd_context.hash(user.password)
-    user_update = users_collection.update_one({"_id": user_id}, {"$set": {"password": new_password_hashed, "updated_at": datetime.now()}})
+    user_update = users_collection.update_one(
+        {"_id": user_id},
+        {"$set": {"password": new_password_hashed, "updated_at": datetime.now()}},
+    )
 
     global_id_delete = global_ids_collection.delete_one({"global_id": user.global_id})
 
     user_update, global_id_delete = await gather(user_update, global_id_delete)
 
     if not user_update.modified_count:
-        raise HTTPException(status_code=409, detail="Erro ao atualizar a password do utilizador.")
+        raise HTTPException(
+            status_code=409, detail="Erro ao atualizar a password do utilizador."
+        )
 
     if global_id_delete.deleted_count == 0:
-        raise HTTPException(status_code=500, detail="Erro ao remover o global ID após atualização da password.")
+        raise HTTPException(
+            status_code=500,
+            detail="Erro ao remover o global ID após atualização da password.",
+        )
 
     return {"message": "Password atualizada com sucesso!"}
 
@@ -136,12 +178,16 @@ async def accept_invite(global_id: str, request: Request, captcha_data: GlobalId
     print("Aceitar convite para empresa - Global ID:", global_id)
 
     # Verificar se o global ID Eexiste
-    global_id_data = await global_ids_collection.find_one({"global_id": global_id, "operation": "convite"})
+    global_id_data = await global_ids_collection.find_one(
+        {"global_id": global_id, "operation": "convite"}
+    )
 
     print("Global ID Data:", global_id_data)
 
     if not global_id_data:
-        raise HTTPException(status_code=404, detail="Global ID não encontrado ou inválido.")
+        raise HTTPException(
+            status_code=404, detail="Global ID não encontrado ou inválido."
+        )
 
     # Criar novo user_empresa
     host_user_id = global_id_data["host_user_id"]
@@ -169,13 +215,18 @@ async def accept_invite(global_id: str, request: Request, captcha_data: GlobalId
         user_empresa_insertion = users_empresas_collection.insert_one(user_empresa_data)
         global_delete = global_ids_collection.delete_one({"global_id": global_id})
 
-        user_empresa, global_delete = await gather(user_empresa_insertion, global_delete)
+        user_empresa, global_delete = await gather(
+            user_empresa_insertion, global_delete
+        )
 
         if not str(user_empresa.inserted_id):
             raise HTTPException(status_code=500, detail="Erro ao aceitar o convite.")
 
         if global_delete.deleted_count == 0:
-            raise HTTPException(status_code=500, detail="Erro ao remover o global ID após aceitar o convite.")
+            raise HTTPException(
+                status_code=500,
+                detail="Erro ao remover o global ID após aceitar o convite.",
+            )
 
     except DuplicateKeyError as e:
         raise HTTPException(status_code=409, detail="Erro ao aceitar o convite.")

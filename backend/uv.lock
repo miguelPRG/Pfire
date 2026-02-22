@@ -95,7 +95,7 @@ wheels = [
 
 [[package]]
 name = "backend"
-version = "0.1.0"
+version = "1.6.1"
 source = { virtual = "." }
 dependencies = [
     { name = "apscheduler" },
@@ -120,7 +120,7 @@ requires-dist = [
     { name = "apscheduler", specifier = ">=3.11.2" },
     { name = "argon2-cffi", specifier = ">=25.1.0" },
     { name = "brevo-python", specifier = ">=4.0.5" },
-    { name = "fastapi", extras = ["standard"], specifier = ">=0.129.1" },
+    { name = "fastapi", extras = ["standard"], specifier = ">=0.131.0" },
     { name = "filetype", specifier = ">=1.2.0" },
     { name = "firebase-admin", specifier = ">=7.1.0" },
     { name = "motor", specifier = ">=3.7.1" },
@@ -129,7 +129,7 @@ requires-dist = [
     { name = "redis", specifier = ">=7.2.0" },
     { name = "sib-api-v3-sdk", specifier = ">=7.6.0" },
     { name = "starlette", specifier = ">=0.52.1" },
-    { name = "strawberry-graphql", specifier = ">=0.300.0" },
+    { name = "strawberry-graphql", specifier = ">=0.303.1" },
     { name = "stripe", specifier = ">=14.3.0" },
     { name = "weasyprint", specifier = ">=68.1" },
 ]
@@ -462,7 +462,7 @@ wheels = [
 
 [[package]]
 name = "fastapi"
-version = "0.129.1"
+version = "0.131.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-doc" },
@@ -471,9 +471,9 @@ dependencies = [
     { name = "typing-extensions" },
     { name = "typing-inspection" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f6/37/4aa7f6ce92745458b6ce0acd706dde2ac23a3bf341266b5311c904109f67/fastapi-0.129.1.tar.gz", hash = "sha256:6ccf0eca9644e0d6280115b4fc8281bf55ec5878d4d95572f7b2034ab15708ba", size = 369852, upload-time = "2026-02-21T13:10:03.335Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/91/32/158cbf685b7d5a26f87131069da286bf10fc9fbf7fc968d169d48a45d689/fastapi-0.131.0.tar.gz", hash = "sha256:6531155e52bee2899a932c746c9a8250f210e3c3303a5f7b9f8a808bfe0548ff", size = 369612, upload-time = "2026-02-22T16:38:11.252Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/01/f9/f15d92bd6035d4f83be8b82dc527a3e7abc87648fda62cf8d1df344410a7/fastapi-0.129.1-py3-none-any.whl", hash = "sha256:022462403bc385b791df418d8f088eb0e8f1fe7cb8f625d682f5e9da6157cc83", size = 103226, upload-time = "2026-02-21T13:10:05.058Z" },
+    { url = "https://files.pythonhosted.org/packages/ff/94/b58ec24c321acc2ad1327f69b033cadc005e0f26df9a73828c9e9c7db7ce/fastapi-0.131.0-py3-none-any.whl", hash = "sha256:ed0e53decccf4459de78837ce1b867cd04fa9ce4579497b842579755d20b405a", size = 103854, upload-time = "2026-02-22T16:38:09.814Z" },
 ]
 
 [package.optional-dependencies]
@@ -1744,7 +1744,7 @@ wheels = [
 
 [[package]]
 name = "strawberry-graphql"
-version = "0.300.0"
+version = "0.303.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cross-web" },
@@ -1753,9 +1753,9 @@ dependencies = [
     { name = "python-dateutil" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3b/a7/420588fc818401cb69751d830cc6acbcc8351d8a8022015637c90d2bd595/strawberry_graphql-0.300.0.tar.gz", hash = "sha256:6695777ae0565a7ca04b3b02b194ec7607244c739bc10e33a8cf9207ee8f61bd", size = 215970, upload-time = "2026-02-21T11:06:47.141Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b0/62/1ac95efc3a74679ab93f5bb48983f8ea591cc84a61adcc8523f5a0105eff/strawberry_graphql-0.303.1.tar.gz", hash = "sha256:a4ad6420600d1f70564bfa88a1033a8dfbe881dfa1368d43121e54211f61a369", size = 211335, upload-time = "2026-02-22T11:49:59.297Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/81/98/f9ec64f5d6b74b04ebd567d7cfcc4152901aa2772e302f35071caa4f3f22/strawberry_graphql-0.300.0-py3-none-any.whl", hash = "sha256:5a3c6f754219152446f933a6f9a9f0e6783aab5c3a568aff63a7f869ae81e18b", size = 313800, upload-time = "2026-02-21T11:06:49.095Z" },
+    { url = "https://files.pythonhosted.org/packages/0c/f6/11324e30ed09c80cc4b85bb4263b25f2ee89ce1a3b6890621fc04d8047fa/strawberry_graphql-0.303.1-py3-none-any.whl", hash = "sha256:2ff821ad0b9d366ceb1caec14fc24f9e00a1e0e249ddc3453e1620ae0e2a0a16", size = 308421, upload-time = "2026-02-22T11:50:00.558Z" },
 ]
 
 [[package]]

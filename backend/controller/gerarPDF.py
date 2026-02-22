@@ -3,7 +3,13 @@ from io import BytesIO
 from typing import Any
 
 
-def gerar_pdf(relatorios: list[dict], modelo: dict, cliente: dict, empresa_logo: str | None, criterios: dict) -> BytesIO:
+def gerar_pdf(
+    relatorios: list[dict],
+    modelo: dict,
+    cliente: dict,
+    empresa_logo: str | None,
+    criterios: dict,
+) -> BytesIO:
     styles = """
     <style>
         @page {
@@ -128,13 +134,26 @@ def gerar_pdf(relatorios: list[dict], modelo: dict, cliente: dict, empresa_logo:
     header2 = "<tr>"
     column_order = []
 
-    for key, info in sorted(custom_fields.items(), key=lambda x: x[1].get("indice", 999)):
+    for key, info in sorted(
+        custom_fields.items(), key=lambda x: x[1].get("indice", 999)
+    ):
         display_key = key.replace("custom_", "")
         datatype = info.get("datatype")
         if datatype == "object":
             # procurar o primeiro rel válido com o objeto preenchido
-            exemplo_obj = next((r.get(key, {}) for r in relatorios if isinstance(r.get(key, {}), dict)), {})
-            subfields = [(k, {"indice": i}) for i, k in enumerate(exemplo_obj.keys()) if k.startswith("custom_")]
+            exemplo_obj = next(
+                (
+                    r.get(key, {})
+                    for r in relatorios
+                    if isinstance(r.get(key, {}), dict)
+                ),
+                {},
+            )
+            subfields = [
+                (k, {"indice": i})
+                for i, k in enumerate(exemplo_obj.keys())
+                if k.startswith("custom_")
+            ]
 
             header1 += f"<th colspan='{len(subfields)}'>{display_key}</th>"
             for subkey, _ in sorted(subfields, key=lambda x: x[1].get("indice", 999)):
@@ -154,7 +173,11 @@ def gerar_pdf(relatorios: list[dict], modelo: dict, cliente: dict, empresa_logo:
 
     # Header com logo (se existir)
     if empresa_logo:
-        logo_src = empresa_logo if empresa_logo.startswith("data:") else f"data:image/png;base64,{empresa_logo}"
+        logo_src = (
+            empresa_logo
+            if empresa_logo.startswith("data:")
+            else f"data:image/png;base64,{empresa_logo}"
+        )
         html += f"<div class='header'><img class='logo' src='{logo_src}' alt='Logo'/><h2>RELATÓRIO TÉCNICO: {modelo_nome}</h2></div>"
     else:
         html += f"<h2 style='text-align:center;'>RELATÓRIO TÉCNICO: {modelo_nome}</h2>"
