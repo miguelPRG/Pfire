@@ -22,14 +22,22 @@ class CriteriaQuery:
 
         # Verifica permissões
         if not jwt.get("isSuperAdmin", False):
-            user_empresa = await users_empresas_collection.find_one({"user_id": user_id, "empresa_id": modelo["empresa_id"]})
+            user_empresa = await users_empresas_collection.find_one(
+                {"user_id": user_id, "empresa_id": modelo["empresa_id"]}
+            )
             if not user_empresa:
-                raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para ver os critérios desta empresa.")
+                raise HTTPException(
+                    status_code=403,
+                    detail="Acesso negado! Não tens permissão para ver os critérios desta empresa.",
+                )
 
         criteria_cursor = criterios_collection.find({"modelo_id": modelo_id})
         criteria_list = []
         async for criterion in criteria_cursor:
-            options = [Option(key=opt.get("key"), value=str(opt.get("value"))) for opt in criterion.get("options", [])]
+            options = [
+                Option(key=opt.get("key"), value=str(opt.get("value")))
+                for opt in criterion.get("options", [])
+            ]
             criterion_data = {
                 "id": str(criterion.get("_id")),
                 "nome": criterion.get("nome"),

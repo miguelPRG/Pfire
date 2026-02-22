@@ -1,5 +1,9 @@
 from fastapi import APIRouter, HTTPException, Request
-from models.modeloCamposModels import ModelosCamposCreate, ModelosCamposUpdate, ModelosCamposDelete
+from models.modeloCamposModels import (
+    ModelosCamposCreate,
+    ModelosCamposUpdate,
+    ModelosCamposDelete,
+)
 from database import modelos_collection, users_empresas_collection, empresas_collection
 from bson import ObjectId
 from datetime import datetime
@@ -19,10 +23,15 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
 
     if not jwt.get("isSuperAdmin", False):
         # Verificar se o utilizador é admin da empresa
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": modelo.empresa_id, "user_id": user_id, "isAdmin": True})
+        user_empresa = await users_empresas_collection.find_one(
+            {"empresa_id": modelo.empresa_id, "user_id": user_id, "isAdmin": True}
+        )
 
         if not user_empresa:
-            raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para criar modelos nesta empresa.")
+            raise HTTPException(
+                status_code=403,
+                detail="Acesso negado! Não tens permissão para criar modelos nesta empresa.",
+            )
 
     modelo.empresa_id = ObjectId(modelo.empresa_id)
 
@@ -31,10 +40,14 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
     if not empresa_found:
         raise HTTPException(status_code=400, detail="Empresa não encontrada.")
 
-    modelo_existente = await modelos_collection.find_one({"empresa_id": modelo.empresa_id, "modelo_nome": modelo.modelo_nome})
+    modelo_existente = await modelos_collection.find_one(
+        {"empresa_id": modelo.empresa_id, "modelo_nome": modelo.modelo_nome}
+    )
 
     if modelo_existente:
-        raise HTTPException(status_code=400, detail="Modelo com esse nome nesta empresa já existe.")
+        raise HTTPException(
+            status_code=400, detail="Modelo com esse nome nesta empresa já existe."
+        )
 
     # 6) Preparar dados para inserção
     modelo_data = modelo.model_dump(by_alias=True)
@@ -64,9 +77,13 @@ async def update_modelo(request: Request, modelo: ModelosCamposUpdate, id: str):
     empresa_id = ObjectId(modelo.empresa_id)
 
     if not jwt.get("isSuperAdmin"):
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": empresa_id, "user_id": user_id, "isAdmin": True})
+        user_empresa = await users_empresas_collection.find_one(
+            {"empresa_id": empresa_id, "user_id": user_id, "isAdmin": True}
+        )
         if not user_empresa:
-            raise HTTPException(status_code=403, detail="Não tem permissão para atualizar este modelo!")
+            raise HTTPException(
+                status_code=403, detail="Não tem permissão para atualizar este modelo!"
+            )
 
     modelo_found = await modelos_collection.find_one({"_id": id})
     if not modelo_found:
@@ -135,13 +152,20 @@ async def apagar_modelo(request: Request, modelo: ModelosCamposDelete):
 
     if not jwt.get("isSuperAdmin", False):
         # Verificar se o utilizador é admin da empresa
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": empresa_id, "user_id": user_id, "isAdmin": True})
+        user_empresa = await users_empresas_collection.find_one(
+            {"empresa_id": empresa_id, "user_id": user_id, "isAdmin": True}
+        )
 
         if not user_empresa:
-            raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para apagar modelos nesta empresa.")
+            raise HTTPException(
+                status_code=403,
+                detail="Acesso negado! Não tens permissão para apagar modelos nesta empresa.",
+            )
 
     result = await modelos_collection.delete_one({"_id": modelo.id})
     if not hasattr(result, "deleted_count") or result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Modelo não encontrado ou já foi apagado.")
+        raise HTTPException(
+            status_code=404, detail="Modelo não encontrado ou já foi apagado."
+        )
 
     return {"message": "Modelo apagado com sucesso!"}

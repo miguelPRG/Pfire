@@ -10,7 +10,9 @@ configuration.api_key["api-key"] = getenv("BREVO_API_KEY")
 # Função para testar a conexão com a API da Brevo
 def test_brevo_connection():
     try:
-        api_instance = sib_api_v3_sdk.AccountApi(sib_api_v3_sdk.ApiClient(configuration))
+        api_instance = sib_api_v3_sdk.AccountApi(
+            sib_api_v3_sdk.ApiClient(configuration)
+        )
         api_response = api_instance.get_account()
 
         if api_response:
@@ -20,8 +22,17 @@ def test_brevo_connection():
 
 
 # Função de recuperação da password
-def enviar_email(email_destino: str, name: str, global_id: str, template_id: int, operation: str, empresa_nome: str = None):
-    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+def enviar_email(
+    email_destino: str,
+    name: str,
+    global_id: str,
+    template_id: int,
+    operation: str,
+    empresa_nome: str = None,
+):
+    api_instance = sib_api_v3_sdk.TransactionalEmailsApi(
+        sib_api_v3_sdk.ApiClient(configuration)
+    )
 
     # Prepara os dados do e-mail
     params = {

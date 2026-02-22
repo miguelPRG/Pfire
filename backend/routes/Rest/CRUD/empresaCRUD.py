@@ -34,7 +34,9 @@ async def create_empresa(payload: EmpresaCreateAsLoggedUser, request: Request):
     except DuplicateKeyError as e:
         text = str(e).lower()
         if "nif" in text:
-            raise HTTPException(status_code=409, detail="Empresa com este NIF já existe.")
+            raise HTTPException(
+                status_code=409, detail="Empresa com este NIF já existe."
+            )
         raise HTTPException(status_code=409, detail="Campo duplicado na empresa.")
 
     # associar criador como admin
@@ -49,7 +51,9 @@ async def create_empresa(payload: EmpresaCreateAsLoggedUser, request: Request):
     ).model_dump(by_alias=True)
     await users_empresas_collection.insert_one(assoc)
 
-    return JSONResponse(status_code=201, content={"message": "Empresa criada com sucesso!"})
+    return JSONResponse(
+        status_code=201, content={"message": "Empresa criada com sucesso!"}
+    )
 
 
 # Atualizar Empresa
@@ -60,11 +64,12 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str):
     try:
         id = ObjectId(id)
     except Exception as e:
-        raise HTTPException(status_code=400, detail="ID inválido. Deve ser um ObjectId válido.")
+        raise HTTPException(
+            status_code=400, detail="ID inválido. Deve ser um ObjectId válido."
+        )
 
     # Sacar jwt
     jwt = getattr(request.state, "jwt", None)
-
 
     user_id = ObjectId(jwt["user_id"])
     id = ObjectId(id)
@@ -80,18 +85,29 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str):
             try:
                 empresa.logo = b64decode(empresa.logo)
             except Exception as e:
-                raise HTTPException(status_code=400, detail="Erro ao decodificar a imagem. Verifica se a imagem está em base64.")
+                raise HTTPException(
+                    status_code=400,
+                    detail="Erro ao decodificar a imagem. Verifica se a imagem está em base64.",
+                )
 
             tipo = guess(empresa.logo)
             if tipo.mime not in ["image/jpeg", "image/png"]:
-                raise HTTPException(status_code=404, detail="Tipo de imagem não permitido. Apenas JPEG e PNG são aceitos.")
+                raise HTTPException(
+                    status_code=404,
+                    detail="Tipo de imagem não permitido. Apenas JPEG e PNG são aceitos.",
+                )
 
     # Se o utilizador não for super admin, verificar se ele é admin da empresa que quer atualizar
     if not jwt.get("isSuperAdmin", False):
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": id, "user_id": user_id, "isAdmin": True})
+        user_empresa = await users_empresas_collection.find_one(
+            {"empresa_id": id, "user_id": user_id, "isAdmin": True}
+        )
 
         if not user_empresa:
-            raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para atualizar esta empresa.")
+            raise HTTPException(
+                status_code=403,
+                detail="Acesso negado! Não tens permissão para atualizar esta empresa.",
+            )
 
     empresa_data = empresa.model_dump(exclude_unset=True)
 
@@ -108,6 +124,9 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str):
     result = await empresas_collection.update_one({"_id": ObjectId(id)}, update_ops)
 
     if not result.modified_count:
-        raise HTTPException(status_code=400, detail="Erro ao atualizar empresa. Verifica se a empresa existe.")
+        raise HTTPException(
+            status_code=400,
+            detail="Erro ao atualizar empresa. Verifica se a empresa existe.",
+        )
 
     return {"message": "Empresa Criada com Sucesso!"}

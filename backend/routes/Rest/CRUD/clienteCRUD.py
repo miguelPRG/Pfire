@@ -19,10 +19,15 @@ async def criar_cliente(cliente: ClienteCreate, request: Request):
     empresa_id = ObjectId(cliente.empresa_id)
 
     if not jwt.get("isSuperAdmin", False):
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": empresa_id, "user_id": user_id, "isAdmin": True})
+        user_empresa = await users_empresas_collection.find_one(
+            {"empresa_id": empresa_id, "user_id": user_id, "isAdmin": True}
+        )
 
         if not user_empresa:
-            raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para criar clientes nesta empresa.")
+            raise HTTPException(
+                status_code=403,
+                detail="Acesso negado! Não tens permissão para criar clientes nesta empresa.",
+            )
 
     # 2) Preparar dados
     cliente_data = cliente.model_dump(by_alias=True)
@@ -43,9 +48,13 @@ async def criar_cliente(cliente: ClienteCreate, request: Request):
     except DuplicateKeyError as e:
         msg = str(e).lower()
         if "nif" in msg:
-            raise HTTPException(409, detail="Já existe um cliente com este NIF nesta empresa.")
+            raise HTTPException(
+                409, detail="Já existe um cliente com este NIF nesta empresa."
+            )
         if "email" in msg:
-            raise HTTPException(409, detail="Já existe um cliente com este email nesta empresa.")
+            raise HTTPException(
+                409, detail="Já existe um cliente com este email nesta empresa."
+            )
         raise HTTPException(409, detail="Cliente duplicado.")
 
     if not result.inserted_id:
@@ -67,17 +76,26 @@ async def atualizar_cliente(cliente: ClienteUpdate, request: Request, id: str):
         raise HTTPException(400, detail="ID inválido. Deve ser um ObjectId válido.")
 
     if not jwt.get("isSuperAdmin", None):
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True})
+        user_empresa = await users_empresas_collection.find_one(
+            {"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True}
+        )
         if not user_empresa:
-            raise HTTPException(403, detail="Acesso negado! Não tens permissão para atualizar clientes nesta empresa.")
+            raise HTTPException(
+                403,
+                detail="Acesso negado! Não tens permissão para atualizar clientes nesta empresa.",
+            )
 
     cliente_data = cliente.model_dump(exclude_unset=True)
     cliente_data.update({"updated_by": user_id, "updated_at": datetime.now()})
     del cliente_data["recaptchaToken"]
 
-    result = await clientes_collection.update_one({"_id": id, "isActive": True}, {"$set": cliente_data})
+    result = await clientes_collection.update_one(
+        {"_id": id, "isActive": True}, {"$set": cliente_data}
+    )
     if not result.modified_count:
-        raise HTTPException(404, detail="Cliente não encontrado. Verifica se existe e está ativo.")
+        raise HTTPException(
+            404, detail="Cliente não encontrado. Verifica se existe e está ativo."
+        )
 
     return {"message": "Cliente atualizado com sucesso!"}
 
@@ -94,18 +112,33 @@ async def apagar_cliente(cliente: ClienteActivion, request: Request):
         raise HTTPException(400, detail="ID ou NIF inválido.")
 
     if not jwt.get("isSuperAdmin", None):
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True})
+        user_empresa = await users_empresas_collection.find_one(
+            {"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True}
+        )
         if not user_empresa:
-            raise HTTPException(403, detail="Acesso negado! Não tens permissão para apagar clientes nesta empresa.")
+            raise HTTPException(
+                403,
+                detail="Acesso negado! Não tens permissão para apagar clientes nesta empresa.",
+            )
 
-    update_fields = {"isActive": False, "updated_at": datetime.now(), "updated_by": user_id}
+    update_fields = {
+        "isActive": False,
+        "updated_at": datetime.now(),
+        "updated_by": user_id,
+    }
     if cliente.id:
-        result = await clientes_collection.update_one({"_id": cliente.id, "isActive": True}, {"$set": update_fields})
+        result = await clientes_collection.update_one(
+            {"_id": cliente.id, "isActive": True}, {"$set": update_fields}
+        )
     else:
-        result = await clientes_collection.update_one({"nif": cliente.nif, "isActive": True}, {"$set": update_fields})
+        result = await clientes_collection.update_one(
+            {"nif": cliente.nif, "isActive": True}, {"$set": update_fields}
+        )
 
     if not result.modified_count:
-        raise HTTPException(404, detail="Cliente não encontrado. Verifica se existe e está ativo.")
+        raise HTTPException(
+            404, detail="Cliente não encontrado. Verifica se existe e está ativo."
+        )
 
     return {"message": "Cliente apagado com sucesso!"}
 
@@ -123,9 +156,14 @@ async def hard_delete_cliente(cliente: ClienteActivion, request: Request):
         raise HTTPException(400, detail="ID inválido.")
 
     if not jwt.get("isSuperAdmin", None):
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True})
+        user_empresa = await users_empresas_collection.find_one(
+            {"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True}
+        )
         if not user_empresa:
-            raise HTTPException(403, detail="Acesso negado! Não tens permissão para apagar clientes nesta empresa.")
+            raise HTTPException(
+                403,
+                detail="Acesso negado! Não tens permissão para apagar clientes nesta empresa.",
+            )
 
     result = await clientes_collection.delete_one({"_id": cliente.id})
     if not result.deleted_count:
@@ -149,12 +187,23 @@ async def reativar_cliente(cliente: ClienteActivion, request: Request):
         raise HTTPException(400, detail="ID inválido.")
 
     if not jwt.get("isSuperAdmin", None):
-        user_empresa = await users_empresas_collection.find_one({"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True})
+        user_empresa = await users_empresas_collection.find_one(
+            {"empresa_id": cliente.empresa_id, "user_id": user_id, "isAdmin": True}
+        )
         if not user_empresa:
-            raise HTTPException(403, detail="Acesso negado! Não tens permissão para ativar clientes nesta empresa.")
+            raise HTTPException(
+                403,
+                detail="Acesso negado! Não tens permissão para ativar clientes nesta empresa.",
+            )
 
-    update_fields = {"isActive": True, "updated_at": datetime.now(), "updated_by": user_id}
-    result = await clientes_collection.update_one({"_id": cliente.id, "isActive": False}, {"$set": update_fields})
+    update_fields = {
+        "isActive": True,
+        "updated_at": datetime.now(),
+        "updated_by": user_id,
+    }
+    result = await clientes_collection.update_one(
+        {"_id": cliente.id, "isActive": False}, {"$set": update_fields}
+    )
     if not result.modified_count:
         raise HTTPException(404, detail="Cliente não encontrado ou já está ativo.")
 

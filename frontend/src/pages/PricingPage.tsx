@@ -34,7 +34,7 @@ export default function PricingPage() {
   const handleClick = async (planName: string) => {
     try {
       setLoadingPlan(planName);
-      
+
       // Mapear plano para priceId do Stripe
       const priceMap: { [key: string]: string } = {
         Pro: "prod_Th7a0Si19Ty7rb",
@@ -212,7 +212,7 @@ export default function PricingPage() {
                   },
                 }}
                 onClick={() => handleClick(plan.name)}
-                disabled={plan.name.toLocaleLowerCase() === "free" && !isCurrent || loadingPlan === plan.name}
+                disabled={(plan.name.toLocaleLowerCase() === "free" && !isCurrent) || loadingPlan === plan.name}
               >
                 {loadingPlan === plan.name ? (
                   <CircularProgress size={24} sx={{ color: "white" }} />

@@ -9,7 +9,9 @@ from fastapi import HTTPException
 
 class UserCreate(BaseModel):
     nome: str = Field(..., max_length=100)
-    email: EmailStr = Field(max_length=254, description="O email deve ser um endereço de email válido.")
+    email: EmailStr = Field(
+        max_length=254, description="O email deve ser um endereço de email válido."
+    )
     password: str = Field(
         ...,
         min_length=9,
@@ -26,26 +28,40 @@ class UserCreate(BaseModel):
     @classmethod
     def validate_password(cls, v):
         if len(v) < 9:
-            raise HTTPException(status_code=400, detail="A senha deve ter pelo menos 9 caracteres.")
+            raise HTTPException(
+                status_code=400, detail="A senha deve ter pelo menos 9 caracteres."
+            )
         if not any(c.islower() for c in v):
-            raise HTTPException(status_code=400, detail="A senha deve conter pelo menos uma letra minúscula.")
+            raise HTTPException(
+                status_code=400,
+                detail="A senha deve conter pelo menos uma letra minúscula.",
+            )
         if not any(c.isupper() for c in v):
-            raise HTTPException(status_code=400, detail="A senha deve conter pelo menos uma letra maiúscula.")
+            raise HTTPException(
+                status_code=400,
+                detail="A senha deve conter pelo menos uma letra maiúscula.",
+            )
         if not any(c.isdigit() for c in v):
-            raise HTTPException(status_code=400, detail="A senha deve conter pelo menos um dígito.")
+            raise HTTPException(
+                status_code=400, detail="A senha deve conter pelo menos um dígito."
+            )
         return v
 
     @model_validator(mode="after")
     def check_passwords_match(self):
         if self.password != self.confirmPassword:
-            raise HTTPException(status_code=400, detail="As novas senhas não coincidem.")
+            raise HTTPException(
+                status_code=400, detail="As novas senhas não coincidem."
+            )
         return self
 
 
 class UserUpdate(BaseModel):
     nome: Optional[str] = Field(None, max_length=100)
     telefone: Optional[str] = Field(None, pattern=r"^\+?[0-9\s\-()]{7,15}$")
-    assinatura: Optional[str] = Field(None, max_length=1398101, description="Assinatura do user em base64, até 1MB.")
+    assinatura: Optional[str] = Field(
+        None, max_length=1398101, description="Assinatura do user em base64, até 1MB."
+    )
 
     @field_validator("nome", "telefone", mode="before")
     @classmethod
@@ -61,23 +77,35 @@ class UserUpdatePassword(BaseModel):
     @model_validator(mode="after")
     def check_passwords_match(self):
         if self.newPassword != self.confirmPassword:
-            raise HTTPException(status_code=400, detail="As novas senhas não coincidem.")
+            raise HTTPException(
+                status_code=400, detail="As novas senhas não coincidem."
+            )
         return self
 
     @field_validator("newPassword", "confirmPassword", mode="after")
     @classmethod
     def validate_password(cls, v):
         if not any(c.islower() for c in v):
-            raise HTTPException(status_code=400, detail="A senha deve conter pelo menos uma letra minúscula.")
+            raise HTTPException(
+                status_code=400,
+                detail="A senha deve conter pelo menos uma letra minúscula.",
+            )
         if not any(c.isupper() for c in v):
-            raise HTTPException(status_code=400, detail="A senha deve conter pelo menos uma letra maiúscula.")
+            raise HTTPException(
+                status_code=400,
+                detail="A senha deve conter pelo menos uma letra maiúscula.",
+            )
         if not any(c.isdigit() for c in v):
-            raise HTTPException(status_code=400, detail="A senha deve conter pelo menos um dígito.")
+            raise HTTPException(
+                status_code=400, detail="A senha deve conter pelo menos um dígito."
+            )
         return v
 
 
 class UserUpdateEmail(BaseModel):
-    email: EmailStr = Field(max_length=254, description="O email deve ser um endereço de email válido.")
+    email: EmailStr = Field(
+        max_length=254, description="O email deve ser um endereço de email válido."
+    )
 
     @field_validator("email", mode="before")
     def strip_email(cls, v):
@@ -85,7 +113,12 @@ class UserUpdateEmail(BaseModel):
 
 
 class UserActivation(BaseModel):
-    id: str = Field(None, min_length=24, max_length=24, description="O ID do utilizador a ser ativado/desativado.")
+    id: str = Field(
+        None,
+        min_length=24,
+        max_length=24,
+        description="O ID do utilizador a ser ativado/desativado.",
+    )
 
     @field_validator("id", mode="before")
     def validate_id(cls, v):
@@ -111,8 +144,15 @@ class UserRegister(BaseModel):
 
 
 class UserLogin(BaseModel):
-    email: EmailStr = Field(max_length=254, description="O email deve ser um endereço de email válido.")
-    password: str = Field(..., min_length=9, max_length=100, description="A senha deve ter pelo menos 9 caracteres.")
+    email: EmailStr = Field(
+        max_length=254, description="O email deve ser um endereço de email válido."
+    )
+    password: str = Field(
+        ...,
+        min_length=9,
+        max_length=100,
+        description="A senha deve ter pelo menos 9 caracteres.",
+    )
     recaptchaToken: str
 
     @field_validator("email", mode="before")
@@ -132,7 +172,9 @@ class UserLoginWithOAuth(BaseModel):
 
 
 class UserForgotPassword(BaseModel):
-    email: EmailStr = Field(max_length=254, description="O email deve ser um endereço de email válido.")
+    email: EmailStr = Field(
+        max_length=254, description="O email deve ser um endereço de email válido."
+    )
     recaptchaToken: str
 
     @field_validator("email", mode="before")
@@ -142,8 +184,18 @@ class UserForgotPassword(BaseModel):
 
 # classe para trocar password depois do email de recuperação ser enviado
 class UserChangePassword(BaseModel):
-    password: str = Field(..., min_length=9, max_length=100, description="A senha deve ter pelo menos 9 caracteres.")
-    confirmPassword: str = Field(..., min_length=9, max_length=100, description="A confirmação da senha deve ter pelo menos 9 caracteres.")
+    password: str = Field(
+        ...,
+        min_length=9,
+        max_length=100,
+        description="A senha deve ter pelo menos 9 caracteres.",
+    )
+    confirmPassword: str = Field(
+        ...,
+        min_length=9,
+        max_length=100,
+        description="A confirmação da senha deve ter pelo menos 9 caracteres.",
+    )
     global_id: str = Field(
         ...,
         min_length=36,
@@ -163,7 +215,9 @@ class UserChangePassword(BaseModel):
 
 # classe  para enviar convite de empresa
 class UserInvitation(BaseModel):
-    email: EmailStr = Field(max_length=254, description="O email deve ser um endereço de email válido.")
+    email: EmailStr = Field(
+        max_length=254, description="O email deve ser um endereço de email válido."
+    )
     empresa_nome: str = Field(
         ...,
         max_length=100,
