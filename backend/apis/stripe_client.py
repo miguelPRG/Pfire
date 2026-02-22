@@ -52,12 +52,18 @@ async def create_checkout(user_id: str, plan_id: str, stripe_customer_id: str) -
         subscriptions = stripe.Subscription.list(
             customer=stripe_customer_id, status="active"
         )
+        subscriptions = stripe.Subscription.list(
+            customer=stripe_customer_id, status="active"
+        )
         if subscriptions.data:
             active_sub = subscriptions.data[0]
             logger.warning(f"User {user_id} já tem subscrição ativa: {active_sub.id}")
             raise Exception(f"Você já tem um plano ativo ({active_sub.status}). Cancele o atual antes de contratar outro.")
 
         # ✅ Verificar subscrições em trial
+        trial_subs = stripe.Subscription.list(
+            customer=stripe_customer_id, status="trialing"
+        )
         trial_subs = stripe.Subscription.list(
             customer=stripe_customer_id, status="trialing"
         )

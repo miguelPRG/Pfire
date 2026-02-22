@@ -70,6 +70,9 @@ async def create_user_checkout(request: Request, plan_id: str):
         logger.error(
             f"Erro ao criar checkout: {str(e.message if hasattr(e, 'message') else str(e))}"
         )
+        logger.error(
+            f"Erro ao criar checkout: {str(e.message if hasattr(e, 'message') else str(e))}"
+        )
         raise HTTPException(status_code=400, detail=str(e))
 
 

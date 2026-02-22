@@ -33,8 +33,6 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
                 detail="Acesso negado! Não tens permissão para criar modelos nesta empresa.",
             )
 
-        # Verificar se existem outros administradores que tenham plano premium
-
     modelo.empresa_id = ObjectId(modelo.empresa_id)
 
     # 3) Verificar se a empresa existe

@@ -49,62 +49,7 @@ async def lifespan(app: FastAPI):
 
 # Iniciar a aplciação FastAPI
 app = FastAPI(lifespan=lifespan)
-
-# Logger de requisições para ficheiro no host (via volume bind)
-LOG_DIR = Path("/var/log/pfire")
-LOG_DIR.mkdir(parents=True, exist_ok=True)
-
-today_str = datetime.now().strftime("%Y-%m-%d")
-REQUEST_LOG_FILE = LOG_DIR / f"{today_str}.log"
-
-request_logger = logging.getLogger("pfire.requests")
-request_logger.setLevel(logging.INFO)
-if not request_logger.handlers:
-    file_handler = logging.FileHandler(
-        REQUEST_LOG_FILE,
-        encoding="utf-8",
-        delay=True,  # só cria/abre o ficheiro no primeiro log
-    )
-    file_handler.setFormatter(
-        logging.Formatter("%(asctime)s %(levelname)s %(message)s")
-    )
-    request_logger.addHandler(file_handler)
-
-LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
-
-
-def should_log_to_file(origin: str | None) -> bool:
-    if not origin:
-        return False
-    try:
-        host = urlparse(origin).hostname
-        return host not in LOCAL_HOSTS
-    except Exception:
-        return False
-
-
-def log_request_to_file_if_needed(
-    request: Request, status_code: int, start_time: float
-) -> None:
-    origin = request.headers.get("origin")
-    if should_log_to_file(origin):
-        elapsed_ms = (time.perf_counter() - start_time) * 1000
-        request_logger.info(
-            'origin="%s" method=%s path="%s" status=%s duration_ms=%.2f',
-            origin,
-            request.method,
-            request.url.path,
-            status_code,
-            elapsed_ms,
-        )
-
-
-# Estas serão as origens permitidas tanto no CORS como na validação manual no middleware,
-ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "https://pfire.miguelgoncalves2024.workers.dev",
-]
-
+# Estas serão as origens permitidas tanto no CORS como na validação manual no middleware, 
 ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://pfire.miguelgoncalves2024.workers.dev",
