@@ -26,8 +26,9 @@ ENV LOG_DIR=/var/log/pfire
 
 RUN useradd -m -u 10000 appuser \
     && mkdir -p ${LOG_DIR} \
-    && chown -R appuser:appuser /app/ ${LOG_DIR} \
-    && chmod 755 ${LOG_DIR}
+    && chown -R appuser:appuser /app ${LOG_DIR} \
+    && chmod 755 ${LOG_DIR} \
+    && chmod 755 /var/log
 
 USER appuser
 
