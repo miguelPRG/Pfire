@@ -6,10 +6,21 @@ from apis.recaptchaValidation import validar_recaptcha_token
 from apis.firebase_admin_client import verify_firebase_token
 from apis.stripe_client import create_stripe_customer
 from passlib.context import CryptContext
-from models.userModels import UserForgotPassword, UserLogin, UserLoginWithOAuth, UserRegister, UserUpdatePassword
+from models.userModels import (
+    UserForgotPassword,
+    UserLogin,
+    UserLoginWithOAuth,
+    UserRegister,
+    UserUpdatePassword,
+)
 from models.userEmpresaModels import UserEmpresaCreate
 from datetime import datetime
-from database import users_collection, users_empresas_collection, global_ids_collection, empresas_collection
+from database import (
+    users_collection,
+    users_empresas_collection,
+    global_ids_collection,
+    empresas_collection,
+)
 from asyncio import gather
 from bson import ObjectId
 from base64 import b64encode
@@ -45,9 +56,13 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
     telefone = firebase_data.get("phone", "")
 
     if not email:
-        raise HTTPException(status_code=400, detail="Email não disponível no token OAuth.")
+        raise HTTPException(
+            status_code=400, detail="Email não disponível no token OAuth."
+        )
     if not nome:
-        raise HTTPException(status_code=400, detail="Nome não disponível no token OAuth.")
+        raise HTTPException(
+            status_code=400, detail="Nome não disponível no token OAuth."
+        )
 
     # Verificamos se este user já existe no MongoDB
     user_doc = await users_collection.find_one({"email": email})
@@ -79,7 +94,9 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
 
         result = await users_collection.insert_one(insert_data)
         if not result.inserted_id:
-            raise HTTPException(status_code=500, detail="Erro ao criar usuário no MongoDB.")
+            raise HTTPException(
+                status_code=500, detail="Erro ao criar usuário no MongoDB."
+            )
         id_user = result.inserted_id
         user_doc = {**insert_data, "_id": id_user}
 
@@ -89,23 +106,35 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
         if not user_doc.get("isActive", True):
             raise HTTPException(status_code=403, detail="Usuário inativo.")
         # atualiza last_login
-        await users_collection.update_one({"_id": user_doc["_id"]}, {"$set": {"last_login": data, "firebaseUID": uid}})
+        await users_collection.update_one(
+            {"_id": user_doc["_id"]}, {"$set": {"last_login": data, "firebaseUID": uid}}
+        )
         id_user = user_doc["_id"]
 
     # Caso o global_id seja fornecido, vamos verificar se este é valido e se o user já está associado a uma empresa
     if user.global_id:
         # Verifica se o global_id é válido
-        global_id_data = await global_ids_collection.find_one({"global_id": user.global_id, "operation": "convite"})
+        global_id_data = await global_ids_collection.find_one(
+            {"global_id": user.global_id, "operation": "convite"}
+        )
         if not global_id_data:
-            raise HTTPException(status_code=404, detail="Global ID inválido ou expirado.")
+            raise HTTPException(
+                status_code=404, detail="Global ID inválido ou expirado."
+            )
 
         if not user_doc.get("isSuperAdmin", False):
             user_empresa = await users_empresas_collection.find_one(
-                {"user_id": user_doc["_id"], "empresa_id": ObjectId(global_id_data["empresa_id"])}
+                {
+                    "user_id": user_doc["_id"],
+                    "empresa_id": ObjectId(global_id_data["empresa_id"]),
+                }
             )
 
             if user_empresa:
-                raise HTTPException(status_code=409, detail="O utilizador com esta conta já está associado a esta empresa.")
+                raise HTTPException(
+                    status_code=409,
+                    detail="O utilizador com esta conta já está associado a esta empresa.",
+                )
 
         # Criamos um novo user_empresa
         user_empresa = UserEmpresaCreate(
@@ -119,12 +148,19 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
         ).model_dump(by_alias=True)
 
         user_empresa_insertion = users_empresas_collection.insert_one(user_empresa)
-        global_id_deletion = global_ids_collection.delete_one({"global_id": user.global_id})
+        global_id_deletion = global_ids_collection.delete_one(
+            {"global_id": user.global_id}
+        )
 
-        user_empresa_rlt, global_id_rlt = await gather(user_empresa_insertion, global_id_deletion)
+        user_empresa_rlt, global_id_rlt = await gather(
+            user_empresa_insertion, global_id_deletion
+        )
 
         if not user_empresa_rlt.inserted_id or not global_id_rlt.deleted_count:
-            raise HTTPException(status_code=500, detail="Erro ao associar usuário à empresa ou apagar o Global ID.")
+            raise HTTPException(
+                status_code=500,
+                detail="Erro ao associar usuário à empresa ou apagar o Global ID.",
+            )
 
     # 3) Gera JWT (sem listar empresas aqui)
     jwt_token = generate_jwt(
@@ -180,12 +216,16 @@ async def login(user: UserLogin, request: Request):
     if not db_user.get("isActive", True):
         raise HTTPException(status_code=403, detail="Esta conta foi desativada.")
 
-    atualizar_user = await users_collection.update_one({"email": user.email}, {"$set": {"last_login": datetime.now()}})
+    atualizar_user = await users_collection.update_one(
+        {"email": user.email}, {"$set": {"last_login": datetime.now()}}
+    )
 
     if not atualizar_user.modified_count:
         raise HTTPException(status_code=500, detail="Erro ao atualizar o último login.")
 
-    token = generate_jwt(str(db_user["_id"]), db_user["nome"], db_user["email"], db_user["isSuperAdmin"], db_user.get("plano"))
+    token = generate_jwt(
+        str(db_user["_id"]), db_user["nome"], db_user["email"], db_user["isSuperAdmin"]
+    )
 
     # Converte a assinatura (se existir) para base64 para o corpo da resposta (não vai no cookie)
     assinatura_b64 = None
@@ -204,7 +244,9 @@ async def login(user: UserLogin, request: Request):
             "stripeCustomerId": db_user.get("stripe_customer_id", None),
         }
     )
-    response.set_cookie(key="_fp", value=token, httponly=True, samesite="None", secure=True)
+    response.set_cookie(
+        key="_fp", value=token, httponly=True, samesite="None", secure=True
+    )
 
     return response
 
@@ -215,11 +257,16 @@ async def auth_user(request: Request):
 
     jwt = getattr(request.state, "jwt", None)
 
-    assinatura_val = await users_collection.find_one({"_id": ObjectId(jwt["user_id"])}, {"assinatura": 1, "plano": 1, "stripe_customer_id": 1})
+    assinatura_val = await users_collection.find_one(
+        {"_id": ObjectId(jwt["user_id"])},
+        {"assinatura": 1, "plano": 1, "stripe_customer_id": 1},
+    )
 
     # converter para base64
     if isinstance(assinatura_val.get("assinatura"), (bytes, bytearray)):
-        assinatura_val["assinatura"] = b64encode(assinatura_val["assinatura"]).decode("utf-8")
+        assinatura_val["assinatura"] = b64encode(assinatura_val["assinatura"]).decode(
+            "utf-8"
+        )
 
     return {
         "id": jwt["user_id"],
@@ -260,10 +307,14 @@ async def logout_user(request: Request, response: Response):
 async def register_user(data: UserRegister, request: Request):
     # Este if garante que o user será registo por uma das duas maneiras: "Registo Tradicional ou por Convite"
     if not data.global_id and not data.empresa:
-        raise HTTPException(status_code=400, detail="Empresa ou global Id é obrigatória para registo.")
+        raise HTTPException(
+            status_code=400, detail="Empresa ou global Id é obrigatória para registo."
+        )
 
     if data.user.password != data.user.confirmPassword:
-        raise HTTPException(status_code=400, detail="A senha e a confirmação da senha não coincidem.")
+        raise HTTPException(
+            status_code=400, detail="A senha e a confirmação da senha não coincidem."
+        )
 
     # Validar el token reCAPTCHA
     await validar_recaptcha_token(data.recaptchaToken, "register")
@@ -279,23 +330,35 @@ async def register_user(data: UserRegister, request: Request):
     if data.global_id:
 
         # Verificar se o global_id é válido
-        global_id_doc = await global_ids_collection.find_one({"global_id": data.global_id, "operation": "convite"})
+        global_id_doc = await global_ids_collection.find_one(
+            {"global_id": data.global_id, "operation": "convite"}
+        )
 
         if not global_id_doc:
-            raise HTTPException(status_code=404, detail="Convite não encontrado ou expirado.")
+            raise HTTPException(
+                status_code=404, detail="Convite não encontrado ou expirado."
+            )
 
         id_empresa = global_id_doc["empresa_id"]
 
-        global_id_apagar = await global_ids_collection.delete_one({"global_id": data.global_id})
+        global_id_apagar = await global_ids_collection.delete_one(
+            {"global_id": data.global_id}
+        )
 
         if global_id_apagar.deleted_count == 0:
-            raise HTTPException(status_code=404, detail="Este convite não existe ou já foi utilizado.")
+            raise HTTPException(
+                status_code=404, detail="Este convite não existe ou já foi utilizado."
+            )
 
     date = datetime.now()
 
     # Criar novo user depois de verificarmos o global_id
-    del data.user.confirmPassword  # Eliminar confirmPassword do modelo UserRegister, pois não é necessário no MongoDB
-    del data.recaptchaToken  # Eliminar recaptchaToken do modelo UserRegister, pois não é necessário no MongoDB
+    del (
+        data.user.confirmPassword
+    )  # Eliminar confirmPassword do modelo UserRegister, pois não é necessário no MongoDB
+    del (
+        data.recaptchaToken
+    )  # Eliminar recaptchaToken do modelo UserRegister, pois não é necessário no MongoDB
     new_user = data.user
     # Criptografar a senha
     new_user.password = pwd_context.hash(new_user.password)
@@ -306,9 +369,12 @@ async def register_user(data: UserRegister, request: Request):
             "updated_at": date,
             "last_login": None,
             "isSuperAdmin": False,
-            "isActive": data.global_id is not None,  # Se for convidado, não está ativo até ativar o convite
+            "isActive": data.global_id
+            is not None,  # Se for convidado, não está ativo até ativar o convite
             "plano": "free",  # Plano padrão
-            "stripe_customer_id": await create_stripe_customer(new_user.email, new_user.nome),
+            "stripe_customer_id": await create_stripe_customer(
+                new_user.email, new_user.nome
+            ),
         }
     )
 
@@ -350,7 +416,9 @@ async def register_user(data: UserRegister, request: Request):
                 raise HTTPException(status_code=409, detail="O NIF já está registrado.")
 
             if "nome" in text:
-                raise HTTPException(status_code=409, detail="O nome da empresa já está registrado.")
+                raise HTTPException(
+                    status_code=409, detail="O nome da empresa já está registrado."
+                )
 
             raise HTTPException(status_code=409, detail="Campo duplicado na empresa.")
 
@@ -373,7 +441,9 @@ async def register_user(data: UserRegister, request: Request):
     ue = await users_empresas_collection.insert_one(ue)
 
     if not ue.inserted_id:
-        raise HTTPException(status_code=500, detail="Erro ao associar utilizador à empresa.")
+        raise HTTPException(
+            status_code=500, detail="Erro ao associar utilizador à empresa."
+        )
 
     # Se ele não for administrador da empresa, subentende-se que ele foi convidado
     # Assim sendo não à necessidade de enviar um email de confirmação de registo
@@ -413,7 +483,9 @@ async def forgot_password(request: Request, user: UserForgotPassword):
     await validar_recaptcha_token(user.recaptchaToken, "forgot-password")
 
     # Verifica se o usuário existe
-    user_found = await users_collection.find_one({"email": user.email, "isActive": True})
+    user_found = await users_collection.find_one(
+        {"email": user.email, "isActive": True}
+    )
     if not user_found:
         raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
 
@@ -446,7 +518,9 @@ async def update_password(user: UserUpdatePassword, request: Request):
     jwt = getattr(request.state, "jwt", None)
 
     # Pocurar user na base de dados
-    db_user = await users_collection.find_one({"_id": ObjectId(jwt["user_id"]), "isActive": True})
+    db_user = await users_collection.find_one(
+        {"_id": ObjectId(jwt["user_id"]), "isActive": True}
+    )
 
     if not db_user:
         print(f"Utilizador de id {jwt['user_id']} não encontrado.")
@@ -459,7 +533,8 @@ async def update_password(user: UserUpdatePassword, request: Request):
 
     new_password_hashed = pwd_context.hash(user.newPassword)
     user_update = await users_collection.update_one(
-        {"_id": db_user["_id"]}, {"$set": {"password": new_password_hashed, "updated_at": datetime.now()}}
+        {"_id": db_user["_id"]},
+        {"$set": {"password": new_password_hashed, "updated_at": datetime.now()}},
     )
 
     if user_update.modified_count == 0:

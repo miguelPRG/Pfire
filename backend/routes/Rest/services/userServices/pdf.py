@@ -36,37 +36,58 @@ async def converter_relatorio_pdf(request: Request, user: UserConverterPDF):
     user_doc, empresa_doc = await gather(user_future, empresa_future)
 
     if not user_doc:
-        raise HTTPException(status_code=404, detail="Utilizador não encontrado ou inativo.")
+        raise HTTPException(
+            status_code=404, detail="Utilizador não encontrado ou inativo."
+        )
     if not empresa_doc:
-        raise HTTPException(status_code=404, detail="Empresa não encontrada ou inativa.")
+        raise HTTPException(
+            status_code=404, detail="Empresa não encontrada ou inativa."
+        )
 
     # Busca modelo e cliente em paralelo
-    modelo_future = modelos_collection.find_one({"_id": modelo_id, "empresa_id": empresa_id})
-    cliente_future = clientes_collection.find_one({"_id": cliente_id, "empresa_id": empresa_id})
+    modelo_future = modelos_collection.find_one(
+        {"_id": modelo_id, "empresa_id": empresa_id}
+    )
+    cliente_future = clientes_collection.find_one(
+        {"_id": cliente_id, "empresa_id": empresa_id}
+    )
     modelo_doc, cliente_doc = await gather(modelo_future, cliente_future)
 
     if not modelo_doc:
-        raise HTTPException(status_code=404, detail="Modelo não encontrado para esta empresa.")
+        raise HTTPException(
+            status_code=404, detail="Modelo não encontrado para esta empresa."
+        )
     if not cliente_doc:
-        raise HTTPException(status_code=404, detail="Cliente não encontrado para esta empresa.")
+        raise HTTPException(
+            status_code=404, detail="Cliente não encontrado para esta empresa."
+        )
 
     # Permissão
     if not jwt.get("isSuperAdmin"):
-        permissao = await users_empresas_collection.find_one({"user_id": user_id, "empresa_id": empresa_id})
+        permissao = await users_empresas_collection.find_one(
+            {"user_id": user_id, "empresa_id": empresa_id}
+        )
         if not permissao:
-            raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para esta empresa.")
+            raise HTTPException(
+                status_code=403,
+                detail="Acesso negado! Não tens permissão para esta empresa.",
+            )
 
     SIZE_20_MB = 20 * 1024 * 1024
     relatorios_para_pdf = []
 
     try:
-        cursor = relatorios_collection.find({"modelo_id": modelo_id, "empresa_id": empresa_id, "cliente_id": cliente_id}).sort("created_at", -1)
+        cursor = relatorios_collection.find(
+            {"modelo_id": modelo_id, "empresa_id": empresa_id, "cliente_id": cliente_id}
+        ).sort("created_at", -1)
 
         async for rel in cursor:
             relatorios_para_pdf.append(rel)
 
         if not relatorios_para_pdf:
-            raise HTTPException(status_code=404, detail="Nenhum relatório encontrado para conversão.")
+            raise HTTPException(
+                status_code=404, detail="Nenhum relatório encontrado para conversão."
+            )
 
         empresa_logo = empresa_doc.get("logo")
         if empresa_logo:
@@ -74,13 +95,20 @@ async def converter_relatorio_pdf(request: Request, user: UserConverterPDF):
 
         # gerar_pdf deve retornar um BytesIO
         final_pdf = gerar_pdf(
-            relatorios_para_pdf, modelo_doc, cliente_doc, empresa_logo, criterios=await criterios_collection.find_one({"modelo_id": modelo_id})
+            relatorios_para_pdf,
+            modelo_doc,
+            cliente_doc,
+            empresa_logo,
+            criterios=await criterios_collection.find_one({"modelo_id": modelo_id}),
         )
         final_pdf.seek(0)
 
         pdf_size = len(final_pdf.getvalue())
         if pdf_size > SIZE_20_MB:
-            raise HTTPException(status_code=413, detail=f"PDF demasiado pesado: {pdf_size/(1024*1024):.2f} MB (máx 20 MB)")
+            raise HTTPException(
+                status_code=413,
+                detail=f"PDF demasiado pesado: {pdf_size/(1024*1024):.2f} MB (máx 20 MB)",
+            )
 
         return StreamingResponse(
             final_pdf,

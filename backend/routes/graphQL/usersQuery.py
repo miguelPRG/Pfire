@@ -11,7 +11,9 @@ from re import escape
 @strawberry.type
 class UserQuery:
     @strawberry.field
-    async def getUsers(self, info: Info, empresa_id: str, start: int = 0, filter: UserFilter = None) -> UserList:
+    async def getUsers(
+        self, info: Info, empresa_id: str, start: int = 0, filter: UserFilter = None
+    ) -> UserList:
 
         lmt = 10  # Limite padrão de resultados por página
 
@@ -29,9 +31,18 @@ class UserQuery:
             raise HTTPException(status_code=404, detail="Empresa não encontrada.")
 
         if not jwt.get("isSuperAdmin", False):
-            user_empresa = await users_empresas_collection.find_one({"user_id": ObjectId(jwt["user_id"]), "empresa_id": empresa_id, "isAdmin": True})
+            user_empresa = await users_empresas_collection.find_one(
+                {
+                    "user_id": ObjectId(jwt["user_id"]),
+                    "empresa_id": empresa_id,
+                    "isAdmin": True,
+                }
+            )
             if not user_empresa:
-                raise HTTPException(status_code=403, detail="Acesso negado. Apenas administradores podem visualizar os utilizadores.")
+                raise HTTPException(
+                    status_code=403,
+                    detail="Acesso negado. Apenas administradores podem visualizar os utilizadores.",
+                )
 
         filtro_users_empresas = {"empresa_id": empresa_id}
         filtro_users = {}
@@ -47,14 +58,19 @@ class UserQuery:
                 filtro_users["email"] = {"$regex": f"^{email_escaped}", "$options": "i"}
             elif filter.telefone:
                 telefone_escaped = escape(str(filter.telefone).strip())
-                filtro_users["telefone"] = {"$regex": f"{telefone_escaped}", "$options": "i"}
+                filtro_users["telefone"] = {
+                    "$regex": f"{telefone_escaped}",
+                    "$options": "i",
+                }
             if filter.role is not None:
                 filtro_users_empresas["isAdmin"] = filter.role
 
         print(filter)
 
         # Primeiro, buscar todas as relações user_empresa que atendem aos critérios
-        user_empresas_cursor = users_empresas_collection.find(filtro_users_empresas).skip(start).limit(lmt)
+        user_empresas_cursor = (
+            users_empresas_collection.find(filtro_users_empresas).skip(start).limit(lmt)
+        )
         user_empresas_list = await user_empresas_cursor.to_list(length=None)
 
         # Extrair os user_ids das relações encontradas
@@ -97,9 +113,15 @@ class UserQuery:
 
                 # Ocultar campos sensíveis se NÃO for superadmin
                 if not jwt.get("isSuperAdmin", False):
-                    user_data = {k: v for k, v in user_data.items() if k not in ["created_at", "updated_at"]}
+                    user_data = {
+                        k: v
+                        for k, v in user_data.items()
+                        if k not in ["created_at", "updated_at"]
+                    }
 
                 users.append(User(**filter_null_fields(user_data)))
 
-        total_users = await users_empresas_collection.count_documents(filtro_users_empresas)
+        total_users = await users_empresas_collection.count_documents(
+            filtro_users_empresas
+        )
         return UserList(users=users, totalUsers=total_users)

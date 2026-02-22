@@ -47,15 +47,20 @@ async def create_checkout(user_id: str, plan_id: str, stripe_customer_id: str) -
         except stripe.error.InvalidRequestError:
             raise Exception(f"Customer Stripe {stripe_customer_id} não existe")
 
+
         # ✅ VERIFICAR SE JÁ TEM SUBSCRIÇÃO ATIVA
-        subscriptions = stripe.Subscription.list(customer=stripe_customer_id, status="active")
+        subscriptions = stripe.Subscription.list(
+            customer=stripe_customer_id, status="active"
+        )
         if subscriptions.data:
             active_sub = subscriptions.data[0]
             logger.warning(f"User {user_id} já tem subscrição ativa: {active_sub.id}")
             raise Exception(f"Você já tem um plano ativo ({active_sub.status}). Cancele o atual antes de contratar outro.")
 
         # ✅ Verificar subscrições em trial
-        trial_subs = stripe.Subscription.list(customer=stripe_customer_id, status="trialing")
+        trial_subs = stripe.Subscription.list(
+            customer=stripe_customer_id, status="trialing"
+        )
         if trial_subs.data:
             trial_sub = trial_subs.data[0]
             logger.warning(f"User {user_id} já tem subscrição em trial: {trial_sub.id}")
@@ -66,7 +71,9 @@ async def create_checkout(user_id: str, plan_id: str, stripe_customer_id: str) -
             product = stripe.Product.retrieve(plan_id)
             logger.info(f"Produto encontrado: {product.id}")
 
+
             prices = stripe.Price.list(product=plan_id, active=True, limit=1)
+
 
             if not prices.data:
                 raise Exception(f"Nenhum plano de preço encontrado para o produto: {plan_id}")
@@ -74,11 +81,15 @@ async def create_checkout(user_id: str, plan_id: str, stripe_customer_id: str) -
             price_id = prices.data[0].id
             logger.info(f"Price encontrado: {price_id}")
 
+
         except stripe.error.InvalidRequestError as e:
             logger.error(f"Product ID inválido: {plan_id}")
             raise Exception(f"Produto não encontrado: {plan_id}")
 
+
         # Determinar trial period baseado no produto
+        trial_days = 15 if "pro" in product.name.lower() else 7
+
         trial_days = 15 if "pro" in product.name.lower() else 7
 
         URL = os.getenv("SUCCESS_URL", "http://localhost:3000")
@@ -90,15 +101,28 @@ async def create_checkout(user_id: str, plan_id: str, stripe_customer_id: str) -
             "mode": "subscription",
             "subscription_data": {
                 "trial_period_days": trial_days,
+            "payment_method_types": ["card", "paypal"],
+            "customer": stripe_customer_id,  # ✅ OBRIGATÓRIO - sempre usar customer existente
+            "line_items": [{"price": price_id, "quantity": 1}],
+            "mode": "subscription",
+            "subscription_data": {
+                "trial_period_days": trial_days,
             },
+            "success_url": f"{URL}/success",
+            "cancel_url": f"{URL}/pricing",
+            "metadata": {"user_id": user_id, "plano": product.name.lower()},
             "success_url": f"{URL}/success",
             "cancel_url": f"{URL}/pricing",
             "metadata": {"user_id": user_id, "plano": product.name.lower()},
         }
 
+
         session = stripe.checkout.Session.create(**session_data)
 
+
         logger.info(f"Sessão criada: {session.id} com trial de {trial_days} dias")
+        return {"id": session.id, "url": session.url, "trial_days": trial_days}
+
         return {"id": session.id, "url": session.url, "trial_days": trial_days}
 
     except stripe.error.StripeError as e:
@@ -117,21 +141,27 @@ async def handle_subscription_created(users_collection, subscription: dict) -> d
     try:
         customer_id = subscription.get("customer")
 
+
         if not customer_id:
             raise Exception("Customer ID ausente na subscrição")
 
+
         # Buscar user por stripe_customer_id
+        user = await users_collection.find_one({"stripe_customer_id": customer_id})
+
         user = await users_collection.find_one({"stripe_customer_id": customer_id})
 
         if not user:
             logger.error(f"Utilizador não encontrado para customer_id: {customer_id}")
             raise Exception("Utilizador não encontrado")
 
+
         # Obter informações do plano
         price_id = subscription["items"]["data"][0]["price"]["id"]
         price = stripe.Price.retrieve(price_id)
         product = stripe.Product.retrieve(price["product"])
         plan_name = product["name"].lower()
+
 
         # Determinar plano
         if "pro" in plan_name:
@@ -140,6 +170,7 @@ async def handle_subscription_created(users_collection, subscription: dict) -> d
             plano = "premium"
         else:
             plano = "free"
+
 
         # Atualizar user na BD
         result = await users_collection.update_one(
@@ -151,14 +182,19 @@ async def handle_subscription_created(users_collection, subscription: dict) -> d
                     "stripe_subscription_id": subscription["id"],
                     "subscription_status": subscription["status"],
                     "updated_at": datetime.now(),
+                    "updated_at": datetime.now(),
                 }
             },
+            },
         )
+
 
         if result.modified_count == 0:
             logger.warning(f"Nenhum documento atualizado para user: {user['_id']}")
 
+
         logger.info(f"Subscrição {subscription['id']} processada - Plano: {plano}")
+
 
         return {
             "success": True,
@@ -166,8 +202,11 @@ async def handle_subscription_created(users_collection, subscription: dict) -> d
             "plano": plano,
             "subscription_id": subscription["id"],
             "message": f"Plano {plano} ativado com sucesso",
+            "message": f"Plano {plano} ativado com sucesso",
         }
+
 
     except Exception as e:
         logger.error(f"Erro ao processar subscrição: {str(e)}")
         raise
+

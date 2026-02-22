@@ -28,7 +28,9 @@ async def unblock_ip_after_delay(ip: str):
     await asyncio.sleep(BLOCK_DURATION)
     if ip in blocked_ips:
         del blocked_ips[ip]
-        print(f"IP {ip} foi desbloqueado automaticamente após {BLOCK_DURATION} segundos.")
+        print(
+            f"IP {ip} foi desbloqueado automaticamente após {BLOCK_DURATION} segundos."
+        )
 
 
 async def rate_limit(request: Request):

@@ -4,7 +4,12 @@ from bson import ObjectId
 from datetime import datetime
 from asyncio import gather
 from models.relatorioModels import RelatorioCreate, RelatorioActivation
-from database import relatorios_collection, clientes_collection, modelos_collection, users_empresas_collection
+from database import (
+    relatorios_collection,
+    clientes_collection,
+    modelos_collection,
+    users_empresas_collection,
+)
 
 routerRelatorio = APIRouter(prefix="/relatorio")
 
@@ -20,33 +25,51 @@ def validate_custom_fields(relatorio_data: dict, modelo: dict):
 
         if key not in relatorio_data:
             if required:
-                raise HTTPException(status_code=400, detail=f"Campo obrigatório ausente: {key}")
+                raise HTTPException(
+                    status_code=400, detail=f"Campo obrigatório ausente: {key}"
+                )
             continue
 
         value = relatorio_data[key]
 
         if datatype == "string":
             if not isinstance(value, str):
-                raise HTTPException(status_code=400, detail=f"O campo {key} deve ser texto")
+                raise HTTPException(
+                    status_code=400, detail=f"O campo {key} deve ser texto"
+                )
         elif datatype == "number":
             if not isinstance(value, (int, float)):
-                raise HTTPException(status_code=400, detail=f"O campo {key} deve ser numérico")
+                raise HTTPException(
+                    status_code=400, detail=f"O campo {key} deve ser numérico"
+                )
         elif datatype == "date":
             try:
                 datetime.fromisoformat(str(value))
             except ValueError:
-                raise HTTPException(status_code=400, detail=f"O campo {key} deve ser uma data válida (ISO)")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"O campo {key} deve ser uma data válida (ISO)",
+                )
         elif datatype == "array":
             items = field_def.get("items", [])
             if value not in items:
-                raise HTTPException(status_code=400, detail=f"O campo {key} deve ser uma das opções: {', '.join(items)}")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"O campo {key} deve ser uma das opções: {', '.join(items)}",
+                )
         # Campo do tipo object
         elif datatype == "object":
             if not isinstance(value, dict):
-                raise HTTPException(status_code=400, detail=f"O campo {key} deve ser um objeto válido")
+                raise HTTPException(
+                    status_code=400, detail=f"O campo {key} deve ser um objeto válido"
+                )
 
             # Normaliza nomes dos subcampos para evitar problemas de espaço vs underscore
-            sub_fields = {k.replace(" ", "_"): v for k, v in field_def.items() if k.startswith("custom_")}
+            sub_fields = {
+                k.replace(" ", "_"): v
+                for k, v in field_def.items()
+                if k.startswith("custom_")
+            }
 
             for sub_key, sub_def in sub_fields.items():
                 sub_required = sub_def.get("required", False)
@@ -54,23 +77,41 @@ def validate_custom_fields(relatorio_data: dict, modelo: dict):
                 sub_value = value.get(sub_key)
 
                 if sub_required and sub_value is None:
-                    raise HTTPException(status_code=400, detail=f"Subcampo obrigatório {sub_key} do campo {key} ausente")
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Subcampo obrigatório {sub_key} do campo {key} ausente",
+                    )
 
                 if sub_value is not None:
                     if sub_type == "string" and not isinstance(sub_value, str):
-                        raise HTTPException(status_code=400, detail=f"O subcampo {sub_key} deve ser texto")
-                    elif sub_type == "number" and not isinstance(sub_value, (int, float)):
-                        raise HTTPException(status_code=400, detail=f"O subcampo {sub_key} deve ser numérico")
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"O subcampo {sub_key} deve ser texto",
+                        )
+                    elif sub_type == "number" and not isinstance(
+                        sub_value, (int, float)
+                    ):
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"O subcampo {sub_key} deve ser numérico",
+                        )
                     elif sub_type == "date":
                         try:
                             datetime.fromisoformat(str(sub_value))
                         except ValueError:
-                            raise HTTPException(status_code=400, detail=f"O subcampo {sub_key} deve ser uma data válida")
+                            raise HTTPException(
+                                status_code=400,
+                                detail=f"O subcampo {sub_key} deve ser uma data válida",
+                            )
         elif datatype == "critério":
             if not isinstance(value, (str, dict)):
-                raise HTTPException(status_code=400, detail=f"O campo {key} tem tipo critério inválido")
+                raise HTTPException(
+                    status_code=400, detail=f"O campo {key} tem tipo critério inválido"
+                )
         else:
-            raise HTTPException(status_code=400, detail=f"Tipo de campo desconhecido: {datatype}")
+            raise HTTPException(
+                status_code=400, detail=f"Tipo de campo desconhecido: {datatype}"
+            )
 
 
 # Criar Relatório
@@ -88,13 +129,26 @@ async def create_relatorio(request: Request, relatorio: RelatorioCreate):
     relatorio.empresa_id = ObjectId(relatorio.empresa_id)
 
     if not jwt.get("isSuperAdmin", False):
-        user_empresa = await users_empresas_collection.find_one({"user_id": user_id, "empresa_id": relatorio.empresa_id})
+        user_empresa = await users_empresas_collection.find_one(
+            {"user_id": user_id, "empresa_id": relatorio.empresa_id}
+        )
         if not user_empresa:
-            raise HTTPException(status_code=403, detail="Sem permissão para criar relatórios nesta empresa")
+            raise HTTPException(
+                status_code=403,
+                detail="Sem permissão para criar relatórios nesta empresa",
+            )
 
-    cliente_task = clientes_collection.find_one({"_id": relatorio.cliente_id, "empresa_id": relatorio.empresa_id, "isActive": True})
+    cliente_task = clientes_collection.find_one(
+        {
+            "_id": relatorio.cliente_id,
+            "empresa_id": relatorio.empresa_id,
+            "isActive": True,
+        }
+    )
 
-    modelo_task = modelos_collection.find_one({"_id": relatorio.modelo_id, "empresa_id": relatorio.empresa_id})
+    modelo_task = modelos_collection.find_one(
+        {"_id": relatorio.modelo_id, "empresa_id": relatorio.empresa_id}
+    )
 
     cliente, modelo = await gather(cliente_task, modelo_task)
 
@@ -110,7 +164,9 @@ async def create_relatorio(request: Request, relatorio: RelatorioCreate):
     # VALIDAR CAMPOS CUSTOM
     validate_custom_fields(relatorio_data, modelo_dict)
 
-    count = await relatorios_collection.count_documents({"empresa_id": relatorio.empresa_id})
+    count = await relatorios_collection.count_documents(
+        {"empresa_id": relatorio.empresa_id}
+    )
 
     # Create report data with auto-generated number
     data = datetime.now()
@@ -130,7 +186,10 @@ async def create_relatorio(request: Request, relatorio: RelatorioCreate):
     except DuplicateKeyError as e:
         text = str(e).lower()
         if "number" in text:
-            raise HTTPException(status_code=400, detail="Já existe um relatório com este número nesta empresa.")
+            raise HTTPException(
+                status_code=400,
+                detail="Já existe um relatório com este número nesta empresa.",
+            )
         raise HTTPException(status_code=400, detail="Campo duplicado no relatório.")
 
     return {"message": "Relatório criado com sucesso!"}
@@ -146,17 +205,30 @@ async def delete_relatorio(relatorio: RelatorioActivation, request: Request):
     if not jwt.get("isSuperAdmin", False):
         # Verificar se o usuário tem permissão para apagar relatórios para a empresa
 
-        user_empresa = await users_empresas_collection.find_one({"user_id": jwt["user_id"], "empresa_id": ObjectId(relatorio.empresa_id)})
+        user_empresa = await users_empresas_collection.find_one(
+            {"user_id": jwt["user_id"], "empresa_id": ObjectId(relatorio.empresa_id)}
+        )
         if not user_empresa:
-            raise HTTPException(status_code=403, detail="Usuário não tem permissão para apagar relatórios para esta empresa")
+            raise HTTPException(
+                status_code=403,
+                detail="Usuário não tem permissão para apagar relatórios para esta empresa",
+            )
 
     relatio_update = await relatorios_collection.update_one(
         {"_id": ObjectId(relatorio.id), "isActive": True},
-        {"$set": {"isActive": False, "updated_at": datetime.now(), "updated_by": ObjectId(jwt["user_id"])}},
+        {
+            "$set": {
+                "isActive": False,
+                "updated_at": datetime.now(),
+                "updated_by": ObjectId(jwt["user_id"]),
+            }
+        },
     )
 
     if relatio_update.modified_count == 0:
-        raise HTTPException(status_code=404, detail="Relatório não encontrado ou já foi apagado!")
+        raise HTTPException(
+            status_code=404, detail="Relatório não encontrado ou já foi apagado!"
+        )
 
     return {"message": "Relatório apagado com sucesso!"}
 
@@ -175,17 +247,30 @@ async def activate_relatorio(relatorio: RelatorioActivation, request: Request):
     if not jwt.get("isSuperAdmin", False):
         # Verificar se o usuário tem permissão para apagar relatórios para a empresa
 
-        user_empresa = await users_empresas_collection.find_one({"user_id": jwt["user_id"], "empresa_id": ObjectId(relatorio.empresa_id)})
+        user_empresa = await users_empresas_collection.find_one(
+            {"user_id": jwt["user_id"], "empresa_id": ObjectId(relatorio.empresa_id)}
+        )
         if not user_empresa:
-            raise HTTPException(status_code=403, detail="Usuário não tem permissão para apagar relatórios para esta empresa")
+            raise HTTPException(
+                status_code=403,
+                detail="Usuário não tem permissão para apagar relatórios para esta empresa",
+            )
 
     relatio_update = await relatorios_collection.update_one(
         {"_id": ObjectId(relatorio.id), "isActive": False},
-        {"$set": {"isActive": True, "updated_at": datetime.now(), "updated_by": ObjectId(jwt["user_id"])}},
+        {
+            "$set": {
+                "isActive": True,
+                "updated_at": datetime.now(),
+                "updated_by": ObjectId(jwt["user_id"]),
+            }
+        },
     )
 
     if relatio_update.modified_count == 0:
-        raise HTTPException(status_code=404, detail="Relatório não encontrado ou já foi apagado!")
+        raise HTTPException(
+            status_code=404, detail="Relatório não encontrado ou já foi apagado!"
+        )
 
     return {"message": "Relatório reativado com sucesso!"}
 
@@ -199,9 +284,14 @@ async def hard_delete_relatorio(relatorio: RelatorioActivation, request: Request
 
     # Permissões iguais ao soft delete
     if not jwt.get("isSuperAdmin", False):
-        user_empresa = await users_empresas_collection.find_one({"user_id": jwt["user_id"], "empresa_id": ObjectId(relatorio.empresa_id)})
+        user_empresa = await users_empresas_collection.find_one(
+            {"user_id": jwt["user_id"], "empresa_id": ObjectId(relatorio.empresa_id)}
+        )
         if not user_empresa:
-            raise HTTPException(status_code=403, detail="Usuário não tem permissão para apagar relatórios para esta empresa")
+            raise HTTPException(
+                status_code=403,
+                detail="Usuário não tem permissão para apagar relatórios para esta empresa",
+            )
 
     # Só apaga se já estiver inativo
     result = await relatorios_collection.delete_one(
@@ -215,6 +305,8 @@ async def hard_delete_relatorio(relatorio: RelatorioActivation, request: Request
     )
 
     if result.deleted_count == 0:
-        raise HTTPException(status_code=404, detail="Relatório não encontrado ou ainda está ativo.")
+        raise HTTPException(
+            status_code=404, detail="Relatório não encontrado ou ainda está ativo."
+        )
 
     return {"message": "Relatório apagado permanentemente com sucesso!"}

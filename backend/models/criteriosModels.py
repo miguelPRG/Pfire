@@ -18,7 +18,9 @@ class CriterioCreate(BaseModel):
     @classmethod
     def validate_nome(cls, v):
         if not v.strip():
-            raise HTTPException(status_code=400, detail="Nome não pode ser vazio ou apenas espaços")
+            raise HTTPException(
+                status_code=400, detail="Nome não pode ser vazio ou apenas espaços"
+            )
         return v
 
     @field_validator("modelo_id")
@@ -36,9 +38,15 @@ class CriterioCreate(BaseModel):
             key = item.key
             value = item.value
             if not isinstance(key, str) or not key.isalpha() or len(key) != 1:
-                raise HTTPException(status_code=400, detail="Chaves de options devem ser letras do alfabeto")
+                raise HTTPException(
+                    status_code=400,
+                    detail="Chaves de options devem ser letras do alfabeto",
+                )
             if not isinstance(value, str) or not value.strip():
-                raise HTTPException(status_code=400, detail="Valores de options devem ser strings não vazias")
+                raise HTTPException(
+                    status_code=400,
+                    detail="Valores de options devem ser strings não vazias",
+                )
             new_options.append(OptionItem(key=key.upper(), value=value.strip()))
         return new_options
 
@@ -51,7 +59,9 @@ class CriterioUpdate(BaseModel):
     @classmethod
     def validate_nome(cls, v):
         if v is not None and not v.strip():
-            raise HTTPException(status_code=400, detail="Nome não pode ser vazio ou apenas espaços")
+            raise HTTPException(
+                status_code=400, detail="Nome não pode ser vazio ou apenas espaços"
+            )
         return v
 
     @field_validator("options")
@@ -63,9 +73,15 @@ class CriterioUpdate(BaseModel):
                 key = item.key
                 value = item.value
                 if not isinstance(key, str) or not key.isalpha() or len(key) != 1:
-                    raise HTTPException(status_code=400, detail="Chaves de options devem ser letras do alfabeto")
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Chaves de options devem ser letras do alfabeto",
+                    )
                 if not isinstance(value, str) or not value.strip():
-                    raise HTTPException(status_code=400, detail="Valores de options devem ser strings não vazias")
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Valores de options devem ser strings não vazias",
+                    )
                 new_options.append(OptionItem(key=key.upper(), value=value.strip()))
             return new_options
         return v
@@ -91,7 +107,9 @@ class CriterioCreate(BaseModel):
     @classmethod
     def validate_nome(cls, v):
         if not v.strip():
-            raise HTTPException(status_code=400, detail="Nome não pode ser vazio ou apenas espaços")
+            raise HTTPException(
+                status_code=400, detail="Nome não pode ser vazio ou apenas espaços"
+            )
         return v
 
     @field_validator("modelo_id")
@@ -109,9 +127,15 @@ class CriterioCreate(BaseModel):
             key = item.key
             value = item.value
             if not isinstance(key, str) or not key.isalpha() or len(key) != 1:
-                raise HTTPException(status_code=400, detail="Chaves de options devem ser letras do alfabeto")
+                raise HTTPException(
+                    status_code=400,
+                    detail="Chaves de options devem ser letras do alfabeto",
+                )
             if not isinstance(value, str) or not value.strip():
-                raise HTTPException(status_code=400, detail="Valores de options devem ser strings não vazias")
+                raise HTTPException(
+                    status_code=400,
+                    detail="Valores de options devem ser strings não vazias",
+                )
             new_options.append(OptionItem(key=key.upper(), value=value.strip()))
         return new_options
 
@@ -124,7 +148,9 @@ class CriterioUpdate(BaseModel):
     @classmethod
     def validate_nome(cls, v):
         if v is not None and not v.strip():
-            raise HTTPException(status_code=400, detail="Nome não pode ser vazio ou apenas espaços")
+            raise HTTPException(
+                status_code=400, detail="Nome não pode ser vazio ou apenas espaços"
+            )
         return v
 
     @field_validator("options")
@@ -136,9 +162,15 @@ class CriterioUpdate(BaseModel):
                 key = item.key
                 value = item.value
                 if not isinstance(key, str) or not key.isalpha() or len(key) != 1:
-                    raise HTTPException(status_code=400, detail="Chaves de options devem ser letras do alfabeto")
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Chaves de options devem ser letras do alfabeto",
+                    )
                 if not isinstance(value, str) or not value.strip():
-                    raise HTTPException(status_code=400, detail="Valores de options devem ser strings não vazias")
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Valores de options devem ser strings não vazias",
+                    )
                 new_options.append(OptionItem(key=key.upper(), value=value.strip()))
             return new_options
         return v
