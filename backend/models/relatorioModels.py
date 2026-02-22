@@ -21,7 +21,11 @@ def clean_payload(data: Any) -> Any:
         return cleaned
     elif isinstance(data, list):
         cleaned_list = [clean_payload(v) for v in data]
-        cleaned_list = [v for v in cleaned_list if v is not None and not (isinstance(v, (list, dict)) and len(v) == 0)]
+        cleaned_list = [
+            v
+            for v in cleaned_list
+            if v is not None and not (isinstance(v, (list, dict)) and len(v) == 0)
+        ]
         return cleaned_list if cleaned_list else None
     else:
         return data if data is not None else None
@@ -46,13 +50,19 @@ class RelatorioCreate(BaseModel):
 
         custom_fields = [k for k in values.keys() if k not in MAIN_FIELDS]
         if not custom_fields:
-            raise HTTPException(status_code=400, detail="O relatório deve conter pelo menos um campo personalizado")
+            raise HTTPException(
+                status_code=400,
+                detail="O relatório deve conter pelo menos um campo personalizado",
+            )
 
         for key in values.keys():
             if key in MAIN_FIELDS:
                 continue
             if not key.startswith("custom_"):
-                raise HTTPException(status_code=400, detail=f"Nome de campo inválido: {key}. Os campos personalizados devem começar com 'custom_'")
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Nome de campo inválido: {key}. Os campos personalizados devem começar com 'custom_'",
+                )
 
         return values
 

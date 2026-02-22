@@ -9,7 +9,9 @@ from passlib.context import CryptContext
 from models.userModels import UserUpdate, UserActivation
 from datetime import datetime
 from database import users_collection
-from controller.token_blacklist import add_token_to_blacklist  # Nova função para usar Redis
+from controller.token_blacklist import (
+    add_token_to_blacklist,
+)  # Nova função para usar Redis
 
 
 routerUser = APIRouter(prefix="/user")
@@ -43,11 +45,17 @@ async def update_user(user: UserUpdate, request: Request):
             try:
                 user.assinatura = b64decode(user.assinatura)
             except Exception as e:
-                raise HTTPException(status_code=400, detail="Erro ao decodificar a imagem. Verifica se a imagem está em base64.")
+                raise HTTPException(
+                    status_code=400,
+                    detail="Erro ao decodificar a imagem. Verifica se a imagem está em base64.",
+                )
 
             tipo = guess(user.assinatura)
             if not tipo or tipo.extension not in ["jpeg", "jpg", "png"]:
-                raise HTTPException(status_code=404, detail="Tipo de imagem não permitido. Apenas JPEG e PNG são aceitos.")
+                raise HTTPException(
+                    status_code=404,
+                    detail="Tipo de imagem não permitido. Apenas JPEG e PNG são aceitos.",
+                )
 
     update_data = user.model_dump(exclude_unset=True)
     update_data["updated_at"] = datetime.now()
@@ -61,12 +69,22 @@ async def update_user(user: UserUpdate, request: Request):
         update_ops["$set"].pop("assinatura", None)
         update_ops["$unset"] = {"assinatura": ""}
 
-    result = await users_collection.update_one({"_id": user_id, "isActive": True}, update_ops)
+    result = await users_collection.update_one(
+        {"_id": user_id, "isActive": True}, update_ops
+    )
 
     if not result.modified_count:
-        raise HTTPException(status_code=400, detail="Erro ao atualizar. O utilizador não foi encontrado ou não está ativo.")
+        raise HTTPException(
+            status_code=400,
+            detail="Erro ao atualizar. O utilizador não foi encontrado ou não está ativo.",
+        )
 
-    if user.nome and user.nome != jwt.get("nome") or user.telefone and user.telefone != jwt.get("telefone"):
+    if (
+        user.nome
+        and user.nome != jwt.get("nome")
+        or user.telefone
+        and user.telefone != jwt.get("telefone")
+    ):
 
         token = request.cookies.get("_fp")
         await add_token_to_blacklist(token, jwt["exp"])
@@ -80,7 +98,9 @@ async def update_user(user: UserUpdate, request: Request):
             firebase_uid=jwt.get("firebase_uid"),
         )
         response = JSONResponse({"message": "Utilizador atualizado com sucesso!"})
-        response.set_cookie(key="_fp", value=token, httponly=True, samesite="Strict", secure=True)
+        response.set_cookie(
+            key="_fp", value=token, httponly=True, samesite="Strict", secure=True
+        )
 
         return response
 
@@ -92,18 +112,32 @@ async def update_user(user: UserUpdate, request: Request):
 async def soft_delete_user(request: Request, user: UserActivation):
 
     jwt = getattr(request.state, "jwt", None)
-    updated_fields = {"isActive": False, "updated_at": datetime.now(), "updated_by": ObjectId(jwt["user_id"])}
+    updated_fields = {
+        "isActive": False,
+        "updated_at": datetime.now(),
+        "updated_by": ObjectId(jwt["user_id"]),
+    }
 
     if jwt["user_id"] != user.id and not jwt.get("isSuperAdmin", False):
-        raise HTTPException(status_code=403, detail="Acesso negado! Não tens autorização para apagar utilizadores!")
+        raise HTTPException(
+            status_code=403,
+            detail="Acesso negado! Não tens autorização para apagar utilizadores!",
+        )
 
     if user.id:
-        result = await users_collection.update_one({"_id": ObjectId(user.id)}, {"$set": updated_fields})
+        result = await users_collection.update_one(
+            {"_id": ObjectId(user.id)}, {"$set": updated_fields}
+        )
     else:
-        result = await users_collection.update_one({"email": user.email}, {"$set": updated_fields})
+        result = await users_collection.update_one(
+            {"email": user.email}, {"$set": updated_fields}
+        )
 
     if not result.modified_count:
-        raise HTTPException(status_code=409, detail="Erro ao apagar utilizador. Verifica se o utilizador existe.")
+        raise HTTPException(
+            status_code=409,
+            detail="Erro ao apagar utilizador. Verifica se o utilizador existe.",
+        )
 
     return {"message": "Utilizador apagado com sucesso!"}
 
@@ -113,14 +147,26 @@ async def soft_delete_user(request: Request, user: UserActivation):
 async def activate_user(request: Request, user: UserActivation):
 
     jwt = getattr(request.state, "jwt", None)
-    updated_fields = {"isActive": True, "updated_at": datetime.now(), "updated_by": ObjectId(jwt["user_id"])}
+    updated_fields = {
+        "isActive": True,
+        "updated_at": datetime.now(),
+        "updated_by": ObjectId(jwt["user_id"]),
+    }
 
     if jwt["user_id"] != user.id and not jwt.get("isSuperAdmin", False):
-        raise HTTPException(status_code=403, detail="Acesso negado! Não tens autorização para ativar utilizadores!")
+        raise HTTPException(
+            status_code=403,
+            detail="Acesso negado! Não tens autorização para ativar utilizadores!",
+        )
 
-    result = await users_collection.update_one({"_id": ObjectId(user.id)}, {"$set": updated_fields})
+    result = await users_collection.update_one(
+        {"_id": ObjectId(user.id)}, {"$set": updated_fields}
+    )
 
     if not result.modified_count:
-        raise HTTPException(status_code=409, detail="Erro ao ativar utilizador. Verifica se o utilizador existe ou se já foi ativado.")
+        raise HTTPException(
+            status_code=409,
+            detail="Erro ao ativar utilizador. Verifica se o utilizador existe ou se já foi ativado.",
+        )
 
     return {"message": "Utilizador ativado com sucesso!"}

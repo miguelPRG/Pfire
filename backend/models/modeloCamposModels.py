@@ -8,7 +8,15 @@ MAIN_FIELDS = {
     "empresa_id",
 }
 
-ALLOWED_DATATYPES = {"number", "string", "bool", "object", "date", "array", "critério"}  # Tipos de dados permitidos
+ALLOWED_DATATYPES = {
+    "number",
+    "string",
+    "bool",
+    "object",
+    "date",
+    "array",
+    "critério",
+}  # Tipos de dados permitidos
 
 
 # Função auxiliar para validação de campos personalizados no método de criação
@@ -33,13 +41,19 @@ def validate_field(key, value, indice=0):
     allowed_keys = {"datatype", "required", "indice"}
 
     if value.get("datatype") == "object":
-        custom_fields = {k: v for k, v in value.items() if k not in {"datatype", "required", "indice"} and v is not None}
+        custom_fields = {
+            k: v
+            for k, v in value.items()
+            if k not in {"datatype", "required", "indice"} and v is not None
+        }
         if not custom_fields:
             raise HTTPException(
                 status_code=400,
                 detail=f"O campo que está a tentar criar:  {key} do tipo 'object' deve conter pelo menos um subcampo personalizado (custom_).",
             )
-        bad_fields = {k for k in custom_fields if not k.startswith("custom_") and k != "custom_"}
+        bad_fields = {
+            k for k in custom_fields if not k.startswith("custom_") and k != "custom_"
+        }
         if bad_fields:
             raise HTTPException(
                 status_code=400,
@@ -69,13 +83,19 @@ def validate_field(key, value, indice=0):
 
     extra_keys = {k for k in value.keys() if value[k] is not None} - allowed_keys
     if extra_keys:
-        raise HTTPException(status_code=400, detail=f"O campo que está a tentar criar: {key} contém chaves inválidas: {extra_keys}.")
+        raise HTTPException(
+            status_code=400,
+            detail=f"O campo que está a tentar criar: {key} contém chaves inválidas: {extra_keys}.",
+        )
 
     datatype = value.get("datatype")
     required = value.get("required")
 
     if datatype is None:
-        raise HTTPException(status_code=400, detail=f"O campo que está a tentar criar: {key} deve conter 'datatype'.")
+        raise HTTPException(
+            status_code=400,
+            detail=f"O campo que está a tentar criar: {key} deve conter 'datatype'.",
+        )
     if datatype not in ALLOWED_DATATYPES:
         raise HTTPException(
             status_code=400,
@@ -84,13 +104,25 @@ def validate_field(key, value, indice=0):
     if required is None:
         value["required"] = False
     elif not isinstance(required, bool):
-        raise HTTPException(status_code=400, detail=f"O campo 'required' de {key} deve ser um booleano (true ou false).")
+        raise HTTPException(
+            status_code=400,
+            detail=f"O campo 'required' de {key} deve ser um booleano (true ou false).",
+        )
 
 
 # Classe ModelosCamposCreate
 class ModelosCamposCreate(BaseModel):
-    modelo_nome: str = Field(..., max_length=100, description="Nome do modelo. Deve ter no máximo 100 caracteres.")
-    empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
+    modelo_nome: str = Field(
+        ...,
+        max_length=100,
+        description="Nome do modelo. Deve ter no máximo 100 caracteres.",
+    )
+    empresa_id: str = Field(
+        ...,
+        min_length=24,
+        max_length=24,
+        description="ID da empresa associada ao modelo.",
+    )
     model_config = ConfigDict(extra="allow")  # Permite campos extras
 
     @field_validator("empresa_id", mode="before")
@@ -122,9 +154,16 @@ class ModelosCamposCreate(BaseModel):
 # Classe ModelosCamposUpdate
 class ModelosCamposUpdate(BaseModel):
     modelo_nome: Optional[str] = Field(
-        None, max_length=100, description="Nome do modelo. Deve ter no máximo 100 caracteres."
+        None,
+        max_length=100,
+        description="Nome do modelo. Deve ter no máximo 100 caracteres.",
     )  # Ex: "extintores", "para-raios", "bocas de incêndio"
-    empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
+    empresa_id: str = Field(
+        ...,
+        min_length=24,
+        max_length=24,
+        description="ID da empresa associada ao modelo.",
+    )
     model_config = ConfigDict(extra="allow")  # Permite campos extras
 
     @field_validator("empresa_id", mode="before")
@@ -141,16 +180,33 @@ class ModelosCamposUpdate(BaseModel):
     def validate_fields(cls, values):
         if "modelo_nome" in values and isinstance(values["modelo_nome"], str):
             values["modelo_nome"] = values["modelo_nome"].strip()
-        custom_keys = [k for k in values.keys() if k not in MAIN_FIELDS and values[k] is not None]
+        custom_keys = [
+            k for k in values.keys() if k not in MAIN_FIELDS and values[k] is not None
+        ]
         for idx, key in enumerate(custom_keys):
             validate_field(key, values[key], indice=idx)
         return values
 
 
 class ModelosCamposDelete(BaseModel):
-    empresa_id: str = Field(..., min_length=24, max_length=24, description="ID da empresa associada ao modelo.")
-    id: str = Field(..., min_length=24, max_length=24, description="ID do modelo de campos a ser deletado.")
+    empresa_id: str = Field(
+        ...,
+        min_length=24,
+        max_length=24,
+        description="ID da empresa associada ao modelo.",
+    )
+    id: str = Field(
+        ...,
+        min_length=24,
+        max_length=24,
+        description="ID do modelo de campos a ser deletado.",
+    )
 
 
 class ModelosCamposClone(BaseModel):
-    id: str = Field(..., min_length=24, max_length=24, description="ID do modelo de campos a ser clonado.")
+    id: str = Field(
+        ...,
+        min_length=24,
+        max_length=24,
+        description="ID do modelo de campos a ser clonado.",
+    )

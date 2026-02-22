@@ -19,7 +19,9 @@ async def clone_report_template(request: Request, data: ModelosCamposClone):
 
     user_id = ObjectId(jwt.get("user_id"))
     if not jwt.get("isSuperAdmin"):
-        user = await users_empresas_collection.find_one({"_id": user_id, "isAdmin": True})
+        user = await users_empresas_collection.find_one(
+            {"_id": user_id, "isAdmin": True}
+        )
         if not user:
             raise HTTPException(403, detail="Usuário não autorizado a clonar modelos")
     date = datetime.now()
@@ -36,7 +38,9 @@ async def clone_report_template(request: Request, data: ModelosCamposClone):
     # Inserir na base de dados un novo modelo clonado
 
     # Temos de verificar se já exite pelo menos um clone deste modelo. E se já existir então o nome do novo clone deverá ser nome_clone_1, nome_clone_2, etc.
-    existing_clones = await modelos_collection.find({"modelo_nome": {"$regex": f"^{nome}_clone"}}).to_list(length=None)
+    existing_clones = await modelos_collection.find(
+        {"modelo_nome": {"$regex": f"^{nome}_clone"}}
+    ).to_list(length=None)
 
     if existing_clones:
         clone_count = len(existing_clones)

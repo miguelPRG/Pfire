@@ -32,7 +32,9 @@ TOKEN_BLACKLIST = set()
 # Função para carregar a chave pública
 def load_public_key():
     with open(PUBLIC_KEY, "rb") as key_file:
-        return serialization.load_pem_public_key(key_file.read(), backend=default_backend())
+        return serialization.load_pem_public_key(
+            key_file.read(), backend=default_backend()
+        )
 
 
 # Função para carregar a chave privada
@@ -53,9 +55,13 @@ private_key = load_private_key()
 # Geração do token JWT assinado com chave privada RSA
 def generate_jwt(id: str, user_name: str, user_email: str, is_super_admin: bool):
     if is_super_admin:
-        expire_delta = SUPER_ADMIN_DAYS * 12 * 60 * 60  # Validade mais curta para admins
+        expire_delta = (
+            SUPER_ADMIN_DAYS * 12 * 60 * 60
+        )  # Validade mais curta para admins
     else:
-        expire_delta = NORMAL_USER_DAYS * 24 * 60 * 60  # Validade padrão para usuários comuns
+        expire_delta = (
+            NORMAL_USER_DAYS * 24 * 60 * 60
+        )  # Validade padrão para usuários comuns
 
     expire = datetime.now().timestamp() + expire_delta  # Data de expiração em segundos
 
@@ -90,7 +96,9 @@ def verify_jwt(token):
         raise HTTPException(status_code=400, detail="Token inválido!")
 
     except ExpiredSignatureError:
-        raise HTTPException(status_code=400, detail="A sua sessão foi expirada, faça login novamente.")
+        raise HTTPException(
+            status_code=400, detail="A sua sessão foi expirada, faça login novamente."
+        )
 
     except DecodeError:
         raise HTTPException(status_code=400, detail="Erro de decodificação!")

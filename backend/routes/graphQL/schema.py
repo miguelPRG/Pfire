@@ -9,7 +9,9 @@ from strawberry.fastapi import GraphQLRouter
 
 
 @strawberry.type
-class Query(UserQuery, EmpresaQuery, ClienteQuery, ModeloQuery, RelatorioQuery, CriteriaQuery):
+class Query(
+    UserQuery, EmpresaQuery, ClienteQuery, ModeloQuery, RelatorioQuery, CriteriaQuery
+):
     @strawberry.field
     async def hello() -> str:
         return "Olá! Eu so o GraphQL! O que queres consultar?"
