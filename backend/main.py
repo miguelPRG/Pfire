@@ -87,6 +87,15 @@ def log_request_to_file_if_needed(
     request: Request, status_code: int, start_time: float
 ) -> None:
     origin = request.headers.get("origin")
+
+    # Fallbacks sem alterar comportamento atual dos logs já existentes
+    if not origin:
+        origin = request.headers.get("x-frontend-origin")  # opcional (Worker)
+    if not origin:
+        origin = request.headers.get("referer")  # browser/edge fallback
+    if not origin:
+        origin = request.headers.get("host")  # último recurso, pode ser local ou remoto
+
     if should_log_to_file(origin):
         elapsed_ms = (time.perf_counter() - start_time) * 1000
         request_logger.info(
