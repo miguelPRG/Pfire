@@ -224,7 +224,7 @@ async def login(user: UserLogin, request: Request):
         raise HTTPException(status_code=500, detail="Erro ao atualizar o último login.")
 
     token = generate_jwt(
-        str(db_user["_id"]), db_user["nome"], db_user["email"], db_user["isSuperAdmin"]
+        str(db_user["_id"]), db_user["nome"], db_user["email"], db_user["isSuperAdmin"], db_user.get("plano", None)
     )
 
     # Converte a assinatura (se existir) para base64 para o corpo da resposta (não vai no cookie)

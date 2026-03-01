@@ -70,7 +70,7 @@ class RelatorioQuery:
                 filtro["numero"] = filter.numero
 
         # Verificar permissões
-        if not jwt["isSuperAdmin"]:
+        if not jwt.get("isSuperAdmin", False):
             user_empresa = await users_empresas_collection.find_one(
                 {"user_id": jwt["user_id"], "empresa_id": empresa_id}
             )
@@ -125,11 +125,12 @@ class RelatorioQuery:
         empresa_id = ObjectId(empresa_id)
         request = info.context["request"]
         jwt = getattr(request.state, "jwt", None)
+        user_id = ObjectId(jwt["user_id"])
 
         # Verificar permissões
-        if not jwt["isSuperAdmin"]:
+        if not jwt.get("isSuperAdmin", False):
             user_empresa = await users_empresas_collection.find_one(
-                {"user_id": jwt["user_id"], "empresa_id": empresa_id}
+                {"user_id": user_id, "empresa_id": empresa_id}
             )
             if not user_empresa:
                 raise HTTPException(
@@ -182,9 +183,10 @@ class RelatorioQuery:
         jwt = getattr(request.state, "jwt", None)
 
         # Verificar permissões
-        if not jwt["isSuperAdmin"]:
+        if not jwt.get("isSuperAdmin", False):
+            user_id = ObjectId(jwt["user_id"])
             user_empresa = await users_empresas_collection.find_one(
-                {"user_id": jwt["user_id"], "empresa_id": empresa_id}
+                {"user_id": user_id, "empresa_id": empresa_id}
             )
 
             if not user_empresa:

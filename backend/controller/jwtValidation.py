@@ -53,7 +53,9 @@ private_key = load_private_key()
 
 
 # Geração do token JWT assinado com chave privada RSA
-def generate_jwt(id: str, user_name: str, user_email: str, is_super_admin: bool, plano: str):
+def generate_jwt(
+    id: str, user_name: str, user_email: str, is_super_admin: bool, plano: str
+):
     if is_super_admin:
         expire_delta = (
             SUPER_ADMIN_DAYS * 12 * 60 * 60

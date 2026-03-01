@@ -16,7 +16,6 @@ routerPayment = APIRouter(prefix="/user")
 processed_events = set()
 
 
-
 @routerPayment.post("/checkout/{plan_id}")
 async def create_user_checkout(request: Request, plan_id: str):
     """
@@ -30,31 +29,31 @@ async def create_user_checkout(request: Request, plan_id: str):
     user_id = str(jwt["user_id"])
     email = jwt.get("email")
 
-
     if not email:
         raise HTTPException(status_code=400, detail="Email do user ausente")
 
     try:
         user = await users_collection.find_one({"_id": ObjectId(user_id)})
 
-
         if not user:
             raise HTTPException(status_code=404, detail="User não encontrado")
 
-
         stripe_customer_id = user.get("stripe_customer_id")
-
 
         # ✅ CRIAR CUSTOMER SE NÃO EXISTIR
         if not stripe_customer_id:
             logger.info(f"Criando Stripe customer para user {user_id}")
 
-            stripe_customer_id = await create_stripe_customer(email=email, name=user.get("nome", email))
+            stripe_customer_id = await create_stripe_customer(
+                email=email, name=user.get("nome", email)
+            )
 
             # ✅ Guardar customer_id na BD
-            await users_collection.update_one({"_id": ObjectId(user_id)}, {"$set": {"stripe_customer_id": stripe_customer_id}})
+            await users_collection.update_one(
+                {"_id": ObjectId(user_id)},
+                {"$set": {"stripe_customer_id": stripe_customer_id}},
+            )
             logger.info(f"Customer Stripe criado: {stripe_customer_id}")
-
 
         # ✅ CRIAR CHECKOUT (com validação de subscrição ativa inside)
         checkout_session = await create_checkout(user_id, plan_id, stripe_customer_id)
@@ -62,7 +61,6 @@ async def create_user_checkout(request: Request, plan_id: str):
         checkout_session = await create_checkout(user_id, plan_id, stripe_customer_id)
 
         return checkout_session
-
 
     except HTTPException:
         raise
@@ -104,7 +102,6 @@ async def stripe_webhook(request: Request):
     if event_id in processed_events:
         print(f"⚠️ Evento {event_id} já processado, ignorando...")
         return {"status": "ok", "message": "Evento já processado"}
-
 
     processed_events.add(event_id)
 
@@ -170,11 +167,17 @@ async def refresh_token_after_payment(request: Request, response: Response):
 
         # ✅ Gerar novo JWT com o plano atualizado
         new_jwt = generate_jwt(
-            str(user["_id"]), user.get("nome", ""), user.get("email", ""), user.get("isSuperAdmin", False), user.get("plano", "free")  # ✅ Novo plano
+            str(user["_id"]),
+            user.get("nome", ""),
+            user.get("email", ""),
+            user.get("isSuperAdmin", False),
+            user.get("plano", "free"),  # ✅ Novo plano
         )
 
         # ✅ Remover flag e guardar novo JWT no cookie
-        await users_collection.update_one({"_id": ObjectId(user_id)}, {"$unset": {"needs_jwt_refresh": ""}})
+        await users_collection.update_one(
+            {"_id": ObjectId(user_id)}, {"$unset": {"needs_jwt_refresh": ""}}
+        )
 
         # ✅ Enviar novo JWT no cookie HTTP-only secure
         response.set_cookie(
@@ -185,9 +188,15 @@ async def refresh_token_after_payment(request: Request, response: Response):
             samesite="None",
         )
 
-        logger.info(f"Novo JWT gerado para user {user_id} com plano {user.get('plano')}")
+        logger.info(
+            f"Novo JWT gerado para user {user_id} com plano {user.get('plano')}"
+        )
 
-        return {"status": "ok", "message": "JWT atualizado com sucesso", "plano": user.get("plano")}
+        return {
+            "status": "ok",
+            "message": "JWT atualizado com sucesso",
+            "plano": user.get("plano"),
+        }
 
     except HTTPException:
         raise
