@@ -178,8 +178,6 @@ async def reativar_cliente(cliente: ClienteActivion, request: Request):
     jwt = getattr(request.state, "jwt", None)
     user_id = ObjectId(jwt["user_id"])
 
-    print("Reativando cliente:", cliente)
-
     try:
         cliente.id = ObjectId(cliente.id)
         cliente.empresa_id = ObjectId(cliente.empresa_id)

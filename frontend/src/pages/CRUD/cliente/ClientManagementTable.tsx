@@ -256,6 +256,8 @@ export default function ClientManagementTable() {
     }
   };
 
+  const canManageClientActions = empresa?.isAdmin === true;
+
   if (!initialLoaded && loading) return <LoadingAnimation />;
   if (error) return <Typography>Erro ao carregar clientes: {error.message}</Typography>;
 
@@ -278,14 +280,14 @@ export default function ClientManagementTable() {
           <Typography variant="h5" sx={{ fontWeight: "bold", fontSize: 30 }}>
             Clientes
           </Typography>
-          <Button
+          {empresa?.isAdmin && (<Button
             variant="contained"
             color="primary"
             onClick={() => navigate("/add-client")}
             sx={{ textTransform: "none", height: 40, width: 180, p: "5px" }}
           >
             Adicionar novo Cliente
-          </Button>
+          </Button>)}
         </Box>
 
         <Box
@@ -331,7 +333,7 @@ export default function ClientManagementTable() {
                     "morada",
                     "codigoPostal",
                     "createdAt",
-                    ...(empresa?.isAdmin ? ["estado", ""] : []),
+                    ...(canManageClientActions ? ["estado", ""] : []),
                   ].map((key) => (
                     <TableCell
                       key={key}
@@ -379,10 +381,11 @@ export default function ClientManagementTable() {
                   ))}
                 </TableRow>
               </TableHead>
+
               <TableBody>
                 {filteredRows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={empresa?.isAdmin ? 11 : 9}>
+                    <TableCell colSpan={canManageClientActions ? 11 : 9}>
                       <NoDataMessage nome="clientes" />
                     </TableCell>
                   </TableRow>
@@ -394,100 +397,105 @@ export default function ClientManagementTable() {
                       const bValue = b[orderBy]?.toString() || "";
                       return order === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
                     })
-                    .map((cliente) => (
-                      <TableRow key={cliente.id} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
-                        <TableCell>
-                          <Link
-                            component="button"
-                            onClick={() => navigate("/add-client", { state: { cliente } })}
-                            sx={{ cursor: "pointer" }}
+                    .map((cliente) => {
+                      const isClienteAtivo = cliente.isActive === true;
+
+                      return (
+                        <TableRow key={cliente.id} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
+                          <TableCell>
+                            <Link
+                              component="button"
+                              onClick={() => navigate("/add-client", { state: { cliente } })}
+                              sx={{ cursor: "pointer" }}
+                            >
+                              {cliente.nome}
+                            </Link>
+                          </TableCell>
+                          <TableCell>{cliente.email}</TableCell>
+                          <TableCell>{cliente.telefone}</TableCell>
+                          <TableCell>{cliente.nif}</TableCell>
+                          <TableCell>{cliente.localidade}</TableCell>
+                          <TableCell
+                            sx={{
+                              maxWidth: 80,
+                              width: 80,
+                              whiteSpace: "nowrap",
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                            }}
                           >
-                            {cliente.nome}
-                          </Link>
-                        </TableCell>
-                        <TableCell>{cliente.email}</TableCell>
-                        <TableCell>{cliente.telefone}</TableCell>
-                        <TableCell>{cliente.nif}</TableCell>
-                        <TableCell>{cliente.localidade}</TableCell>
-                        <TableCell
-                          sx={{
-                            maxWidth: 80,
-                            width: 80,
-                            whiteSpace: "nowrap",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                          }}
-                        >
-                          <Tooltip title={cliente.morada || ""} placement="top" arrow>
-                            <span>{cliente.morada}</span>
-                          </Tooltip>
-                        </TableCell>
-                        <TableCell>{cliente.codigoPostal}</TableCell>
-                        <TableCell>
-                          {cliente.createdAt ? new Date(cliente.createdAt).toLocaleDateString("pt-PT") : ""}
-                        </TableCell>
-                        {empresa?.isAdmin ? (
-                          <>
-                            <TableCell>
-                              <Button
-                                variant="contained"
-                                size="small"
-                                sx={{
-                                  width: 55,
-                                  height: 55,
-                                  borderRadius: "50%",
-                                  backgroundColor: cliente.isActive
-                                    ? theme.palette.success.main
-                                    : theme.palette.error.main,
-                                  color: "#fff",
-                                  fontWeight: "bold",
-                                  fontSize: 15,
-                                  minWidth: 0,
-                                  px: 0,
-                                  position: "relative",
-                                }}
-                                disabled={loadingClienteId === cliente.id}
-                                onClick={async () => {
-                                  setLoadingClienteId(cliente.id);
-                                  await toggleClienteStatus(cliente.id, cliente.isActive);
-                                  setLoadingClienteId(null);
-                                }}
-                              >
-                                {loadingClienteId === cliente.id ? (
-                                  <CircularProgress size={28} sx={{ color: "#fff" }} />
-                                ) : cliente.isActive ? (
-                                  "Ativo"
-                                ) : (
-                                  "Inativo"
-                                )}
-                              </Button>
-                            </TableCell>
-                            <TableCell>
-                              {!cliente.isActive && loadingClienteId !== cliente.id && (
+                            <Tooltip title={cliente.morada || ""} placement="top" arrow>
+                              <span>{cliente.morada}</span>
+                            </Tooltip>
+                          </TableCell>
+                          <TableCell>{cliente.codigoPostal}</TableCell>
+                          <TableCell>
+                            {cliente.createdAt ? new Date(cliente.createdAt).toLocaleDateString("pt-PT") : ""}
+                          </TableCell>
+                          {canManageClientActions ? (
+                            <>
+                              <TableCell>
                                 <Button
                                   variant="contained"
-                                  color="error"
                                   size="small"
                                   sx={{
-                                    borderRadius: "20px",
+                                    width: 55,
+                                    height: 55,
+                                    borderRadius: "50%",
+                                    backgroundColor: isClienteAtivo
+                                      ? theme.palette.success.main
+                                      : theme.palette.error.main,
+                                    color: "#fff",
+                                    fontWeight: "bold",
+                                    fontSize: 15,
                                     minWidth: 0,
-                                    px: 1.5,
-                                    width: "auto",
-                                    textTransform: "none",
+                                    px: 0,
+                                    position: "relative",
                                   }}
-                                  onClick={() => {
-                                    setSelectedCliente(cliente);
-                                    setDeleteDialogOpen(true);
+                                  disabled={loadingClienteId === cliente.id}
+                                  onClick={async () => {
+                                    setLoadingClienteId(cliente.id);
+                                    await toggleClienteStatus(cliente.id, isClienteAtivo);
+                                    setLoadingClienteId(null);
                                   }}
                                 >
-                                  Apagar permanentemente
+                                  {loadingClienteId === cliente.id ? (
+                                    <CircularProgress size={28} sx={{ color: "#fff" }} />
+                                  ) : isClienteAtivo ? (
+                                    "Ativo"
+                                  ) : (
+                                    "Inativo"
+                                  )}
                                 </Button>
-                              )}
-                            </TableCell>
-                          </>
-                        ) : null}
-                      </TableRow>
-                    ))
+                              </TableCell>
+
+                              <TableCell>
+                                {!isClienteAtivo && loadingClienteId !== cliente.id && (
+                                  <Button
+                                    variant="contained"
+                                    color="error"
+                                    size="small"
+                                    sx={{
+                                      borderRadius: "20px",
+                                      minWidth: 0,
+                                      px: 1.5,
+                                      width: "auto",
+                                      textTransform: "none",
+                                    }}
+                                    onClick={() => {
+                                      setSelectedCliente(cliente);
+                                      setDeleteDialogOpen(true);
+                                    }}
+                                  >
+                                    Apagar permanentemente
+                                  </Button>
+                                )}
+                              </TableCell>
+                            </>
+                          ) : null}
+                        </TableRow>
+                      );
+                    })
                 )}
               </TableBody>
             </Table>

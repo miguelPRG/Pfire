@@ -36,7 +36,7 @@ class EmpresaQuery:
                 user_empresa = await users_empresas_collection.find_one(
                     {"user_id": ObjectId(jwt["user_id"]), "empresa_id": empresa["_id"]}
                 )
-                if not user_empresa or not user_empresa.get("isAdmin", False):
+                if not user_empresa:
                     raise HTTPException(
                         status_code=403,
                         detail="Acesso negado! Não tens permissão para ver esta empresa.",

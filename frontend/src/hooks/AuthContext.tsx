@@ -98,18 +98,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserLoggedIn | null>(null);
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [loading, setLoading] = useState(true);
-  const [authError, setAuthError] = useState<string | null>(null); // Add state for authentication error
+
+  // ✅ empresaId em estado (persistido no refresh)
+  const [empresaId, setEmpresaId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return localStorage.getItem("empresaId");
+  });
 
   // Hook para usar o reCAPTCHA
   const { generateToken } = useRecaptcha();
 
-  // Pega o empresaId do localStorage
-  const localEmpresaId = typeof window !== "undefined" ? localStorage.getItem("empresaId") : null;
-
   // Use o hook useQuery no topo do componente
   const { data, error } = useQuery(GET_EMPRESAS, {
-    variables: { id: localEmpresaId },
-    skip: !user || !localEmpresaId, // Só executa se houver user e empresaId
+    variables: { id: empresaId },
+    skip: !user || !empresaId,
     fetchPolicy: "network-only",
   });
 
@@ -137,12 +139,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             plano: userData.plano,
           });
         } else {
-          setAuthError(userData.detail || "Erro ao autenticar utilizador");
           setLoading(false); // Set loading to false on error
         }
       } catch (error) {
         console.error("Erro ao verificar autenticação:", error);
-        setAuthError("Erro ao verificar autenticação");
         setLoading(false); // Set loading to false on error
       }
     }
@@ -155,21 +155,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (!localEmpresaId) {
-      console.log("Nenhuma empresa selecionada, aguardando dados...");
-      setLoading(false); // <--- indica que o carregamento foi concluído
+    if (!empresaId) {
+      setEmpresa(null);
+      setLoading(false);
       return;
     }
 
     if (error) {
       console.error("Erro ao carregar empresas:", error);
-      localStorage.removeItem("empresaId"); // Limpa o empresaId se houver erro
-      setLoading(false); // <--- indica que o carregamento falhou
+      localStorage.removeItem("empresaId");
+      setEmpresaId(null);
+      setEmpresa(null);
+      setLoading(false);
       return;
     }
 
-    if (data && !empresa) {
-      const empresaData = data?.getEmpresas.empresas[0];
+    if (data) {
+      const empresaData = data?.getEmpresas?.empresas?.[0];
+
+      // ✅ Se id guardado já não for válido/permitido
+      if (!empresaData) {
+        localStorage.removeItem("empresaId");
+        setEmpresaId(null);
+        setEmpresa(null);
+        setLoading(false);
+        return;
+      }
+
       setEmpresa({
         id: empresaData.id,
         nome: empresaData.nome,
@@ -179,12 +191,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localidade: empresaData.localidade,
         codigoPostal: empresaData.codigoPostal,
         logo: empresaData.logo,
-        isAdmin: empresaData.isAdmin ?? user.isSuperAdmin ?? false, // Se isAdmin for null, usa isSuperAdmin
+        isAdmin: empresaData.isAdmin ?? user.isSuperAdmin ?? false,
       });
 
-      setLoading(false); // <--- indica que o carregamento foi concluído
+      setLoading(false);
     }
-  }, [data, error, user]);
+  }, [data, error, user, empresaId]);
 
   async function login(email: string, password: string) {
     if (!email || !password) {
@@ -337,6 +349,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setEmpresa(null);
     setUser(null);
     setLoading(false);
+    localStorage.removeItem("empresaId");
+    setEmpresaId(null);
 
     try {
       await fetch("/backend/user/logout", {
@@ -362,7 +376,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAdmin: empresa.isAdmin,
     });
 
-    localStorage.setItem("empresaId", empresa.id); // <--- armazena o empresaId no localStorage
+    localStorage.setItem("empresaId", empresa.id);
+    setEmpresaId(empresa.id); // ✅ sincroniza estado com storage
   }
 
   const updateUser = useCallback(
