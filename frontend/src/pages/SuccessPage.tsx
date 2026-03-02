@@ -7,12 +7,30 @@ export default function SuccessPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // ✅ Apenas 1 timer: aguardar webhook processar e redirecionar
-    const timer = setTimeout(() => {
-      navigate("/");
-    }, 3000); // 3 segundos é suficiente para o webhook processar
+    const refreshToken = async () => {
+      try {
+        // ✅ Chamar endpoint para gerar novo JWT
+        const res = await fetch("/backend/user/refresh-token-after-payment", {
+          method: "POST",
+          credentials: "include",
+        });
 
-    return () => clearTimeout(timer);
+        if (res.ok) {
+          const data = await res.json();
+          console.log("JWT atualizado:", data.plano);
+          // ✅ Cookie foi setado automaticamente
+        }
+      } catch (err) {
+        console.error("Erro ao refresh token:", err);
+      }
+
+      // Aguardar um pouco mais para garantir que tudo processou
+      setTimeout(() => {
+        navigate("/");
+      }, 1000);
+    };
+
+    refreshToken();
   }, [navigate]);
 
   return (

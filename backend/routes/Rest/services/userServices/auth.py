@@ -168,6 +168,7 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
         user_doc.get("nome", ""),
         user_doc.get("email", ""),
         user_doc.get("isSuperAdmin", False),
+        user_doc.get("plano", None),
     )
 
     # Converte a assinatura (se existir) para base64 para o corpo da resposta (não vai no cookie)
@@ -223,7 +224,7 @@ async def login(user: UserLogin, request: Request):
         raise HTTPException(status_code=500, detail="Erro ao atualizar o último login.")
 
     token = generate_jwt(
-        str(db_user["_id"]), db_user["nome"], db_user["email"], db_user["isSuperAdmin"]
+        str(db_user["_id"]), db_user["nome"], db_user["email"], db_user["isSuperAdmin"], db_user.get("plano", None)
     )
 
     # Converte a assinatura (se existir) para base64 para o corpo da resposta (não vai no cookie)
@@ -297,7 +298,7 @@ async def logout_user(request: Request, response: Response):
     await add_token_to_blacklist(token, jwt["exp"])
 
     # Elimina la cookie del JWT
-    response.delete_cookie("_fp", httponly=True, samesite="Strict", secure=True)
+    response.delete_cookie("_fp", httponly=True, samesite="None", secure=True)
     return {"message": "Logout efetuado com sucesso!"}
 
 
