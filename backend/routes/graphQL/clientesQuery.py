@@ -11,9 +11,7 @@ from re import escape
 @strawberry.type
 class ClienteQuery:
     @strawberry.field
-    async def getClientes(
-        self, info: Info, empresa_id: str, start: int = 0, filter: ClienteFilter = None
-    ) -> ClienteList:
+    async def getClientes(self, info: Info, empresa_id: str, start: int = 0, filter: ClienteFilter = None) -> ClienteList:
 
         lmt = 10  # Limite padrão de resultados por página
 
@@ -30,14 +28,9 @@ class ClienteQuery:
         is_admin = False
 
         if not is_super_admin:
-            user_empresa = await users_empresas_collection.find_one(
-                {"empresa_id": empresa_id, "user_id": user_id}
-            )
+            user_empresa = await users_empresas_collection.find_one({"empresa_id": empresa_id, "user_id": user_id})
             if not user_empresa:
-                raise HTTPException(
-                    status_code=403,
-                    detail="Acesso negado! Não tens permissão para ver clientes nesta empresa.",
-                )
+                raise HTTPException(status_code=403, detail="Acesso negado! Não tens permissão para ver clientes nesta empresa.")
             is_admin = user_empresa.get("isAdmin", False)
         else:
             is_admin = True
@@ -50,32 +43,17 @@ class ClienteQuery:
         # Si viene un objeto filter, aplicarlo con regex (igual que EmpresaFilter)
         if filter:
             if filter.nome:
-                filtro["nome"] = {
-                    "$regex": f"{escape(filter.nome.strip())}",
-                    "$options": "i",
-                }
+                filtro["nome"] = {"$regex": f"{escape(filter.nome.strip())}", "$options": "i"}
             elif filter.nif and filter.nif.strip():
-                filtro["nif"] = {
-                    "$regex": f"^{escape(filter.nif.strip())}",
-                    "$options": "i",
-                }
+                filtro["nif"] = {"$regex": f"^{escape(filter.nif.strip())}", "$options": "i"}
             elif filter.localidade and filter.localidade.strip():
-                filtro["localidade"] = {
-                    "$regex": f"^{escape(filter.localidade.strip())}",
-                    "$options": "i",
-                }
+                filtro["localidade"] = {"$regex": f"^{escape(filter.localidade.strip())}", "$options": "i"}
             elif filter.morada and filter.morada.strip():
-                filtro["morada"] = {
-                    "$regex": f"^{escape(filter.morada.strip())}",
-                    "$options": "i",
-                }
+                filtro["morada"] = {"$regex": f"^{escape(filter.morada.strip())}", "$options": "i"}
             # elif filter.codigo_postal and filter.codigo_postal.strip():
             #    filtro["codigo_postal"] = {"$regex": f"{escape(filter.codigo_postal.strip())}", "$options": "i"}
             elif filter.telefone and filter.telefone.strip():
-                filtro["telefone"] = {
-                    "$regex": f"{escape(filter.telefone.strip())}",
-                    "$options": "i",
-                }
+                filtro["telefone"] = {"$regex": f"{escape(filter.telefone.strip())}", "$options": "i"}
 
         clientes = []
 
@@ -98,15 +76,9 @@ class ClienteQuery:
             }
 
             if not is_super_admin:
-                cliente_data = {
-                    k: v
-                    for k, v in cliente_data.items()
-                    if k not in ["created_by", "updated_by", "updated_at"]
-                }
+                cliente_data = {k: v for k, v in cliente_data.items() if k not in ["created_by", "updated_by", "updated_at"]}
             if not is_admin and not is_super_admin:
-                cliente_data = {
-                    k: v for k, v in cliente_data.items() if k not in ["isActive"]
-                }
+                cliente_data = {k: v for k, v in cliente_data.items() if k not in ["isActive"]}
 
             # print("Dados dos clientes:", cliente_data)  # Debugging line
 

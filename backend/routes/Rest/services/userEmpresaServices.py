@@ -281,7 +281,6 @@ async def expel_user(user: UserExpel, request: Request):
         raise HTTPException(
             status_code=403, detail="Não é permitido expulsar este utilizador."
         )
-
     if not jwt.get("isSuperAdmin") and not user_empresa_found.get("isAdmin"):
         raise HTTPException(
             status_code=403,
