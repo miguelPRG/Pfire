@@ -39,9 +39,7 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
     # 3) Verificar se a empresa existe
     empresa_found = empresas_collection.find_one({"_id": modelo.empresa_id})
 
-    modelo_found = modelos_collection.find_one(
-        {"empresa_id": modelo.empresa_id, "modelo_nome": modelo.modelo_nome}
-    )
+    modelo_found = modelos_collection.find_one({"empresa_id": modelo.empresa_id, "modelo_nome": modelo.modelo_nome})
 
     empresa_found, modelo_found = await gather(empresa_found, modelo_found)
 
