@@ -94,11 +94,11 @@ interface returnedData {
 */
 export default function ReportListPage() {
   // Estados de UI e filtros
-  const [search, setSearch] = useState<number>(); // pesquisa por número
   const [advFilter, setAdvFilter] = useState<{ field: string; text: string }>({
     field: "clienteNome",
     text: "",
   }); // AdvancedSearchBar: campo + texto
+  const [reportFilter, setReportFilter] = useState<Record<string, any>>({});
   const [page, setPage] = useState(0); // página atual (0-index)
   const [alert, setAlert] = useState<{ message: string; isError: boolean } | null>(null); // notificações
   const [exportingAll, setExportingAll] = useState(false); // indicador de exportação em massa
@@ -108,11 +108,14 @@ export default function ReportListPage() {
   const rowsPerPage = 4; // número de linhas por página
   const navigate = useNavigate(); // navegação de rotas
   const theme = useTheme(); // tema MUI
-  const { empresa } = useAuth(); // contexto de autenticação/empresa
+  const { empresa, user } = useAuth(); // contexto de autenticação/empresa
+  const isCompanyAdmin = Boolean(empresa?.isAdmin) || Boolean(user?.isSuperAdmin);
   const [hardDeleteDialogOpen, setHardDeleteDialogOpen] = useState(false); // dialogo de hard delete
   const location = useLocation(); // leitura de estado passado pela navegação
   const [selectedReport, setSelectedReport] = useState<Report | null>(null); // relatório selecionado p/ delete
   const [loadingReportId, setLoadingReportId] = useState<string | null>(null); // rastrear qual relatório está carregando
+  const [reports, setReports] = useState<Report[]>([]);
+  const [totalReports, setTotalReports] = useState(0);
   // estilo reutilizável para linhas entre células (vertical + horizontal)
   // usa cor cinza no modo light para as linhas (mais visível), mantém o divider do tema no dark
   const dividerColor = theme.palette.mode === "light" ? "#bdbdbd" : theme.palette.divider;
@@ -128,7 +131,7 @@ export default function ReportListPage() {
   };
 
   // Query GraphQL: obtém relatórios por modelo (pode receber filtro e paginação)
-  const [getReports, { data, loading, error }] = useLazyQuery<returnedData>(GET_REPORTS_BY_MODEL, {
+  const [getReports, { loading, error }] = useLazyQuery<returnedData>(GET_REPORTS_BY_MODEL, {
     fetchPolicy: "cache-and-network",
   });
 
@@ -137,72 +140,30 @@ export default function ReportListPage() {
     fetchPolicy: "cache-first",
   });
 
-  // Inicializa a query ao montar o componente
+  // Carrega relatórios ao mudar pagina/filtro/modelo
   useEffect(() => {
+    if (!empresa?.id || !location.state?.filter?.modeloId) return;
+
     getReports({
       variables: {
-        empresaId: empresa?.id,
-        modeloId: location.state?.filter?.modeloId,
+        empresaId: empresa.id,
+        modeloId: location.state.filter.modeloId,
         start: page * rowsPerPage,
-        filter: {},
-      },
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Atualiza busca quando o termo de pesquisa por número muda
-  useEffect(() => {
-    if (search) {
-      getReports({
-        variables: {
-          empresaId: empresa?.id,
-          modeloId: location.state?.filter?.modeloId,
-          filter: { numero: Number(search) }, // Garantir que é number
-        },
-      }).then((result) => {
-        if (result.data?.getRelatorios?.relatorios) {
-          setReports(result.data.getRelatorios.relatorios);
-        }
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
-
-  // Adicionar o useState no topo, junto com os outros estados
-  const [reports, setReports] = useState<Report[]>([]);
-
-  // Remover a linha atual (linha 151-152):
-  // const reports: Report[] = data?.getRelatorios?.relatorios || [];
-
-  // Adicionar useEffect para atualizar o estado quando os dados mudarem
-  useEffect(() => {
-    if (data?.getRelatorios?.relatorios) {
-      setReports(data.getRelatorios.relatorios);
-    }
-  }, [data]);
-
-  useEffect(() => {
-    console.log("Mudando para a página:", page); // Log para verificar a mudança de página
-    getReports({
-      variables: {
-        empresaId: empresa?.id,
-        modeloId: location.state?.filter?.modeloId,
-        start: page * rowsPerPage,
+        filter: reportFilter,
       },
     })
       .then((response) => {
-        console.log("Dados retornados:", response.data); // Log para verificar os dados retornados
-        if (response.data?.getRelatorios?.relatorios) {
-          setReports(response.data.getRelatorios.relatorios);
+        if (response.data?.getRelatorios) {
+          setReports(response.data.getRelatorios.relatorios || []);
+          setTotalReports(response.data.getRelatorios.totalRelatorios || 0);
         }
       })
-      .catch((error) => {
-        console.error("Erro ao buscar:", error); // Log para verificar erros
+      .catch((fetchError) => {
+        console.error("Erro ao buscar relatórios:", fetchError);
       });
-  }, [page]);
+  }, [empresa?.id, location.state?.filter?.modeloId, page, reportFilter, rowsPerPage, getReports]);
 
   // Calcula total de relatórios para paginação (valor retornado pela API)
-  const totalReports: number = data?.getRelatorios?.totalRelatorios || 0;
   const pageCount = Math.max(1, Math.ceil(totalReports / rowsPerPage)); // Isso deve funcionar corretamente
 
   // Normaliza diferentes formatos de customFields para array de { key, value } // extractFields normaliza formatos diferentes de customFields (array ou object) e remove o prefixo "custom_" das keys.
@@ -389,23 +350,17 @@ export default function ReportListPage() {
       if (!response.ok) throw new Error(json.detail || "Erro ao apagar relatório permanentemente.");
       setAlert({ message: json.message || "Relatório apagado permanentemente com sucesso!", isError: false });
 
-      // Recarregar a tabela após exclusão permanente
-      setPage(0);
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      const result = await getReports({
-        variables: {
-          empresaId: empresa?.id,
-          modeloId: location.state?.filter?.modeloId,
-          start: 0,
-          filter: {},
-        },
-      });
-      if (result.data?.getRelatorios?.relatorios) {
-        setReports(result.data.getRelatorios.relatorios);
-      }
+      // Atualizar tabela local após exclusão permanente
+      setReports((prev) => prev.filter((r) => r.id !== report.id));
+      setTotalReports((prev) => Math.max(0, prev - 1));
     } catch (err: any) {
       setAlert({ message: err.message || "Erro ao apagar relatório permanentemente.", isError: true });
     }
+  };
+
+  const closeHardDeleteDialog = () => {
+    setHardDeleteDialogOpen(false);
+    setSelectedReport(null);
   };
 
   const handleOpenExportDialog = () => {
@@ -434,17 +389,7 @@ export default function ReportListPage() {
         filterObj = { [advFilter.field]: text };
       }
     }
-    const result = await getReports({
-      variables: {
-        empresaId: empresa?.id,
-        modeloId: location.state?.filter?.modeloId,
-        start: 0,
-        filter: filterObj,
-      },
-    });
-    if (result.data?.getRelatorios?.relatorios) {
-      setReports(result.data.getRelatorios.relatorios);
-    }
+    setReportFilter(filterObj);
   };
 
   const handleExportAll = async () => {
@@ -573,12 +518,28 @@ export default function ReportListPage() {
         {/* Breadcrumbs: navegação secundária */}
         <Breadcrumbs
           aria-label="breadcrumb"
-          sx={{ mb: 3, backgroundColor: "background.paper", maxWidth: "200px", borderRadius: 5, padding: 0.5 }}
+          sx={{
+            mb: 3,
+            backgroundColor: "background.paper",
+            width: "fit-content",
+            maxWidth: "none",
+            borderRadius: 5,
+            padding: 0.5,
+            whiteSpace: "nowrap",
+            "& .MuiBreadcrumbs-ol": {
+              flexWrap: "nowrap",
+            },
+          }}
         >
           <StyledBreadcrumb
             sx={{ cursor: "pointer" }}
             onClick={() => navigate("/")}
             icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
+          />
+          <StyledBreadcrumb
+            sx={{ cursor: "pointer", fontSize: "0.9rem" }}
+            label="Modelos"
+            onClick={() => navigate("/report-models")}
           />
           <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} label="Relatórios" />
         </Breadcrumbs>
@@ -730,9 +691,11 @@ export default function ReportListPage() {
                   <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }}>
                     Data Criação
                   </TableCell>
-                  <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }} align="center">
-                    Estado
-                  </TableCell>
+                  {isCompanyAdmin && (
+                    <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }} align="center">
+                      Estado
+                    </TableCell>
+                  )}
                   <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }} align="center">
                     Ações
                   </TableCell>
@@ -789,58 +752,66 @@ export default function ReportListPage() {
                     <TableCell sx={cellBorders}>
                       {report.createdAt ? new Date(report.createdAt).toLocaleDateString() : "-"}
                     </TableCell>
-                    <TableCell sx={{ ...cellBorders, textAlign: "center" }}>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        sx={{
-                          width: 55,
-                          height: 55,
-                          borderRadius: "50%",
-                          backgroundColor: report.isActive ? theme.palette.success.main : theme.palette.error.main,
-                          color: "#fff",
-                          fontWeight: "bold",
-                          fontSize: 12,
-                          minWidth: 0,
-                          px: 0,
-                          position: "relative",
-                        }}
-                        disabled={loadingReportId === report.id}
-                        onClick={async () => {
-                          setLoadingReportId(report.id);
-                          await toggleReportStatus(report.id, report.isActive);
-                          setLoadingReportId(null);
-                        }}
-                      >
-                        {loadingReportId === report.id ? (
-                          <CircularProgress size={28} sx={{ color: "#fff" }} />
-                        ) : report.isActive ? (
-                          "Ativo"
-                        ) : (
-                          "Inativo"
-                        )}
-                      </Button>
-                    </TableCell>
-                    <TableCell sx={{ ...cellBorders, textAlign: "center" }}>
-                      {!report.isActive && loadingReportId !== report.id && (
+                    {isCompanyAdmin && (
+                      <TableCell sx={{ ...cellBorders, textAlign: "center" }}>
                         <Button
                           variant="contained"
-                          color="error"
                           size="small"
                           sx={{
-                            borderRadius: "20px",
+                            width: 55,
+                            height: 55,
+                            borderRadius: "50%",
+                            backgroundColor: report.isActive ? theme.palette.success.main : theme.palette.error.main,
+                            color: "#fff",
+                            fontWeight: "bold",
+                            fontSize: 12,
                             minWidth: 0,
-                            px: 1.5,
-                            width: "auto",
-                            textTransform: "none",
+                            px: 0,
+                            position: "relative",
                           }}
-                          onClick={() => {
-                            setSelectedReport(report);
-                            setHardDeleteDialogOpen(true);
+                          disabled={loadingReportId === report.id}
+                          onClick={async () => {
+                            setLoadingReportId(report.id);
+                            await toggleReportStatus(report.id, report.isActive);
+                            setLoadingReportId(null);
                           }}
                         >
-                          Apagar Permanentemente
+                          {loadingReportId === report.id ? (
+                            <CircularProgress size={28} sx={{ color: "#fff" }} />
+                          ) : report.isActive ? (
+                            "Ativo"
+                          ) : (
+                            "Inativo"
+                          )}
                         </Button>
+                      </TableCell>
+                    )}
+                    <TableCell sx={{ ...cellBorders, textAlign: "center" }}>
+                      {isCompanyAdmin ? (
+                        !report.isActive && loadingReportId !== report.id ? (
+                          <Button
+                            variant="contained"
+                            color="error"
+                            size="small"
+                            sx={{
+                              borderRadius: "20px",
+                              minWidth: 0,
+                              px: 1.5,
+                              width: "auto",
+                              textTransform: "none",
+                            }}
+                            onClick={() => {
+                              setSelectedReport(report);
+                              setHardDeleteDialogOpen(true);
+                            }}
+                          >
+                            Apagar Permanentemente
+                          </Button>
+                        ) : null
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          Sem ações
+                        </Typography>
                       )}
                     </TableCell>
                   </TableRow>
@@ -938,14 +909,19 @@ export default function ReportListPage() {
           <Button onClick={() => setExportDialogOpen(false)} variant="outlined">
             Cancelar
           </Button>
-          <Button onClick={handleExportAll} color="primary" variant="contained" disabled={!selectedClienteForExport}>
+          <Button
+            onClick={handleExportAll}
+            color="primary"
+            variant="contained"
+            disabled={!selectedClienteForExport || exportingAll}
+          >
             Exportar PDF
           </Button>
         </DialogActions>
       </Dialog>
 
       {/* Dialog de confirmação para apagar relatório permanentemente. */}
-      <Dialog open={hardDeleteDialogOpen} onClose={() => setHardDeleteDialogOpen(false)}>
+      <Dialog open={hardDeleteDialogOpen} onClose={closeHardDeleteDialog}>
         <DialogTitle sx={{ fontWeight: "bold" }}>Eliminar relatório permanentemente!</DialogTitle>
         <DialogContent>
           <Typography>
@@ -954,15 +930,14 @@ export default function ReportListPage() {
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setHardDeleteDialogOpen(false)} variant="outlined">
+          <Button onClick={closeHardDeleteDialog} variant="outlined">
             Cancelar
           </Button>
           <Button
             onClick={async () => {
               if (selectedReport) {
                 await hardDeleteReport(selectedReport);
-                setHardDeleteDialogOpen(false);
-                setSelectedReport(null);
+                closeHardDeleteDialog();
               }
             }}
             color="error"
@@ -978,3 +953,5 @@ export default function ReportListPage() {
     </>
   );
 }
+
+

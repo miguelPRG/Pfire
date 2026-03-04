@@ -58,6 +58,30 @@ const ProtectedRoute = ({ element }: { element: ReactElement }) => {
   return element;
 };
 
+// Rotas que exigem permissÃ£o de admin (ou superadmin)
+const AdminRoute = ({ element }: { element: ReactElement }) => {
+  const { user, empresa, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingAnimation />;
+  }
+
+  if (!user) {
+    return <Login />;
+  }
+
+  if (!empresa) {
+    return <ChooseCompanyPage />;
+  }
+
+  const isAdmin = Boolean(empresa?.isAdmin) || Boolean(user?.isSuperAdmin);
+  if (!isAdmin) {
+    return <Navigate to="/" />;
+  }
+
+  return element;
+};
+
 // Rotas públicas, acessível sem autenticação
 const PublicRoute = ({ element }: { element: ReactElement }) => {
   const { user, loading } = useAuth();
@@ -155,17 +179,17 @@ function App() {
             <Route path="/login" element={<PublicRoute element={<Login />} />} />
             <Route path="/forgot-password" element={<PublicRoute element={<ForgotPasswordPage />} />} />
             <Route path="/" element={<ProtectedRoute element={<Home />} />} />
-            <Route path="/users-list" element={<ProtectedRoute element={<UserManagementTable />} />} />
+            <Route path="/users-list" element={<AdminRoute element={<UserManagementTable />} />} />
             <Route path="/clients-list" element={<ProtectedRoute element={<ClientManagementTable />} />} />
-            <Route path="/add-client" element={<ProtectedRoute element={<AddNewClient />} />} />
+            <Route path="/add-client" element={<AdminRoute element={<AddNewClient />} />} />
             <Route path="/edit-profile" element={<ProtectedRoute element={<EditProfilePage />} />} />
             <Route path="/choose-company" element={<CompanyRoute element={<ChooseCompanyPage />} />} />
             <Route path="/create-company" element={<CompanyRoute element={<CreateCompanyPage />} />} />
             <Route path="/report-models" element={<ProtectedRoute element={<ReportModelListPage />} />} />
-            <Route path="/report-templates" element={<ProtectedRoute element={<ReportTemplatesPage />} />} />
+            <Route path="/report-templates" element={<AdminRoute element={<ReportTemplatesPage />} />} />
             <Route path="/add-new-report" element={<ProtectedRoute element={<AddNewReportPage />} />} />
             <Route path="/reports-list" element={<ProtectedRoute element={<ReportListPage />} />} />
-            <Route path="/editar-criterio" element={<ProtectedRoute element={<CreateCriteriaPage />} />} />
+            <Route path="/editar-criterio" element={<AdminRoute element={<CreateCriteriaPage />} />} />
             {/* Rota de fallback para redirecionar usuários não autenticados */}
             <Route path="/add-new-report" element={<ProtectedRoute element={<AddNewReportPage />} />} />
             <Route path="/plans" element={<ProtectedRoute element={<PricingPage />} />} />

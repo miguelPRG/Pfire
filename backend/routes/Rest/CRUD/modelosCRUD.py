@@ -7,6 +7,7 @@ from models.modeloCamposModels import (
 from database import modelos_collection, users_empresas_collection, empresas_collection
 from bson import ObjectId
 from datetime import datetime
+from asyncio import gather
 
 routerModelo = APIRouter(prefix="/modelo", tags=["modelo"])
 
@@ -36,7 +37,12 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
     modelo.empresa_id = ObjectId(modelo.empresa_id)
 
     # 3) Verificar se a empresa existe
-    empresa_found = await empresas_collection.find_one({"_id": modelo.empresa_id})
+    empresa_found = empresas_collection.find_one({"_id": modelo.empresa_id})
+
+    modelo_found = modelos_collection.find_one({"empresa_id": modelo.empresa_id, "modelo_nome": modelo.modelo_nome})
+
+    empresa_found, modelo_found = await gather(empresa_found, modelo_found)
+
     if not empresa_found:
         raise HTTPException(status_code=400, detail="Empresa não encontrada.")
 

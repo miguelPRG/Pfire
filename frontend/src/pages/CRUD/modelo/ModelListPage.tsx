@@ -410,29 +410,31 @@ export default function ReportModelListPage() {
               Sem critérios.
             </Typography>
 
-            <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 1, justifyContent: "center" }}>
-              <Tooltip title="Criar critério para este modelo" placement="top">
-                <IconButton
-                  onClick={() => navigate("/editar-criterio", { state: { modeloId: modelo.id } })}
-                  // forçar tamanho e centralização do ícone
-                  sx={{
-                    width: 40,
-                    height: 40,
-                    minWidth: 40,
-                    minHeight: 40,
-                    p: 0,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor: "primary.main",
-                    color: "#fff",
-                    "&:hover": { backgroundColor: "primary.dark" },
-                  }}
-                >
-                  <AddCommentIcon sx={{ fontSize: 24, color: "#fff" }} />
-                </IconButton>
-              </Tooltip>
-            </Box>
+            {empresa?.isAdmin && (
+              <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 1, justifyContent: "center" }}>
+                <Tooltip title="Criar critério para este modelo" placement="top">
+                  <IconButton
+                    onClick={() => navigate("/editar-criterio", { state: { modeloId: modelo.id } })}
+                    // forçar tamanho e centralização do ícone
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      minWidth: 40,
+                      minHeight: 40,
+                      p: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      backgroundColor: "primary.main",
+                      color: "#fff",
+                      "&:hover": { backgroundColor: "primary.dark" },
+                    }}
+                  >
+                    <AddCommentIcon sx={{ fontSize: 24, color: "#fff" }} />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+            )}
           </Paper>
         ) : (
           <TableContainer
@@ -528,13 +530,15 @@ export default function ReportModelListPage() {
           <Typography variant="h5" sx={{ fontWeight: "bold", fontSize: 30, color: theme.palette.text.primary }}>
             Modelos de Relatórios
           </Typography>
-          <Button
-            variant="contained"
-            onClick={() => navigate("/report-templates")}
-            sx={{ textTransform: "none", height: "40px", width: "220px" }}
-          >
-            Adicionar novo Modelo
-          </Button>
+          {empresa?.isAdmin && (
+            <Button
+              variant="contained"
+              onClick={() => navigate("/report-templates")}
+              sx={{ textTransform: "none", height: "40px", width: "220px" }}
+            >
+              Adicionar novo Modelo
+            </Button>
+          )}
         </Box>
 
         {/* Barra de pesquisa (enter para pesquisar) */}
@@ -610,24 +614,28 @@ export default function ReportModelListPage() {
                 modelos.map((modelo: any) => (
                   <TableRow key={modelo.id} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
                     <TableCell>
-                      <Link
-                        component="button"
-                        onClick={() =>
-                          navigate("/report-templates", {
-                            state: {
-                              modelo: {
-                                id: modelo.id,
-                                modeloNome: modelo.modeloNome,
-                                customFields: modelo.customFields,
-                                createdAt: modelo.createdAt,
+                      {empresa?.isAdmin ? (
+                        <Link
+                          component="button"
+                          onClick={() =>
+                            navigate("/report-templates", {
+                              state: {
+                                modelo: {
+                                  id: modelo.id,
+                                  modeloNome: modelo.modeloNome,
+                                  customFields: modelo.customFields,
+                                  createdAt: modelo.createdAt,
+                                },
                               },
-                            },
-                          })
-                        }
-                        sx={{ cursor: "pointer", textDecoration: "none" }}
-                      >
-                        {modelo.modeloNome}
-                      </Link>
+                            })
+                          }
+                          sx={{ cursor: "pointer", textDecoration: "none" }}
+                        >
+                          {modelo.modeloNome}
+                        </Link>
+                      ) : (
+                        <span>{modelo.modeloNome}</span>
+                      )}
                     </TableCell>
                     <TableCell>{new Date(modelo.createdAt).toLocaleDateString()}</TableCell>
                     {Array.isArray(modelo.customFields) &&
@@ -671,74 +679,75 @@ export default function ReportModelListPage() {
                       ))}
                     <TableCell align="center">
                       <Box sx={{ display: "flex", gap: 2, justifyContent: "space-between" }}>
+                        <Tooltip title="Adicionar Relatório" placement="top">
+                          <IconButton
+                            onClick={() =>
+                              navigate("/add-new-report", {
+                                state: {
+                                  selectedModel: modelo,
+                                },
+                              })
+                            }
+                            sx={{
+                              color: "#fff",
+                              backgroundColor: "primary.main",
+                              border: "1px solid",
+                              borderColor: "primary.main",
+                              "&:hover": {
+                                backgroundColor: "primary.dark",
+                                color: "#fff",
+                              },
+                              width: 40,
+                              height: 40,
+                            }}
+                          >
+                            <Typography
+                              component="span"
+                              sx={{
+                                fontSize: 26,
+                                fontWeight: "bold",
+                                color: "#fff",
+                              }}
+                            >
+                              +
+                            </Typography>
+                          </IconButton>
+                        </Tooltip>
+
+                        <Tooltip title="Ver relatórios" placement="top">
+                          <IconButton
+                            aria-label="Ver relatórios"
+                            onClick={() =>
+                              navigate("/reports-list", {
+                                state: {
+                                  filter: {
+                                    modeloId: modelo.id,
+                                  },
+                                },
+                              })
+                            }
+                            sx={{
+                              color: "#fff",
+                              backgroundColor: "primary.main",
+                              border: "1px solid",
+                              borderColor: "primary.main",
+                              "&:hover": {
+                                backgroundColor: "primary.dark",
+                                color: "#fff",
+                              },
+                              width: 40,
+                              height: 40,
+                            }}
+                          >
+                            <DescriptionIcon sx={{ fontSize: 24, color: "#fff" }} />
+                          </IconButton>
+                        </Tooltip>
+
                         {empresa?.isAdmin && (
                           <>
-                            <Tooltip title="Adicionar Relatório" placement="top">
-                              <IconButton
-                                onClick={() =>
-                                  navigate("/add-new-report", {
-                                    state: {
-                                      selectedModel: modelo,
-                                    },
-                                  })
-                                }
-                                sx={{
-                                  color: "#fff",
-                                  backgroundColor: "primary.main",
-                                  border: "1px solid",
-                                  borderColor: "primary.main",
-                                  "&:hover": {
-                                    backgroundColor: "primary.dark",
-                                    color: "#fff",
-                                  },
-                                  width: 40,
-                                  height: 40,
-                                }}
-                              >
-                                <Typography
-                                  component="span"
-                                  sx={{
-                                    fontSize: 26,
-                                    fontWeight: "bold",
-                                    color: "#fff",
-                                  }}
-                                >
-                                  +
-                                </Typography>
-                              </IconButton>
-                            </Tooltip>
-
                             <Tooltip title="Clonar Modelo" placement="top" sx={{ width: 40, height: 40 }}>
                               <IconButton onClick={() => requestClone(modelo.id)} disabled={cloningId === modelo.id}>
                                 <ContentCopyIcon />
-                              </IconButton>
-                            </Tooltip>
-                            <Tooltip title="Ver relatórios" placement="top">
-                              <IconButton
-                                aria-label="Ver relatórios"
-                                onClick={() =>
-                                  navigate("/reports-list", {
-                                    state: {
-                                      filter: {
-                                        modeloId: modelo.id,
-                                      },
-                                    },
-                                  })
-                                }
-                                sx={{
-                                  color: "#fff",
-                                  backgroundColor: "primary.main",
-                                  border: "1px solid",
-                                  borderColor: "primary.main",
-                                  "&:hover": {
-                                    backgroundColor: "primary.dark",
-                                    color: "#fff",
-                                  },
-                                  width: 40,
-                                  height: 40,
-                                }}
-                              >
-                                <DescriptionIcon sx={{ fontSize: 24, color: "#fff" }} />
                               </IconButton>
                             </Tooltip>
 

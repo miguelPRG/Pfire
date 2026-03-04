@@ -195,10 +195,9 @@ async def create_relatorio(request: Request, relatorio: RelatorioCreate):
     return {"message": "Relatório criado com sucesso!"}
 
 
-# Apagar Relatório (soft delete) – sem alterações de negócio
+# Apagar Relatório (soft delete)
 @routerRelatorio.delete("/")
 async def delete_relatorio(relatorio: RelatorioActivation, request: Request):
-    # Sacar jwt
     jwt = getattr(request.state, "jwt", None)
 
     # Verificar se o usuário é super admin
@@ -233,12 +232,9 @@ async def delete_relatorio(relatorio: RelatorioActivation, request: Request):
     return {"message": "Relatório apagado com sucesso!"}
 
 
-# Reativar Relatório – sem alterações
+# Reativar Relatório
 @routerRelatorio.put("/activate")
 async def activate_relatorio(relatorio: RelatorioActivation, request: Request):
-
-    # Validar o reCAPTCHA token
-    # await validar_recaptcha_token(relatorio.recaptchaToken, "activate")
 
     # Sacar jwt
     jwt = getattr(request.state, "jwt", None)
@@ -275,14 +271,19 @@ async def activate_relatorio(relatorio: RelatorioActivation, request: Request):
     return {"message": "Relatório reativado com sucesso!"}
 
 
-# Hard delete – sem alterações
+# Hard delete
 @routerRelatorio.delete("/hard-delete")
 async def hard_delete_relatorio(relatorio: RelatorioActivation, request: Request):
 
-    # Sacar jwt
     jwt = getattr(request.state, "jwt", None)
+    if not jwt or "user_id" not in jwt:
+        raise HTTPException(status_code=401, detail="Token JWT inválido ou ausente")
 
-    # Permissões iguais ao soft delete
+    user_id = ObjectId(jwt["user_id"])
+    empresa_id = ObjectId(relatorio.empresa_id)
+    relatorio_id = ObjectId(relatorio.id)
+
+    # Hard delete: apenas SuperAdmin ou admin da empresa.
     if not jwt.get("isSuperAdmin", False):
         user_empresa = await users_empresas_collection.find_one(
             {"user_id": jwt["user_id"], "empresa_id": ObjectId(relatorio.empresa_id)}

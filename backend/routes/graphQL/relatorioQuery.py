@@ -4,7 +4,7 @@ from .types.relatorioType import (
     RelatorioCountByCliente,
     RelatorioCountByModelo,
     RelatorioFilter,
-)  # Adicione o tipo RelatorioFilter
+)
 from database import relatorios_collection, users_empresas_collection
 from .utils.limpar import filter_null_fields
 from fastapi import HTTPException
@@ -32,7 +32,7 @@ class RelatorioQuery:
         modelo_id = ObjectId(modelo_id)
         empresa_id = ObjectId(empresa_id)
 
-        lmt = 4  # Limite padrão de resultados Relatórpor página
+        lmt = 4  # Limite padrÃ£o de resultados RelatÃ³rpor pÃ¡gina
 
         if start < 0:
             start = 0
@@ -46,15 +46,12 @@ class RelatorioQuery:
             if not user_empresa:
                 raise HTTPException(
                     status_code=403,
-                    detail="Acesso negado! Não tens permissão para ver relatórios nesta empresa.",
+                    detail="Acesso negado! NÃ£o tens permissÃ£o para ver relatÃ³rios nesta empresa.",
                 )
 
-        # Filtro inicial
         filtro = {"modelo_id": modelo_id}
 
-        # Adicione os filtros avançados
         if filter:
-            # Verifique cada atributo do objeto `filter` diretamente
             if filter.clienteNome:
                 filtro["cliente_nome"] = {
                     "$regex": f"{filter.clienteNome}",
@@ -65,34 +62,18 @@ class RelatorioQuery:
                     "$regex": f"^{filter.clienteNif}",
                     "$options": "i",
                 }
-
             elif filter.numero is not None:
                 filtro["numero"] = filter.numero
 
-        # Verificar permissões
-        if not jwt.get("isSuperAdmin", False):
-            user_empresa = await users_empresas_collection.find_one(
-                {"user_id": jwt["user_id"], "empresa_id": empresa_id}
-            )
-            if not user_empresa:
-                raise HTTPException(
-                    status_code=403,
-                    detail="Acesso negado! Não tens permissão para ver relatórios nesta empresa.",
-                )
-
-        # Buscar relatórios no banco de dados
         async for relatorio in (
             relatorios_collection.find(filtro).skip(start).limit(lmt)
         ):
-
-            # Extraia os campos personalizados (chaves que começam com "custom_")
             custom_fields = [
                 {"key": k, "value": v}
                 for k, v in relatorio.items()
                 if k.startswith("custom_")
             ]
 
-            # Mapeia os dados do relatório
             relatorio_data = {
                 "id": str(relatorio.get("_id")),
                 "numero": relatorio.get("numero"),
@@ -105,7 +86,6 @@ class RelatorioQuery:
                 "isActive": relatorio.get("isActive"),
             }
 
-            # Remover campos restritos para usuários não administradores
             if not jwt.get("isSuperAdmin", False):
                 relatorio_data = {
                     k: v for k, v in relatorio_data.items() if k not in ["created_by"]
@@ -116,18 +96,17 @@ class RelatorioQuery:
         total_relatorios = await relatorios_collection.count_documents(filtro)
         return RelatorioList(relatorios=relatorios, totalRelatorios=total_relatorios)
 
-    # Esta query é utilizada para o gráfico de relatórios por cliente
+    # Esta query Ã© utilizada para o grÃ¡fico de relatÃ³rios por cliente
     @strawberry.field
     async def getRelatoriosCountByClientes(
         self, info: Info, empresa_id: str
     ) -> list[RelatorioCountByCliente]:
 
-        empresa_id = ObjectId(empresa_id)
         request = info.context["request"]
         jwt = getattr(request.state, "jwt", None)
         user_id = ObjectId(jwt["user_id"])
+        empresa_id = ObjectId(empresa_id)
 
-        # Verificar permissões
         if not jwt.get("isSuperAdmin", False):
             user_empresa = await users_empresas_collection.find_one(
                 {"user_id": user_id, "empresa_id": empresa_id}
@@ -135,10 +114,9 @@ class RelatorioQuery:
             if not user_empresa:
                 raise HTTPException(
                     status_code=403,
-                    detail="Acesso negado! Não tens permissão para ver relatórios nesta empresa.",
+                    detail="Acesso negado! NÃ£o tens permissÃ£o para ver relatÃ³rios nesta empresa.",
                 )
 
-        # Pipeline sempre definido
         pipeline = [
             {"$match": {"empresa_id": empresa_id}},
             {
@@ -172,19 +150,19 @@ class RelatorioQuery:
 
         return consulta
 
-    # Esta query é utilizada para o gráfico de relatórios por modelo
+    # Esta query Ã© utilizada para o grÃ¡fico de relatÃ³rios por modelo
     @strawberry.field
     async def getRelatoriosCountByModelo(
         self, info: Info, empresa_id: str
     ) -> list[RelatorioCountByModelo]:
 
-        empresa_id = ObjectId(empresa_id)
         request = info.context["request"]
         jwt = getattr(request.state, "jwt", None)
 
-        # Verificar permissões
+        user_id = ObjectId(jwt["user_id"])
+        empresa_id = ObjectId(empresa_id)
+
         if not jwt.get("isSuperAdmin", False):
-            user_id = ObjectId(jwt["user_id"])
             user_empresa = await users_empresas_collection.find_one(
                 {"user_id": user_id, "empresa_id": empresa_id}
             )
@@ -192,10 +170,9 @@ class RelatorioQuery:
             if not user_empresa:
                 raise HTTPException(
                     status_code=403,
-                    detail="Acesso negado! Não tens permissão para ver relatórios nesta empresa.",
+                    detail="Acesso negado! NÃ£o tens permissÃ£o para ver relatÃ³rios nesta empresa.",
                 )
 
-        # Pipeline para contar relatórios por modelo
         pipeline = [
             {"$match": {"empresa_id": empresa_id}},
             {

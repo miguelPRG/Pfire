@@ -29,6 +29,7 @@ class UserQuery:
         empresa = await empresas_collection.find_one({"_id": empresa_id})
         if not empresa:
             raise HTTPException(status_code=404, detail="Empresa não encontrada.")
+        empresa_created_by = empresa.get("created_by")
 
         if not jwt.get("isSuperAdmin", False):
             user_empresa = await users_empresas_collection.find_one(
@@ -98,6 +99,7 @@ class UserQuery:
                     continue
 
                 role = "Admin" if user_empresa.get("isAdmin") else "Técnico"
+                is_owner = user_empresa.get("created_by") == empresa_created_by
 
                 user_data = {
                     "id": str(user.get("_id")),
@@ -105,6 +107,7 @@ class UserQuery:
                     "email": user.get("email"),
                     "telefone": user.get("telefone"),
                     "role": role,
+                    "isOwner": is_owner,
                     "created_at": user.get("created_at"),
                     "updated_at": user.get("updated_at"),
                     "last_login": user.get("last_login"),

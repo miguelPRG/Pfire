@@ -9,10 +9,8 @@ export const GET_USERS = gql`
         email
         telefone
         role
-        createdAt
-        updatedAt
-        lastLogin
         isActive
+        isOwner
       }
       totalUsers
     }

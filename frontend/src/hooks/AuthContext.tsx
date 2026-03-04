@@ -41,6 +41,7 @@ interface EmpresaRegistered {
   morada: string;
   codigo_postal: string;
   telefone: string;
+  createdBy: string;
 }
 
 interface Empresa {
@@ -192,6 +193,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         codigoPostal: empresaData.codigoPostal,
         logo: empresaData.logo,
         isAdmin: empresaData.isAdmin ?? user.isSuperAdmin ?? false,
+        createdBy: empresaData.createdBy, // Adicione esta linha para armazenar o created_by
       });
 
       setLoading(false);
@@ -373,7 +375,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localidade: empresa.localidade,
       codigoPostal: empresa.codigoPostal,
       logo: empresa.logo,
-      isAdmin: empresa.isAdmin,
+      isAdmin: Boolean(empresa.isAdmin) || Boolean(user?.isSuperAdmin),
     });
 
     localStorage.setItem("empresaId", empresa.id);

@@ -43,8 +43,10 @@ interface User {
   email: string;
   telefone: string;
   role: string;
+  isOwner?: boolean;
   acao?: string;
   createdAt?: string;
+  createdBy?: string;
   updatedAt?: string;
   lastLogin?: string;
   isActive?: boolean;
@@ -155,6 +157,10 @@ export default function UserManagementTable() {
   const pageCount = Math.ceil(totalUsers / rowsPerPage);
 
   const handleToggleAdmin = async (usr: User) => {
+    if (usr.isOwner) {
+      setAlert({ message: "O criador da empresa não pode ter o papel alterado.", isError: true });
+      return;
+    }
     setRoleLoading((prev) => ({ ...prev, [usr.id]: true }));
     const endpoint = usr.role == "Admin" ? "/backend/user/revoke_admin" : "/backend/user/set_admin";
     try {
@@ -416,7 +422,7 @@ export default function UserManagementTable() {
                           color: theme.palette.mode === "light" ? theme.palette.text.primary : "#fff",
                         }}
                         onClick={() => handleToggleAdmin(user)}
-                        disabled={!!roleLoading[user.id]}
+                        disabled={!!roleLoading[user.id] || Boolean(user.isOwner)}
                       >
                         {roleLoading[user.id] ? "Alterando..." : user.role}
                       </Button>
@@ -425,7 +431,13 @@ export default function UserManagementTable() {
                     <TableCell>
                       <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-start" }}>
                         <Button
-                          onClick={() => handleOpenDeleteDialog(user.id)}
+                          onClick={() => {
+                            if (user.isOwner) {
+                              setAlert({ message: "O criador da empresa não pode ser expulso.", isError: true });
+                              return;
+                            }
+                            handleOpenDeleteDialog(user.id);
+                          }}
                           sx={{
                             minWidth: 0,
                             width: 36,
@@ -436,6 +448,7 @@ export default function UserManagementTable() {
                             "&:hover": { backgroundColor: "error.dark" },
                             px: 0,
                           }}
+                          disabled={Boolean(user.isOwner)}
                         >
                           <Delete fontSize="small" />
                         </Button>

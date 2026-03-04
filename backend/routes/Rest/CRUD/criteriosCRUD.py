@@ -29,7 +29,6 @@ async def create_criterio(criterio: CriterioCreate, request: Request):
     data = datetime.now()
 
     criterio_doc = criterio.model_dump(exclude_unset=True)
-    del criterio_doc["recaptcha_token"]
     criterio_doc["created_by"] = user_id
     criterio_doc["created_at"] = data
     criterio_doc["updated_by"] = user_id

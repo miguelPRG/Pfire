@@ -18,6 +18,11 @@ ALLOWED_DATATYPES = {
     "critério",
 }  # Tipos de dados permitidos
 
+PRO_DATATYPES = {
+    "object",
+    "array",
+    "critério",   
+}
 
 # Função auxiliar para validação de campos personalizados no método de criação
 def validate_field(key, value, indice=0):
@@ -139,7 +144,7 @@ class ModelosCamposCreate(BaseModel):
     def validate_fields(cls, values):
         if "modelo_nome" in values and isinstance(values["modelo_nome"], str):
             values["modelo_nome"] = values["modelo_nome"].strip()
-        if len(values.keys()) < 4:
+        if len(values.keys()) < 3:
             raise HTTPException(
                 status_code=400,
                 detail="O modelo deve contar pelo menos um campo personalizado",
