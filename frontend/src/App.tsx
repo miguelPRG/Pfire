@@ -112,14 +112,16 @@ const CompanyRoute = ({ element }: { element: ReactElement }) => {
 };
 
 // Layout base
-const Layout = memo(({ userId, empresaID, children }: { userId: string | null; empresaID: string | null; children: React.ReactNode }) => {
-  return (
-    <>
-      {userId && empresaID && <ResponsiveAppBar />}
-      <Box component="main">{children}</Box>
-    </>
-  );
-});
+const Layout = memo(
+  ({ userId, empresaID, children }: { userId: string | null; empresaID: string | null; children: React.ReactNode }) => {
+    return (
+      <>
+        {userId && empresaID && <ResponsiveAppBar />}
+        <Box component="main">{children}</Box>
+      </>
+    );
+  }
+);
 
 // Botão de troca de tema
 const ThemeToggleButton = () => {

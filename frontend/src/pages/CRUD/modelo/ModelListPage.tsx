@@ -411,7 +411,9 @@ export default function ReportModelListPage() {
             </Typography>
 
             {empresa?.isAdmin && (
-              <Box sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 1, justifyContent: "center" }}>
+              <Box
+                sx={{ display: "flex", flexDirection: "row", alignItems: "center", gap: 1, justifyContent: "center" }}
+              >
                 <Tooltip title="Criar critério para este modelo" placement="top">
                   <IconButton
                     onClick={() => navigate("/editar-criterio", { state: { modeloId: modelo.id } })}

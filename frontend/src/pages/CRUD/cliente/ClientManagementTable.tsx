@@ -280,14 +280,16 @@ export default function ClientManagementTable() {
           <Typography variant="h5" sx={{ fontWeight: "bold", fontSize: 30 }}>
             Clientes
           </Typography>
-          {empresa?.isAdmin && (<Button
-            variant="contained"
-            color="primary"
-            onClick={() => navigate("/add-client")}
-            sx={{ textTransform: "none", height: 40, width: 180, p: "5px" }}
-          >
-            Adicionar novo Cliente
-          </Button>)}
+          {empresa?.isAdmin && (
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={() => navigate("/add-client")}
+              sx={{ textTransform: "none", height: 40, width: 180, p: "5px" }}
+            >
+              Adicionar novo Cliente
+            </Button>
+          )}
         </Box>
 
         <Box
