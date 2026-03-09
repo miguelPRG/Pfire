@@ -32,7 +32,7 @@ class RelatorioQuery:
         modelo_id = ObjectId(modelo_id)
         empresa_id = ObjectId(empresa_id)
 
-        lmt = 4  # Limite padrÃ£o de resultados RelatÃ³rpor pÃ¡gina
+        lmt = 15  # Limite padrÃ£o de resultados RelatÃ³rpor pÃ¡gina
 
         if start < 0:
             start = 0

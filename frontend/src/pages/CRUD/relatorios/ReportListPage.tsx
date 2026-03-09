@@ -105,7 +105,7 @@ export default function ReportListPage() {
   const [exportDialogOpen, setExportDialogOpen] = useState(false); // dialog de exportação
   const [selectedClienteForExport, setSelectedClienteForExport] = useState<any>(null); // cliente selecionado
   const [clienteInputValue, setClienteInputValue] = useState(""); // input do autocomplete
-  const rowsPerPage = 4; // número de linhas por página
+  const rowsPerPage = 15; // número de linhas por página
   const navigate = useNavigate(); // navegação de rotas
   const theme = useTheme(); // tema MUI
   const { empresa, user } = useAuth(); // contexto de autenticação/empresa
