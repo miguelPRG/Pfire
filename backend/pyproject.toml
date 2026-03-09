@@ -14,10 +14,10 @@ dependencies = [
     "motor>=3.7.1",
     "passlib>=1.7.4",
     "pymongo>=4.16.0",
-    "redis>=7.2.1",
+    "redis>=7.3.0",
     "sib-api-v3-sdk>=7.6.0",
     "starlette>=0.52.1",
-    "strawberry-graphql>=0.308.3",
-    "stripe>=14.4.0",
+    "strawberry-graphql>=0.311.0",
+    "stripe>=14.4.1",
     "weasyprint>=68.1",
 ]

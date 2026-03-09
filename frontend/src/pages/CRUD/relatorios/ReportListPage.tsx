@@ -953,5 +953,3 @@ export default function ReportListPage() {
     </>
   );
 }
-
-
