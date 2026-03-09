@@ -106,7 +106,9 @@ async def set_admin(user: UserRole, request: Request):
     user.user_id = ObjectId(user.user_id)
     user.empresa_id = ObjectId(user.empresa_id)
 
-    empresa = await empresas_collection.find_one({"_id": user.empresa_id}, {"created_by": 1})
+    empresa = await empresas_collection.find_one(
+        {"_id": user.empresa_id}, {"created_by": 1}
+    )
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa não encontrada.")
 
@@ -118,7 +120,9 @@ async def set_admin(user: UserRole, request: Request):
             status_code=404, detail="Relação entre utilizador e empresa não encontrada."
         )
     if relacao_existente.get("created_by") == empresa.get("created_by"):
-        raise HTTPException(status_code=403, detail="Não é permitido alterar o papel deste utilizador.")
+        raise HTTPException(
+            status_code=403, detail="Não é permitido alterar o papel deste utilizador."
+        )
 
     # ✅ Se não for superadmin, verificar se é admin da empresa e não foi ele que criou
     if not jwt["isSuperAdmin"]:
@@ -160,7 +164,9 @@ async def remoke_admin(user: UserRole, request: Request):
     user.user_id = ObjectId(user.user_id)
     user.empresa_id = ObjectId(user.empresa_id)
 
-    empresa = await empresas_collection.find_one({"_id": user.empresa_id}, {"created_by": 1})
+    empresa = await empresas_collection.find_one(
+        {"_id": user.empresa_id}, {"created_by": 1}
+    )
     if not empresa:
         raise HTTPException(status_code=404, detail="Empresa não encontrada.")
 
@@ -172,7 +178,9 @@ async def remoke_admin(user: UserRole, request: Request):
             status_code=404, detail="Relação entre utilizador e empresa não encontrada."
         )
     if relacao_existente.get("created_by") == empresa.get("created_by"):
-        raise HTTPException(status_code=403, detail="Não é permitido alterar o papel deste utilizador.")
+        raise HTTPException(
+            status_code=403, detail="Não é permitido alterar o papel deste utilizador."
+        )
 
     # ✅ Se não for superadmin, verificar se é admin da empresa e não foi ele que criou
     if not jwt["isSuperAdmin"]:
@@ -253,7 +261,9 @@ async def expel_user(user: UserExpel, request: Request):
     user.user_id = ObjectId(user.user_id)
     user.empresa_id = ObjectId(user.empresa_id)
 
-    empresa_found = await empresas_collection.find_one({"_id": user.empresa_id}, {"created_by": 1})
+    empresa_found = await empresas_collection.find_one(
+        {"_id": user.empresa_id}, {"created_by": 1}
+    )
 
     if not empresa_found:
         raise HTTPException(status_code=404, detail="Empresa não encontrada.")
