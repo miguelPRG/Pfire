@@ -232,7 +232,6 @@ async def activate_user(user: UserActivation, request: Request):
 
     if (
         jwt["user_id"] != str(filtro.get("_id", ""))
-        and jwt["email"] != filtro.get("email")
         and not jwt["isSuperAdmin"]
     ):
         raise HTTPException(

@@ -7,6 +7,7 @@ from os import getenv
 from datetime import datetime
 import logging
 from controller.jwtValidation import generate_jwt
+from controller.cookie_settings import get_auth_cookie_settings
 
 logger = logging.getLogger(__name__)
 
@@ -180,13 +181,7 @@ async def refresh_token_after_payment(request: Request, response: Response):
         )
 
         # ✅ Enviar novo JWT no cookie HTTP-only secure
-        response.set_cookie(
-            key="_fp",
-            value=new_jwt,
-            httponly=True,
-            secure=True,
-            samesite="None",
-        )
+        response.set_cookie(key="_fp", value=new_jwt, **get_auth_cookie_settings(request))
 
         logger.info(
             f"Novo JWT gerado para user {user_id} com plano {user.get('plano')}"

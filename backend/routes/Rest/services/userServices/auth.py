@@ -27,7 +27,7 @@ from base64 import b64encode
 from uuid import uuid4
 from apis.brevo_client import enviar_email
 from pymongo.errors import DuplicateKeyError
-
+from controller.cookie_settings import clear_auth_cookie, get_auth_cookie_settings
 
 routerAuth = APIRouter(prefix="/user")
 
@@ -89,7 +89,6 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
             "last_login": data,
             "firebaseUID": uid,
             "plano": "free",  # Plano padrão
-            "stripe_customer_id": await create_stripe_customer(email, nome),
         }
 
         result = await users_collection.insert_one(insert_data)
@@ -192,13 +191,7 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
 
     response = JSONResponse(content=response_payload)
     # seta cookie HTTP-only com o JWT (apenas o token, não inclui o JSON)
-    response.set_cookie(
-        key="_fp",
-        value=jwt_token,
-        httponly=True,
-        secure=True,
-        samesite="None",
-    )
+    response.set_cookie(key="_fp", value=jwt_token, **get_auth_cookie_settings(request))
     return response
 
 
@@ -248,9 +241,7 @@ async def login(user: UserLogin, request: Request):
             "stripeCustomerId": db_user.get("stripe_customer_id", None),
         }
     )
-    response.set_cookie(
-        key="_fp", value=token, httponly=True, samesite="None", secure=True
-    )
+    response.set_cookie(key="_fp", value=token, **get_auth_cookie_settings(request))
 
     return response
 
@@ -263,7 +254,7 @@ async def auth_user(request: Request):
 
     assinatura_val = await users_collection.find_one(
         {"_id": ObjectId(jwt["user_id"])},
-        {"assinatura": 1, "plano": 1, "stripe_customer_id": 1},
+        {"assinatura": 1, "plano": 1, "stripe_customer_id": 1, "telefone": 1, "firebaseUID": 1},
     )
 
     # converter para base64
@@ -276,11 +267,12 @@ async def auth_user(request: Request):
         "id": jwt["user_id"],
         "nome": jwt["nome"],
         "email": jwt["email"],
-        "telefone": jwt.get("telefone", None),
+        "telefone": assinatura_val.get("telefone", None),
         "assinatura": assinatura_val.get("assinatura", None),
         "isSuperAdmin": jwt.get("isSuperAdmin", False),
         "stripeCustomerId": assinatura_val.get("stripe_customer_id", None),
         "plano": assinatura_val.get("plano", "free"),
+        "firebaseUID": assinatura_val.get("firebaseUID", None),
     }
 
 
@@ -302,7 +294,7 @@ async def logout_user(request: Request, response: Response):
     await add_token_to_blacklist(token, jwt["exp"])
 
     # Elimina la cookie del JWT
-    response.delete_cookie("_fp", httponly=True, samesite="None", secure=True)
+    clear_auth_cookie(response, request)
     return {"message": "Logout efetuado com sucesso!"}
 
 
@@ -366,6 +358,12 @@ async def register_user(data: UserRegister, request: Request):
     new_user = data.user
     # Criptografar a senha
     new_user.password = pwd_context.hash(new_user.password)
+    try:
+        stripe_customer_id = await create_stripe_customer(
+            new_user.email, new_user.nome
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
     user_doc = new_user.model_dump(by_alias=True)
     user_doc.update(
         {
@@ -376,9 +374,7 @@ async def register_user(data: UserRegister, request: Request):
             "isActive": data.global_id
             is not None,  # Se for convidado, não está ativo até ativar o convite
             "plano": "free",  # Plano padrão
-            "stripe_customer_id": await create_stripe_customer(
-                new_user.email, new_user.nome
-            ),
+            "stripe_customer_id": stripe_customer_id,
         }
     )
 

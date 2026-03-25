@@ -13,7 +13,6 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions,
   Fade,
   Alert,
 } from "@mui/material";
@@ -369,29 +368,6 @@ export default function RegisterPage() {
               O seu registo foi concluído. Por favor, verifique o seu email para ativar a conta.
             </Typography>
           </DialogContent>
-          <DialogActions sx={{ justifyContent: "center", pb: 2 }}>
-            <Button
-              onClick={() => navigate("/login")}
-              variant="contained"
-              sx={{
-                background:
-                  theme.palette.mode === "dark"
-                    ? "linear-gradient(45deg, #43A047, #66BB6A)"
-                    : "linear-gradient(45deg, #4CAF50, #81C784)",
-                color: "#fff",
-                fontWeight: "bold",
-                px: 3,
-                "&:hover": {
-                  background:
-                    theme.palette.mode === "dark"
-                      ? "linear-gradient(45deg, #388E3C, #66BB6A)"
-                      : "linear-gradient(45deg, #388E3C, #66BB6A)",
-                },
-              }}
-            >
-              Ir para login
-            </Button>
-          </DialogActions>
         </Dialog>
         {noCompany && (
           <Typography variant="body1" sx={{ mt: 2 }}>

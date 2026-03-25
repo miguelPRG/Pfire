@@ -1,8 +1,14 @@
 import { createContext, useState, useContext, ReactNode, useEffect, useCallback } from "react";
+import { useQuery } from "@apollo/client/react";
 import { FirebaseLogin } from "../firebase";
 import { GET_EMPRESAS } from "../graphql/empresasQueries";
-import { useQuery } from "@apollo/client/react";
 import { useRecaptcha } from "./RecaptchaContext";
+
+type ApiResponsePayload = {
+  detail?: string;
+  message?: string;
+  [key: string]: unknown;
+};
 
 interface UserLoggedIn {
   id: string;
@@ -13,6 +19,7 @@ interface UserLoggedIn {
   isSuperAdmin?: boolean;
   stripeCustomerId?: string;
   plano?: string;
+  firebaseUID?: string;
 }
 
 interface UserRegistered {
@@ -54,6 +61,7 @@ interface Empresa {
   codigoPostal: string;
   logo: string;
   isAdmin: boolean | null;
+  createdBy?: string;
 }
 
 interface EmpresaUpdate {
@@ -63,13 +71,13 @@ interface EmpresaUpdate {
   morada?: string;
   localidade?: string;
   codigoPostal?: string;
-  logo?: string | Blob; // Permite string ou Blob para o logo
+  logo?: string | Blob;
 }
 
 interface AuthContextType {
   user: UserLoggedIn | null;
   empresa: Empresa | null;
-  loading: boolean; // <--- adicione isto
+  loading: boolean;
   registerUser: (payload: {
     user: UserRegistered;
     empresa: EmpresaRegistered | null | unknown;
@@ -78,19 +86,41 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   loginWithOAuth: (provider: "google" | "microsoft", global_id?: string) => Promise<boolean>;
   logout: () => Promise<void>;
+  refreshAuth: () => Promise<void>;
   chooseCompany: (empresa: Empresa) => void;
   updateUser: (user: UserUpdate) => Promise<void>;
   updatePassword: (passwordUpdate: PasswordUpdate) => Promise<void>;
   updateCompany: (empresa: EmpresaUpdate, id: string) => Promise<void>;
 }
 
+async function readResponsePayload(response: Response): Promise<ApiResponsePayload> {
+  const raw = await response.text();
+
+  if (!raw) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(raw) as ApiResponsePayload;
+  } catch {
+    return { message: raw.trim() };
+  }
+}
+
+function getResponseErrorMessage(response: Response, data: ApiResponsePayload, fallback: string): string {
+  return (
+    (typeof data.detail === "string" && data.detail) ||
+    (typeof data.message === "string" && data.message) ||
+    (response.status >= 500 ? "Erro interno do backend. Confirma se o servidor FastAPI esta levantado." : fallback)
+  );
+}
+
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
-// Para salir del contexto e eliminar a cookie de autenticação
+
 export function killAuthCookie() {
   try {
     document.cookie = `_fp=; Max-Age=0; path=/`;
     document.cookie = `_fp=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-    // Se o teu login setou domain, repete com domain explícito:
     document.cookie = `_fp=; Max-Age=0; path=/; domain=${location.hostname}`;
   } catch {}
 }
@@ -99,60 +129,88 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserLoggedIn | null>(null);
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [loading, setLoading] = useState(true);
-
-  // ✅ empresaId em estado (persistido no refresh)
   const [empresaId, setEmpresaId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     return localStorage.getItem("empresaId");
   });
 
-  // Hook para usar o reCAPTCHA
   const { generateToken } = useRecaptcha();
 
-  // Use o hook useQuery no topo do componente
   const { data, error } = useQuery(GET_EMPRESAS, {
     variables: { id: empresaId },
     skip: !user || !empresaId,
     fetchPolicy: "network-only",
   });
 
-  useEffect(() => {
-    async function checkAuth() {
-      try {
-        const response = await fetch("/backend/user/auth", {
-          method: "GET",
-          credentials: "include",
-        });
+  const buildUserState = useCallback(
+    (userData: UserLoggedIn): UserLoggedIn => ({
+      id: userData.id,
+      nome: userData.nome,
+      email: userData.email,
+      telefone: userData.telefone,
+      assinatura: userData.assinatura,
+      isSuperAdmin: userData.isSuperAdmin,
+      stripeCustomerId: userData.stripeCustomerId,
+      plano: userData.plano,
+      firebaseUID: userData.firebaseUID,
+    }),
+    []
+  );
 
-        const userData = await response.json();
+  const setAuthenticatedUser = useCallback(
+    (userData: UserLoggedIn) => {
+      const previousUserId = localStorage.getItem("userId");
 
-        console.log("Dados de autenticação do utilizador:", userData);
-
-        if (response.ok) {
-          setUser({
-            id: userData.id,
-            nome: userData.nome,
-            email: userData.email,
-            telefone: userData.telefone,
-            assinatura: userData.assinatura,
-            isSuperAdmin: userData.isSuperAdmin,
-            stripeCustomerId: userData.stripeCustomerId,
-            plano: userData.plano,
-          });
-        } else {
-          setLoading(false); // Set loading to false on error
-        }
-      } catch (error) {
-        console.error("Erro ao verificar autenticação:", error);
-        setLoading(false); // Set loading to false on error
+      if (previousUserId && previousUserId !== userData.id) {
+        localStorage.removeItem("empresaId");
+        setEmpresaId(null);
+        setEmpresa(null);
       }
+
+      localStorage.setItem("userId", userData.id);
+      setUser(buildUserState(userData));
+
+      if (!localStorage.getItem("empresaId")) {
+        setEmpresa(null);
+        setLoading(false);
+      }
+    },
+    [buildUserState]
+  );
+
+  const refreshAuth = useCallback(async () => {
+    setLoading(true);
+
+    try {
+      const response = await fetch("/backend/user/auth", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      const userData = await readResponsePayload(response);
+
+      if (!response.ok) {
+        throw new Error(getResponseErrorMessage(response, userData, "Erro ao verificar autenticacao."));
+      }
+
+      setAuthenticatedUser(userData as UserLoggedIn);
+    } catch (error) {
+      setUser(null);
+      setEmpresa(null);
+      setLoading(false);
+      throw error;
     }
-    checkAuth();
-  }, []); // Ensure this effect runs only once
+  }, [setAuthenticatedUser]);
+
+  useEffect(() => {
+    refreshAuth().catch((authError) => {
+      console.error("Erro ao verificar autenticacao:", authError);
+    });
+  }, [refreshAuth]);
 
   useEffect(() => {
     if (!user) {
-      console.log("Utilizador não autenticado");
+      console.log("Utilizador nao autenticado");
       return;
     }
 
@@ -171,80 +229,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    if (data) {
-      const empresaData = data?.getEmpresas?.empresas?.[0];
-
-      // ✅ Se id guardado já não for válido/permitido
-      if (!empresaData) {
-        localStorage.removeItem("empresaId");
-        setEmpresaId(null);
-        setEmpresa(null);
-        setLoading(false);
-        return;
-      }
-
-      setEmpresa({
-        id: empresaData.id,
-        nome: empresaData.nome,
-        nif: empresaData.nif,
-        telefone: empresaData.telefone,
-        morada: empresaData.morada,
-        localidade: empresaData.localidade,
-        codigoPostal: empresaData.codigoPostal,
-        logo: empresaData.logo,
-        isAdmin: empresaData.isAdmin ?? user.isSuperAdmin ?? false,
-        createdBy: empresaData.createdBy, // Adicione esta linha para armazenar o created_by
-      });
-
-      setLoading(false);
+    if (!data) {
+      return;
     }
+
+    const empresaData = data?.getEmpresas?.empresas?.[0];
+
+    if (!empresaData) {
+      localStorage.removeItem("empresaId");
+      setEmpresaId(null);
+      setEmpresa(null);
+      setLoading(false);
+      return;
+    }
+
+    setEmpresa({
+      id: empresaData.id,
+      nome: empresaData.nome,
+      nif: empresaData.nif,
+      telefone: empresaData.telefone,
+      morada: empresaData.morada,
+      localidade: empresaData.localidade,
+      codigoPostal: empresaData.codigoPostal,
+      logo: empresaData.logo,
+      isAdmin: empresaData.isAdmin ?? user.isSuperAdmin ?? false,
+      createdBy: empresaData.createdBy,
+    });
+
+    setLoading(false);
   }, [data, error, user, empresaId]);
 
   async function login(email: string, password: string) {
     if (!email || !password) {
-      console.error("Email e senha são obrigatórios!");
+      console.error("Email e senha sao obrigatorios!");
       return;
     }
 
     try {
       const token = await generateToken("login");
-      const response = await fetch(`/backend/user/login`, {
+      const response = await fetch("/backend/user/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         credentials: "include",
         body: JSON.stringify({
-          email: email,
-          password: password,
+          email,
+          password,
           recaptchaToken: token,
         }),
       });
 
-      const data = await response.json();
+      const data = await readResponsePayload(response);
       if (!response.ok) {
-        throw new Error(data.detail || "Erro desconhecido do servidor");
-      }
-
-      if (data.id != localStorage.getItem("userId")) {
-        localStorage.removeItem("empresaId"); // Limpa o empresaId se o userId for diferente
+        throw new Error(getResponseErrorMessage(response, data, "Erro desconhecido do servidor"));
       }
 
       setLoading(true);
-
-      // Guardar o id do user no localStorage
-      localStorage.setItem("userId", data.id);
-
-      setUser({
-        id: data.id,
-        nome: data.nome,
-        email: data.email,
-        assinatura: data.assinatura,
-        telefone: data.telefone,
-        isSuperAdmin: data.isSuperAdmin,
-        plano: data.plano,
-        stripeCustomerId: data.stripeCustomerId,
-      });
+      setAuthenticatedUser(data as UserLoggedIn);
     } catch (error) {
       console.error("Erro no login:", error);
       throw error;
@@ -262,7 +304,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = await generateToken("register");
       payload.recaptchaToken = token;
 
-      // Verifica se a empresa é null e remove do payload se for
       if (!payload.empresa) {
         delete payload.empresa;
       }
@@ -273,7 +314,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       console.log("Payload do registo:", payload);
 
-      const response = await fetch(`/backend/user/register`, {
+      const response = await fetch("/backend/user/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -282,13 +323,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      const data = await readResponsePayload(response);
 
       if (!response.ok) {
-        throw new Error(data.detail || "Erro desconhecido do backend");
+        throw new Error(getResponseErrorMessage(response, data, "Erro desconhecido do backend"));
       }
     } catch (error) {
-      console.error("Erro ao registrar usuário:", error);
+      console.error("Erro ao registrar usuario:", error);
       throw error;
     }
   }
@@ -304,46 +345,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         },
         body: JSON.stringify({
           firebase_token: idToken,
-          global_id: global_id, // Passa o global_id se estiver definido
+          global_id,
         }),
       });
 
-      const data = await response.json();
+      const data = await readResponsePayload(response);
 
       console.log("Dados do login com OAuth:", data);
 
       if (!response.ok) {
-        const msg = data?.detail || (await response.text()) || "OAuth login falhou";
-        throw new Error(msg);
+        throw new Error(getResponseErrorMessage(response, data, "OAuth login falhou"));
       }
 
-      setLoading(true); // <--- adicione isto para indicar que o login está em progresso
-
-      setUser({
-        id: data.id,
-        nome: data.nome,
-        email: data.email,
-        telefone: data.telefone,
-        assinatura: data.assinatura,
-        isSuperAdmin: data.isSuperAdmin,
-        plano: data.plano,
-        stripeCustomerId: data.stripeCustomerId,
-      });
+      setLoading(true);
+      setAuthenticatedUser(data as UserLoggedIn);
       return data.newUser as boolean;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Erro no login com OAuth:", error);
       setUser(null);
-      // Não lançar erro se for popup fechado pelo utilizador
+
+      const errorMessage = error instanceof Error ? error.message : "";
       if (
-        typeof error?.message === "string" &&
-        (error.message.includes("auth/popup-closed-by-user") || error.message.includes("auth/cancelled-popup-request"))
+        errorMessage.includes("auth/popup-closed-by-user") ||
+        errorMessage.includes("auth/cancelled-popup-request")
       ) {
-        // Apenas loga, não lança
         return false;
       }
-      // Substituir mensagens de erro do Firebase por mensagens personalizadas
-      const customError = new Error("Erro ao autenticar com a conta externa. Tente novamente.");
-      throw customError;
+
+      throw new Error("Erro ao autenticar com a conta externa. Tente novamente.");
     }
   }
 
@@ -352,112 +381,106 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setLoading(false);
     localStorage.removeItem("empresaId");
+    localStorage.removeItem("userId");
     setEmpresaId(null);
 
     try {
       await fetch("/backend/user/logout", {
         method: "POST",
         credentials: "include",
-      }); // await fetch("/backend/user/logout", { method: "POST", credentials: "include" }).catch(() => {}); } catch {}
-      killAuthCookie();
-    } catch (error) {
+      });
+    } catch {
       console.error("Erro ao fazer logout");
     }
+
+    killAuthCookie();
   }
 
-  function chooseCompany(empresa: Empresa) {
+  function chooseCompany(empresaSelected: Empresa) {
     setEmpresa({
-      id: empresa.id,
-      nome: empresa.nome,
-      nif: empresa.nif,
-      telefone: empresa.telefone,
-      morada: empresa.morada,
-      localidade: empresa.localidade,
-      codigoPostal: empresa.codigoPostal,
-      logo: empresa.logo,
-      isAdmin: Boolean(empresa.isAdmin) || Boolean(user?.isSuperAdmin),
+      id: empresaSelected.id,
+      nome: empresaSelected.nome,
+      nif: empresaSelected.nif,
+      telefone: empresaSelected.telefone,
+      morada: empresaSelected.morada,
+      localidade: empresaSelected.localidade,
+      codigoPostal: empresaSelected.codigoPostal,
+      logo: empresaSelected.logo,
+      isAdmin: Boolean(empresaSelected.isAdmin) || Boolean(user?.isSuperAdmin),
+      createdBy: empresaSelected.createdBy,
     });
 
-    localStorage.setItem("empresaId", empresa.id);
-    setEmpresaId(empresa.id); // ✅ sincroniza estado com storage
+    localStorage.setItem("empresaId", empresaSelected.id);
+    setEmpresaId(empresaSelected.id);
   }
 
-  const updateUser = useCallback(
-    async (user: UserUpdate) => {
-      if (user.nome) user.nome = user?.nome?.trim();
-      if (user.telefone) user.telefone = user?.telefone?.trim();
+  const updateUser = useCallback(async (userToUpdate: UserUpdate) => {
+    if (userToUpdate.nome) userToUpdate.nome = userToUpdate.nome.trim();
+    if (userToUpdate.telefone) userToUpdate.telefone = userToUpdate.telefone.trim();
 
-      const body = JSON.stringify({
-        nome: user.nome,
-        telefone: user.telefone,
-        assinatura: user.assinatura,
+    const body = JSON.stringify({
+      nome: userToUpdate.nome,
+      telefone: userToUpdate.telefone,
+      assinatura: userToUpdate.assinatura,
+    });
+
+    try {
+      const response = await fetch("/backend/user/", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body,
       });
 
-      try {
-        const response = await fetch("/backend/user/", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body,
-        });
-
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.detail || "Erro ao atualizar usuário");
-        }
-
-        setUser((prevUser) => {
-          if (!prevUser) return prevUser;
-          return {
-            ...prevUser,
-            id: prevUser.id,
-            nome: user.nome !== undefined ? user.nome : prevUser.nome,
-            telefone: user.telefone !== undefined ? user.telefone : prevUser.telefone,
-            assinatura: user.assinatura !== undefined ? user.assinatura : prevUser.assinatura,
-          } as UserLoggedIn;
-        });
-      } catch (error) {
-        console.error("Erro ao atualizar usuário:", error);
-        throw error;
+      if (!response.ok) {
+        const data = await readResponsePayload(response);
+        throw new Error(getResponseErrorMessage(response, data, "Erro ao atualizar usuario"));
       }
-    },
-    [generateToken]
-  );
 
-  const updatePassword = useCallback(
-    async (passwordUpdate: PasswordUpdate) => {
-      console.log(passwordUpdate);
+      setUser((prevUser) => {
+        if (!prevUser) return prevUser;
+        return {
+          ...prevUser,
+          nome: userToUpdate.nome !== undefined ? userToUpdate.nome : prevUser.nome,
+          telefone: userToUpdate.telefone !== undefined ? userToUpdate.telefone : prevUser.telefone,
+          assinatura: userToUpdate.assinatura !== undefined ? userToUpdate.assinatura : prevUser.assinatura,
+        };
+      });
+    } catch (error) {
+      console.error("Erro ao atualizar usuario:", error);
+      throw error;
+    }
+  }, []);
 
-      try {
-        const response = await fetch("/backend/user/update-password", {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            password: passwordUpdate.password,
-            newPassword: passwordUpdate.newPassword,
-            confirmPassword: passwordUpdate.confirmPassword,
-          }),
-        });
+  const updatePassword = useCallback(async (passwordUpdate: PasswordUpdate) => {
+    try {
+      const response = await fetch("/backend/user/update-password", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          password: passwordUpdate.password,
+          newPassword: passwordUpdate.newPassword,
+          confirmPassword: passwordUpdate.confirmPassword,
+        }),
+      });
 
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.detail || "Erro ao atualizar senha");
-        }
-      } catch (error) {
-        console.error("Erro ao atualizar password:", error);
-        throw error;
+      if (!response.ok) {
+        const data = await readResponsePayload(response);
+        throw new Error(getResponseErrorMessage(response, data, "Erro ao atualizar senha"));
       }
-    },
-    [generateToken]
-  );
+    } catch (error) {
+      console.error("Erro ao atualizar password:", error);
+      throw error;
+    }
+  }, []);
 
   const updateCompany = useCallback(
-    async (emp: EmpresaUpdate, id: string) => {
+    async (empresaToUpdate: EmpresaUpdate, id: string) => {
       const recaptchaToken = await generateToken("update");
 
       try {
@@ -466,37 +489,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           headers: {
             "Content-Type": "application/json",
           },
-
           credentials: "include",
           body: JSON.stringify({
             recaptchaToken,
-            nome: emp?.nome,
-            nif: emp.nif,
-            telefone: emp.telefone,
-            morada: emp.morada,
-            localidade: emp.localidade,
-            codigo_postal: emp.codigoPostal,
-            logo: emp.logo, // Se for uma string base64, remove o prefixo
+            nome: empresaToUpdate.nome,
+            nif: empresaToUpdate.nif,
+            telefone: empresaToUpdate.telefone,
+            morada: empresaToUpdate.morada,
+            localidade: empresaToUpdate.localidade,
+            codigo_postal: empresaToUpdate.codigoPostal,
+            logo: empresaToUpdate.logo,
           }),
         });
 
         if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.detail || "Erro ao atualizar empresa");
+          const data = await readResponsePayload(response);
+          throw new Error(getResponseErrorMessage(response, data, "Erro ao atualizar empresa"));
         }
 
         setEmpresa((prevEmpresa) => {
           if (!prevEmpresa) return prevEmpresa;
           return {
             ...prevEmpresa,
-            nome: emp.nome !== undefined ? emp.nome : prevEmpresa.nome,
-            nif: emp.nif !== undefined ? emp.nif : prevEmpresa.nif,
-            telefone: emp.telefone !== undefined ? emp.telefone : prevEmpresa.telefone,
-            morada: emp.morada !== undefined ? emp.morada : prevEmpresa.morada,
-            localidade: emp.localidade !== undefined ? emp.localidade : prevEmpresa.localidade,
-            codigoPostal: emp.codigoPostal !== undefined ? emp.codigoPostal : prevEmpresa.codigoPostal,
-            logo: emp.logo || null,
-          } as Empresa;
+            nome: empresaToUpdate.nome !== undefined ? empresaToUpdate.nome : prevEmpresa.nome,
+            nif: empresaToUpdate.nif !== undefined ? empresaToUpdate.nif : prevEmpresa.nif,
+            telefone: empresaToUpdate.telefone !== undefined ? empresaToUpdate.telefone : prevEmpresa.telefone,
+            morada: empresaToUpdate.morada !== undefined ? empresaToUpdate.morada : prevEmpresa.morada,
+            localidade: empresaToUpdate.localidade !== undefined ? empresaToUpdate.localidade : prevEmpresa.localidade,
+            codigoPostal:
+              empresaToUpdate.codigoPostal !== undefined ? empresaToUpdate.codigoPostal : prevEmpresa.codigoPostal,
+            logo: typeof empresaToUpdate.logo === "string" ? empresaToUpdate.logo : prevEmpresa.logo,
+          };
         });
       } catch (error) {
         console.error("Erro ao atualizar empresa:", error);
@@ -505,7 +528,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
     [generateToken]
   );
-  // -------------------------------------------------------
 
   return (
     <AuthContext.Provider
@@ -517,6 +539,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         registerUser,
         loginWithOAuth,
         logout,
+        refreshAuth,
         chooseCompany,
         updateUser,
         updatePassword,

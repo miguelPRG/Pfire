@@ -1,110 +1,138 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../hooks/AuthContext";
+import { useRecaptcha } from "../hooks/RecaptchaContext";
 import LoadingAnimation from "./LoadingAnimation";
 
-function EmailOperation() {
-  const [userConfirmation, setUserConfirmation] = useState<{
-    isConfirmed: boolean;
-    message: string;
-  }>({ isConfirmed: false, message: "" });
+type ConfirmationState = {
+  isConfirmed: boolean;
+  message: string;
+};
 
+function EmailOperation() {
   const navigate = useNavigate();
+  const { refreshAuth } = useAuth();
+  const { generateToken } = useRecaptcha();
+  const hasProcessedRef = useRef(false);
   const { GLOBAL_ID, OPERATION } = useParams<{
     GLOBAL_ID: string;
     OPERATION: string;
   }>();
 
   useEffect(() => {
+    if (hasProcessedRef.current) {
+      return;
+    }
+
+    hasProcessedRef.current = true;
+
+    const redirectToLogin = (state: ConfirmationState) => {
+      navigate("/login", { state, replace: true });
+    };
+
+    const parseResponse = async (response: Response) => {
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.detail || data.message || "Erro ao efetuar operacao. O link do email ja nao funciona.");
+      }
+      return data;
+    };
+
+    const createCaptchaPayload = async () => ({
+      global_id: GLOBAL_ID,
+      recaptchaToken: await generateToken("register"),
+    });
+
     const processOperation = async () => {
-      const operationsMap: Record<string, () => void | Promise<void>> = {
+      if (!GLOBAL_ID || !OPERATION) {
+        redirectToLogin({
+          isConfirmed: false,
+          message: "Erro ao efetuar operacao. O link do email ja nao funciona.",
+        });
+        return;
+      }
+
+      const operationsMap: Record<string, () => Promise<void>> = {
         registo: async () => {
+          const payload = await createCaptchaPayload();
+          const response = await fetch(`/backend/user/email/activate/${GLOBAL_ID}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify(payload),
+          });
+
+          await parseResponse(response);
+
           try {
-            const response = await fetch(`/backend/user/email/activate/${GLOBAL_ID}`, {
-              method: "PUT",
-            });
-            const data = await response.json();
-            setUserConfirmation({
-              isConfirmed: true,
-              message: data.message,
-            });
-          } catch (error) {
-            setUserConfirmation({
-              isConfirmed: false,
-              message: "Erro ao efetuar operação! O botão que foi enviado no email já não funciona.",
-            });
+            await refreshAuth();
+          } catch {
+            throw new Error("Conta ativada, mas nao foi possivel iniciar sessao automaticamente. Tente fazer login manualmente.");
           }
+
+          navigate("/", { replace: true });
         },
-        recuperarPassword: () => {
-          // Redireciona para a página de recuperação de palavra-passe
-          navigate(`/new-password/${GLOBAL_ID}`);
+        recuperarPassword: async () => {
+          navigate(`/new-password/${GLOBAL_ID}`, { replace: true });
         },
         convite: async () => {
-          let globalIdData: { email: string | null; operation: string | null } | null = null;
+          const globalIdResponse = await fetch(`/backend/user/get-global-id/${GLOBAL_ID}`, {
+            credentials: "include",
+          });
+          const globalIdData = await parseResponse(globalIdResponse);
 
-          try {
-            // Buscar e guardar os dados do global_id
-            const globalIdResponse = await fetch(`/backend/user/get-global-id/${GLOBAL_ID}`);
-            if (globalIdResponse.ok) {
-              globalIdData = await globalIdResponse.json();
-
-              if (globalIdData?.operation !== "convite") {
-                throw new Error("Esta operação não é um convite.");
-              }
-            } else {
-              throw new Error("Operação Inválida! O botão que foi enviado no email já não funciona.");
-            }
-          } catch (error) {
-            setUserConfirmation({
-              isConfirmed: false,
-              message: String(error) || "Operação Inválida! O botão que foi enviado no email já não funciona.",
-            });
-            return;
+          if (globalIdData?.operation !== "convite") {
+            throw new Error("Esta operacao nao e um convite.");
           }
 
           if (globalIdData?.email) {
-            // Se o email foi fornecido, redireciona para a página de registo com o email já preenchido
-            navigate(`/register/${GLOBAL_ID}`, { state: { email: globalIdData.email } });
+            navigate(`/register/${GLOBAL_ID}`, {
+              state: { email: globalIdData.email },
+              replace: true,
+            });
             return;
           }
 
-          try {
-            const response = await fetch(`/backend/user/email/accept-invite/${GLOBAL_ID}`, {
-              method: "PUT",
-            });
-            const data = await response.json();
-            setUserConfirmation({
-              isConfirmed: true,
-              message: data.message,
-            });
-          } catch (error) {
-            setUserConfirmation({
-              isConfirmed: false,
-              message: "Erro ao aceitar convite.",
-            });
-          }
+          const payload = await createCaptchaPayload();
+          const response = await fetch(`/backend/user/email/accept-invite/${GLOBAL_ID}`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            credentials: "include",
+            body: JSON.stringify(payload),
+          });
+          const data = await parseResponse(response);
+
+          redirectToLogin({
+            isConfirmed: true,
+            message: data.message || "Convite aceite com sucesso.",
+          });
         },
       };
 
-      if (OPERATION && operationsMap.hasOwnProperty(OPERATION)) {
-        operationsMap[OPERATION]();
-      } else {
-        setUserConfirmation({
+      if (!Object.prototype.hasOwnProperty.call(operationsMap, OPERATION)) {
+        redirectToLogin({
           isConfirmed: false,
-          message: "Erro ao efetuar operação. O botão que foi enviado no email já não funciona.",
+          message: "Erro ao efetuar operacao. O link do email ja nao funciona.",
+        });
+        return;
+      }
+
+      try {
+        await operationsMap[OPERATION]();
+      } catch (error) {
+        redirectToLogin({
+          isConfirmed: false,
+          message: error instanceof Error ? error.message : "Erro ao efetuar operacao. O link do email ja nao funciona.",
         });
       }
     };
 
     processOperation();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (userConfirmation.message) {
-      navigate("/login", { state: userConfirmation });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userConfirmation]);
+  }, [GLOBAL_ID, OPERATION, generateToken, navigate, refreshAuth]);
 
   return <LoadingAnimation />;
 }

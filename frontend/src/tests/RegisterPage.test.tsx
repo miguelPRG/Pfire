@@ -31,11 +31,15 @@ describe("RegisterPage", () => {
           user: null,
           empresa: null,
           loading: false,
-          login: vi.fn(),
+          login: vi.fn().mockResolvedValue(undefined),
           registerUser: registerUserMock,
-          loginWithOAuth: vi.fn(),
-          logout: vi.fn(),
+          loginWithOAuth: vi.fn().mockResolvedValue(false),
+          logout: vi.fn().mockResolvedValue(undefined),
+          refreshAuth: vi.fn().mockResolvedValue(undefined),
           chooseCompany: vi.fn(),
+          updateUser: vi.fn().mockResolvedValue(undefined),
+          updatePassword: vi.fn().mockResolvedValue(undefined),
+          updateCompany: vi.fn().mockResolvedValue(undefined),
         }}
       >
         <RegisterPage />

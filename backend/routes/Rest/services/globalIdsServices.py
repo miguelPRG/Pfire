@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import JSONResponse
 from re import compile, IGNORECASE
 from datetime import datetime
 from models.userModels import UserChangePassword
@@ -10,10 +11,13 @@ from database import (
     users_empresas_collection,
 )
 from apis.recaptchaValidation import validar_recaptcha_token
+from controller.cookie_settings import get_auth_cookie_settings
+from controller.jwtValidation import generate_jwt, verify_jwt
+from controller.token_blacklist import add_token_to_blacklist
 from passlib.context import CryptContext
 from asyncio import gather
 from pymongo.errors import DuplicateKeyError
-from apis.stripe_client import create_stripe_customer
+from base64 import b64encode
 
 routerUser = APIRouter(prefix="/user")
 pwd_context = CryptContext(
@@ -22,6 +26,24 @@ pwd_context = CryptContext(
     argon2__memory_cost=65536,
     argon2__time_cost=3,
 )
+
+
+
+def build_authenticated_user_payload(user_doc: dict, message: str) -> dict:
+    assinatura_b64 = None
+    if isinstance(user_doc.get("assinatura"), (bytes, bytearray)):
+        assinatura_b64 = b64encode(user_doc["assinatura"]).decode("utf-8")
+
+    return {
+        "message": message,
+        "id": str(user_doc["_id"]),
+        "nome": user_doc.get("nome", ""),
+        "email": user_doc.get("email", ""),
+        "telefone": user_doc.get("telefone"),
+        "isSuperAdmin": user_doc.get("isSuperAdmin", False),
+        "firebaseUID": user_doc.get("firebaseUID"),
+        "assinatura": assinatura_b64,
+    }
 
 
 # 🚀 Obter Global ID de um Utilizador
@@ -96,34 +118,36 @@ async def confirm_user(global_id: str, request: Request, captcha_data: GlobalIdM
     if not user_id:
         raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
 
-    stripe_customer_id = await create_stripe_customer(
-        email=global_id_data.get("email", ""), name=global_id_data.get("name", "")
-    )
+    user_doc = await users_collection.find_one({"_id": user_id})
+    if not user_doc:
+        raise HTTPException(status_code=404, detail="Utilizador não encontrado.")
 
+    now = datetime.now()
     user_update = users_collection.update_one(
         {"_id": user_id},
-        {
-            "$set": {
-                "isActive": True,
-                "stripe_customer_id": stripe_customer_id,
-                "updated_at": datetime.now(),
-            }
-        },
+        {"$set": {"isActive": True, "last_login": now, "updated_at": now}},
     )
-    global_id_data = global_ids_collection.delete_one({"global_id": global_id})
+    global_id_delete = global_ids_collection.delete_one({"global_id": global_id})
 
-    user_update, global_id_data = await gather(user_update, global_id_data)
+    user_update, global_id_delete = await gather(user_update, global_id_delete)
 
     if not user_update.modified_count:
         raise HTTPException(status_code=409, detail="Erro ao ativar o utilizador.")
 
-    if global_id_data.deleted_count == 0:
-        raise HTTPException(
-            status_code=500, detail="Erro ao remover o global ID após ativação."
-        )
+    if global_id_delete.deleted_count == 0:
+        raise HTTPException(status_code=500, detail="Erro ao remover o global ID após ativação.")
 
-    return {"message": "Utilizador ativado com sucesso!"}
+    jwt_token = generate_jwt(
+        str(user_doc["_id"]),
+        user_doc.get("nome", ""),
+        user_doc.get("email", ""),
+        user_doc.get("isSuperAdmin", False),
+        user_doc.get("plano", "free"),
+    )
 
+    response = JSONResponse(content=build_authenticated_user_payload(user_doc, "Utilizador ativado com sucesso!"))
+    response.set_cookie(key="_fp", value=jwt_token, **get_auth_cookie_settings(request))
+    return response
 
 # Redefinir a password do utilizador depois do email de recuperação ser enviado
 @routerUser.put("/email/change-password")
@@ -232,3 +256,4 @@ async def accept_invite(global_id: str, request: Request, captcha_data: GlobalId
         raise HTTPException(status_code=409, detail="Erro ao aceitar o convite.")
 
     return {"message": f"Convite aceite com sucesso!"}
+

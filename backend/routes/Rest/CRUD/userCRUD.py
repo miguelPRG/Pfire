@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from apis.recaptchaValidation import validar_recaptcha_token
+from controller.cookie_settings import get_auth_cookie_settings
 from controller.jwtValidation import generate_jwt
 from base64 import b64decode
 from filetype import guess
@@ -91,16 +92,13 @@ async def update_user(user: UserUpdate, request: Request):
 
         token = generate_jwt(
             str(user_id),
-            nome=user.nome,
-            email=jwt.get("email"),
-            isSuperAdmin=jwt.get("isSuperAdmin", False),
-            telefone=user.telefone,
-            firebase_uid=jwt.get("firebase_uid"),
+            user.nome or jwt.get("nome", ""),
+            jwt.get("email", ""),
+            jwt.get("isSuperAdmin", False),
+            jwt.get("plano", "free"),
         )
         response = JSONResponse({"message": "Utilizador atualizado com sucesso!"})
-        response.set_cookie(
-            key="_fp", value=token, httponly=True, samesite="Strict", secure=True
-        )
+        response.set_cookie(key="_fp", value=token, **get_auth_cookie_settings(request))
 
         return response
 
