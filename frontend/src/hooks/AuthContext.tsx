@@ -381,6 +381,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setLoading(false);
     localStorage.removeItem("empresaId");
+    localStorage.removeItem("userId");
     setEmpresaId(null);
 
     try {

@@ -23,11 +23,6 @@ stripe.api_key = _read_stripe_api_key()
 
 
 async def create_stripe_customer(email: str, name: str) -> str:
-    if not stripe.api_key:
-      raise Exception(
-          "Configuracao Stripe em falta. Define STRIPE_API_KEY ou STRIPE_KEY no ficheiro .env do backend."
-      )
-
     try:
         customer = stripe.Customer.create(
             email=email,
