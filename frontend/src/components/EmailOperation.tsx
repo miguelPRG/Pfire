@@ -69,7 +69,9 @@ function EmailOperation() {
           try {
             await refreshAuth();
           } catch {
-            throw new Error("Conta ativada, mas nao foi possivel iniciar sessao automaticamente. Tente fazer login manualmente.");
+            throw new Error(
+              "Conta ativada, mas nao foi possivel iniciar sessao automaticamente. Tente fazer login manualmente."
+            );
           }
 
           navigate("/", { replace: true });
@@ -126,7 +128,8 @@ function EmailOperation() {
       } catch (error) {
         redirectToLogin({
           isConfirmed: false,
-          message: error instanceof Error ? error.message : "Erro ao efetuar operacao. O link do email ja nao funciona.",
+          message:
+            error instanceof Error ? error.message : "Erro ao efetuar operacao. O link do email ja nao funciona.",
         });
       }
     };

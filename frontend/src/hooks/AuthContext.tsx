@@ -93,20 +93,6 @@ interface AuthContextType {
   updateCompany: (empresa: EmpresaUpdate, id: string) => Promise<void>;
 }
 
-async function readResponsePayload(response: Response): Promise<ApiResponsePayload> {
-  const raw = await response.text();
-
-  if (!raw) {
-    return {};
-  }
-
-  try {
-    return JSON.parse(raw) as ApiResponsePayload;
-  } catch {
-    return { message: raw.trim() };
-  }
-}
-
 function getResponseErrorMessage(response: Response, data: ApiResponsePayload, fallback: string): string {
   return (
     (typeof data.detail === "string" && data.detail) ||
@@ -136,7 +122,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const { generateToken } = useRecaptcha();
 
-  const { data, error } = useQuery(GET_EMPRESAS, {
+  const { data, error } = useQuery<{ getEmpresas?: { empresas?: Empresa[] } }>(GET_EMPRESAS, {
     variables: { id: empresaId },
     skip: !user || !empresaId,
     fetchPolicy: "network-only",
@@ -170,7 +156,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem("userId", userData.id);
       setUser(buildUserState(userData));
 
-      if (!localStorage.getItem("empresaId")) {
+      const savedEmpresaId = localStorage.getItem("empresaId");
+      setEmpresaId(savedEmpresaId);
+
+      if (!savedEmpresaId) {
         setEmpresa(null);
         setLoading(false);
       }
@@ -187,13 +176,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         credentials: "include",
       });
 
-      const userData = await readResponsePayload(response);
+      const userData = (await response.json().catch(() => ({}))) as ApiResponsePayload;
 
       if (!response.ok) {
         throw new Error(getResponseErrorMessage(response, userData, "Erro ao verificar autenticacao."));
       }
 
-      setAuthenticatedUser(userData as UserLoggedIn);
+      setAuthenticatedUser(userData as unknown as UserLoggedIn);
     } catch (error) {
       setUser(null);
       setEmpresa(null);
@@ -280,13 +269,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }),
       });
 
-      const data = await readResponsePayload(response);
+      const data = (await response.json().catch(() => ({}))) as ApiResponsePayload;
       if (!response.ok) {
         throw new Error(getResponseErrorMessage(response, data, "Erro desconhecido do servidor"));
       }
 
       setLoading(true);
-      setAuthenticatedUser(data as UserLoggedIn);
+      setAuthenticatedUser(data as unknown as UserLoggedIn);
     } catch (error) {
       console.error("Erro no login:", error);
       throw error;
@@ -323,7 +312,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(payload),
       });
 
-      const data = await readResponsePayload(response);
+      const data = (await response.json().catch(() => ({}))) as ApiResponsePayload;
 
       if (!response.ok) {
         throw new Error(getResponseErrorMessage(response, data, "Erro desconhecido do backend"));
@@ -349,7 +338,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }),
       });
 
-      const data = await readResponsePayload(response);
+      const data = (await response.json().catch(() => ({}))) as ApiResponsePayload;
 
       console.log("Dados do login com OAuth:", data);
 
@@ -358,17 +347,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setLoading(true);
-      setAuthenticatedUser(data as UserLoggedIn);
+      setAuthenticatedUser(data as unknown as UserLoggedIn);
       return data.newUser as boolean;
     } catch (error: unknown) {
       console.error("Erro no login com OAuth:", error);
       setUser(null);
 
       const errorMessage = error instanceof Error ? error.message : "";
-      if (
-        errorMessage.includes("auth/popup-closed-by-user") ||
-        errorMessage.includes("auth/cancelled-popup-request")
-      ) {
+      if (errorMessage.includes("auth/popup-closed-by-user") || errorMessage.includes("auth/cancelled-popup-request")) {
         return false;
       }
 
@@ -379,9 +365,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function logout() {
     setEmpresa(null);
     setUser(null);
-    setLoading(false);
-    localStorage.removeItem("empresaId");
-    localStorage.removeItem("userId");
+    setLoading(true);
     setEmpresaId(null);
 
     try {
@@ -391,9 +375,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     } catch {
       console.error("Erro ao fazer logout");
+    } finally {
+      setLoading(false);
+      killAuthCookie();
     }
-
-    killAuthCookie();
   }
 
   function chooseCompany(empresaSelected: Empresa) {
@@ -435,7 +420,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (!response.ok) {
-        const data = await readResponsePayload(response);
+        const data = (await response.json().catch(() => ({}))) as ApiResponsePayload;
         throw new Error(getResponseErrorMessage(response, data, "Erro ao atualizar usuario"));
       }
 
@@ -470,7 +455,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (!response.ok) {
-        const data = await readResponsePayload(response);
+        const data = (await response.json().catch(() => ({}))) as ApiResponsePayload;
         throw new Error(getResponseErrorMessage(response, data, "Erro ao atualizar senha"));
       }
     } catch (error) {
@@ -503,7 +488,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
 
         if (!response.ok) {
-          const data = await readResponsePayload(response);
+          const data = (await response.json().catch(() => ({}))) as ApiResponsePayload;
           throw new Error(getResponseErrorMessage(response, data, "Erro ao atualizar empresa"));
         }
 

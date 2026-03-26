@@ -217,6 +217,7 @@ async def remoke_admin(user: UserRole, request: Request):
 
 # 🚀 Ativar utilizador
 
+
 @routerUserEmpresa.put("/activate")
 async def activate_user(user: UserActivation, request: Request):
     jwt = getattr(request.state, "jwt", None)
@@ -231,10 +232,7 @@ async def activate_user(user: UserActivation, request: Request):
             status_code=400, detail="ID ou email obrigatório para ativação"
         )
 
-    if (
-        jwt["user_id"] != str(filtro.get("_id", ""))
-        and not jwt["isSuperAdmin"]
-    ):
+    if jwt["user_id"] != str(filtro.get("_id", "")) and not jwt["isSuperAdmin"]:
         raise HTTPException(
             status_code=403, detail="Sem permissão para ativar este utilizador"
         )

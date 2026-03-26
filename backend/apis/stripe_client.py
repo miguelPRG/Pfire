@@ -55,7 +55,7 @@ async def create_checkout(user_id: str, plan_id: str, stripe_customer_id: str) -
         try:
             customer = stripe.Customer.retrieve(stripe_customer_id)
             print(f"Customer Stripe valido: {customer}")
-            if customer.get("deleted", False):
+            if getattr(customer, "deleted", False):
                 raise Exception("Customer Stripe foi eliminado")
             logger.info(f"Customer Stripe valido: {stripe_customer_id}")
         except stripe.error.InvalidRequestError:

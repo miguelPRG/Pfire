@@ -28,7 +28,6 @@ pwd_context = CryptContext(
 )
 
 
-
 def build_authenticated_user_payload(user_doc: dict, message: str) -> dict:
     assinatura_b64 = None
     if isinstance(user_doc.get("assinatura"), (bytes, bytearray)):
@@ -135,7 +134,9 @@ async def confirm_user(global_id: str, request: Request, captcha_data: GlobalIdM
         raise HTTPException(status_code=409, detail="Erro ao ativar o utilizador.")
 
     if global_id_delete.deleted_count == 0:
-        raise HTTPException(status_code=500, detail="Erro ao remover o global ID após ativação.")
+        raise HTTPException(
+            status_code=500, detail="Erro ao remover o global ID após ativação."
+        )
 
     jwt_token = generate_jwt(
         str(user_doc["_id"]),
@@ -145,9 +146,14 @@ async def confirm_user(global_id: str, request: Request, captcha_data: GlobalIdM
         user_doc.get("plano", "free"),
     )
 
-    response = JSONResponse(content=build_authenticated_user_payload(user_doc, "Utilizador ativado com sucesso!"))
+    response = JSONResponse(
+        content=build_authenticated_user_payload(
+            user_doc, "Utilizador ativado com sucesso!"
+        )
+    )
     response.set_cookie(key="_fp", value=jwt_token, **get_auth_cookie_settings(request))
     return response
+
 
 # Redefinir a password do utilizador depois do email de recuperação ser enviado
 @routerUser.put("/email/change-password")
@@ -256,4 +262,3 @@ async def accept_invite(global_id: str, request: Request, captcha_data: GlobalId
         raise HTTPException(status_code=409, detail="Erro ao aceitar o convite.")
 
     return {"message": f"Convite aceite com sucesso!"}
-

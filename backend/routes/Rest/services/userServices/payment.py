@@ -181,7 +181,9 @@ async def refresh_token_after_payment(request: Request, response: Response):
         )
 
         # ✅ Enviar novo JWT no cookie HTTP-only secure
-        response.set_cookie(key="_fp", value=new_jwt, **get_auth_cookie_settings(request))
+        response.set_cookie(
+            key="_fp", value=new_jwt, **get_auth_cookie_settings(request)
+        )
 
         logger.info(
             f"Novo JWT gerado para user {user_id} com plano {user.get('plano')}"

@@ -254,7 +254,13 @@ async def auth_user(request: Request):
 
     assinatura_val = await users_collection.find_one(
         {"_id": ObjectId(jwt["user_id"])},
-        {"assinatura": 1, "plano": 1, "stripe_customer_id": 1, "telefone": 1, "firebaseUID": 1},
+        {
+            "assinatura": 1,
+            "plano": 1,
+            "stripe_customer_id": 1,
+            "telefone": 1,
+            "firebaseUID": 1,
+        },
     )
 
     # converter para base64
@@ -359,9 +365,7 @@ async def register_user(data: UserRegister, request: Request):
     # Criptografar a senha
     new_user.password = pwd_context.hash(new_user.password)
     try:
-        stripe_customer_id = await create_stripe_customer(
-            new_user.email, new_user.nome
-        )
+        stripe_customer_id = await create_stripe_customer(new_user.email, new_user.nome)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
     user_doc = new_user.model_dump(by_alias=True)
