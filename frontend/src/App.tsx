@@ -195,8 +195,8 @@ function App() {
             {/* Rota de fallback para redirecionar usuários não autenticados */}
             <Route path="/add-new-report" element={<ProtectedRoute element={<AddNewReportPage />} />} />
             <Route path="/plans" element={<ProtectedRoute element={<PricingPage />} />} />
-            {/* Rota de fallback para redirecionar usuários não autenticados */}
-            <Route path="/sucesso" element={<ProtectedRoute element={<SuccessPage />} />} />
+            {/* Success deve exigir apenas user autenticado (não empresa) */}
+            <Route path="/success" element={<CompanyRoute element={<SuccessPage />} />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Layout>

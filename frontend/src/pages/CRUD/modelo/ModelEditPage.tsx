@@ -37,13 +37,23 @@ const subfieldSchema = z.object({
 });
 
 // Esquema de validação para um campo personalizado
-const fieldSchema = z.object({
-  name: z.string().min(1, "Nome do subcampo é obrigatório").trim(),
-  datatype: z.string().min(1, "Tipo de dados é obrigatório").trim(),
-  required: z.boolean(),
-  items: z.array(z.string().min(1, "Item do array é obrigatório").trim()).optional(),
-  subfields: z.array(subfieldSchema).optional(),
-});
+const fieldSchema = z
+  .object({
+    name: z.string().min(1, "Nome do subcampo é obrigatório").trim(),
+    datatype: z.string().min(1, "Tipo de dados é obrigatório").trim(),
+    required: z.boolean(),
+    items: z.array(z.string().min(1, "Item do array é obrigatório").trim()).optional(),
+    subfields: z.array(subfieldSchema).optional(),
+  })
+  .superRefine((field, ctx) => {
+    if (field.datatype === "array" && (!field.items || field.items.length === 0)) {
+      ctx.addIssue({
+        code: "custom", // Use the string literal here
+        path: ["items"],
+        message: "Campos do tipo Lista devem ter pelo menos um elemento.",
+      });
+    }
+  });
 
 // Esquema de validação do formulário principal
 const formSchema = z.object({
@@ -604,7 +614,7 @@ export default function ReportTemplatePage() {
                           <Controller
                             control={control}
                             name={`fields.${index}.items`}
-                            render={({ field }) => {
+                            render={({ field, fieldState }) => {
                               const items: string[] = Array.isArray(field.value) ? field.value : [];
                               const [inputValue, setInputValue] = useState("");
 
@@ -628,33 +638,11 @@ export default function ReportTemplatePage() {
                                       value={inputValue}
                                       onChange={(e) => setInputValue(e.target.value)}
                                       size="small"
-                                      onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                          e.preventDefault();
-                                          addItem();
-                                        }
-                                      }}
                                       fullWidth
-                                      sx={{
-                                        bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
-                                        color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
-                                        "& .MuiInputBase-input": {
-                                          color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
-                                        },
-                                      }}
+                                      error={!!fieldState.error}
+                                      helperText={fieldState.error?.message}
                                     />
-                                    <Button
-                                      variant="contained"
-                                      onClick={addItem}
-                                      type="button"
-                                      sx={{
-                                        height: 40,
-                                        fontWeight: "bold",
-                                        bgcolor: "primary.main",
-                                        color: "white",
-                                        "&:hover": { bgcolor: "primary.dark" },
-                                      }}
-                                    >
+                                    <Button variant="contained" type="button">
                                       Adicionar
                                     </Button>
                                   </Box>

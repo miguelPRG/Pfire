@@ -162,12 +162,13 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
             )
 
     # 3) Gera JWT (sem listar empresas aqui)
-    jwt_token = generate_jwt(
-        str(id_user),
-        user_doc.get("nome", ""),
-        user_doc.get("email", ""),
-        user_doc.get("isSuperAdmin", False),
+    token, expire = generate_jwt(
+        str(user_doc["_id"]),
+        user_doc["isSuperAdmin"],
         user_doc.get("plano", None),
+        email=user_doc.get("email", None),
+        nome=user_doc.get("nome", None),
+        stripe_customer_id=user_doc.get("stripe_customer_id", None),
     )
 
     # Converte a assinatura (se existir) para base64 para o corpo da resposta (não vai no cookie)
@@ -191,7 +192,9 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
 
     response = JSONResponse(content=response_payload)
     # seta cookie HTTP-only com o JWT (apenas o token, não inclui o JSON)
-    response.set_cookie(key="_fp", value=jwt_token, **get_auth_cookie_settings(request))
+    response.set_cookie(
+        key="_fp", value=token, **get_auth_cookie_settings(request), expires=expire
+    )
     return response
 
 
@@ -199,7 +202,7 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
 @routerAuth.post("/login")
 async def login(user: UserLogin, request: Request):
     # Validar el token reCAPTCHA (se descomenta según necesidad)
-    await validar_recaptcha_token(user.recaptchaToken, "login")
+    # await validar_recaptcha_token(user.recaptchaToken, "login")
 
     db_user = await users_collection.find_one({"email": user.email})
 
@@ -216,12 +219,13 @@ async def login(user: UserLogin, request: Request):
     if not atualizar_user.modified_count:
         raise HTTPException(status_code=500, detail="Erro ao atualizar o último login.")
 
-    token = generate_jwt(
+    token, expire = generate_jwt(
         str(db_user["_id"]),
-        db_user["nome"],
-        db_user["email"],
         db_user["isSuperAdmin"],
         db_user.get("plano", None),
+        email=db_user.get("email", None),
+        nome=db_user.get("nome", None),
+        stripe_customer_id=db_user.get("stripe_customer_id", None),
     )
 
     # Converte a assinatura (se existir) para base64 para o corpo da resposta (não vai no cookie)
@@ -241,7 +245,9 @@ async def login(user: UserLogin, request: Request):
             "stripeCustomerId": db_user.get("stripe_customer_id", None),
         }
     )
-    response.set_cookie(key="_fp", value=token, **get_auth_cookie_settings(request))
+    response.set_cookie(
+        key="_fp", value=token, **get_auth_cookie_settings(request), expires=expire
+    )
 
     return response
 
@@ -249,37 +255,40 @@ async def login(user: UserLogin, request: Request):
 # 🚀 Autenticação do Usuário (Verificar JWT)
 @routerAuth.get("/auth")
 async def auth_user(request: Request):
-
+    """
+    Verificar se user está autenticado
+    """
     jwt = getattr(request.state, "jwt", None)
+    user_id = ObjectId(jwt["user_id"])
 
-    assinatura_val = await users_collection.find_one(
-        {"_id": ObjectId(jwt["user_id"])},
-        {
-            "assinatura": 1,
-            "plano": 1,
-            "stripe_customer_id": 1,
-            "telefone": 1,
-            "firebaseUID": 1,
-        },
-    )
+    user_found = await users_collection.find_one({"_id": user_id, "isActive": True})
 
-    # converter para base64
-    if isinstance(assinatura_val.get("assinatura"), (bytes, bytearray)):
-        assinatura_val["assinatura"] = b64encode(assinatura_val["assinatura"]).decode(
-            "utf-8"
+    # invalida apenas se user não existir/inativo
+    if not user_found:
+        token = request.cookies.get("_fp")
+        if token:
+            await add_token_to_blacklist(token, jwt["exp"])
+
+        response = JSONResponse(
+            status_code=401,
+            content={"detail": "Token inválido ou usuário não encontrado."},
         )
+        response.delete_cookie(
+            "_fp", httponly=True, samesite="None", secure=True, path="/"
+        )
+        return response
 
-    return {
-        "id": jwt["user_id"],
-        "nome": jwt["nome"],
-        "email": jwt["email"],
-        "telefone": assinatura_val.get("telefone", None),
-        "assinatura": assinatura_val.get("assinatura", None),
-        "isSuperAdmin": jwt.get("isSuperAdmin", False),
-        "stripeCustomerId": assinatura_val.get("stripe_customer_id", None),
-        "plano": assinatura_val.get("plano", "free"),
-        "firebaseUID": assinatura_val.get("firebaseUID", None),
+    payload = {
+        "id": str(user_found["_id"]),
+        "nome": user_found.get("nome", ""),
+        "email": user_found.get("email", ""),
+        "telefone": user_found.get("telefone"),
+        "isSuperAdmin": user_found.get("isSuperAdmin", False),
+        "plano": user_found.get("plano", "free"),
+        "stripeCustomerId": user_found.get("stripe_customer_id"),
     }
+
+    return JSONResponse(status_code=200, content=payload)  # <- faltava isto
 
 
 # 🚀 Logout

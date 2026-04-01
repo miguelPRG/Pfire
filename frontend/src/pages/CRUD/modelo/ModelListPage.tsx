@@ -39,7 +39,6 @@ import Dialog from "@mui/material/Dialog";
 import DialogTitle from "@mui/material/DialogTitle";
 import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
-
 import CircularProgress from "@mui/material/CircularProgress";
 import AddCommentIcon from "@mui/icons-material/AddComment";
 import { GET_CRITERIA_BY_MODEL } from "../../../graphql/criteriaQueries";
@@ -98,7 +97,6 @@ export default function ReportModelListPage() {
   // Estado para pesquisa, paginação e campos expandidos
   const [page, setPage] = useState(0);
   const rowsPerPage = 1;
-  const [search, setSearch] = useState("");
   const [isAdvancedActive, setIsAdvancedActive] = useState(false);
   const [advValue, setAdvValue] = useState<{ field: string; text: string }>({ field: "", text: "" });
   const [alert, setAlert] = useState<{ message: string; isError: boolean; onConfirm?: () => void } | null>(null);

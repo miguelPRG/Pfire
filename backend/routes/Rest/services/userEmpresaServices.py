@@ -40,6 +40,21 @@ async def invite_user_to_empresa(request: Request, user: UserInvitation):
                 detail="Você não tem permissão para convidar utilizadores para esta empresa.",
             )
 
+        user_empresa_count = await users_empresas_collection.count_documents(
+            {"empresa_id": empresa_id}
+        )
+
+        if jwt.get("plano") == "free" and user_empresa_count >= 3:
+            raise HTTPException(
+                status_code=403,
+                detail="Sua assinatura gratuita permite no máximo 3 utilizadores na empresa.",
+            )
+        elif jwt.get("plano") == "pro" and user_empresa_count >= 10:
+            raise HTTPException(
+                status_code=403,
+                detail="Sua assinatura pro permite no máximo 10 utilizadores na empresa.",
+            )
+
     # Verificar se o utilizador já existe
     existing_user = await users_collection.find_one({"email": user.email})
 
@@ -62,7 +77,6 @@ async def invite_user_to_empresa(request: Request, user: UserInvitation):
 
     # Criar o convite
     global_id = str(uuid4())
-    print("Global ID gerado:", global_id)
     # Este global_id tem 3 parametros adicionais para facilitar o convite: user_id, empresa_id e user_exists(boolean)
 
     global_id_data = {

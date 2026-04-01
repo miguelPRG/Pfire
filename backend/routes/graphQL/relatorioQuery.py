@@ -65,6 +65,18 @@ class RelatorioQuery:
             elif filter.numero is not None:
                 filtro["numero"] = filter.numero
 
+        # Verificar permissões
+        if not jwt.get("isSuperAdmin", False):
+            user_empresa = await users_empresas_collection.find_one(
+                {"user_id": user_id, "empresa_id": empresa_id}
+            )
+            if not user_empresa:
+                raise HTTPException(
+                    status_code=403,
+                    detail="Acesso negado! Não tens permissão para ver relatórios nesta empresa.",
+                )
+
+        # Buscar relatórios no banco de dados
         async for relatorio in (
             relatorios_collection.find(filtro).skip(start).limit(lmt)
         ):
@@ -155,7 +167,6 @@ class RelatorioQuery:
     async def getRelatoriosCountByModelo(
         self, info: Info, empresa_id: str
     ) -> list[RelatorioCountByModelo]:
-
         request = info.context["request"]
         jwt = getattr(request.state, "jwt", None)
 

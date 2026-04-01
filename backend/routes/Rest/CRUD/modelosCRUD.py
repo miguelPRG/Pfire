@@ -4,7 +4,12 @@ from models.modeloCamposModels import (
     ModelosCamposUpdate,
     ModelosCamposDelete,
 )
-from database import modelos_collection, users_empresas_collection, empresas_collection
+from database import (
+    modelos_collection,
+    users_empresas_collection,
+    empresas_collection,
+    relatorios_collection,
+)
 from bson import ObjectId
 from datetime import datetime
 from asyncio import gather
@@ -15,23 +20,80 @@ routerModelo = APIRouter(prefix="/modelo", tags=["modelo"])
 # Criar Modelo
 @routerModelo.post("/")
 async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
+    payload = await request.json()
+    plano = jwt.get("plano", "free")
+    # Com esta linha, o pydantic irá receber a informação do plano do user e assim a função de validação de campos personalizados que acontece dentro do model_validator da classe ModelosCamposCreate, poderá validar corretamente o número de campos permitidos para o plano free ou não free.
+    modelo = ModelosCamposCreate.model_validate(payload, context={"plano": plano})
+
     # Verificar se o user tem permissão para criar modelos nesta empresa
     jwt = getattr(request.state, "jwt", None)
-    if not jwt:
-        raise HTTPException(status_code=401, detail="Não autorizado")
-
     user_id = ObjectId(jwt["user_id"])
+    empresa_id = ObjectId(modelo.empresa_id)
+
+    if not jwt.get("isSuperAdmin", False) and jwt.get("plano") != "premium":
+
+        modelos_count = await modelos_collection.count_documents(
+            {"created_by": user_id, "empresa_id": empresa_id}
+        )
+
+        if modelos_count >= 1 and jwt.get("plano") == "free":
+            raise HTTPException(
+                status_code=403,
+                detail="Limite de modelos atingido para o plano gratis. Por favor, atualize seu plano para criar mais modelos.",
+            )
+
+        elif modelos_count >= 25 and jwt.get("plano") == "pro":
+            raise HTTPException(
+                status_code=403,
+                detail="Limite de modelos atingido para o plano pro. Por favor, atualize seu plano para criar mais modelos.",
+            )
+
+    # Verificar se a empresa existe logo no início
+    empresa_found = await empresas_collection.find_one({"_id": empresa_id})
+    if not empresa_found:
+        raise HTTPException(status_code=400, detail="Empresa não encontrada.")
 
     if not jwt.get("isSuperAdmin", False):
         # Verificar se o utilizador é admin da empresa
         user_empresa = await users_empresas_collection.find_one(
-            {"empresa_id": modelo.empresa_id, "user_id": user_id, "isAdmin": True}
+            {"empresa_id": empresa_id, "user_id": user_id, "isAdmin": True}
         )
 
         if not user_empresa:
             raise HTTPException(
                 status_code=403,
                 detail="Acesso negado! Não tens permissão para criar modelos nesta empresa.",
+            )
+
+        # Recuperar todos os modelos desta empresa numa única query
+        modelos_empresa = await modelos_collection.find(
+            {"empresa_id": empresa_id}
+        ).to_list(None)
+
+        # Contar modelos do utilizador atual
+        modelos_count = sum(1 for m in modelos_empresa if m["created_by"] == user_id)
+
+        # Verificar limite de modelos baseado no plano
+        if (
+            modelos_count >= 1 and jwt.get("plano") == "free"
+        ):  # Limite de 1 modelo para plano free
+            raise HTTPException(
+                status_code=403,
+                detail="Limite de modelos atingido para o plano gratis. Por favor, atualize seu plano para criar mais modelos.",
+            )
+
+        elif (
+            modelos_count >= 5 and jwt.get("plano") == "pro"
+        ):  # Limite de 5 modelos para plano pro
+            raise HTTPException(
+                status_code=403,
+                detail="Limite de modelos atingido para o plano pro. Por favor, atualize seu plano para criar mais modelos.",
+            )
+
+        # Verificar duplicação de nome na empresa
+        if any(m["modelo_nome"] == modelo.modelo_nome for m in modelos_empresa):
+            raise HTTPException(
+                status_code=400, detail="Modelo com esse nome nesta empresa já existe."
             )
 
     modelo.empresa_id = ObjectId(modelo.empresa_id)
@@ -169,6 +231,18 @@ async def apagar_modelo(request: Request, modelo: ModelosCamposDelete):
                 status_code=403,
                 detail="Acesso negado! Não tens permissão para apagar modelos nesta empresa.",
             )
+
+    # Temos que verificar se existem relatórios associados a este modelo. Se existirem, não podemos apagar o modelo
+
+    relatorios_associados = await relatorios_collection.count_documents(
+        {"modelo_id": modelo.id}
+    )
+
+    if relatorios_associados > 0:
+        raise HTTPException(
+            status_code=400,
+            detail="Não é possível apagar este modelo porque existem relatórios associados a ele.",
+        )
 
     result = await modelos_collection.delete_one({"_id": modelo.id})
     if not hasattr(result, "deleted_count") or result.deleted_count == 0:

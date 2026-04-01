@@ -54,33 +54,36 @@ private_key = load_private_key()
 
 # Geração do token JWT assinado com chave privada RSA
 def generate_jwt(
-    id: str, user_name: str, user_email: str, is_super_admin: bool, plano: str
+    id: str,
+    is_super_admin: bool,
+    plano: str,
+    email: str,
+    nome: str,
+    stripe_customer_id: str = None,
 ):
     if is_super_admin:
-        expire_delta = (
-            SUPER_ADMIN_DAYS * 12 * 60 * 60
-        )  # Validade mais curta para admins
+        expire_delta = SUPER_ADMIN_DAYS * 12 * 60 * 60
     else:
-        expire_delta = (
-            NORMAL_USER_DAYS * 24 * 60 * 60
-        )  # Validade padrão para usuários comuns
+        expire_delta = NORMAL_USER_DAYS * 24 * 60 * 60
 
-    expire = datetime.now().timestamp() + expire_delta  # Data de expiração em segundos
+    now = datetime.now().timestamp()
+    expire = now + expire_delta
 
     to_encode = {
         "user_id": id,
-        "nome": user_name,
-        "email": user_email,
-        "iat": datetime.now().timestamp(),
+        "isSuperAdmin": bool(is_super_admin),
+        "nome": nome,
+        "email": email,
+        "iat": now,
         "exp": expire,
         "plano": plano,
     }
 
-    if is_super_admin:
-        to_encode["isSuperAdmin"] = True
+    if stripe_customer_id:
+        to_encode["stripe_customer_id"] = stripe_customer_id
 
     encoded_jwt = encode(to_encode, private_key, algorithm=ALGORITHM)
-    return encoded_jwt
+    return encoded_jwt, expire_delta
 
 
 # Verificação do token JWT
@@ -95,13 +98,13 @@ def verify_jwt(token):
         payload = decode(token, public_key, algorithms=[ALGORITHM])
         return payload
 
-    except InvalidTokenError:
-        raise HTTPException(status_code=400, detail="Token inválido!")
-
     except ExpiredSignatureError:
         raise HTTPException(
             status_code=400, detail="A sua sessão foi expirada, faça login novamente."
         )
+
+    except InvalidTokenError:
+        raise HTTPException(status_code=400, detail="Token inválido!")
 
     except DecodeError:
         raise HTTPException(status_code=400, detail="Erro de decodificação!")

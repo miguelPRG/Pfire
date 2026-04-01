@@ -1,37 +1,33 @@
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import { Box, Container, Typography } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import { useNavigate } from "react-router-dom";
 
 export default function SuccessPage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const refreshToken = async () => {
+    const refreshTokenAfterPayment = async () => {
       try {
-        // ✅ Chamar endpoint para gerar novo JWT
         const res = await fetch("/backend/user/refresh-token-after-payment", {
           method: "POST",
           credentials: "include",
         });
 
-        if (res.ok) {
-          const data = await res.json();
-          console.log("JWT atualizado:", data.plano);
-          // ✅ Cookie foi setado automaticamente
+        if (!res.ok) {
+          console.error("Falha no refresh token após pagamento");
         }
       } catch (err) {
         console.error("Erro ao refresh token:", err);
+      } finally {
+        setTimeout(() => {
+          navigate("/"); // redireciona após 3 segundos
+        }, 3000);
       }
-
-      // Aguardar um pouco mais para garantir que tudo processou
-      setTimeout(() => {
-        navigate("/");
-      }, 1000);
     };
 
-    refreshToken();
-  }, [navigate]);
+    refreshTokenAfterPayment();
+  }, []);
 
   return (
     <Container maxWidth="sm">
@@ -52,7 +48,7 @@ export default function SuccessPage() {
           Plano atualizado com sucesso!
         </Typography>
         <Typography variant="caption" color="textSecondary">
-          Redirecionando em breve...
+          Redirecionando para a página inicial em 3 segundos...
         </Typography>
       </Box>
     </Container>

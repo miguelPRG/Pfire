@@ -1,5 +1,5 @@
 import { useAuth } from "../hooks/AuthContext";
-import { Paper, Typography, Container, Box, Skeleton, useMediaQuery } from "@mui/material";
+import { Paper, Typography, Container, Box, Skeleton, useMediaQuery, Chip, Stack } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
 import { useQuery } from "@apollo/client/react";
 import { PieChart, BarChart } from "@mui/x-charts";
@@ -23,6 +23,9 @@ function HomePage() {
   const theme = useTheme();
   const isXs = useMediaQuery(theme.breakpoints.down("sm"));
   const isSm = useMediaQuery(theme.breakpoints.between("sm", "md"));
+
+  const userPlan = user?.plano?.trim() ? user.plano : "Sem plano";
+  const userRole = user?.isSuperAdmin ? "Super Administrador" : "Utilizador";
 
   // Query para o PieChart
   const { data: chart1Data, loading: pieLoading } = useQuery<{ reports: ReportCliente[] }>(
@@ -78,44 +81,45 @@ function HomePage() {
           justifyContent: "center",
         }}
       >
-        <Typography variant="h2" sx={{ mb: 4 }}>
-          Bem-vindo: {user?.nome}!
+        <Typography variant="h2" sx={{ mb: 2 }}>
+          Bem-vindo, {user?.nome}!
         </Typography>
 
-        {user?.isSuperAdmin && (
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              width: { xs: "40%" },
-              mb: 2,
-              gap: 1,
-              background: "linear-gradient(90deg, #FFD700 0%, #FF8C00 60%, #FF3B3B 100%)",
-              borderRadius: 2,
-              px: 3,
-              py: 1,
-              boxShadow: 2,
-            }}
-          >
-            <span role="img" aria-label="coroa" style={{ fontSize: 20 }}>
-              👑
-            </span>
+        {/* Bloco profissional de plano + perfil */}
+        <Box
+          sx={{
+            width: "100%",
+            maxWidth: 720,
+            mb: 3,
+            p: 2,
+            borderRadius: 2,
+            border: theme.palette.mode === "dark" ? "1px solid #444" : "1px solid #ddd",
+            background: theme.palette.mode === "dark" ? "#1f2429" : "#f7f9fc",
+          }}
+        >
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} justifyContent="center" alignItems="center">
+            <Chip label={`Plano: ${userPlan}`} color="primary" variant="filled" sx={{ fontWeight: 700, px: 0.5 }} />
+            <Chip
+              label={`Perfil: ${userRole}`}
+              color={user?.isSuperAdmin ? "warning" : "default"}
+              variant={user?.isSuperAdmin ? "filled" : "outlined"}
+              sx={{ fontWeight: 700, px: 0.5 }}
+            />
+          </Stack>
+
+          {user?.isSuperAdmin && (
             <Typography
-              variant="h3"
+              variant="body2"
               sx={{
-                color: "#fff",
-                fontWeight: "bold",
-                textShadow: "1px 1px 4px #0008",
+                mt: 1.5,
+                color: theme.palette.mode === "dark" ? "#ffd54f" : "#9a5d00",
+                fontWeight: 600,
               }}
             >
-              Você é um Super Administrador!
+              Acesso global ativo: gestão avançada de utilizadores, empresas e permissões.
             </Typography>
-            <span role="img" aria-label="coroa" style={{ fontSize: 20 }}>
-              👑
-            </span>
-          </Box>
-        )}
+          )}
+        </Box>
 
         {/* Mostrar nome e logótipo da empresa caso exista */}
         <Box

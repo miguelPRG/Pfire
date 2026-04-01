@@ -1,8 +1,4 @@
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import JSONResponse
-from apis.recaptchaValidation import validar_recaptcha_token
-from controller.cookie_settings import get_auth_cookie_settings
-from controller.jwtValidation import generate_jwt
 from base64 import b64decode
 from filetype import guess
 from bson import ObjectId
@@ -10,9 +6,6 @@ from passlib.context import CryptContext
 from models.userModels import UserUpdate, UserActivation
 from datetime import datetime
 from database import users_collection
-from controller.token_blacklist import (
-    add_token_to_blacklist,
-)  # Nova função para usar Redis
 
 
 routerUser = APIRouter(prefix="/user")
@@ -79,28 +72,6 @@ async def update_user(user: UserUpdate, request: Request):
             status_code=400,
             detail="Erro ao atualizar. O utilizador não foi encontrado ou não está ativo.",
         )
-
-    if (
-        user.nome
-        and user.nome != jwt.get("nome")
-        or user.telefone
-        and user.telefone != jwt.get("telefone")
-    ):
-
-        token = request.cookies.get("_fp")
-        await add_token_to_blacklist(token, jwt["exp"])
-
-        token = generate_jwt(
-            str(user_id),
-            user.nome or jwt.get("nome", ""),
-            jwt.get("email", ""),
-            jwt.get("isSuperAdmin", False),
-            jwt.get("plano", "free"),
-        )
-        response = JSONResponse({"message": "Utilizador atualizado com sucesso!"})
-        response.set_cookie(key="_fp", value=token, **get_auth_cookie_settings(request))
-
-        return response
 
     return {"message": "Utilizador atualizado com sucesso!"}
 

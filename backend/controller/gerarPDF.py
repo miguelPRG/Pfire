@@ -1,6 +1,18 @@
 from weasyprint import HTML
 from io import BytesIO
+from pathlib import Path
+from base64 import b64encode
 from typing import Any
+
+
+WATERMARK_LOGO_PATH = Path(__file__).resolve().parents[1] / "images" / "logo.png"
+
+
+def _load_watermark_data_uri() -> str | None:
+    if not WATERMARK_LOGO_PATH.exists():
+        return None
+    raw = WATERMARK_LOGO_PATH.read_bytes()
+    return f"data:image/png;base64,{b64encode(raw).decode('utf-8')}"
 
 
 def gerar_pdf(
@@ -9,6 +21,7 @@ def gerar_pdf(
     cliente: dict,
     empresa_logo: str | None,
     criterios: dict,
+    watterMark: bool,
 ) -> BytesIO:
     styles = """
     <style>
@@ -123,6 +136,22 @@ def gerar_pdf(
         .criterio-value {
             width: 85%;
         }
+
+        /* Estilos para o watermark */
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            width: 85px;
+            height: 85px;
+            transform: translate(-50%, -50%);
+            opacity: 0.10;
+            z-index: 0;
+        }
+        .pdf-content {
+            position: relative;
+            z-index: 1;
+        }
     </style>
     """
 
@@ -168,7 +197,13 @@ def gerar_pdf(
     header2 += "</tr>"
 
     # Construção do HTML
-    html = f"<html><head>{styles}</head><body>"
+    watermark_html = ""
+    if watterMark:
+        wm_src = _load_watermark_data_uri()
+        if wm_src:
+            watermark_html = f"<img class='watermark' src='{wm_src}' alt='Watermark'/>"
+
+    html = f"<html><head>{styles}</head><body>{watermark_html}<div class='pdf-content'>"
     modelo_nome = modelo.get("modelo_nome", "Relatório Técnico")
 
     # Header com logo (se existir)
@@ -251,9 +286,7 @@ def gerar_pdf(
             html += "</tbody></table>"
     else:
         html += "<p>Nenhum critério disponível.</p>"
-    html += "</div>"
-
-    html += "</body></html>"
+    html += "</div></body></html>"
 
     buffer = BytesIO()
     HTML(string=html).write_pdf(buffer)

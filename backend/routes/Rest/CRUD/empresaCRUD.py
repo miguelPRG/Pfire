@@ -19,6 +19,23 @@ async def create_empresa(payload: EmpresaCreateAsLoggedUser, request: Request):
     user_id = ObjectId(jwt["user_id"])
     date = datetime.now()
 
+    if not jwt.get("isSuperAdmin", False) and not jwt.get("plano", "free") == "premium":
+
+        # Contar quantas empresas foram criadas pelo user
+        empresa_len = await empresas_collection.count_documents({"created_by": user_id})
+
+        if empresa_len >= 1 and jwt.get("plano") == "free":
+            raise HTTPException(
+                status_code=403,
+                detail="Limite de empresas criadas atingido para o plano grátis. Considera fazer upgrade para criar mais empresas.",
+            )
+
+        elif empresa_len >= 5 and jwt.get("plano") == "pro":
+            raise HTTPException(
+                status_code=403,
+                detail="Limite de empresas criadas atingido para o plano pro. Considera fazer upgrade para criar mais empresas.",
+            )
+
     empresa_doc = payload.model_dump(exclude_unset=True)
     empresa_doc.update(
         {
@@ -129,4 +146,4 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str):
             detail="Erro ao atualizar empresa. Verifica se a empresa existe.",
         )
 
-    return {"message": "Empresa Criada com Sucesso!"}
+    return {"message": "Empresa Atualizada com Sucesso!"}

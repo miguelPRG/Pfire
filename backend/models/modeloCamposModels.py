@@ -2,6 +2,7 @@ from pydantic import BaseModel, model_validator, ConfigDict, Field, field_valida
 from typing import Optional
 from fastapi import HTTPException
 from bson import ObjectId
+from pydantic import ValidationInfo
 
 MAIN_FIELDS = {
     "modelo_nome",
@@ -12,10 +13,7 @@ ALLOWED_DATATYPES = {
     "number",
     "string",
     "bool",
-    "object",
     "date",
-    "array",
-    "critério",
 }  # Tipos de dados permitidos
 
 PRO_DATATYPES = {
@@ -26,7 +24,7 @@ PRO_DATATYPES = {
 
 
 # Função auxiliar para validação de campos personalizados no método de criação
-def validate_field(key, value, indice=0):
+def validate_field(key, value, indice=0, plano="free"):
     key = key.strip()
 
     if not key.startswith("custom_") or key == "custom_":
@@ -68,7 +66,9 @@ def validate_field(key, value, indice=0):
         for idx, (subkey, subvalue) in enumerate(custom_fields.items()):
             if subvalue is None:
                 continue
-            validate_field(subkey, subvalue, indice=idx)  # Passa o índice do subcampo
+            validate_field(
+                subkey, subvalue, indice=idx, plano=plano
+            )  # Passa o índice do subcampo
         if any(subvalue.get("required") is True for subvalue in custom_fields.values()):
             value["required"] = True
         else:
@@ -94,6 +94,10 @@ def validate_field(key, value, indice=0):
             detail=f"O campo que está a tentar criar: {key} contém chaves inválidas: {extra_keys}.",
         )
 
+    allowed_datatypes = (
+        ALLOWED_DATATYPES if plano == "free" else ALLOWED_DATATYPES | PRO_DATATYPES
+    )
+
     datatype = value.get("datatype")
     required = value.get("required")
 
@@ -102,11 +106,13 @@ def validate_field(key, value, indice=0):
             status_code=400,
             detail=f"O campo que está a tentar criar: {key} deve conter 'datatype'.",
         )
-    if datatype not in ALLOWED_DATATYPES:
+    if datatype not in allowed_datatypes:
         raise HTTPException(
             status_code=400,
-            detail=f"datatype inválido para o novo campo {key}: {datatype}. Tipos permitidos: {ALLOWED_DATATYPES}.",
+            detail="Não tem permissão para usar o tipo de dado especificado: "
+            + datatype,
         )
+
     if required is None:
         value["required"] = False
     elif not isinstance(required, bool):
@@ -142,7 +148,9 @@ class ModelosCamposCreate(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def validate_fields(cls, values):
+    def validate_fields(cls, values, info: ValidationInfo):
+        plano = (info.context or {}).get("plano", "free")
+
         if "modelo_nome" in values and isinstance(values["modelo_nome"], str):
             values["modelo_nome"] = values["modelo_nome"].strip()
         if len(values.keys()) < 3:
@@ -153,7 +161,7 @@ class ModelosCamposCreate(BaseModel):
         # Valida todos os campos personalizados no nível principal e atribui o índice
         custom_keys = [k for k in values.keys() if k not in MAIN_FIELDS]
         for idx, key in enumerate(custom_keys):
-            validate_field(key, values[key], indice=idx)
+            validate_field(key, values[key], indice=idx, plano=plano)
         return values
 
 
@@ -183,14 +191,16 @@ class ModelosCamposUpdate(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def validate_fields(cls, values):
+    def validate_fields(cls, values, info: ValidationInfo):
+        plano = (info.context or {}).get("plano", "free")
+
         if "modelo_nome" in values and isinstance(values["modelo_nome"], str):
             values["modelo_nome"] = values["modelo_nome"].strip()
         custom_keys = [
             k for k in values.keys() if k not in MAIN_FIELDS and values[k] is not None
         ]
         for idx, key in enumerate(custom_keys):
-            validate_field(key, values[key], indice=idx)
+            validate_field(key, values[key], indice=idx, plano=plano)
         return values
 
 

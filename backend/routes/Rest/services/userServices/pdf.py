@@ -93,13 +93,17 @@ async def converter_relatorio_pdf(request: Request, user: UserConverterPDF):
         if empresa_logo:
             empresa_logo = b64encode(empresa_logo).decode("utf-8")
 
+        # Sacar criterios
+        criterio_found = await criterios_collection.find_one({"modelo_id": modelo_id})
+
         # gerar_pdf deve retornar um BytesIO
         final_pdf = gerar_pdf(
             relatorios_para_pdf,
             modelo_doc,
             cliente_doc,
             empresa_logo,
-            criterios=await criterios_collection.find_one({"modelo_id": modelo_id}),
+            criterio_found,
+            jwt.get("plano", "free") == "free",
         )
         final_pdf.seek(0)
 

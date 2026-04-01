@@ -153,7 +153,7 @@ class UserLogin(BaseModel):
         max_length=100,
         description="A senha deve ter pelo menos 9 caracteres.",
     )
-    recaptchaToken: str
+    # recaptchaToken: str
 
     @field_validator("email", mode="before")
     def strip_email(cls, v):

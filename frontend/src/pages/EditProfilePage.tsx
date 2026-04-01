@@ -2,6 +2,7 @@ import { useAuth } from "../hooks/AuthContext";
 import {
   Box,
   Button,
+  Chip,
   Container,
   TextField,
   Typography,
@@ -14,12 +15,16 @@ import {
   DialogContent,
   DialogActions,
   Stack,
+  CircularProgress,
+  Tooltip,
+  IconButton,
 } from "@mui/material";
+import { Delete } from "@mui/icons-material";
 import { useForm, SubmitHandler } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import GlobalPhone from "../components/GlobalPhone";
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import isValidNIF from "./utils/isValidNIF";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
 import PasswordField from "../components/PasswordField";
@@ -27,6 +32,11 @@ import StyledBreadcrumb from "../components/StyledBreadCrumbs";
 import { useNavigate } from "react-router-dom";
 import HomeIcon from "@mui/icons-material/Home";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import visaLogo from "../assets/images/cards/visa.png";
+import mastercardLogo from "../assets/images/cards/mastercard.png";
+import amexLogo from "../assets/images/cards/americanExpress.png";
+import discoverLogo from "../assets/images/cards/discover.png";
+import genericCardLogo from "../assets/images/logo.png";
 
 // Schemas
 const userInfoSchema = z.object({
@@ -34,10 +44,10 @@ const userInfoSchema = z.object({
   telefone: z
     .string()
     .trim()
-    .regex(/^[+]?\d{9,15}$/, "Número de telefone inválido"),
+    .regex(/^[+]?\d{9,15}$/, "Número de telefone inválido")
+    .optional(),
   assinatura: z.string().optional(), // Removido z.base64() para aceitar string vazia
 });
-
 const userPasswordSchema = z
   .object({
     password: z.string().nonempty("Senha atual é obrigatória"),
@@ -82,9 +92,117 @@ type CompanyFormType = z.infer<typeof companySchema>;
 
 type MessageType = { error: boolean; message: string } | null;
 
+type PaymentMethodType = {
+  id: string;
+  brand: string | null;
+  last4: string | null;
+  expMonth: number | null;
+  expYear: number | null;
+  maskedNumber: string;
+  isDefault: boolean;
+};
+
+function normalizePaymentMethods(data: any): PaymentMethodType[] {
+  // Helper to extract actual data from Stripe SDK objects
+  function extractData(obj: any): any {
+    if (!obj) return obj;
+    // If it has _data, use that (recursively), otherwise return as is
+    return obj._data ? extractData(obj._data) : obj;
+  }
+
+  let paymentArray: any[] = [];
+
+  // Try to extract the array from various possible structures
+  if (Array.isArray(data)) {
+    paymentArray = data;
+  } else if (Array.isArray(data?.data)) {
+    paymentArray = data.data;
+  } else if (Array.isArray(data?.payment_methods)) {
+    paymentArray = data.payment_methods;
+  } else {
+    return [];
+  }
+
+  const defaultPaymentMethodId = data?.default_payment_method_id ?? null;
+
+  return paymentArray
+    .map((item: any) => {
+      try {
+        const paymentData = extractData(item);
+
+        if (paymentData?.type !== "card") return null;
+
+        const cardData = extractData(paymentData.card);
+        if (!cardData) return null;
+
+        const last4 = cardData.last4 ?? null;
+
+        return {
+          id: paymentData.id,
+          brand: cardData.display_brand ?? cardData.brand ?? null,
+          last4,
+          maskedNumber: last4 ? `**** **** **** ${last4}` : "**** **** **** ----",
+          expMonth: cardData.exp_month ?? null,
+          expYear: cardData.exp_year ?? null,
+          isDefault: paymentData.id === defaultPaymentMethodId,
+        };
+      } catch (err) {
+        console.warn("Erro ao normalizar método de pagamento:", err, item);
+        return null;
+      }
+    })
+    .filter((item: any): item is PaymentMethodType => item !== null);
+}
+
+function getPaymentBrandKey(brand: string | null): string {
+  const normalized = (brand || "").toLowerCase().replace(/\s+/g, "_");
+  if (normalized === "amex" || normalized === "american_express") {
+    return "american_express";
+  }
+  return normalized;
+}
+
+function getPaymentBrandName(brand: string | null): string {
+  const key = getPaymentBrandKey(brand);
+  if (key === "visa") return "Visa";
+  if (key === "mastercard") return "Mastercard";
+  if (key === "american_express") return "American Express";
+  if (key === "discover") return "Discover";
+  return "Cartão";
+}
+
+function getPaymentBrandImage(brand: string | null): string {
+  const key = getPaymentBrandKey(brand);
+  if (key === "visa") return visaLogo;
+  if (key === "mastercard") return mastercardLogo;
+  if (key === "american_express") return amexLogo;
+  if (key === "discover") return discoverLogo;
+  return genericCardLogo;
+}
+
+function isPaymentMethodExpired(paymentMethod: PaymentMethodType): boolean {
+  if (!paymentMethod.expMonth || !paymentMethod.expYear) {
+    return false;
+  }
+
+  // O cartão é válido até ao último dia do mês de expiração.
+  const expiryEndDate = new Date(paymentMethod.expYear, paymentMethod.expMonth, 0, 23, 59, 59, 999);
+  return new Date() > expiryEndDate;
+}
+
+function getPaymentExpiryLabel(paymentMethod: PaymentMethodType): string {
+  if (!paymentMethod.expMonth || !paymentMethod.expYear) {
+    return "--/--";
+  }
+
+  const month = String(paymentMethod.expMonth).padStart(2, "0");
+  const shortYear = String(paymentMethod.expYear).slice(-2);
+  return `${month}/${shortYear}`;
+}
+
 interface SectionFormProps {
   title: string;
-  onSubmit: React.FormEventHandler<HTMLFormElement>;
+  onSubmit: React.InputEventHandler<HTMLFormElement>;
   children: React.ReactNode;
   message?: MessageType;
   setMessage?: React.Dispatch<React.SetStateAction<MessageType>>;
@@ -124,6 +242,12 @@ function EditProfilePage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [deactivating, setDeactivating] = useState(false);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethodType[]>([]);
+  const [loadingPaymentMethod, setLoadingPaymentMethod] = useState(false);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [redirectingToBilling, setRedirectingToBilling] = useState(false);
+  const [updatingDefaultPaymentId, setUpdatingDefaultPaymentId] = useState<string | null>(null);
+  const [removingPaymentId, setRemovingPaymentId] = useState<string | null>(null);
 
   // Ref para o topo da página
   const topRef = useRef<HTMLDivElement>(null);
@@ -167,6 +291,98 @@ function EditProfilePage() {
       });
     }
   }, [user, empresa, userInfoForm, companyForm]);
+
+  const fetchPaymentMethods = useCallback(async () => {
+    if (!user) {
+      setPaymentMethods([]);
+      return;
+    }
+
+    setLoadingPaymentMethod(true);
+    try {
+      const response = await fetch("/backend/user/payment-methods", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Não foi possível carregar o cartão");
+      }
+
+      const data = await response.json();
+
+      console.log("Dados brutos do método de pagamento:", data);
+
+      setPaymentMethods(normalizePaymentMethods(data));
+    } catch (error) {
+      console.error("Erro ao obter método de pagamento:", error);
+      setPaymentMethods([]);
+    } finally {
+      setLoadingPaymentMethod(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchPaymentMethods();
+  }, [fetchPaymentMethods]);
+
+  const handleSetDefaultPaymentMethod = async (paymentMethodId: string) => {
+    if (!paymentMethodId || paymentMethodId === "legacy") {
+      return;
+    }
+
+    setUpdatingDefaultPaymentId(paymentMethodId);
+    try {
+      const response = await fetch(`/backend/user/payment-method/default/${paymentMethodId}`, {
+        method: "PUT",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.detail || "Não foi possível definir o cartão como padrão.");
+      }
+
+      await fetchPaymentMethods();
+      setGlobalMessage({ error: false, message: "Cartão definido como padrão." });
+    } catch (error: any) {
+      setGlobalMessage({
+        error: true,
+        message: error?.message || "Erro ao definir o cartão como padrão.",
+      });
+    } finally {
+      setUpdatingDefaultPaymentId(null);
+    }
+  };
+
+  const handleRemovePaymentMethod = async (paymentMethodId: string) => {
+    if (!paymentMethodId || paymentMethodId === "legacy") {
+      return;
+    }
+
+    setRemovingPaymentId(paymentMethodId);
+    try {
+      const response = await fetch(`/backend/user/payment-method/${paymentMethodId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => null);
+        throw new Error(error?.detail || "Não foi possível remover o método de pagamento.");
+      }
+
+      await fetchPaymentMethods();
+      setGlobalMessage({ error: false, message: "Método de pagamento removido." });
+    } catch (error: any) {
+      setGlobalMessage({
+        error: true,
+        message: error?.message || "Erro ao remover método de pagamento.",
+      });
+    } finally {
+      setRemovingPaymentId(null);
+    }
+  };
 
   // Scroll suave para o topo quando globalMessage muda
   useEffect(() => {
@@ -298,6 +514,47 @@ function EditProfilePage() {
       setSubmitting((s) => ({ ...s, company: false }));
     }
   };
+
+  const handleOpenPaymentUpdate = async () => {
+    setRedirectingToBilling(true);
+    try {
+      let response = await fetch("/backend/payment-methods/add-session", {
+        method: "POST",
+        credentials: "include",
+      });
+
+      // Fallback para endpoint legado caso o v2 não esteja publicado.
+      if (response.status === 404 || response.status === 405) {
+        response = await fetch("/backend/user/payment-method/update-session", {
+          method: "POST",
+          credentials: "include",
+        });
+      }
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error?.detail || "Erro ao abrir atualização do cartão");
+      }
+
+      const data = await response.json();
+      if (!data?.url) {
+        throw new Error("URL de atualização indisponível");
+      }
+
+      window.location.href = data.url;
+    } catch (error: any) {
+      setGlobalMessage({
+        error: true,
+        message: error?.message || "Erro ao abrir atualização do cartão",
+      });
+      setRedirectingToBilling(false);
+      setPaymentDialogOpen(false);
+    }
+  };
+
+  const hasExpiredPaymentMethods = paymentMethods.some(isPaymentMethodExpired);
+  const expiredPaymentMessage = "Existe um cartão expirado. Atualize ou adicione um novo método de pagamento.";
+  const defaultPaymentMethod = paymentMethods.find((method) => method.isDefault) || null;
 
   return (
     <Container maxWidth={false} sx={{ mt: 5 }}>
@@ -482,6 +739,136 @@ function EditProfilePage() {
         </Grid>
       </SectionForm>
 
+      <SectionForm title="Métodos de Pagamento" onSubmit={(e) => e.preventDefault()}>
+        <Grid container spacing={2} sx={{ maxWidth: "450px", mx: "auto" }}>
+          {hasExpiredPaymentMethods && (
+            <Grid size={{ xs: 12 }}>
+              <Alert severity="error" variant="outlined">
+                {expiredPaymentMessage}
+              </Alert>
+            </Grid>
+          )}
+
+          <Grid size={{ xs: 9 }} sx={{ mx: "auto" }}>
+            {loadingPaymentMethod ? (
+              <Box display="flex" alignItems="center" gap={1} mt={1}>
+                <CircularProgress size={20} />
+                <Typography variant="body2">A carregar métodos de pagamento...</Typography>
+              </Box>
+            ) : defaultPaymentMethod ? (
+              <Paper
+                elevation={1}
+                onClick={() => setPaymentDialogOpen(true)}
+                sx={{
+                  p: 1.5,
+                  borderRadius: 2,
+                  cursor: "pointer",
+                  border: "1px solid",
+                  borderColor: isPaymentMethodExpired(defaultPaymentMethod) ? "error.main" : "success.main",
+                  bgcolor: "action.selected",
+                  transition: "box-shadow 0.2s, transform 0.2s",
+                  "&:hover": {
+                    boxShadow: 4,
+                    transform: "translateY(-1px)",
+                  },
+                }}
+              >
+                <Box
+                  display="flex"
+                  flexDirection={{ xs: "column", sm: "row" }}
+                  alignItems="center"
+                  justifyContent="space-between"
+                  gap={2}
+                >
+                  <Box
+                    display="flex"
+                    flexDirection="column"
+                    alignItems="flex-start"
+                    gap={0.5}
+                    sx={{ flex: 1, minWidth: 0 }}
+                  >
+                    <Box display="flex" alignItems="center" gap={1} sx={{ minWidth: 0 }}>
+                      <Typography
+                        variant="body1"
+                        sx={{
+                          color: "text.primary",
+                          fontWeight: 700,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {getPaymentBrandName(defaultPaymentMethod.brand)}{" "}
+                        {defaultPaymentMethod.maskedNumber.replace("**** **** **** ", "•••• ")}
+                      </Typography>
+                    </Box>
+                    <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                      <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
+                        Expires {getPaymentExpiryLabel(defaultPaymentMethod)}
+                      </Typography>
+                      <Chip
+                        size="small"
+                        color="success"
+                        label="Padrão"
+                        sx={{ height: 18, fontWeight: 700, fontSize: "0.65rem" }}
+                      />
+                    </Box>
+                    {isPaymentMethodExpired(defaultPaymentMethod) && (
+                      <Typography variant="caption" color="error.main" sx={{ fontWeight: 600, whiteSpace: "nowrap" }}>
+                        Cartão expirado
+                      </Typography>
+                    )}
+                  </Box>
+                  <Box
+                    component="img"
+                    src={getPaymentBrandImage(defaultPaymentMethod.brand)}
+                    alt={getPaymentBrandName(defaultPaymentMethod.brand)}
+                    sx={{
+                      height: "auto",
+                      width: 45,
+                      objectFit: "contain",
+                      flexShrink: 0,
+                    }}
+                  />
+                </Box>
+              </Paper>
+            ) : paymentMethods.length > 0 ? (
+              <Paper
+                onClick={() => setPaymentDialogOpen(true)}
+                elevation={0}
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  cursor: "pointer",
+                  border: "1px dashed",
+                  borderColor: "divider",
+                }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  Nenhum método padrão definido. Clique para escolher um método padrão.
+                </Typography>
+              </Paper>
+            ) : (
+              <Paper
+                onClick={() => setPaymentDialogOpen(true)}
+                elevation={0}
+                sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  cursor: "pointer",
+                  border: "1px dashed",
+                  borderColor: "divider",
+                }}
+              >
+                <Typography variant="body2" color="text.secondary">
+                  Nenhum cartão guardado. Clique para adicionar um novo método de pagamento.
+                </Typography>
+              </Paper>
+            )}
+          </Grid>
+        </Grid>
+      </SectionForm>
+
       <SectionForm title="Alterar Senha" onSubmit={userPasswordForm.handleSubmit(handleSubmitUserPassword)}>
         <Grid container spacing={2}>
           <Grid size={{ xs: 12 }}>
@@ -609,7 +996,7 @@ function EditProfilePage() {
                   )}
                   <input
                     ref={fileInputRef}
-                    accept="image/png, image/jpeg, image/jpg"
+                    accept="image/png"
                     id="logo-upload"
                     type="file"
                     style={{ display: "none" }}
@@ -618,11 +1005,6 @@ function EditProfilePage() {
                       const file = e.target.files?.[0];
                       if (file) {
                         const maxSize = 1024 * 1024; // Limite de 1MB
-                        const allowedTypes = ["image/png", "image/jpeg", "image/jpg"];
-                        if (!allowedTypes.includes(file.type)) {
-                          alert("Apenas imagens JPG, JPEG ou PNG são permitidas.");
-                          return;
-                        }
                         if (file.size > maxSize) {
                           alert("O ficheiro é demasiado grande. O limite é 1MB.");
                           return;
@@ -723,6 +1105,144 @@ function EditProfilePage() {
           </Grid>
         </SectionForm>
       )}
+      <Dialog open={paymentDialogOpen} onClose={() => setPaymentDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Gerir métodos de pagamento</DialogTitle>
+        <DialogContent sx={{ overflowY: "auto", maxHeight: "70vh" }}>
+          <Stack spacing={1.5} mt={1}>
+            {paymentMethods.length > 0 ? (
+              paymentMethods.map((item) => {
+                const isExpired = isPaymentMethodExpired(item);
+                return (
+                  <Paper
+                    key={`dialog-${item.id}`}
+                    elevation={0}
+                    sx={{
+                      p: 1.5,
+                      borderRadius: 1.5,
+                      border: "1px solid",
+                      borderColor: isExpired ? "error.main" : item.isDefault ? "success.main" : "divider",
+                      bgcolor: item.isDefault ? "action.selected" : "background.default",
+                    }}
+                  >
+                    <Box
+                      display="flex"
+                      flexDirection={{ xs: "column", md: "row" }}
+                      justifyContent="space-between"
+                      alignItems="center"
+                      gap={2}
+                    >
+                      <Box display="flex" flexDirection="row" alignItems="center" gap={3}>
+                        <Box
+                          component="img"
+                          src={getPaymentBrandImage(item.brand)}
+                          alt={getPaymentBrandName(item.brand)}
+                          sx={{ height: 26, width: "auto", maxWidth: 80, objectFit: "contain" }}
+                        />
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontFamily: "monospace",
+                            letterSpacing: "0.06em",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {item.maskedNumber || "**** **** **** ----"}
+                        </Typography>
+                        <Typography variant="body2" color={isExpired ? "error.main" : "text.secondary"}>
+                          {getPaymentExpiryLabel(item)}
+                        </Typography>
+                      </Box>
+
+                      <Box display="flex" alignItems="center" gap={1}>
+                        {item.isDefault ? (
+                          <Button size="small" variant="contained" disabled sx={{ minWidth: 86, mb: 0 }}>
+                            Padrão
+                          </Button>
+                        ) : (
+                          <Button
+                            size="small"
+                            variant="contained"
+                            sx={{ mb: 0 }}
+                            disabled={
+                              redirectingToBilling ||
+                              updatingDefaultPaymentId === item.id ||
+                              removingPaymentId === item.id ||
+                              item.id === "legacy"
+                            }
+                            onClick={() => handleSetDefaultPaymentMethod(item.id)}
+                          >
+                            {updatingDefaultPaymentId === item.id ? "A definir..." : "Tornar padrão"}
+                          </Button>
+                        )}
+
+                        {!item.isDefault && item.id !== "legacy" && (
+                          <Tooltip title="Remover cartão">
+                            <IconButton
+                              onClick={() => handleRemovePaymentMethod(item.id)}
+                              disabled={
+                                redirectingToBilling ||
+                                updatingDefaultPaymentId === item.id ||
+                                removingPaymentId === item.id
+                              }
+                              size="small"
+                              sx={{
+                                backgroundColor: "error.main",
+                                color: "#fff",
+                                "&:hover": {
+                                  backgroundColor: "error.dark",
+                                },
+                                width: 40,
+                                height: 40,
+                              }}
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Box>
+                    </Box>
+                    {isExpired && (
+                      <Typography variant="caption" color="error.main" sx={{ mt: 0.75, display: "block" }}>
+                        Cartão expirado
+                      </Typography>
+                    )}
+                  </Paper>
+                );
+              })
+            ) : (
+              <Typography variant="body2" color="text.secondary">
+                Não existem métodos de pagamento guardados.
+              </Typography>
+            )}
+
+            {hasExpiredPaymentMethods && (
+              <Alert severity="error" variant="outlined" sx={{ mt: 1 }}>
+                {expiredPaymentMessage}
+              </Alert>
+            )}
+
+            <Box display="flex" justifyContent="center" alignContent="center">
+              <Button sx={{ width: "50%" }} onClick={handleOpenPaymentUpdate} disabled={redirectingToBilling}>
+                {redirectingToBilling ? "A abrir Stripe..." : "+ Adicionar método de pagamento"}
+              </Button>
+            </Box>
+
+            <Typography variant="caption" color="text.secondary">
+              O formulário de novo cartão é carregado pela Stripe em ambiente seguro.
+            </Typography>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            sx={{ maxWidth: "50%", mx: "auto" }}
+            variant="outlined"
+            onClick={() => setPaymentDialogOpen(false)}
+            disabled={redirectingToBilling}
+          >
+            Cancelar
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Sección de desativação de utilizador (Versão 1 - REST) */}
       <Paper
@@ -747,7 +1267,7 @@ function EditProfilePage() {
         </Stack>
 
         <Typography variant="body1" sx={{ mb: 2 }}>
-          A sua será conta apagada e o sistema terminará a sessão automaticamente. Será retida por 30 dias até ser
+          A sua conta será apagada e o sistema terminará a sessão automaticamente. Será retida por 30 dias até ser
           apagada permanentemente.
         </Typography>
 
