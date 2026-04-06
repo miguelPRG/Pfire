@@ -62,8 +62,8 @@ class RelatorioQuery:
                     "$regex": f"^{filter.clienteNif}",
                     "$options": "i",
                 }
-            elif filter.numero is not None:
-                filtro["numero"] = filter.numero
+            elif filter.numero_id is not None:
+                filtro["numero_id"] = filter.numero_id
 
         # Verificar permissões
         if not jwt.get("isSuperAdmin", False):
@@ -88,7 +88,7 @@ class RelatorioQuery:
 
             relatorio_data = {
                 "id": str(relatorio.get("_id")),
-                "numero": relatorio.get("numero"),
+                "numero_id": relatorio.get("numero_id"),
                 "modelo_nome": relatorio.get("modelo_nome"),
                 "cliente_nome": relatorio.get("cliente_nome"),
                 "cliente_nif": relatorio.get("cliente_nif"),

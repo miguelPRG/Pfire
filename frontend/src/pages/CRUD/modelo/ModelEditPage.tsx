@@ -31,7 +31,7 @@ import Notification from "../../../components/Notification";
 
 // Esquema de validação para um subcampo personalizado
 const subfieldSchema = z.object({
-  name: z.string().min(1, "Nome do subcampo é obrigatório").trim(),
+  name: z.string().min(3, "Nome do subcampo deve ter pelo menos 3 caracteres").trim(),
   datatype: z.string().min(1, "Tipo de dados é obrigatório").trim(),
   required: z.boolean(),
 });
@@ -62,7 +62,7 @@ const formSchema = z.object({
 });
 
 // Novo schema para validação do nome do campo
-const newFieldNameSchema = z.string().min(1, "Nome do campo é obrigatório");
+const newFieldNameSchema = z.string().min(3, "Nome do campo deve ter pelo menos 3 caracteres");
 
 // Tipos TypeScript inferidos dos esquemas
 

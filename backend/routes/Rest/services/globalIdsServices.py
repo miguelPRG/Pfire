@@ -27,6 +27,7 @@ pwd_context = CryptContext(
     argon2__time_cost=3,
 )
 
+
 # 🚀 Obter Global ID de um Utilizador
 @routerUser.get("/get-global-id/{global_id}")
 async def get_global_id(global_id: str, request: Request):
@@ -133,21 +134,23 @@ async def confirm_user(global_id: str, request: Request, captcha_data: GlobalIdM
     if isinstance(user_doc.get("assinatura"), (bytes, bytearray)):
         assinatura_b64 = b64encode(user_doc["assinatura"]).decode("utf-8")
 
-    payload= {
-            "id": str(user_doc["_id"]),
-            "nome": user_doc.get("nome", ""),
-            "email": user_doc.get("email", ""),
-            "telefone": user_doc.get("telefone", None),
-            "isSuperAdmin": user_doc.get("isSuperAdmin", False),
-            "plano": user_doc.get("plano", "free"),
-            "stripeCustomerId": user_doc.get("stripe_customer_id", None),
+    payload = {
+        "id": str(user_doc["_id"]),
+        "nome": user_doc.get("nome", ""),
+        "email": user_doc.get("email", ""),
+        "telefone": user_doc.get("telefone", None),
+        "isSuperAdmin": user_doc.get("isSuperAdmin", False),
+        "plano": user_doc.get("plano", "free"),
+        "stripeCustomerId": user_doc.get("stripe_customer_id", None),
     }
 
     if payload.get("assinatura"):
         payload["assinatura"] = assinatura_b64
 
     response = JSONResponse(content=payload)
-    response.set_cookie(key="_fp", value=jwt_token, **get_auth_cookie_settings(request), expires=expire)  # Define o cookie com o token JWT e a data de expiração
+    response.set_cookie(
+        key="_fp", value=jwt_token, **get_auth_cookie_settings(request), expires=expire
+    )  # Define o cookie com o token JWT e a data de expiração
     return response
 
 

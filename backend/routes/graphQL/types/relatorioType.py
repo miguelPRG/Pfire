@@ -7,7 +7,7 @@ from typing import Optional
 @strawberry.type
 class Relatorio:
     id: str
-    numero: int
+    numero_id: int
     modelo_nome: str
     cliente_nome: str
     cliente_nif: str
@@ -41,4 +41,4 @@ class RelatorioCountByModelo:
 class RelatorioFilter:
     clienteNome: str = None
     clienteNif: str = None
-    numero: int = None
+    numero_id: int = None

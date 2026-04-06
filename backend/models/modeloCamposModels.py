@@ -27,10 +27,11 @@ PRO_DATATYPES = {
 def validate_field(key, value, indice=0, plano="free"):
     key = key.strip()
 
-    if not key.startswith("custom_") or key == "custom_":
+    suffix = key[len("custom_") :]
+    if not key.startswith("custom_") or len(suffix) < 3:
         raise HTTPException(
             status_code=400,
-            detail=f"O campo que está a tentar criar é inválido: {key}. Os campos personalizados devem começar com 'custom_'.",
+            detail=f"O campo que está a tentar criar é inválido: {key}. Os campos personalizados devem começar com 'custom_' seguido de pelo menos 3 caracteres.",
         )
 
     if not isinstance(value, dict):
@@ -56,12 +57,14 @@ def validate_field(key, value, indice=0, plano="free"):
                 detail=f"O campo que está a tentar criar:  {key} do tipo 'object' deve conter pelo menos um subcampo personalizado (custom_).",
             )
         bad_fields = {
-            k for k in custom_fields if not k.startswith("custom_") and k != "custom_"
+            k
+            for k in custom_fields
+            if not k.startswith("custom_") or len(k[len("custom_") :]) < 3
         }
         if bad_fields:
             raise HTTPException(
                 status_code=400,
-                detail=f"Foram encontrados subcampos inválidos: {bad_fields}. Os campos personalizados devem começar com 'custom_'.",
+                detail=f"Foram encontrados subcampos inválidos: {bad_fields}. Os campos personalizados devem começar com 'custom_' seguido de pelo menos 3 caracteres.",
             )
         for idx, (subkey, subvalue) in enumerate(custom_fields.items()):
             if subvalue is None:

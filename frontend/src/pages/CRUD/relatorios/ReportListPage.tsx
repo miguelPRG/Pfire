@@ -65,7 +65,7 @@ interface FileSystemWritableFileStream extends WritableStream<Uint8Array> {
 */
 export interface Report {
   id: string;
-  numero: string;
+  numeroId: string;
   modeloNome: string;
   clienteNome: string;
   clienteNif: string;
@@ -378,13 +378,13 @@ export default function ReportListPage() {
     const text = advFilter.text.trim();
     let filterObj: Record<string, any> = {};
     if (text) {
-      if (advFilter.field === "numero") {
+      if (advFilter.field === "numeroId") {
         const n = Number(text);
         if (Number.isNaN(n)) {
           setAlert({ message: "Número inválido.", isError: true });
           return;
         }
-        filterObj = { numero: n };
+        filterObj = { numeroId: n };
       } else {
         filterObj = { [advFilter.field]: text };
       }
@@ -608,7 +608,7 @@ export default function ReportListPage() {
 
           <AdvancedSearchBar
             fields={[
-              { value: "numero", label: "Número do Relatório" },
+              { value: "numeroId", label: "Número do Relatório" },
               { value: "clienteNome", label: "Nome do Cliente" },
               { value: "clienteNif", label: "NIF do Cliente" },
             ]}
@@ -633,7 +633,7 @@ export default function ReportListPage() {
               <TableHead sx={{ background: "#070707d4" }}>
                 <TableRow>
                   <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }}>
-                    Número
+                    ID
                   </TableCell>
                   <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }}>
                     Cliente
@@ -692,13 +692,15 @@ export default function ReportListPage() {
                     Data Criação
                   </TableCell>
                   {isCompanyAdmin && (
-                    <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }} align="center">
-                      Estado
-                    </TableCell>
+                    <>
+                      <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }} align="center">
+                        Estado
+                      </TableCell>
+                      <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }} align="center">
+                        Ações
+                      </TableCell>
+                    </>
                   )}
-                  <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }} align="center">
-                    Ações
-                  </TableCell>
                 </TableRow>
 
                 <TableRow>
@@ -720,7 +722,7 @@ export default function ReportListPage() {
               <TableBody>
                 {reports.map((report: Report) => (
                   <TableRow key={report.id}>
-                    <TableCell sx={cellBorders}>{report.numero}</TableCell>
+                    <TableCell sx={cellBorders}>{report.numeroId}</TableCell>
                     <TableCell sx={cellBorders}>{report.clienteNome}</TableCell>
                     <TableCell sx={cellBorders}>{report.clienteNif || "-"}</TableCell>
                     <TableCell sx={cellBorders}>{report.modeloNome}</TableCell>
@@ -753,67 +755,69 @@ export default function ReportListPage() {
                       {report.createdAt ? new Date(report.createdAt).toLocaleDateString() : "-"}
                     </TableCell>
                     {isCompanyAdmin && (
-                      <TableCell sx={{ ...cellBorders, textAlign: "center" }}>
-                        <Button
-                          variant="contained"
-                          size="small"
-                          sx={{
-                            width: 55,
-                            height: 55,
-                            borderRadius: "50%",
-                            backgroundColor: report.isActive ? theme.palette.success.main : theme.palette.error.main,
-                            color: "#fff",
-                            fontWeight: "bold",
-                            fontSize: 12,
-                            minWidth: 0,
-                            px: 0,
-                            position: "relative",
-                          }}
-                          disabled={loadingReportId === report.id}
-                          onClick={async () => {
-                            setLoadingReportId(report.id);
-                            await toggleReportStatus(report.id, report.isActive);
-                            setLoadingReportId(null);
-                          }}
-                        >
-                          {loadingReportId === report.id ? (
-                            <CircularProgress size={28} sx={{ color: "#fff" }} />
-                          ) : report.isActive ? (
-                            "Ativo"
-                          ) : (
-                            "Inativo"
-                          )}
-                        </Button>
-                      </TableCell>
-                    )}
-                    <TableCell sx={{ ...cellBorders, textAlign: "center" }}>
-                      {isCompanyAdmin ? (
-                        !report.isActive && loadingReportId !== report.id ? (
+                      <>
+                        <TableCell sx={{ ...cellBorders, textAlign: "center" }}>
                           <Button
                             variant="contained"
-                            color="error"
                             size="small"
                             sx={{
-                              borderRadius: "20px",
+                              width: 55,
+                              height: 55,
+                              borderRadius: "50%",
+                              backgroundColor: report.isActive ? theme.palette.success.main : theme.palette.error.main,
+                              color: "#fff",
+                              fontWeight: "bold",
+                              fontSize: 12,
                               minWidth: 0,
-                              px: 1.5,
-                              width: "auto",
-                              textTransform: "none",
+                              px: 0,
+                              position: "relative",
                             }}
-                            onClick={() => {
-                              setSelectedReport(report);
-                              setHardDeleteDialogOpen(true);
+                            disabled={loadingReportId === report.id}
+                            onClick={async () => {
+                              setLoadingReportId(report.id);
+                              await toggleReportStatus(report.id, report.isActive);
+                              setLoadingReportId(null);
                             }}
                           >
-                            Apagar Permanentemente
+                            {loadingReportId === report.id ? (
+                              <CircularProgress size={28} sx={{ color: "#fff" }} />
+                            ) : report.isActive ? (
+                              "Ativo"
+                            ) : (
+                              "Inativo"
+                            )}
                           </Button>
-                        ) : null
-                      ) : (
-                        <Typography variant="body2" color="text.secondary">
-                          Sem ações
-                        </Typography>
-                      )}
-                    </TableCell>
+                        </TableCell>
+                        <TableCell sx={{ ...cellBorders, textAlign: "center" }}>
+                          {isCompanyAdmin ? (
+                            !report.isActive && loadingReportId !== report.id ? (
+                              <Button
+                                variant="contained"
+                                color="error"
+                                size="small"
+                                sx={{
+                                  borderRadius: "20px",
+                                  minWidth: 0,
+                                  px: 1.5,
+                                  width: "auto",
+                                  textTransform: "none",
+                                }}
+                                onClick={() => {
+                                  setSelectedReport(report);
+                                  setHardDeleteDialogOpen(true);
+                                }}
+                              >
+                                Apagar Permanentemente
+                              </Button>
+                            ) : null
+                          ) : (
+                            <Typography variant="body2" color="text.secondary">
+                              Sem ações
+                            </Typography>
+                          )}
+                        </TableCell>
+                      </>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

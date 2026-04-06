@@ -168,10 +168,10 @@ async def create_relatorio(request: Request, relatorio: RelatorioCreate):
         {"empresa_id": relatorio.empresa_id}
     )
 
-    # Create report data with auto-generated number
+    # Create report data with auto-generated ID
     data = datetime.now()
     relatorio_data = relatorio.model_dump()
-    relatorio_data["numero"] = count + 1
+    relatorio_data["numero_id"] = count + 1
     relatorio_data["cliente_nome"] = cliente["nome"]
     relatorio_data["cliente_nif"] = cliente["nif"]
     relatorio_data["modelo_nome"] = modelo["modelo_nome"]
@@ -185,7 +185,7 @@ async def create_relatorio(request: Request, relatorio: RelatorioCreate):
         await relatorios_collection.insert_one(relatorio_data)
     except DuplicateKeyError as e:
         text = str(e).lower()
-        if "number" in text:
+        if "numero_id" in text or "numero" in text or "id" in text or "number" in text:
             raise HTTPException(
                 status_code=400,
                 detail="Já existe um relatório com este número nesta empresa.",
@@ -198,14 +198,19 @@ async def create_relatorio(request: Request, relatorio: RelatorioCreate):
 # Apagar Relatório (soft delete)
 @routerRelatorio.delete("/")
 async def delete_relatorio(relatorio: RelatorioActivation, request: Request):
-    jwt = getattr(request.state, "jwt", None)
 
+    jwt = getattr(request.state, "jwt", None)
+    user_id = ObjectId(jwt["user_id"])
+    relatorio_id = ObjectId(relatorio.id)
+
+    print("Dados recebidos para ativar relatório:", relatorio)
+    print("User Id: ", jwt.get("user_id"))
     # Verificar se o usuário é super admin
     if not jwt.get("isSuperAdmin", False):
         # Verificar se o usuário tem permissão para apagar relatórios para a empresa
 
         user_empresa = await users_empresas_collection.find_one(
-            {"user_id": jwt["user_id"], "empresa_id": ObjectId(relatorio.empresa_id)}
+            {"user_id": user_id, "empresa_id": ObjectId(relatorio.empresa_id)}
         )
         if not user_empresa:
             raise HTTPException(
@@ -214,12 +219,12 @@ async def delete_relatorio(relatorio: RelatorioActivation, request: Request):
             )
 
     relatio_update = await relatorios_collection.update_one(
-        {"_id": ObjectId(relatorio.id), "isActive": True},
+        {"_id": relatorio_id, "isActive": True},
         {
             "$set": {
                 "isActive": False,
                 "updated_at": datetime.now(),
-                "updated_by": ObjectId(jwt["user_id"]),
+                "updated_by": user_id,
             }
         },
     )
@@ -238,13 +243,16 @@ async def activate_relatorio(relatorio: RelatorioActivation, request: Request):
 
     # Sacar jwt
     jwt = getattr(request.state, "jwt", None)
+    user_id = ObjectId(jwt["user_id"])
+    relatorio_id = ObjectId(relatorio.id)
+    empresa_id = ObjectId(relatorio.empresa_id)
 
     # Verificar se o usuário é super admin
     if not jwt.get("isSuperAdmin", False):
         # Verificar se o usuário tem permissão para apagar relatórios para a empresa
 
         user_empresa = await users_empresas_collection.find_one(
-            {"user_id": jwt["user_id"], "empresa_id": ObjectId(relatorio.empresa_id)}
+            {"user_id": user_id, "empresa_id": empresa_id}
         )
         if not user_empresa:
             raise HTTPException(
@@ -253,12 +261,12 @@ async def activate_relatorio(relatorio: RelatorioActivation, request: Request):
             )
 
     relatio_update = await relatorios_collection.update_one(
-        {"_id": ObjectId(relatorio.id), "isActive": False},
+        {"_id": relatorio_id, "isActive": False},
         {
             "$set": {
                 "isActive": True,
                 "updated_at": datetime.now(),
-                "updated_by": ObjectId(jwt["user_id"]),
+                "updated_by": user_id,
             }
         },
     )
@@ -286,7 +294,7 @@ async def hard_delete_relatorio(relatorio: RelatorioActivation, request: Request
     # Hard delete: apenas SuperAdmin ou admin da empresa.
     if not jwt.get("isSuperAdmin", False):
         user_empresa = await users_empresas_collection.find_one(
-            {"user_id": jwt["user_id"], "empresa_id": ObjectId(relatorio.empresa_id)}
+            {"user_id": user_id, "empresa_id": empresa_id}
         )
         if not user_empresa:
             raise HTTPException(
@@ -297,10 +305,10 @@ async def hard_delete_relatorio(relatorio: RelatorioActivation, request: Request
     # Só apaga se já estiver inativo
     result = await relatorios_collection.delete_one(
         {
-            "_id": ObjectId(relatorio.id),
-            "empresa_id": ObjectId(relatorio.empresa_id),
+            "_id": relatorio_id,
+            "empresa_id": empresa_id,
             "isActive": False,
-            "updated_by": ObjectId(jwt["user_id"]),
+            "updated_by": user_id,
             "updated_at": datetime.now(),
         }
     )
