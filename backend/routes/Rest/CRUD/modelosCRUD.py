@@ -20,10 +20,6 @@ routerModelo = APIRouter(prefix="/modelo", tags=["modelo"])
 # Criar Modelo
 @routerModelo.post("/")
 async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
-    payload = await request.json()
-    plano = jwt.get("plano", "free")
-    # Com esta linha, o pydantic irá receber a informação do plano do user e assim a função de validação de campos personalizados que acontece dentro do model_validator da classe ModelosCamposCreate, poderá validar corretamente o número de campos permitidos para o plano free ou não free.
-    modelo = ModelosCamposCreate.model_validate(payload, context={"plano": plano})
 
     # Verificar se o user tem permissão para criar modelos nesta empresa
     jwt = getattr(request.state, "jwt", None)
