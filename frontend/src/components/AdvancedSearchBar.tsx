@@ -54,8 +54,8 @@ export default function AdvancedSearchBar({
       <Stack
         direction={{ sm: "column", md: "row" }}
         spacing={2}
-        alignItems={{ sm: "stretch", md: "center" }}
         sx={{
+          alignItems: { sm: "stretch", md: "center" },
           p: 2,
           borderRadius: 2,
           border: `1px solid ${isDark ? theme.palette.divider : "#e7eaf3"}`,
@@ -149,7 +149,13 @@ export default function AdvancedSearchBar({
           />
         )}
 
-        <Stack direction="row" spacing={1} justifyContent="flex-end">
+        <Stack
+          direction="row"
+          spacing={1}
+          sx={{
+            justifyContent: "flex-end",
+          }}
+        >
           <Button
             variant="contained"
             onClick={handleApply}

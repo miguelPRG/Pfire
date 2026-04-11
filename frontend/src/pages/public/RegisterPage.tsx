@@ -175,7 +175,6 @@ export default function RegisterPage() {
           </Alert>
         </Fade>
       )}
-
       <Box
         sx={{
           position: "relative",
@@ -209,7 +208,6 @@ export default function RegisterPage() {
           />
         </Box>
       </Box>
-
       <Paper elevation={6} sx={{ p: isMobile ? 2 : 4 }}>
         <Typography variant="h5" sx={{ mb: 2 }}>
           CRIAR CONTA COM
@@ -251,7 +249,12 @@ export default function RegisterPage() {
         </Box>
 
         <Divider sx={{ my: 2 }}>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            sx={{
+              color: "text.secondary",
+            }}
+          >
             ou
           </Typography>
         </Divider>

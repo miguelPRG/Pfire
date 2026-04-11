@@ -104,14 +104,35 @@ function ForgotPassword() {
             />
           </Box>
 
-          <Typography variant="h1" textAlign="center" mb={3} mt={4}>
+          <Typography
+            variant="h1"
+            sx={{
+              textAlign: "center",
+              mb: 3,
+              mt: 4,
+            }}
+          >
             Não te lembras da tua Palavra-Passe?
           </Typography>
-          <Typography textAlign="center" mb={4} mt={4}>
+          <Typography
+            sx={{
+              textAlign: "center",
+              mb: 4,
+              mt: 4,
+            }}
+          >
             Introduz em baixo o email associado à tua conta Pfire.
           </Typography>
 
-          <Box component="form" onSubmit={handleSubmit(onSubmit)} display="flex" flexDirection="column" gap={2}>
+          <Box
+            component="form"
+            onSubmit={handleSubmit(onSubmit)}
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 2,
+            }}
+          >
             <TextField
               {...register("email")}
               label="Email"
@@ -121,7 +142,14 @@ function ForgotPassword() {
               helperText={errors.email?.message}
             />
 
-            <Box display="flex" justifyContent="space-between" gap={2} mt={4}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 2,
+                mt: 4,
+              }}
+            >
               <Button
                 type="button"
                 onClick={() => navigate("/login")}

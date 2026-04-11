@@ -88,7 +88,13 @@ export default function CreateCompanyPage() {
         <Typography variant="h5" sx={{ mb: 1 }}>
           Criar nova empresa
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 3,
+          }}
+        >
           Preencha os campos abaixo para cadastrar uma nova empresa.
         </Typography>
 
@@ -132,7 +138,6 @@ export default function CreateCompanyPage() {
           <SaveCancelBar onCancel={handleCancel} loading={isSubmitting || loading} />
         </Box>
       </Paper>
-
       <Snackbar
         open={!!alert}
         autoHideDuration={3200}

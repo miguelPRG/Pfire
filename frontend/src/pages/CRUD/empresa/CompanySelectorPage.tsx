@@ -181,12 +181,11 @@ export default function CompanySelectorPage() {
             </Box>
           )}
         </Box>
-
         <Typography
           variant="h6"
-          fontWeight="bold"
           align="center"
           sx={{
+            fontWeight: "bold",
             mb: 1.5,
             fontSize: "1.23rem",
             lineHeight: 1.12,
@@ -197,7 +196,6 @@ export default function CompanySelectorPage() {
         >
           {emp.nome}
         </Typography>
-
         <Box
           sx={{
             width: "100%",
@@ -222,7 +220,6 @@ export default function CompanySelectorPage() {
           </Typography>
           {/* Adicione outros campos se quiser */}
         </Box>
-
         <Button
           variant="contained"
           size="large"
@@ -283,7 +280,14 @@ export default function CompanySelectorPage() {
 
           {/* Título */}
           <Box sx={{ width: "100%", mb: 3, textAlign: "center" }}>
-            <Typography variant="h4" fontWeight="bold" letterSpacing={1.5} sx={{ color: theme.palette.text.primary }}>
+            <Typography
+              variant="h4"
+              sx={{
+                fontWeight: "bold",
+                letterSpacing: 1.5,
+                color: theme.palette.text.primary,
+              }}
+            >
               Selecionar Empresa
             </Typography>
           </Box>
@@ -348,7 +352,14 @@ export default function CompanySelectorPage() {
               >
                 +
               </Box>
-              <Typography variant="h5" fontWeight="bold" align="center" sx={{ color: theme.palette.text.primary }}>
+              <Typography
+                variant="h5"
+                align="center"
+                sx={{
+                  fontWeight: "bold",
+                  color: theme.palette.text.primary,
+                }}
+              >
                 Criar nova empresa
               </Typography>
               <Typography

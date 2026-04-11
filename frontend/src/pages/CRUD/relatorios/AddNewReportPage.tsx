@@ -334,7 +334,11 @@ function AddNewReportPage() {
         <Paper sx={{ maxWidth: 600, mx: "auto", mt: 4, p: 4 }}>
           {/* Exibe alerta de erro geral, se houver */}
           {errorMessage && (
-            <Box mb={2}>
+            <Box
+              sx={{
+                mb: 2,
+              }}
+            >
               <Alert severity="error" variant="filled" onClose={() => setErrorMessage(null)}>
                 {errorMessage}
               </Alert>

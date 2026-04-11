@@ -212,8 +212,18 @@ interface SectionFormProps {
 function SectionForm({ title, onSubmit, children }: Omit<SectionFormProps, "message" | "setMessage">) {
   return (
     <Paper elevation={3} sx={{ p: 3, borderRadius: 3, mt: 2, mx: "auto", width: "100%", maxWidth: "700px" }}>
-      <Box textAlign="center" mb={3}>
-        <Typography variant="h1" fontWeight="bold">
+      <Box
+        sx={{
+          mb: 3,
+          textAlign: "center",
+        }}
+      >
+        <Typography
+          variant="h1"
+          sx={{
+            fontWeight: "bold",
+          }}
+        >
           {title}
         </Typography>
       </Box>
@@ -560,7 +570,13 @@ function EditProfilePage() {
     <Container maxWidth={false} sx={{ mt: 5 }}>
       <div ref={topRef} />
       {globalMessage && (
-        <Box mb={3} maxWidth="700px" mx="auto">
+        <Box
+          sx={{
+            mb: 3,
+            maxWidth: "700px",
+            mx: "auto",
+          }}
+        >
           <Alert
             severity={globalMessage.error ? "error" : "success"}
             onClose={() => setGlobalMessage(null)}
@@ -582,12 +598,18 @@ function EditProfilePage() {
         />
         <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} component="span" label="Editar Perfil" />
       </Breadcrumbs>
-
       <SectionForm title="Alterar Nome e Telefone" onSubmit={userInfoForm.handleSubmit(handleSubmitUserUpdate)}>
         <Grid container spacing={2}>
           {/* Uploader da assinatura */}
           <Grid size={{ xs: 12 }} sx={{ marginBottom: 2, marginTop: 1 }}>
-            <Box display="flex" justifyContent="center" alignItems="center" height={140}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                height: 140,
+              }}
+            >
               <Paper
                 elevation={1}
                 sx={{
@@ -658,7 +680,7 @@ function EditProfilePage() {
                     </Box>
                   </>
                 ) : (
-                  <Box textAlign="center">Insira a assinatura aqui</Box>
+                  <Box sx={{ textAlign: "center" }}>Insira a assinatura aqui</Box>
                 )}
                 <input
                   ref={assinaturaInputRef}
@@ -695,7 +717,13 @@ function EditProfilePage() {
             </Box>
 
             {/* Botão vermelho para apagar assinatura */}
-            <Box display="flex" justifyContent="center" mt={5}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                mt: 5,
+              }}
+            >
               <Button
                 variant="outlined"
                 color="error"
@@ -724,7 +752,13 @@ function EditProfilePage() {
             <TextField label="Email" fullWidth sx={{ width: "100%" }} disabled value={user?.email || ""} />
           </Grid>
           <Grid size={{ xs: 12 }}>
-            <Box display="flex" justifyContent="center" mt={2}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                mt: 2,
+              }}
+            >
               <Button
                 type="submit"
                 variant="contained"
@@ -738,7 +772,6 @@ function EditProfilePage() {
           </Grid>
         </Grid>
       </SectionForm>
-
       <SectionForm title="Métodos de Pagamento" onSubmit={(e) => e.preventDefault()}>
         <Grid container spacing={2} sx={{ maxWidth: "450px", mx: "auto" }}>
           {hasExpiredPaymentMethods && (
@@ -751,7 +784,14 @@ function EditProfilePage() {
 
           <Grid size={{ xs: 9 }} sx={{ mx: "auto" }}>
             {loadingPaymentMethod ? (
-              <Box display="flex" alignItems="center" gap={1} mt={1}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mt: 1,
+                }}
+              >
                 <CircularProgress size={20} />
                 <Typography variant="body2">A carregar métodos de pagamento...</Typography>
               </Box>
@@ -774,20 +814,32 @@ function EditProfilePage() {
                 }}
               >
                 <Box
-                  display="flex"
-                  flexDirection={{ xs: "column", sm: "row" }}
-                  alignItems="center"
-                  justifyContent="space-between"
-                  gap={2}
+                  sx={{
+                    display: "flex",
+                    flexDirection: { xs: "column", sm: "row" },
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 2,
+                  }}
                 >
                   <Box
-                    display="flex"
-                    flexDirection="column"
-                    alignItems="flex-start"
-                    gap={0.5}
-                    sx={{ flex: 1, minWidth: 0 }}
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "flex-start",
+                      gap: 0.5,
+                      flex: 1,
+                      minWidth: 0,
+                    }}
                   >
-                    <Box display="flex" alignItems="center" gap={1} sx={{ minWidth: 0 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        minWidth: 0,
+                      }}
+                    >
                       <Typography
                         variant="body1"
                         sx={{
@@ -802,7 +854,14 @@ function EditProfilePage() {
                         {defaultPaymentMethod.maskedNumber.replace("**** **** **** ", "•••• ")}
                       </Typography>
                     </Box>
-                    <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                        flexWrap: "wrap",
+                      }}
+                    >
                       <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
                         Expires {getPaymentExpiryLabel(defaultPaymentMethod)}
                       </Typography>
@@ -814,7 +873,14 @@ function EditProfilePage() {
                       />
                     </Box>
                     {isPaymentMethodExpired(defaultPaymentMethod) && (
-                      <Typography variant="caption" color="error.main" sx={{ fontWeight: 600, whiteSpace: "nowrap" }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "error.main",
+                          fontWeight: 600,
+                          whiteSpace: "nowrap",
+                        }}
+                      >
                         Cartão expirado
                       </Typography>
                     )}
@@ -844,7 +910,12 @@ function EditProfilePage() {
                   borderColor: "divider",
                 }}
               >
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "text.secondary",
+                  }}
+                >
                   Nenhum método padrão definido. Clique para escolher um método padrão.
                 </Typography>
               </Paper>
@@ -860,7 +931,12 @@ function EditProfilePage() {
                   borderColor: "divider",
                 }}
               >
-                <Typography variant="body2" color="text.secondary">
+                <Typography
+                  variant="body2"
+                  sx={{
+                    color: "text.secondary",
+                  }}
+                >
                   Nenhum cartão guardado. Clique para adicionar um novo método de pagamento.
                 </Typography>
               </Paper>
@@ -868,7 +944,6 @@ function EditProfilePage() {
           </Grid>
         </Grid>
       </SectionForm>
-
       <SectionForm title="Alterar Senha" onSubmit={userPasswordForm.handleSubmit(handleSubmitUserPassword)}>
         <Grid container spacing={2}>
           <Grid size={{ xs: 12 }}>
@@ -902,7 +977,13 @@ function EditProfilePage() {
             />
           </Grid>
           <Grid size={{ xs: 12 }}>
-            <Box display="flex" justifyContent="center" mt={2}>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                mt: 2,
+              }}
+            >
               <Button
                 type="submit"
                 variant="contained"
@@ -916,12 +997,18 @@ function EditProfilePage() {
           </Grid>
         </Grid>
       </SectionForm>
-
       {empresa?.isAdmin && (
         <SectionForm title="Editar Dados da Empresa" onSubmit={companyForm.handleSubmit(handleSubmitCompany)}>
           <Grid container spacing={2}>
-            <Grid size={{ xs: 12 }} sx={{ marginBottom: 20, marginTop: 2 }}>
-              <Box display="flex" justifyContent="center" alignItems="center" height={120}>
+            <Grid size={{ xs: 12 }} sx={{ marginBottom: 5, marginTop: 2 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  height: 120,
+                }}
+              >
                 <Paper
                   elevation={1}
                   sx={{
@@ -990,9 +1077,7 @@ function EditProfilePage() {
                       </Box>
                     </>
                   ) : (
-                    <Box textAlign="center" fontSize={22}>
-                      Insira o logotipo da empresa aqui
-                    </Box>
+                    <Box sx={{ textAlign: "center", fontSize: 22 }}>Insira o logotipo da empresa aqui</Box>
                   )}
                   <input
                     ref={fileInputRef}
@@ -1021,7 +1106,13 @@ function EditProfilePage() {
               </Box>
 
               {/* Botão vermelho para apagar logotipo */}
-              <Box display="flex" justifyContent="center" mt={12}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  mt: 12,
+                }}
+              >
                 <Button
                   variant="outlined"
                   color="error"
@@ -1090,7 +1181,13 @@ function EditProfilePage() {
               />
             </Grid>
             <Grid size={{ xs: 12 }}>
-              <Box display="flex" justifyContent="center" mt={2}>
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  mt: 2,
+                }}
+              >
                 <Button
                   type="submit"
                   variant="contained"
@@ -1108,7 +1205,12 @@ function EditProfilePage() {
       <Dialog open={paymentDialogOpen} onClose={() => setPaymentDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle>Gerir métodos de pagamento</DialogTitle>
         <DialogContent sx={{ overflowY: "auto", maxHeight: "70vh" }}>
-          <Stack spacing={1.5} mt={1}>
+          <Stack
+            spacing={1.5}
+            sx={{
+              mt: 1,
+            }}
+          >
             {paymentMethods.length > 0 ? (
               paymentMethods.map((item) => {
                 const isExpired = isPaymentMethodExpired(item);
@@ -1125,13 +1227,22 @@ function EditProfilePage() {
                     }}
                   >
                     <Box
-                      display="flex"
-                      flexDirection={{ xs: "column", md: "row" }}
-                      justifyContent="space-between"
-                      alignItems="center"
-                      gap={2}
+                      sx={{
+                        display: "flex",
+                        flexDirection: { xs: "column", md: "row" },
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: 2,
+                      }}
                     >
-                      <Box display="flex" flexDirection="row" alignItems="center" gap={3}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 3,
+                        }}
+                      >
                         <Box
                           component="img"
                           src={getPaymentBrandImage(item.brand)}
@@ -1153,7 +1264,13 @@ function EditProfilePage() {
                         </Typography>
                       </Box>
 
-                      <Box display="flex" alignItems="center" gap={1}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                        }}
+                      >
                         {item.isDefault ? (
                           <Button size="small" variant="contained" disabled sx={{ minWidth: 86, mb: 0 }}>
                             Padrão
@@ -1202,7 +1319,14 @@ function EditProfilePage() {
                       </Box>
                     </Box>
                     {isExpired && (
-                      <Typography variant="caption" color="error.main" sx={{ mt: 0.75, display: "block" }}>
+                      <Typography
+                        variant="caption"
+                        sx={{
+                          color: "error.main",
+                          mt: 0.75,
+                          display: "block",
+                        }}
+                      >
                         Cartão expirado
                       </Typography>
                     )}
@@ -1210,7 +1334,12 @@ function EditProfilePage() {
                 );
               })
             ) : (
-              <Typography variant="body2" color="text.secondary">
+              <Typography
+                variant="body2"
+                sx={{
+                  color: "text.secondary",
+                }}
+              >
                 Não existem métodos de pagamento guardados.
               </Typography>
             )}
@@ -1221,13 +1350,24 @@ function EditProfilePage() {
               </Alert>
             )}
 
-            <Box display="flex" justifyContent="center" alignContent="center">
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "center",
+                alignContent: "center",
+              }}
+            >
               <Button sx={{ width: "50%" }} onClick={handleOpenPaymentUpdate} disabled={redirectingToBilling}>
                 {redirectingToBilling ? "A abrir Stripe..." : "+ Adicionar método de pagamento"}
               </Button>
             </Box>
 
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              sx={{
+                color: "text.secondary",
+              }}
+            >
               O formulário de novo cartão é carregado pela Stripe em ambiente seguro.
             </Typography>
           </Stack>
@@ -1243,7 +1383,6 @@ function EditProfilePage() {
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Sección de desativação de utilizador (Versão 1 - REST) */}
       <Paper
         elevation={3}
@@ -1259,9 +1398,22 @@ function EditProfilePage() {
           bgcolor: "error.lighter",
         }}
       >
-        <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 2 }}>
+        <Stack
+          direction="row"
+          spacing={2}
+          sx={{
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
           <WarningAmberIcon color="error" />
-          <Typography variant="h2" fontWeight="bold" color="error.main">
+          <Typography
+            variant="h2"
+            sx={{
+              fontWeight: "bold",
+              color: "error.main",
+            }}
+          >
             Apagar utilizador
           </Typography>
         </Stack>
@@ -1271,7 +1423,12 @@ function EditProfilePage() {
           apagada permanentemente.
         </Typography>
 
-        <Box display="flex" justifyContent="center">
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+          }}
+        >
           <Button variant="outlined" color="error" onClick={() => setConfirmOpen(true)} disabled={deactivating}>
             {deactivating ? "Processando..." : "Apagar conta"}
           </Button>

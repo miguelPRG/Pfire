@@ -103,9 +103,22 @@ export default function NewPasswordPage() {
   };
 
   return (
-    <Box display="flex" justifyContent="center" alignItems="center" minHeight="40vh">
+    <Box
+      sx={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        minHeight: "40vh",
+      }}
+    >
       <Paper elevation={0} sx={{ p: 4, minWidth: 350 }}>
-        <Typography variant="h5" mb={2} textAlign="center">
+        <Typography
+          variant="h5"
+          sx={{
+            mb: 2,
+            textAlign: "center",
+          }}
+        >
           Definir Nova Palavra-Passe
         </Typography>
         <form onSubmit={handleSubmit(onSubmit)}>

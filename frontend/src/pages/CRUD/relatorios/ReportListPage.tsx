@@ -811,7 +811,12 @@ export default function ReportListPage() {
                               </Button>
                             ) : null
                           ) : (
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography
+                              variant="body2"
+                              sx={{
+                                color: "text.secondary",
+                              }}
+                            >
                               Sem ações
                             </Typography>
                           )}
@@ -847,7 +852,6 @@ export default function ReportListPage() {
           </Box>
         )}
       </Paper>
-
       {/* Dialog de seleção de cliente para exportação */}
       <Dialog open={exportDialogOpen} onClose={() => setExportDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: "bold" }}>Selecionar Cliente para Exportação</DialogTitle>
@@ -923,7 +927,6 @@ export default function ReportListPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Dialog de confirmação para apagar relatório permanentemente. */}
       <Dialog open={hardDeleteDialogOpen} onClose={closeHardDeleteDialog}>
         <DialogTitle sx={{ fontWeight: "bold" }}>Eliminar relatório permanentemente!</DialogTitle>
@@ -951,7 +954,6 @@ export default function ReportListPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Componente de notificação reutilizável */}
       <Notification alert={alert} setAlert={setAlert} />
     </>

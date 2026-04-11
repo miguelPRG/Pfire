@@ -216,7 +216,13 @@ function ResponsiveAppBar() {
               >
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                   {icon}
-                  <Typography variant="body2" textAlign="left" width="100%">
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      textAlign: "left",
+                      width: "100%",
+                    }}
+                  >
                     {label}
                   </Typography>
                 </Box>

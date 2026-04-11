@@ -73,7 +73,13 @@ const Footer = () => {
   return (
     <FooterContainer>
       <Container>
-        <Box display="flex" flexWrap="wrap" gap={4}>
+        <Box
+          sx={{
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 4,
+          }}
+        >
           <Box
             component="nav"
             sx={{
@@ -100,8 +106,19 @@ const Footer = () => {
             ))}
           </Box>
 
-          <Box flex="1" minWidth={250} width="100%">
-            <Box display="flex" mb={1}>
+          <Box
+            sx={{
+              flex: "1",
+              minWidth: 250,
+              width: "100%",
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                mb: 1,
+              }}
+            >
               <MailOutlineIcon
                 style={{
                   marginRight: 8,
@@ -109,7 +126,12 @@ const Footer = () => {
               />
               <Typography variant="body2">info@company.com</Typography>
             </Box>
-            <Box display="flex" mb={1}>
+            <Box
+              sx={{
+                display: "flex",
+                mb: 1,
+              }}
+            >
               <LocalPhoneOutlinedIcon
                 style={{
                   marginRight: 8,
@@ -117,7 +139,11 @@ const Footer = () => {
               />
               <Typography variant="body2">+1 (555) 123-4567</Typography>
             </Box>
-            <Box display="flex">
+            <Box
+              sx={{
+                display: "flex",
+              }}
+            >
               <LocationOnOutlinedIcon
                 style={{
                   marginRight: 8,
@@ -128,7 +154,13 @@ const Footer = () => {
           </Box>
         </Box>
 
-        <Box flex="1" minWidth={250} width="100%">
+        <Box
+          sx={{
+            flex: "1",
+            minWidth: 250,
+            width: "100%",
+          }}
+        >
           <Box component="form" onSubmit={handleSubscription}>
             <TextField
               fullWidth
@@ -153,13 +185,15 @@ const Footer = () => {
         </Box>
 
         <Box
-          mt={6}
-          pt={3}
-          borderTop={1}
-          display="flex"
-          flexDirection={isMobile ? "column" : "row"}
-          justifyContent="space-between"
-          alignItems="center"
+          sx={{
+            mt: 6,
+            pt: 3,
+            borderTop: 1,
+            display: "flex",
+            flexDirection: isMobile ? "column" : "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
         >
           <Typography
             variant="body2"
@@ -193,7 +227,6 @@ const Footer = () => {
           </Box>
         </Box>
       </Container>
-
       <ScrollToTopButton onClick={handleScrollToTop} aria-label="Scroll to top">
         <ArrowUpwardIcon />
       </ScrollToTopButton>

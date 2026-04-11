@@ -148,7 +148,6 @@ export default function AddNewClientPage() {
   return (
     <Container maxWidth="md" sx={{ textAlign: "center", mt: 4, p: 4, borderRadius: 2 }}>
       <Box sx={{ mb: 2 }}>{breadcrumbs}</Box>
-
       <Paper elevation={6} sx={{ p: isMobile ? 2 : 4 }}>
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", mb: 2 }}>
           <PeopleAltOutlinedIcon color="primary" sx={{ fontSize: 48, mr: 1 }} />
@@ -156,12 +155,22 @@ export default function AddNewClientPage() {
         <Typography variant="h5" sx={{ mb: 1 }}>
           {cliente ? "Editar Cliente" : "Adicionar novo Cliente"}
         </Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+        <Typography
+          variant="body2"
+          sx={{
+            color: "text.secondary",
+            mb: 3,
+          }}
+        >
           Preencha os campos para gerir os dados do cliente.
         </Typography>
 
         {errorMessage && (
-          <Box mb={1}>
+          <Box
+            sx={{
+              mb: 1,
+            }}
+          >
             <Alert severity="error" variant="filled" onClose={() => setErrorMessage(null)}>
               {errorMessage}
             </Alert>

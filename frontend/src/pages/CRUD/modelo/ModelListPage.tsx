@@ -285,7 +285,13 @@ export default function ReportModelListPage() {
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center" }}>
-              <Typography fontSize={12} fontWeight={500} color="primary">
+              <Typography
+                color="primary"
+                sx={{
+                  fontSize: 12,
+                  fontWeight: 500,
+                }}
+              >
                 {level === 0 ? "Campo" : "Subcampo"}:{" "}
                 {namePrefix.split(" / ")[namePrefix.split(" / ").length - 1]?.replace(/^custom_/, "")}
               </Typography>
@@ -307,11 +313,19 @@ export default function ReportModelListPage() {
               )}
             </Box>
 
-            <Typography fontSize={13}>
+            <Typography
+              sx={{
+                fontSize: 13,
+              }}
+            >
               Tipo: <strong>{formatType(val?.datatype)}</strong>
             </Typography>
 
-            <Typography fontSize={13}>
+            <Typography
+              sx={{
+                fontSize: 13,
+              }}
+            >
               Obrigatório:{" "}
               <strong style={{ color: val?.required ? "#388e3c" : "#d32f2f" }}>{val?.required ? "Sim" : "Não"}</strong>
             </Typography>
@@ -354,7 +368,12 @@ export default function ReportModelListPage() {
             )}
 
             {!isObject && !isArray && val?.value !== undefined && (
-              <Typography fontSize={13} mt={1}>
+              <Typography
+                sx={{
+                  fontSize: 13,
+                  mt: 1,
+                }}
+              >
                 Valor: <strong>{val?.value}</strong>
               </Typography>
             )}
@@ -404,7 +423,12 @@ export default function ReportModelListPage() {
           <Typography color="error">{critError.message}</Typography>
         ) : criterios.length === 0 ? (
           <Paper variant="outlined" sx={{ p: 2, textAlign: "center", maxWidth: "25%" }}>
-            <Typography color="text.secondary" sx={{ mb: 1 }}>
+            <Typography
+              sx={{
+                color: "text.secondary",
+                mb: 1,
+              }}
+            >
               Sem critérios.
             </Typography>
 
@@ -607,7 +631,13 @@ export default function ReportModelListPage() {
               {modelos.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={totalColumns}>
-                    <Typography color="text.secondary">Modelo não encontrado.</Typography>
+                    <Typography
+                      sx={{
+                        color: "text.secondary",
+                      }}
+                    >
+                      Modelo não encontrado.
+                    </Typography>
                   </TableCell>
                 </TableRow>
               ) : (
@@ -799,7 +829,6 @@ export default function ReportModelListPage() {
           </Box>
         )}
       </Paper>
-
       {/* Dialog de confirmação para apagar permanentemente */}
       <Dialog open={deleteDialogOpen} onClose={() => setDeleteDialogOpen(false)}>
         <DialogTitle sx={{ fontWeight: "bold" }}>Eliminar modelo permanentemente!</DialogTitle>
@@ -828,7 +857,6 @@ export default function ReportModelListPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Dialog de confirmação para clonar modelo */}
       <Dialog open={cloneDialogOpen} onClose={() => setCloneDialogOpen(false)}>
         <DialogTitle sx={{ fontWeight: "bold" }}>Clonar modelo</DialogTitle>
@@ -857,7 +885,6 @@ export default function ReportModelListPage() {
           </Button>
         </DialogActions>
       </Dialog>
-
       {/*Notification*/}
       <Notification alert={alert} setAlert={setAlert} />
     </>

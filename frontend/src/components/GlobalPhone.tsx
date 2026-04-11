@@ -27,7 +27,15 @@ export default function GlobalPhone({
   const inputId = `phone-input-${fieldName.replace(/\./g, "-")}`;
 
   return (
-    <Box id="telefone-field" display="flex" flexDirection="column" width="100%" sx={{ mt: 1 }}>
+    <Box
+      id="telefone-field"
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        mt: 1,
+      }}
+    >
       <InputLabel htmlFor={inputId} sx={{ mb: 1, width: "100%", textAlign: "left" }}>
         Telefone:
       </InputLabel>

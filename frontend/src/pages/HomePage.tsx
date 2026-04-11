@@ -97,7 +97,14 @@ function HomePage() {
             background: theme.palette.mode === "dark" ? "#1f2429" : "#f7f9fc",
           }}
         >
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5} justifyContent="center" alignItems="center">
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1.5}
+            sx={{
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
             <Chip label={`Plano: ${userPlan}`} color="primary" variant="filled" sx={{ fontWeight: 700, px: 0.5 }} />
             <Chip
               label={`Perfil: ${userRole}`}
@@ -123,19 +130,23 @@ function HomePage() {
 
         {/* Mostrar nome e logótipo da empresa caso exista */}
         <Box
-          display="flex"
-          flexDirection="column"
-          alignItems="center"
-          sx={(theme) => ({
-            borderRadius: 2,
-            p: 2,
-            border: theme.palette.mode === "dark" ? "1px solid #444" : "1px solid #ccc",
-            width: "100%",
-            mx: "auto",
-            background: theme.palette.mode === "dark" ? "#23272b" : "#fafbfc",
-            boxShadow: theme.palette.mode === "dark" ? 3 : 1,
-            transition: "background 0.3s, border 0.3s",
-          })}
+          sx={[
+            {
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            },
+            (theme) => ({
+              borderRadius: 2,
+              p: 2,
+              border: theme.palette.mode === "dark" ? "1px solid #444" : "1px solid #ccc",
+              width: "100%",
+              mx: "auto",
+              background: theme.palette.mode === "dark" ? "#23272b" : "#fafbfc",
+              boxShadow: theme.palette.mode === "dark" ? 3 : 1,
+              transition: "background 0.3s, border 0.3s",
+            }),
+          ]}
         >
           {empresa?.logo && (
             <img
@@ -206,7 +217,14 @@ function HomePage() {
             <Typography variant="h4" sx={{ mb: 1 }}>
               Relatórios por Cliente
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, px: 1 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                mb: 2,
+                px: 1,
+              }}
+            >
               Distribuição dos relatórios criados por cada cliente da empresa. Cada fatia representa um cliente.
             </Typography>
             <Box
@@ -261,10 +279,24 @@ function HomePage() {
             <Typography variant="h4" sx={{ mb: 1 }}>
               Relatórios por Modelo
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, px: 1 }}>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                mb: 2,
+                px: 1,
+              }}
+            >
               Distribuição dos relatórios criados por modelo de relatório. Cada barra representa um modelo.
             </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, px: 1 }}></Typography>
+            <Typography
+              variant="body2"
+              sx={{
+                color: "text.secondary",
+                mb: 2,
+                px: 1,
+              }}
+            ></Typography>
             <Box
               sx={{
                 width: chartSize,
