@@ -388,7 +388,9 @@ export default function ClientManagementTable() {
                 {filteredRows.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={canManageClientActions ? 11 : 9}>
-                      <NoDataMessage nome="clientes" />
+                      <Paper sx={{ p: 4, display: "flex", justifyContent: "center" }}>
+                        <NoDataMessage nome="clientes" />
+                      </Paper>
                     </TableCell>
                   </TableRow>
                 ) : (

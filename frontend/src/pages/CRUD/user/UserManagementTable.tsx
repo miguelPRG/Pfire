@@ -377,7 +377,9 @@ export default function UserManagementTable() {
               {sortedRows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={columns.length + 1}>
-                    <NoDataMessage nome="utilizadores" />
+                    <Paper sx={{ p: 4, display: "flex", justifyContent: "center" }}>
+                      <NoDataMessage nome="utilizadores" />
+                    </Paper>
                   </TableCell>
                 </TableRow>
               ) : (

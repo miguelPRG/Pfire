@@ -44,6 +44,7 @@ import AddCommentIcon from "@mui/icons-material/AddComment";
 import { GET_CRITERIA_BY_MODEL } from "../../../graphql/criteriaQueries";
 import React from "react";
 import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
+import NoDataMessage from "../../../components/NoDataMessage";
 
 // Função utilitária para formatar tipos de campos
 const formatType = (type: string) => {
@@ -631,13 +632,9 @@ export default function ReportModelListPage() {
               {modelos.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={totalColumns}>
-                    <Typography
-                      sx={{
-                        color: "text.secondary",
-                      }}
-                    >
-                      Modelo não encontrado.
-                    </Typography>
+                    <Paper sx={{ p: 4, display: "flex", justifyContent: "center" }}>
+                      <NoDataMessage nome="modelos" />
+                    </Paper>
                   </TableCell>
                 </TableRow>
               ) : (

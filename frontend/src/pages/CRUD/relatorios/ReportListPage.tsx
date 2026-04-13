@@ -32,6 +32,7 @@ import Notification from "../../../components/Notification";
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
 import LoadingAnimation from "../../../components/LoadingAnimation";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import NoDataMessage from "../../../components/NoDataMessage";
 import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
 
 // Declaração de tipo para File System Access API
@@ -625,6 +626,11 @@ export default function ReportListPage() {
         ) : error ? (
           // Mostra mensagem de erro resumida se a query falhar
           <Typography color="error">Erro ao carregar relatórios.</Typography>
+        ) : reports.length === 0 ? (
+          // Mostra mensagem quando não há relatórios
+          <Paper sx={{ p: 4, display: "flex", justifyContent: "center" }}>
+            <NoDataMessage nome="relatórios" />
+          </Paper>
         ) : (
           // Tabela com colunas fixas e colunas dinâmicas para campos personalizados
           <TableContainer component={Paper}>

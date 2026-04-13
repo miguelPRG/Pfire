@@ -294,7 +294,7 @@ async def hard_delete_relatorio(relatorio: RelatorioActivation, request: Request
     # Hard delete: apenas SuperAdmin ou admin da empresa.
     if not jwt.get("isSuperAdmin", False):
         user_empresa = await users_empresas_collection.find_one(
-            {"user_id": user_id, "empresa_id": empresa_id}
+            {"user_id": user_id, "empresa_id": empresa_id, "isAdmin": True}
         )
         if not user_empresa:
             raise HTTPException(
@@ -306,10 +306,6 @@ async def hard_delete_relatorio(relatorio: RelatorioActivation, request: Request
     result = await relatorios_collection.delete_one(
         {
             "_id": relatorio_id,
-            "empresa_id": empresa_id,
-            "isActive": False,
-            "updated_by": user_id,
-            "updated_at": datetime.now(),
         }
     )
 

@@ -374,7 +374,9 @@ export default function CompanySelectorPage() {
 
           {/* Empresas em linhas responsivas */}
           {empresas.length === 0 ? (
-            <NoDataMessage nome="empresas" />
+            <Paper sx={{ p: 4, display: "flex", justifyContent: "center", mt: 4 }}>
+              <NoDataMessage nome="empresas" />
+            </Paper>
           ) : (
             [0, 3].map((start) => {
               const empresasPorLinha = larguraTela < 600 ? 1 : larguraTela < 900 ? 2 : 3;

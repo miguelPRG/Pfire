@@ -32,7 +32,9 @@ class RelatorioQuery:
         modelo_id = ObjectId(modelo_id)
         empresa_id = ObjectId(empresa_id)
 
-        lmt = 15  # Limite padrÃ£o de resultados RelatÃ³rpor pÃ¡gina
+        user_empresa = None
+
+        lmt = 15  # Limite padrão de resultados Relatório por página
 
         if start < 0:
             start = 0
@@ -46,10 +48,10 @@ class RelatorioQuery:
             if not user_empresa:
                 raise HTTPException(
                     status_code=403,
-                    detail="Acesso negado! NÃ£o tens permissÃ£o para ver relatÃ³rios nesta empresa.",
+                    detail="Acesso negado! Não tens permissão para ver relatórios nesta empresa.",
                 )
 
-        filtro = {"modelo_id": modelo_id}
+        filtro = {"modelo_id": modelo_id }
 
         if filter:
             if filter.clienteNome:
@@ -64,17 +66,10 @@ class RelatorioQuery:
                 }
             elif filter.numero_id is not None:
                 filtro["numero_id"] = filter.numero_id
-
-        # Verificar permissões
-        if not jwt.get("isSuperAdmin", False):
-            user_empresa = await users_empresas_collection.find_one(
-                {"user_id": user_id, "empresa_id": empresa_id}
-            )
-            if not user_empresa:
-                raise HTTPException(
-                    status_code=403,
-                    detail="Acesso negado! Não tens permissão para ver relatórios nesta empresa.",
-                )
+        
+        if user_empresa and not user_empresa.get("isAdmin", False):
+            filtro["isActive"] = True
+            
 
         # Buscar relatórios no banco de dados
         async for relatorio in (
@@ -126,7 +121,7 @@ class RelatorioQuery:
             if not user_empresa:
                 raise HTTPException(
                     status_code=403,
-                    detail="Acesso negado! NÃ£o tens permissÃ£o para ver relatÃ³rios nesta empresa.",
+                    detail="Acesso negado! Não tens permissão para ver relatórios nesta empresa.",
                 )
 
         pipeline = [
@@ -181,7 +176,7 @@ class RelatorioQuery:
             if not user_empresa:
                 raise HTTPException(
                     status_code=403,
-                    detail="Acesso negado! NÃ£o tens permissÃ£o para ver relatÃ³rios nesta empresa.",
+                    detail="Acesso negado! Não tens permissão para ver relatórios nesta empresa.",
                 )
 
         pipeline = [
