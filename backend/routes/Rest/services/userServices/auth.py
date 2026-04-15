@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from controller.jwtValidation import generate_jwt
 from controller.token_blacklist import add_token_to_blacklist
@@ -21,7 +21,7 @@ from database import (
     global_ids_collection,
     empresas_collection,
 )
-from asyncio import gather
+from asyncio import gather, sleep
 from bson import ObjectId
 from base64 import b64encode
 from uuid import uuid4
@@ -37,6 +37,18 @@ pwd_context = CryptContext(
     argon2__memory_cost=262144,
     argon2__time_cost=5,
 )
+
+
+async def blacklist_token_after_delay(
+    token: str | None, exp: int | float | None, delay_seconds: float = 5.0
+):
+    if not token or exp is None:
+        return
+
+    if delay_seconds > 0:
+        await sleep(delay_seconds)
+
+    await add_token_to_blacklist(token, exp)
 
 
 # 🚀 Login via Firebase OAuth
@@ -164,7 +176,7 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
     # 3) Gera JWT (sem listar empresas aqui)
     token, expire = generate_jwt(
         str(user_doc["_id"]),
-        user_doc["isSuperAdmin"],
+        user_doc.get("isSuperAdmin", False),
         user_doc.get("plano", None),
         email=user_doc.get("email", None),
         nome=user_doc.get("nome", None),
@@ -202,7 +214,7 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
 @routerAuth.post("/login")
 async def login(user: UserLogin, request: Request):
     # Validar el token reCAPTCHA (se descomenta según necesidad)
-    # await validar_recaptcha_token(user.recaptchaToken, "login")
+    await validar_recaptcha_token(user.recaptchaToken, "login")
 
     db_user = await users_collection.find_one({"email": user.email})
 
@@ -221,7 +233,7 @@ async def login(user: UserLogin, request: Request):
 
     token, expire = generate_jwt(
         str(db_user["_id"]),
-        db_user["isSuperAdmin"],
+        db_user.get("isSuperAdmin", False),
         db_user.get("plano", None),
         email=db_user.get("email", None),
         nome=db_user.get("nome", None),
@@ -254,7 +266,7 @@ async def login(user: UserLogin, request: Request):
 
 # 🚀 Autenticação do Usuário (Verificar JWT)
 @routerAuth.get("/auth")
-async def auth_user(request: Request):
+async def auth_user(request: Request, background_tasks: BackgroundTasks):
     """
     Verificar se user está autenticado
     """
@@ -277,19 +289,64 @@ async def auth_user(request: Request):
             "_fp", httponly=True, samesite="None", secure=True, path="/"
         )
         return response
+    
+    """
+        Dados JWT:
+        {
+            "user_id": "69934130cbe2856ea2149abd",
+            "isSuperAdmin": false,
+            "nome": "Miguel Gonçalves",
+            "email": "miguelprg@ua.pt",
+            "iat": 1775751260.072841,
+            "exp": 1778343260.072841,
+            "plano": "pro"
+        }
+    """
 
     payload = {
-        "id": str(user_found["_id"]),
-        "nome": user_found.get("nome", ""),
-        "email": user_found.get("email", ""),
-        "telefone": user_found.get("telefone"),
-        "isSuperAdmin": user_found.get("isSuperAdmin", False),
-        "plano": user_found.get("plano", "free"),
-        "stripeCustomerId": user_found.get("stripe_customer_id"),
-    }
+            "id": str(user_found["_id"]),
+            "nome": user_found.get("nome", ""),
+            "email": user_found.get("email", ""),
+            "telefone": user_found.get("telefone"),
+            "isSuperAdmin": user_found.get("isSuperAdmin", False),
+            "plano": user_found.get("plano", "free"),
+            "stripeCustomerId": user_found.get("stripe_customer_id"),
+        }
 
-    return JSONResponse(status_code=200, content=payload)  # <- faltava isto
+    if (user_found.get("isSuperAdmin", False) != jwt.get("isSuperAdmin", False) or
+        user_found.get("nome", None) != jwt.get("nome", None) or
+        user_found.get("email", None) != jwt.get("email", None) or
+        user_found.get("plano", "free") != jwt.get("plano", "free")):
 
+            old_token = request.cookies.get("_fp")
+
+            # Gerar um novo token com os dados atualizados
+            new_token, expire = generate_jwt(
+                str(user_found["_id"]),
+                user_found.get("isSuperAdmin", False),
+                user_found.get("plano", "free"),
+                email=user_found.get("email", None),
+                nome=user_found.get("nome", None),
+                stripe_customer_id=user_found.get("stripe_customer_id", None),
+            )
+
+            response = JSONResponse(payload)
+            response.set_cookie(
+                key="_fp", value=new_token, **get_auth_cookie_settings(request), expires=expire
+            )
+
+            # Blacklist do token antigo apos devolver a resposta para evitar logout prematuro.
+            background_tasks.add_task(
+                blacklist_token_after_delay,
+                old_token,
+                jwt.get("exp"),
+                3.0,
+            )
+
+            return response
+
+    return payload
+    
 
 # 🚀 Logout
 @routerAuth.post("/logout")

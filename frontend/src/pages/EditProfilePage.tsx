@@ -528,18 +528,10 @@ function EditProfilePage() {
   const handleOpenPaymentUpdate = async () => {
     setRedirectingToBilling(true);
     try {
-      let response = await fetch("/backend/payment-methods/add-session", {
+      const response = await fetch("/backend/user/payment-method/update-session", {
         method: "POST",
         credentials: "include",
       });
-
-      // Fallback para endpoint legado caso o v2 não esteja publicado.
-      if (response.status === 404 || response.status === 405) {
-        response = await fetch("/backend/user/payment-method/update-session", {
-          method: "POST",
-          credentials: "include",
-        });
-      }
 
       if (!response.ok) {
         const error = await response.json();

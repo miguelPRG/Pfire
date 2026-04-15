@@ -25,7 +25,7 @@ function HomePage() {
   const isSm = useMediaQuery(theme.breakpoints.between("sm", "md"));
 
   const userPlan = user?.plano?.trim() ? user.plano : "Sem plano";
-  const userRole = user?.isSuperAdmin ? "Super Administrador" : "Utilizador";
+  const userRole = user?.isSuperAdmin ? "Super Administrador" : "user";
 
   // Query para o PieChart
   const { data: chart1Data, loading: pieLoading } = useQuery<{ reports: ReportCliente[] }>(

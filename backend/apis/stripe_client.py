@@ -187,10 +187,11 @@ async def create_payment_method_add_session(
             customer=customer_id,
             payment_method_types=["card"],
             mode="setup",
-            success_url=f"{return_url}?payment_success=true",
+            success_url=f"{return_url}",
             cancel_url=return_url,
         )
-        return {"url": session.url}
+
+        return {"url": session.url, "session_id": session.id}
     except stripe.error.PermissionError as e:
         print(
             f"Permissão insuficiente na API key Stripe para criar sessão de setup: {str(e)}"

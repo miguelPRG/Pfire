@@ -15,12 +15,14 @@ export default function GlobalPhone({
 }) {
   // Suporte para erros aninhados e não aninhados
   function getError() {
+    const formErrors = errors as Record<string, any> | undefined;
+
     // Para campos como "empresa.telefone" ou "companyPhone"
     if (fieldName.includes(".")) {
       const [parent, child] = fieldName.split(".");
-      return errors?.[parent]?.[child];
+      return formErrors?.[parent]?.[child];
     }
-    return errors?.[fieldName];
+    return formErrors?.[fieldName];
   }
   const errorObj = getError();
 
@@ -42,58 +44,76 @@ export default function GlobalPhone({
       <Controller
         name={fieldName}
         control={control}
-        render={({ field }) => (
-          <Box sx={{ width: "100%", display: "flex", flexDirection: "column" }}>
-            <Box
-              sx={{
-                alignItems: "center",
-                border: "1px solid",
-                borderColor: errorObj ? "error.main" : "rgba(0, 0, 0, 0.23)",
-                borderRadius: 1,
-                padding: "18.5px 14px",
-                fontSize: "16px",
-                width: "100%", // garante 100% da largura
-                "&:hover": {
-                  borderColor: "black",
-                },
-                "&:focus-within": {
-                  borderColor: "primary.main",
-                  borderWidth: 2,
-                },
-              }}
-              aria-invalid={!!errorObj}
-            >
-              <PhoneInput
-                {...field}
-                id={inputId}
-                defaultCountry="PT"
-                international
-                countryCallingCodeEditable={false}
-                placeholder="Insira o número de telefone"
-                style={{
-                  fontSize: "16px",
-                  border: "none",
-                  outline: "none",
-                  width: "100%", // garante 100% da largura
-                  background: "transparent",
-                }}
-              />
-            </Box>
-            {errorObj && (
-              <Typography
-                color="error"
-                variant="body2"
+        render={({ field }) => {
+          // Normalizar o valor para formato E.164
+          let normalizedValue: string | undefined;
+          if (typeof field.value === "string" && field.value.trim() !== "") {
+            const val = field.value.trim();
+            // Se não começa com "+", adicionar o prefixo português
+            if (!val.startsWith("+")) {
+              normalizedValue = `+351${val}`;
+            } else {
+              normalizedValue = val;
+            }
+          }
+
+          return (
+            <Box sx={{ width: "100%", display: "flex", flexDirection: "column" }}>
+              <Box
                 sx={{
-                  mt: 0.5,
-                  ml: 5, // opcional: pequeno recuo à esquerda
-                  textAlign: "left",
+                  alignItems: "center",
+                  border: "1px solid",
+                  borderColor: errorObj ? "error.main" : "rgba(0, 0, 0, 0.23)",
+                  borderRadius: 1,
+                  padding: "18.5px 14px",
+                  fontSize: "16px",
+                  width: "100%", // garante 100% da largura
+                  "&:hover": {
+                    borderColor: "black",
+                  },
+                  "&:focus-within": {
+                    borderColor: "primary.main",
+                    borderWidth: 2,
+                  },
                 }}
+                aria-invalid={!!errorObj}
               >
-                Número de telefone inválido
-              </Typography>
-            )}
-          </Box>
-        )}
+                <PhoneInput
+                  id={inputId}
+                  name={field.name}
+                  onBlur={field.onBlur}
+                  ref={field.ref}
+                  value={normalizedValue}
+                  onChange={(value) => field.onChange(value ?? "")}
+                  defaultCountry="PT"
+                  international
+                  countryCallingCodeEditable={false}
+                  placeholder="Insira o número de telefone"
+                  style={{
+                    fontSize: "16px",
+                    border: "none",
+                    outline: "none",
+                    width: "100%", // garante 100% da largura
+                    background: "transparent",
+                  }}
+                />
+              </Box>
+              {errorObj && (
+                <Typography
+                  color="error"
+                  variant="body2"
+                  sx={{
+                    mt: 0.5,
+                    ml: 5, // opcional: pequeno recuo à esquerda
+                    textAlign: "left",
+                  }}
+                >
+                  Número de telefone inválido
+                </Typography>
+              )}
+            </Box>
+          );
+        }}
       />
     </Box>
   );
