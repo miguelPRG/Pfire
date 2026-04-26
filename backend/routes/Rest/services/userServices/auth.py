@@ -289,7 +289,7 @@ async def auth_user(request: Request, background_tasks: BackgroundTasks):
             "_fp", httponly=True, samesite="None", secure=True, path="/"
         )
         return response
-    
+
     """
         Dados JWT:
         {
@@ -304,49 +304,54 @@ async def auth_user(request: Request, background_tasks: BackgroundTasks):
     """
 
     payload = {
-            "id": str(user_found["_id"]),
-            "nome": user_found.get("nome", ""),
-            "email": user_found.get("email", ""),
-            "telefone": user_found.get("telefone"),
-            "isSuperAdmin": user_found.get("isSuperAdmin", False),
-            "plano": user_found.get("plano", "free"),
-            "stripeCustomerId": user_found.get("stripe_customer_id"),
-        }
+        "id": str(user_found["_id"]),
+        "nome": user_found.get("nome", ""),
+        "email": user_found.get("email", ""),
+        "telefone": user_found.get("telefone"),
+        "isSuperAdmin": user_found.get("isSuperAdmin", False),
+        "plano": user_found.get("plano", "free"),
+        "stripeCustomerId": user_found.get("stripe_customer_id"),
+    }
 
-    if (user_found.get("isSuperAdmin", False) != jwt.get("isSuperAdmin", False) or
-        user_found.get("nome", None) != jwt.get("nome", None) or
-        user_found.get("email", None) != jwt.get("email", None) or
-        user_found.get("plano", "free") != jwt.get("plano", "free")):
+    if (
+        user_found.get("isSuperAdmin", False) != jwt.get("isSuperAdmin", False)
+        or user_found.get("nome", None) != jwt.get("nome", None)
+        or user_found.get("email", None) != jwt.get("email", None)
+        or user_found.get("plano", "free") != jwt.get("plano", "free")
+    ):
 
-            old_token = request.cookies.get("_fp")
+        old_token = request.cookies.get("_fp")
 
-            # Gerar um novo token com os dados atualizados
-            new_token, expire = generate_jwt(
-                str(user_found["_id"]),
-                user_found.get("isSuperAdmin", False),
-                user_found.get("plano", "free"),
-                email=user_found.get("email", None),
-                nome=user_found.get("nome", None),
-                stripe_customer_id=user_found.get("stripe_customer_id", None),
-            )
+        # Gerar um novo token com os dados atualizados
+        new_token, expire = generate_jwt(
+            str(user_found["_id"]),
+            user_found.get("isSuperAdmin", False),
+            user_found.get("plano", "free"),
+            email=user_found.get("email", None),
+            nome=user_found.get("nome", None),
+            stripe_customer_id=user_found.get("stripe_customer_id", None),
+        )
 
-            response = JSONResponse(payload)
-            response.set_cookie(
-                key="_fp", value=new_token, **get_auth_cookie_settings(request), expires=expire
-            )
+        response = JSONResponse(payload)
+        response.set_cookie(
+            key="_fp",
+            value=new_token,
+            **get_auth_cookie_settings(request),
+            expires=expire,
+        )
 
-            # Blacklist do token antigo apos devolver a resposta para evitar logout prematuro.
-            background_tasks.add_task(
-                blacklist_token_after_delay,
-                old_token,
-                jwt.get("exp"),
-                3.0,
-            )
+        # Blacklist do token antigo apos devolver a resposta para evitar logout prematuro.
+        background_tasks.add_task(
+            blacklist_token_after_delay,
+            old_token,
+            jwt.get("exp"),
+            3.0,
+        )
 
-            return response
+        return response
 
     return payload
-    
+
 
 # 🚀 Logout
 @routerAuth.post("/logout")

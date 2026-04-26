@@ -210,9 +210,7 @@ async def add_payment_method_session_legacy(request: Request):
 async def update_default_payment_method(request: Request, payment_method_id: str):
     jwt = getattr(request.state, "jwt", None)
     if not jwt.get("stripe_customer_id"):
-        raise HTTPException(
-            status_code=400, detail="User sem Stripe customer"
-        )
+        raise HTTPException(status_code=400, detail="User sem Stripe customer")
 
     try:
         return await set_default_payment_method(
@@ -226,9 +224,7 @@ async def update_default_payment_method(request: Request, payment_method_id: str
 async def delete_payment_method(request: Request, payment_method_id: str):
     jwt = getattr(request.state, "jwt", None)
     if not jwt.get("stripe_customer_id"):
-        raise HTTPException(
-            status_code=400, detail="User sem Stripe customer"
-        )
+        raise HTTPException(status_code=400, detail="User sem Stripe customer")
     try:
         return await remove_payment_method_not_default(
             jwt["stripe_customer_id"], payment_method_id
@@ -258,7 +254,11 @@ async def stripe_webhook(request: Request):
     event_type = event["type"]
 
     # Processa eventos de checkout, pagamento de invoice e setup de método de pagamento
-    if event_type not in {"checkout.session.completed", "invoice.payment_succeeded", "setup_intent.succeeded"}:
+    if event_type not in {
+        "checkout.session.completed",
+        "invoice.payment_succeeded",
+        "setup_intent.succeeded",
+    }:
         logger.info(f"Webhook Stripe ignorado: {event_type}")
         return {"status": "ok"}
 
@@ -266,9 +266,9 @@ async def stripe_webhook(request: Request):
     metadata = getattr(stripe_object, "metadata", None)
     if metadata is None:
         metadata = {}
-    
+
     # Tentar extrair metadata de forma segura
-  
+
     user_id = getattr(metadata, "user_id", None)
     plano = getattr(metadata, "plano", None)
     customer_id = getattr(stripe_object, "customer", None)
@@ -278,39 +278,43 @@ async def stripe_webhook(request: Request):
         try:
             # Usar getattr porque stripe_object é StripeObject, não dict
             payment_method_id = getattr(stripe_object, "payment_method", None)
-            
+
             if not payment_method_id:
                 logger.warning(f"❌ payment_method_id ausente no setup_intent")
                 return {"status": "ok"}
-            
+
             if not customer_id:
                 logger.warning(f"❌ customer_id ausente no setup_intent")
                 return {"status": "ok"}
-            
+
             customer_obj = stripe.Customer.retrieve(customer_id)
-            
+
             invoice_settings = getattr(customer_obj, "invoice_settings", None)
             default_pm = None
-            
+
             if invoice_settings:
                 default_pm = getattr(invoice_settings, "default_payment_method", None)
                 if default_pm and hasattr(default_pm, "id"):
                     default_pm = default_pm.id
             else:
                 logger.info(f"   - invoice_settings é None")
-            
-            
+
             # Se não tem default, definir o novo método como default
             if not default_pm:
-                logger.info(f"🚀 Chamando set_default_payment_method({customer_id}, {payment_method_id})")
-                result = await set_default_payment_method(customer_id, payment_method_id)
+                logger.info(
+                    f"🚀 Chamando set_default_payment_method({customer_id}, {payment_method_id})"
+                )
+                result = await set_default_payment_method(
+                    customer_id, payment_method_id
+                )
             else:
-                result = await set_default_payment_method(customer_id, payment_method_id)
+                result = await set_default_payment_method(
+                    customer_id, payment_method_id
+                )
 
-                
         except Exception as e:
             logger.error(f"❌ Erro ao processar setup_intent: {str(e)}", exc_info=True)
-        
+
         # Setup intent não precisa de atualizar plano - return imediatamente
         return {"status": "ok"}
 

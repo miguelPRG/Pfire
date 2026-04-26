@@ -1,7 +1,7 @@
 {
   "name": "pfire",
   "private": true,
-  "version": "1.8.5",
+  "version": "1.8.6",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,25 +11,25 @@
     "format": "prettier --write ."
   },
   "dependencies": {
-    "@apollo/client": "^4.1.7",
+    "@apollo/client": "^4.1.9",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@hookform/resolvers": "^5.2.2",
     "@mui/icons-material": "^9.0.0",
     "@mui/material": "^9.0.0",
-    "@mui/x-charts": "9.0.1",
-    "@stripe/stripe-js": "^9.1.0",
-    "firebase": "^12.12.0",
+    "@mui/x-charts": "9.0.2",
+    "@stripe/stripe-js": "^9.3.1",
+    "firebase": "^12.12.1",
     "graphql": "^16.13.2",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
-    "react-hook-form": "^7.72.1",
+    "react-hook-form": "^7.74.0",
     "react-phone-number-input": "^3.4.16",
-    "react-router-dom": "^7.14.0",
-    "zod": "^4.3.6",
-    "vite": "^8.0.8"
+    "react-router-dom": "^7.14.2",
+    "rxjs": "^7.8.2",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/estree": "^1.0.8",
@@ -38,8 +38,8 @@
     "@vitejs/plugin-react-swc": "^4.3.0",
     "esbuild": "^0.28.0",
     "jsdom": "^29.0.2",
-    "prettier": "^3.8.2",
-    "rxjs": "^7.8.2",
-    "vitest": "^4.1.4"
+    "prettier": "^3.8.3",
+    "vite": "^8.0.10",
+    "vitest": "^4.1.5"
   }
 }

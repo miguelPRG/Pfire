@@ -51,7 +51,7 @@ class RelatorioQuery:
                     detail="Acesso negado! Não tens permissão para ver relatórios nesta empresa.",
                 )
 
-        filtro = {"modelo_id": modelo_id }
+        filtro = {"modelo_id": modelo_id}
 
         if filter:
             if filter.clienteNome:
@@ -66,10 +66,9 @@ class RelatorioQuery:
                 }
             elif filter.numero_id is not None:
                 filtro["numero_id"] = filter.numero_id
-        
+
         if user_empresa and not user_empresa.get("isAdmin", False):
             filtro["isActive"] = True
-            
 
         # Buscar relatórios no banco de dados
         async for relatorio in (
