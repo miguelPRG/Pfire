@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from bson import ObjectId
 
 load_dotenv(Path(__file__).parent / ".env")
 
@@ -23,6 +24,7 @@ from database import (
     database_cleaner_scheduler,
     start_database_cleaner_scheduler,
     testar_database,
+    users_collection,
 )
 from firewall.clientIP import rate_limit
 from routes.Rest.CRUD import (
@@ -222,6 +224,20 @@ async def fast_api_http_middleware(request: Request, call_next):
             log_request_to_file_if_needed(request, response.status_code, start_time)
             return response
 
+        user_doc = await users_collection.find_one(
+            {"_id": ObjectId(user_data["user_id"]), "isActive": True},
+            {"isSuperAdmin": 1, "plano": 1},
+        )
+        if not user_doc:
+            response = JSONResponse(
+                status_code=401,
+                content={"detail": "Utilizador nao encontrado ou inativo."},
+            )
+            log_request_to_file_if_needed(request, response.status_code, start_time)
+            return response
+
+        user_data["isSuperAdmin"] = user_doc.get("isSuperAdmin", False)
+        user_data["plano"] = user_doc.get("plano", "free")
         request.state.jwt = user_data
 
     except Exception:
@@ -238,6 +254,7 @@ async def fast_api_http_middleware(request: Request, call_next):
 
 @app.on_event("startup")
 async def startup_event():
+    await relatorioCRUD.init_contadores()
     database_cleaner_scheduler()
     start_database_cleaner_scheduler()
 

@@ -5,6 +5,7 @@ from datetime import datetime
 from asyncio import gather
 from models.relatorioModels import RelatorioCreate, RelatorioActivation
 from database import (
+    empresas_collection,
     relatorios_collection,
     clientes_collection,
     modelos_collection,
@@ -12,6 +13,15 @@ from database import (
 )
 
 routerRelatorio = APIRouter(prefix="/relatorio")
+
+
+async def get_next_numero_relatorio(empresa_id: str | ObjectId) -> int:
+    """Gera o próximo número de relatório contando os existentes para a empresa."""
+    if isinstance(empresa_id, str):
+        empresa_id = ObjectId(empresa_id)
+    
+    count = await relatorios_collection.count_documents({"empresa_id": empresa_id})
+    return count + 1
 
 
 def validate_custom_fields(relatorio_data: dict, modelo: dict):
@@ -164,14 +174,11 @@ async def create_relatorio(request: Request, relatorio: RelatorioCreate):
     # VALIDAR CAMPOS CUSTOM
     validate_custom_fields(relatorio_data, modelo_dict)
 
-    count = await relatorios_collection.count_documents(
-        {"empresa_id": relatorio.empresa_id}
-    )
-
-    # Create report data with auto-generated ID
     data = datetime.now()
     relatorio_data = relatorio.model_dump()
-    relatorio_data["numero_id"] = count + 1
+    relatorio_data["numero_id"] = await get_next_numero_relatorio(
+        relatorio.empresa_id
+    )
     relatorio_data["cliente_nome"] = cliente["nome"]
     relatorio_data["cliente_nif"] = cliente["nif"]
     relatorio_data["modelo_nome"] = modelo["modelo_nome"]

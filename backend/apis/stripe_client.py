@@ -51,6 +51,11 @@ async def create_checkout(user_id: str, plan_id: str, stripe_customer_id: str) -
     try:
         print(f"Criando sessão de checkout para user_id: {user_id}, plan_id: {plan_id}")
 
+        if not stripe.api_key:
+            raise Exception(
+                "Configuracao Stripe em falta. Define STRIPE_API_KEY ou STRIPE_KEY no ficheiro .env do backend."
+            )
+
         # ✅ VALIDAR/CRIAR CUSTOMER STRIPE OBRIGATÓRIO
         if not stripe_customer_id:
             print(f"User {user_id} sem stripe_customer_id")

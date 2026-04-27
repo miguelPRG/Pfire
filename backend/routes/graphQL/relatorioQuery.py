@@ -5,6 +5,7 @@ from .types.relatorioType import (
     RelatorioCountByModelo,
     RelatorioFilter,
 )
+from controller.relatorio_utils import extract_numero_relatorio
 from database import relatorios_collection, users_empresas_collection
 from .utils.limpar import filter_null_fields
 from fastapi import HTTPException
@@ -65,7 +66,11 @@ class RelatorioQuery:
                     "$options": "i",
                 }
             elif filter.numero_id is not None:
-                filtro["numero_id"] = filter.numero_id
+                filtro["$or"] = [
+                    {"numero_id": filter.numero_id},
+                    {"numero": filter.numero_id},
+                    {"number": filter.numero_id},
+                ]
 
         if user_empresa and not user_empresa.get("isAdmin", False):
             filtro["isActive"] = True
@@ -82,11 +87,20 @@ class RelatorioQuery:
 
             relatorio_data = {
                 "id": str(relatorio.get("_id")),
-                "numero_id": relatorio.get("numero_id"),
+                "cliente_id": (
+                    str(relatorio.get("cliente_id"))
+                    if relatorio.get("cliente_id")
+                    else None
+                ),
+                "numero_id": extract_numero_relatorio(relatorio),
                 "modelo_nome": relatorio.get("modelo_nome"),
                 "cliente_nome": relatorio.get("cliente_nome"),
                 "cliente_nif": relatorio.get("cliente_nif"),
-                "created_by": str(relatorio.get("created_by")),
+                "created_by": (
+                    str(relatorio.get("created_by"))
+                    if relatorio.get("created_by")
+                    else None
+                ),
                 "created_at": relatorio.get("created_at"),
                 "custom_fields": custom_fields,
                 "isActive": relatorio.get("isActive"),

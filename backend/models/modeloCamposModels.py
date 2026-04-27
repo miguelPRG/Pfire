@@ -22,6 +22,12 @@ PRO_DATATYPES = {
     "critério",
 }
 
+PRO_DATATYPES = {
+    "object",
+    "array",
+    "critério",
+}
+
 
 # Função auxiliar para validação de campos personalizados no método de criação
 def validate_field(key, value, indice=0, plano="free"):

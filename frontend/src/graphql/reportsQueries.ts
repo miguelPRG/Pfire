@@ -6,6 +6,7 @@ export const GET_REPORTS_BY_MODEL = gql`
       relatorios {
         id
         numeroId
+        clienteId
         modeloNome
         clienteNome
         clienteNif

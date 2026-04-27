@@ -66,7 +66,8 @@ interface FileSystemWritableFileStream extends WritableStream<Uint8Array> {
 */
 export interface Report {
   id: string;
-  numeroId: string;
+  numeroId: number;
+  clienteId: string;
   modeloNome: string;
   clienteNome: string;
   clienteNif: string;
@@ -87,6 +88,90 @@ interface returnedData {
   };
 }
 
+interface ClienteOption {
+  id: string;
+  nome: string;
+}
+
+interface ExportReportOption {
+  id: string;
+  numeroId: number;
+  createdAt: string;
+}
+
+interface ExportCreatorOption {
+  id: string;
+  nome: string;
+}
+
+interface DatePresetOption {
+  id: "custom" | "last-day" | "last-month" | "last-year";
+  label: string;
+}
+
+const EXPORT_REPORT_OPTIONS_LIMIT = 25;
+const EXPORT_CREATOR_OPTIONS_LIMIT = 15;
+const PDF_REPORTS_PER_PAGE = 12;
+const DATE_PRESET_OPTIONS: DatePresetOption[] = [
+  { id: "custom", label: "Personalizado" },
+  { id: "last-day", label: "Último dia" },
+  { id: "last-month", label: "Último mês" },
+  { id: "last-year", label: "Último ano" },
+];
+
+const autocompleteIndicatorSx = {
+  background: "none !important",
+  color: "inherit",
+  boxShadow: "none",
+  borderRadius: 0,
+  outline: "none",
+  "&:hover": {
+    background: "none",
+  },
+  "&.Mui-focusVisible": {
+    background: "none",
+    outline: "none",
+  },
+  "&:focus-visible": {
+    background: "none",
+    outline: "none",
+  },
+};
+
+const autocompleteIconSlotProps = {
+  clearIndicator: {
+    sx: autocompleteIndicatorSx,
+  },
+  popupIndicator: {
+    sx: autocompleteIndicatorSx,
+  },
+};
+
+const formatDateInputValue = (date: Date) => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const getPresetDateRange = (presetId: DatePresetOption["id"]) => {
+  const endDate = new Date();
+  const startDate = new Date(endDate);
+
+  if (presetId === "last-day") {
+    startDate.setDate(startDate.getDate() - 1);
+  } else if (presetId === "last-month") {
+    startDate.setMonth(startDate.getMonth() - 1);
+  } else if (presetId === "last-year") {
+    startDate.setFullYear(startDate.getFullYear() - 1);
+  }
+
+  return {
+    start: formatDateInputValue(startDate),
+    end: formatDateInputValue(endDate),
+  };
+};
+
 /*
   Componente principal ReportListPage
   - exibe lista paginada de relatórios
@@ -104,8 +189,21 @@ export default function ReportListPage() {
   const [alert, setAlert] = useState<{ message: string; isError: boolean } | null>(null); // notificações
   const [exportingAll, setExportingAll] = useState(false); // indicador de exportação em massa
   const [exportDialogOpen, setExportDialogOpen] = useState(false); // dialog de exportação
-  const [selectedClienteForExport, setSelectedClienteForExport] = useState<any>(null); // cliente selecionado
+  const [selectedClienteForExport, setSelectedClienteForExport] = useState<ClienteOption | null>(null); // cliente selecionado
   const [clienteInputValue, setClienteInputValue] = useState(""); // input do autocomplete
+  const [selectedReportForExport, setSelectedReportForExport] = useState<ExportReportOption | null>(null);
+  const [reportInputValue, setReportInputValue] = useState("");
+  const [availableReportsForExport, setAvailableReportsForExport] = useState<ExportReportOption[]>([]);
+  const [reportsForExportLoading, setReportsForExportLoading] = useState(false);
+  const [selectedCreatorForExport, setSelectedCreatorForExport] = useState<ExportCreatorOption | null>(null);
+  const [creatorInputValue, setCreatorInputValue] = useState("");
+  const [availableCreatorsForExport, setAvailableCreatorsForExport] = useState<ExportCreatorOption[]>([]);
+  const [creatorsForExportLoading, setCreatorsForExportLoading] = useState(false);
+  const [selectedDatePresetForExport, setSelectedDatePresetForExport] = useState<DatePresetOption>(
+    DATE_PRESET_OPTIONS[0]
+  );
+  const [exportDateStart, setExportDateStart] = useState("");
+  const [exportDateEnd, setExportDateEnd] = useState("");
   const rowsPerPage = 15; // número de linhas por página
   const navigate = useNavigate(); // navegação de rotas
   const theme = useTheme(); // tema MUI
@@ -220,6 +318,11 @@ export default function ReportListPage() {
     const keys = Array.from(keysSet);
     return { customFieldKeys: keys, parentSubKeys: parentMap };
   }, [effectiveReports]);
+
+  const formatReportOptionLabel = (report: ExportReportOption) => {
+    const formattedDate = report.createdAt ? new Date(report.createdAt).toLocaleDateString() : "-";
+    return `#${report.numeroId} - ${formattedDate}`;
+  };
 
   // Obtém o valor do subcampo (procurando nos customFields do relatório)
   const getSubFieldValue = (report: Report, subKey: string) => {
@@ -359,6 +462,105 @@ export default function ReportListPage() {
     }
   };
 
+  const fetchReportsForExport = async (clienteId: string, search = "") => {
+    if (!empresa?.id || !location.state?.filter?.modeloId || !clienteId) {
+      setAvailableReportsForExport([]);
+      return;
+    }
+
+    try {
+      setReportsForExportLoading(true);
+      const params = new URLSearchParams({
+        empresa_id: empresa.id,
+        modelo_id: location.state.filter.modeloId,
+        cliente_id: clienteId,
+        limit: String(EXPORT_REPORT_OPTIONS_LIMIT),
+      });
+
+      if (search.trim()) {
+        params.set("query", search.trim());
+      }
+
+      const response = await fetch(`/backend/user/export-report-options?${params.toString()}`, {
+        method: "GET",
+        credentials: "include",
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Erro ao carregar a lista de relatórios.");
+      }
+
+      setAvailableReportsForExport(data.reports || []);
+    } catch (err: any) {
+      setAlert({ message: err.message || "Erro ao carregar a lista de relatórios.", isError: true });
+    } finally {
+      setReportsForExportLoading(false);
+    }
+  };
+
+  const fetchCreatorsForExport = async (clienteId: string, search = "") => {
+    if (!empresa?.id || !location.state?.filter?.modeloId || !clienteId) {
+      setAvailableCreatorsForExport([]);
+      return;
+    }
+
+    try {
+      setCreatorsForExportLoading(true);
+      const params = new URLSearchParams({
+        empresa_id: empresa.id,
+        modelo_id: location.state.filter.modeloId,
+        cliente_id: clienteId,
+        limit: String(EXPORT_CREATOR_OPTIONS_LIMIT),
+      });
+
+      if (search.trim()) {
+        params.set("query", search.trim());
+      }
+
+      const response = await fetch(`/backend/user/export-creator-options?${params.toString()}`, {
+        method: "GET",
+        credentials: "include",
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.detail || "Erro ao carregar a lista de utilizadores.");
+      }
+
+      setAvailableCreatorsForExport(data.creators || []);
+    } catch (err: any) {
+      setAlert({ message: err.message || "Erro ao carregar a lista de utilizadores.", isError: true });
+    } finally {
+      setCreatorsForExportLoading(false);
+    }
+  };
+
+  const applyDatePreset = (preset: DatePresetOption) => {
+    setSelectedDatePresetForExport(preset);
+    if (preset.id === "custom") {
+      return;
+    }
+
+    const range = getPresetDateRange(preset.id);
+    setExportDateStart(range.start);
+    setExportDateEnd(range.end);
+  };
+
+  const resetExportFilters = () => {
+    setSelectedClienteForExport(null);
+    setClienteInputValue("");
+    setSelectedReportForExport(null);
+    setReportInputValue("");
+    setAvailableReportsForExport([]);
+    setSelectedCreatorForExport(null);
+    setCreatorInputValue("");
+    setAvailableCreatorsForExport([]);
+    setSelectedDatePresetForExport(DATE_PRESET_OPTIONS[0]);
+    setExportDateStart("");
+    setExportDateEnd("");
+  };
+
   const closeHardDeleteDialog = () => {
     setHardDeleteDialogOpen(false);
     setSelectedReport(null);
@@ -366,13 +568,28 @@ export default function ReportListPage() {
 
   const handleOpenExportDialog = () => {
     setExportDialogOpen(true);
-    setSelectedClienteForExport(null);
-    setClienteInputValue("");
+    resetExportFilters();
     // Busca os primeiros clientes ao abrir
     if (empresa?.id) {
       getClientes({ variables: { empresaId: empresa.id, start: 0 } });
     }
   };
+
+  const handleCloseExportDialog = () => {
+    setExportDialogOpen(false);
+    resetExportFilters();
+  };
+
+  useEffect(() => {
+    if (!selectedClienteForExport?.id) {
+      setAvailableReportsForExport([]);
+      setAvailableCreatorsForExport([]);
+      return;
+    }
+
+    fetchReportsForExport(selectedClienteForExport.id);
+    fetchCreatorsForExport(selectedClienteForExport.id);
+  }, [selectedClienteForExport?.id, empresa?.id, location.state?.filter?.modeloId]);
 
   const handleApplyAdvanced = async () => {
     setPage(0);
@@ -382,7 +599,7 @@ export default function ReportListPage() {
       if (advFilter.field === "numeroId") {
         const n = Number(text);
         if (Number.isNaN(n)) {
-          setAlert({ message: "Número inválido.", isError: true });
+          setAlert({ message: "ID inválido.", isError: true });
           return;
         }
         filterObj = { numeroId: n };
@@ -391,6 +608,71 @@ export default function ReportListPage() {
       }
     }
     setReportFilter(filterObj);
+  };
+
+  const exportReportsToPdf = async (
+    exportPayload: Record<string, unknown>,
+    suggestedFileName: string,
+    successMessage = "PDF exportado com sucesso!"
+  ) => {
+    const supportsFileSystemAccess = "showSaveFilePicker" in window;
+
+    if (supportsFileSystemAccess) {
+      const fileHandle = await window.showSaveFilePicker({
+        suggestedName: suggestedFileName,
+        types: [
+          {
+            description: "PDF Files",
+            accept: { "application/pdf": [".pdf"] },
+          },
+        ],
+      });
+
+      const response = await fetch("/backend/user/converter-pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(exportPayload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Erro ao exportar relatórios.");
+      }
+
+      const blob = await response.blob();
+      const writable = await fileHandle.createWritable();
+      await writable.write(blob);
+      await writable.close();
+    } else {
+      const response = await fetch("/backend/user/converter-pdf", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify(exportPayload),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Erro ao exportar relatórios.");
+      }
+
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = suggestedFileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }
+
+    setAlert({ message: successMessage, isError: false });
   };
 
   const handleExportAll = async () => {
@@ -404,85 +686,29 @@ export default function ReportListPage() {
       return;
     }
 
+    if (exportDateStart && exportDateEnd && exportDateStart > exportDateEnd) {
+      setAlert({ message: "A data inicial não pode ser superior à data final.", isError: true });
+      return;
+    }
+
+    const selectedReportOption = selectedReportForExport;
+    const hasSelectedReport = Boolean(selectedReportOption);
+    const exportPayload = {
+      empresa_id: empresa.id,
+      modelo_id: location.state.filter.modeloId,
+      cliente_id: selectedClienteForExport.id,
+      ...(selectedReportOption ? { relatorio_ids: [selectedReportOption.id] } : {}),
+      ...(!hasSelectedReport && selectedCreatorForExport ? { created_by_id: selectedCreatorForExport.id } : {}),
+      ...(!hasSelectedReport && exportDateStart ? { created_at_gte: exportDateStart } : {}),
+      ...(!hasSelectedReport && exportDateEnd ? { created_at_lte: exportDateEnd } : {}),
+    };
+    const suggestedFileName = `relatorio_${selectedClienteForExport.nome}_${empresa?.nome || 'export'}.pdf`;
+
     setExportingAll(true);
     setExportDialogOpen(false);
 
     try {
-      // Verificar se o browser suporta File System Access API
-      const supportsFileSystemAccess = "showSaveFilePicker" in window;
-
-      if (supportsFileSystemAccess) {
-        // CAMINHO 1: Chrome, Edge, Opera (com file picker)
-        const fileHandle = await window.showSaveFilePicker({
-          suggestedName: `relatorios_${selectedClienteForExport.nome}_${new Date().getTime()}.pdf`,
-          types: [
-            {
-              description: "PDF Files",
-              accept: { "application/pdf": [".pdf"] },
-            },
-          ],
-        });
-
-        // Chamar a API para obter o PDF
-        const response = await fetch("/backend/user/converter-pdf", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            empresa_id: empresa.id,
-            modelo_id: location.state.filter.modeloId,
-            cliente_id: selectedClienteForExport.id,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.detail || "Erro ao exportar relatórios.");
-        }
-
-        // Escrever o blob no ficheiro escolhido
-        const blob = await response.blob();
-        const writable = await fileHandle.createWritable();
-        await writable.write(blob);
-        await writable.close();
-
-        setAlert({ message: "PDF exportado com sucesso!", isError: false });
-      } else {
-        // CAMINHO 2: Firefox, Safari (download direto com nome sugerido)
-        // Nota: O user escolhe onde salvar no diálogo do browser (automático)
-        const response = await fetch("/backend/user/converter-pdf", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            empresa_id: empresa.id,
-            modelo_id: location.state.filter.modeloId,
-            cliente_id: selectedClienteForExport.id,
-          }),
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.detail || "Erro ao exportar relatórios.");
-        }
-
-        // Criar um blob e forçar download
-        const blob = await response.blob();
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `relatorios_${selectedClienteForExport.nome}_${new Date().getTime()}.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-
-        setAlert({ message: "PDF exportado com sucesso!", isError: false });
-      }
+      await exportReportsToPdf(exportPayload, suggestedFileName);
     } catch (err: any) {
       if (err.name === "AbortError") {
         setAlert({ message: "Exportação cancelada.", isError: false });
@@ -492,7 +718,7 @@ export default function ReportListPage() {
       }
     } finally {
       setExportingAll(false);
-      setSelectedClienteForExport(null);
+      resetExportFilters();
     }
   };
 
@@ -609,7 +835,7 @@ export default function ReportListPage() {
 
           <AdvancedSearchBar
             fields={[
-              { value: "numeroId", label: "Número do Relatório" },
+              { value: "numeroId", label: "NÃºmero do RelatÃ³rio" },
               { value: "clienteNome", label: "Nome do Cliente" },
               { value: "clienteNif", label: "NIF do Cliente" },
             ]}
@@ -698,15 +924,13 @@ export default function ReportListPage() {
                     Data Criação
                   </TableCell>
                   {isCompanyAdmin && (
-                    <>
-                      <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }} align="center">
-                        Estado
-                      </TableCell>
-                      <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }} align="center">
-                        Ações
-                      </TableCell>
-                    </>
+                    <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }} align="center">
+                      Estado
+                    </TableCell>
                   )}
+                  <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }} align="center">
+                    Ações
+                  </TableCell>
                 </TableRow>
 
                 <TableRow>
@@ -862,65 +1086,209 @@ export default function ReportListPage() {
       <Dialog open={exportDialogOpen} onClose={() => setExportDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ fontWeight: "bold" }}>Selecionar Cliente para Exportação</DialogTitle>
         <DialogContent>
-          <Typography sx={{ mb: 2 }}>Selecione o cliente cujos relatórios deseja exportar para PDF.</Typography>
-          <Autocomplete
-            fullWidth
-            options={clientesData?.getClientes?.clientes || []}
-            getOptionLabel={(option) => option.nome}
-            value={selectedClienteForExport}
-            onChange={(_, newValue) => {
-              setSelectedClienteForExport(newValue);
-              setClienteInputValue(newValue ? newValue.nome : "");
-            }}
-            isOptionEqualToValue={(option, value) => option.id === value.id}
-            renderInput={(params) => <TextField {...params} label="Selecione um Cliente" fullWidth sx={{ mt: 2 }} />}
-            loading={clientesLoading}
-            openOnFocus
-            autoHighlight
-            inputValue={clienteInputValue}
-            onInputChange={(_, newInputValue, reason) => {
-              setClienteInputValue(newInputValue);
-              if (reason === "input" && empresa?.id) {
-                getClientes({
-                  variables: {
-                    empresaId: empresa.id,
-                    start: 0,
-                    filter: newInputValue ? { nome: newInputValue } : {},
-                  },
-                });
+          <Typography sx={{ mb: 2 }}>Defina os filtros dos relatórios que pretende exportar para PDF.</Typography>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+            <Autocomplete
+              fullWidth
+              options={clientesData?.getClientes?.clientes || []}
+              getOptionLabel={(option) => option.nome}
+              value={selectedClienteForExport}
+              onChange={(_, newValue) => {
+                setSelectedClienteForExport(newValue);
+                setClienteInputValue(newValue ? newValue.nome : "");
+                setSelectedReportForExport(null);
+                setReportInputValue("");
+                setAvailableReportsForExport([]);
+                setSelectedCreatorForExport(null);
+                setCreatorInputValue("");
+                setAvailableCreatorsForExport([]);
+                setSelectedDatePresetForExport(DATE_PRESET_OPTIONS[0]);
+                setExportDateStart("");
+                setExportDateEnd("");
+              }}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              renderInput={(params) => <TextField {...params} label="Cliente" fullWidth />}
+              loading={clientesLoading}
+              openOnFocus
+              autoHighlight
+              inputValue={clienteInputValue}
+              onInputChange={(_, newInputValue, reason) => {
+                setClienteInputValue(newInputValue);
+                if (reason === "input" && empresa?.id) {
+                  getClientes({
+                    variables: {
+                      empresaId: empresa.id,
+                      start: 0,
+                      filter: newInputValue ? { nome: newInputValue } : {},
+                    },
+                  });
+                }
+              }}
+              onOpen={() => {
+                if (empresa?.id) {
+                  getClientes({ variables: { empresaId: empresa.id, start: 0 } });
+                }
+              }}
+              slotProps={autocompleteIconSlotProps}
+            />
+
+            <Autocomplete
+              fullWidth
+              options={availableReportsForExport}
+              getOptionLabel={formatReportOptionLabel}
+              value={selectedReportForExport}
+              onChange={(_, newValue) => {
+                setSelectedReportForExport(newValue);
+                setReportInputValue(newValue ? formatReportOptionLabel(newValue) : "");
+                if (newValue) {
+                  setSelectedCreatorForExport(null);
+                  setCreatorInputValue("");
+                  setSelectedDatePresetForExport(DATE_PRESET_OPTIONS[0]);
+                  setExportDateStart("");
+                  setExportDateEnd("");
+                }
+              }}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              disabled={!selectedClienteForExport}
+              loading={reportsForExportLoading}
+              openOnFocus
+              autoHighlight
+              inputValue={reportInputValue}
+              onInputChange={(_, newInputValue, reason) => {
+                setReportInputValue(newInputValue);
+                if (!selectedClienteForExport?.id) {
+                  return;
+                }
+                if (reason === "input") {
+                  if (selectedReportForExport) {
+                    setSelectedReportForExport(null);
+                  }
+                  fetchReportsForExport(selectedClienteForExport.id, newInputValue);
+                } else if (reason === "clear") {
+                  setSelectedReportForExport(null);
+                  fetchReportsForExport(selectedClienteForExport.id);
+                }
+              }}
+              onOpen={() => {
+                if (selectedClienteForExport?.id) {
+                  fetchReportsForExport(
+                    selectedClienteForExport.id,
+                    selectedReportForExport ? "" : reportInputValue
+                  );
+                }
+              }}
+              noOptionsText={
+                selectedClienteForExport
+                  ? "Sem relatórios disponíveis para este cliente."
+                  : "Selecione primeiro um cliente."
               }
-            }}
-            onOpen={() => {
-              if (empresa?.id) {
-                getClientes({ variables: { empresaId: empresa.id, start: 0 } });
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Relatório específico (opcional)"
+                  helperText={`A mostrar até ${EXPORT_REPORT_OPTIONS_LIMIT} relatórios mais recentes deste cliente.`}
+                  fullWidth
+                />
+              )}
+              slotProps={autocompleteIconSlotProps}
+            />
+
+            <Autocomplete
+              fullWidth
+              options={availableCreatorsForExport}
+              getOptionLabel={(option) => option.nome}
+              value={selectedCreatorForExport}
+              onChange={(_, newValue) => {
+                setSelectedCreatorForExport(newValue);
+                setCreatorInputValue(newValue ? newValue.nome : "");
+              }}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              disabled={!selectedClienteForExport || Boolean(selectedReportForExport)}
+              loading={creatorsForExportLoading}
+              openOnFocus
+              autoHighlight
+              inputValue={creatorInputValue}
+              onInputChange={(_, newInputValue, reason) => {
+                setCreatorInputValue(newInputValue);
+                if (!selectedClienteForExport?.id) {
+                  return;
+                }
+                if (reason === "input") {
+                  fetchCreatorsForExport(selectedClienteForExport.id, newInputValue);
+                } else if (reason === "clear") {
+                  fetchCreatorsForExport(selectedClienteForExport.id);
+                }
+              }}
+              onOpen={() => {
+                if (selectedClienteForExport?.id) {
+                  fetchCreatorsForExport(selectedClienteForExport.id, creatorInputValue);
+                }
+              }}
+              noOptionsText={
+                selectedClienteForExport
+                  ? "Sem utilizadores disponíveis para este cliente."
+                  : "Selecione primeiro um cliente."
               }
-            }}
-            slotProps={{
-              clearIndicator: {
-                sx: {
-                  background: "none",
-                  color: "inherit",
-                  boxShadow: "none",
-                  "&:hover": {
-                    background: "none",
-                  },
-                },
-              },
-              popupIndicator: {
-                sx: {
-                  background: "none",
-                  color: "inherit",
-                  boxShadow: "none",
-                  "&:hover": {
-                    background: "none",
-                  },
-                },
-              },
-            }}
-          />
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  label="Quem criou (opcional)"
+                  helperText={`A mostrar até ${EXPORT_CREATOR_OPTIONS_LIMIT} utilizadores com relatórios neste cliente.`}
+                  fullWidth
+                />
+              )}
+              slotProps={autocompleteIconSlotProps}
+            />
+
+            <Autocomplete
+              fullWidth
+              options={DATE_PRESET_OPTIONS}
+              getOptionLabel={(option) => option.label}
+              value={selectedDatePresetForExport}
+              onChange={(_, newValue) => applyDatePreset(newValue || DATE_PRESET_OPTIONS[0])}
+              isOptionEqualToValue={(option, value) => option.id === value.id}
+              disabled={Boolean(selectedReportForExport)}
+              renderInput={(params) => <TextField {...params} label="Período rápido" fullWidth />}
+              slotProps={autocompleteIconSlotProps}
+            />
+
+            <Box
+              sx={{
+                display: "grid",
+                gap: 2,
+                gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+              }}
+            >
+              <TextField
+                fullWidth
+                type="date"
+                label="Data inicial"
+                value={exportDateStart}
+                disabled={Boolean(selectedReportForExport)}
+                onChange={(event) => {
+                  setSelectedDatePresetForExport(DATE_PRESET_OPTIONS[0]);
+                  setExportDateStart(event.target.value);
+                }}
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+              <TextField
+                fullWidth
+                type="date"
+                label="Data final"
+                value={exportDateEnd}
+                disabled={Boolean(selectedReportForExport)}
+                onChange={(event) => {
+                  setSelectedDatePresetForExport(DATE_PRESET_OPTIONS[0]);
+                  setExportDateEnd(event.target.value);
+                }}
+                helperText="Se deixar vazio, exporta todos os relatórios dentro dos restantes filtros."
+                slotProps={{ inputLabel: { shrink: true } }}
+              />
+            </Box>
+          </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setExportDialogOpen(false)} variant="outlined">
+          <Button onClick={handleCloseExportDialog} variant="outlined">
             Cancelar
           </Button>
           <Button

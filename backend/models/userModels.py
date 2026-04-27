@@ -1,10 +1,12 @@
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 from typing import Optional
+from datetime import date
 from .empresaModels import EmpresaCreate
 from bson import ObjectId
 from fastapi import HTTPException
 
 """Classes de operações CRUD"""
+"Corregfir commit"
 
 
 class UserCreate(BaseModel):
@@ -23,6 +25,21 @@ class UserCreate(BaseModel):
     @classmethod
     def strip_fields(cls, v):
         return v.strip()
+
+    def validate_relatorio_ids(cls, v):
+        if v in (None, ""):
+            return None
+        if not isinstance(v, list):
+            raise HTTPException(status_code=400, detail="Lista de relatórios inválida.")
+
+        cleaned_ids = []
+        for relatorio_id in v:
+            if not isinstance(relatorio_id, str):
+                raise HTTPException(status_code=400, detail="ID de relatório inválido.")
+
+            relatorio_id = relatorio_id.strip()
+            if not ObjectId.is_valid(relatorio_id):
+                raise HTTPException(status_code=400, detail="ID de relatório inválido.")
 
     @field_validator("password", mode="after")
     @classmethod
@@ -237,24 +254,90 @@ class UserInvitation(BaseModel):
 
 
 class UserConverterPDF(BaseModel):
+    # Este é atributo é obrigatório 
     modelo_id: str = Field(
         min_length=24,
         max_length=24,
         description="O ID do modelo a ser convertido em PDF.",
     )
+    # Este atributo que é obrigatório
     empresa_id: str = Field(
         min_length=24,
         max_length=24,
-        description="O ID do modelo a ser convertido em PDF.",
+        description="O ID da empresa dos relatórios a exportar.",
     )
     cliente_id: str = Field(
         min_length=24,
         max_length=24,
         description="O ID do cliente a ser filtrado.",
     )
+    # Este atributo como é um array deve ter pelo menos um elemento para ser considerado válido.
+    relatorio_ids: Optional[list[str]] = Field(
+        default=None,
+        description="IDs específicos dos relatórios a exportar. Se omitido, exporta todos os relatórios filtrados.",
+    )
+    created_by_id: Optional[str] = Field(
+        default=None,
+        min_length=24,
+        max_length=24,
+        description="ID do utilizador que criou os relatórios.",
+    )
+    created_at_gte: Optional[date] = Field(
+        default=None,
+        description="Data inicial para exportação dos relatórios.",
+    )
+    created_at_lte: Optional[date] = Field(
+        default=None,
+        description="Data limite para exportação dos relatórios.",
+    )
 
-    @field_validator("modelo_id", "cliente_id", mode="before")
+    @field_validator("relatorio_ids", mode="before")
+    def validate_export_report_ids(cls, v):
+        if v in (None, ""):
+            return None
+        if not isinstance(v, list):
+            raise HTTPException(status_code=400, detail="Lista de relatórios inválida.")
+
+        cleaned_ids = []
+        for relatorio_id in v:
+            if not isinstance(relatorio_id, str):
+                raise HTTPException(status_code=400, detail="ID de relatório inválido.")
+
+            relatorio_id = relatorio_id.strip()
+            if not ObjectId.is_valid(relatorio_id):
+                raise HTTPException(status_code=400, detail="ID de relatório inválido.")
+
+            if relatorio_id not in cleaned_ids:
+                cleaned_ids.append(relatorio_id)
+
+        return cleaned_ids or None
+
+    @field_validator(
+        "modelo_id",
+        "empresa_id",
+        "cliente_id",
+        "created_by_id",
+        mode="before",
+    )
     def validate_id(cls, v):
-        if v and not ObjectId.is_valid(v):
+        if v in (None, ""):
+            return None
+        if not isinstance(v, str):
             raise HTTPException(status_code=400, detail="ID inválido.")
-        return v.strip()
+        v = v.strip()
+        if not ObjectId.is_valid(v):
+            raise HTTPException(status_code=400, detail="ID inválido.")
+        return v
+
+    @model_validator(mode="after")
+    def validate_date_interval(self):
+        if (
+            self.created_at_gte
+            and self.created_at_lte
+            and self.created_at_gte > self.created_at_lte
+        ):
+            raise HTTPException(
+                status_code=400,
+                detail="A data inicial não pode ser superior à data final.",
+            )
+        return self

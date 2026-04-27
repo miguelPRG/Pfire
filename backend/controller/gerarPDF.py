@@ -1,11 +1,12 @@
-from weasyprint import HTML
+from base64 import b64encode
 from io import BytesIO
 from pathlib import Path
-from base64 import b64encode
-from typing import Any
+from datetime import datetime
 
 
-WATERMARK_LOGO_PATH = Path(__file__).resolve().parents[1] / "images" / "logo.png"
+WATERMARK_LOGO_PATH = (
+    Path(__file__).resolve().parents[1] / "images" / "logo_watermark_bw.png"
+)
 
 
 def _load_watermark_data_uri() -> str | None:
@@ -15,14 +16,15 @@ def _load_watermark_data_uri() -> str | None:
     return f"data:image/png;base64,{b64encode(raw).decode('utf-8')}"
 
 
-def gerar_pdf(
+def _build_pdf_html(
     relatorios: list[dict],
     modelo: dict,
     cliente: dict,
     empresa_logo: str | None,
     criterios: dict,
-    watterMark: bool,
-) -> BytesIO:
+    apply_watermark: bool,
+    watermark_data_uri: str | None,
+) -> str:
     styles = """
     <style>
         @page {
@@ -99,8 +101,6 @@ def gerar_pdf(
         tr:nth-child(even) td {
             background-color: #f2f2f2;
         }
-
-        /* Estilos específicos para a seção de critérios (compacta, similar à tabela inferior da imagem) */
         .criterios-section {
             margin-top: 18px;
             page-break-inside: avoid;
@@ -109,7 +109,7 @@ def gerar_pdf(
             width: 100%;
             border-collapse: collapse;
             margin-top: 6px;
-            font-size: 11px;            /* mais compacto */
+            font-size: 11px;
             table-layout: fixed;
         }
         .criterio-table thead th {
@@ -136,17 +136,28 @@ def gerar_pdf(
         .criterio-value {
             width: 85%;
         }
-
-        /* Estilos para o watermark */
-        .watermark {
+        .watermark-container {
             position: fixed;
-            top: 50%;
-            left: 50%;
-            width: 85px;
-            height: 85px;
-            transform: translate(-50%, -50%);
-            opacity: 0.10;
+            right: 30px;
+            bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             z-index: 0;
+        }
+        .watermark {
+            width: 180px;
+            height: auto;
+            object-fit: contain;
+            opacity: 1;
+            margin-bottom: -40px;
+        }
+        .watermark-text {
+            font-size: 14px;
+            font-weight: 400;
+            color: #333333;
+            white-space: nowrap;
+            text-align: center;
         }
         .pdf-content {
             position: relative;
@@ -155,10 +166,8 @@ def gerar_pdf(
     </style>
     """
 
-    # Extrair campos customizados
     custom_fields = {k: v for k, v in modelo.items() if k.startswith("custom_")}
 
-    # Cabeçalhos
     header1 = "<tr>"
     header2 = "<tr>"
     column_order = []
@@ -169,7 +178,6 @@ def gerar_pdf(
         display_key = key.replace("custom_", "")
         datatype = info.get("datatype")
         if datatype == "object":
-            # procurar o primeiro rel válido com o objeto preenchido
             exemplo_obj = next(
                 (
                     r.get(key, {})
@@ -188,7 +196,6 @@ def gerar_pdf(
             for subkey, _ in sorted(subfields, key=lambda x: x[1].get("indice", 999)):
                 sub_display = subkey.replace("custom_", "")
                 header2 += f"<th>{sub_display}</th>"
-                # Armazenar a chave completa com 'custom_' do subcampo
                 column_order.append((key, subkey))
         else:
             header1 += f"<th rowspan='2'>{display_key}</th>"
@@ -196,31 +203,36 @@ def gerar_pdf(
     header1 += "</tr>"
     header2 += "</tr>"
 
-    # Construção do HTML
     watermark_html = ""
-    if watterMark:
-        wm_src = _load_watermark_data_uri()
-        if wm_src:
-            watermark_html = f"<img class='watermark' src='{wm_src}' alt='Watermark'/>"
+    if apply_watermark and watermark_data_uri:
+        watermark_html = f"""
+            <div class='watermark-container'>
+                <img class='watermark' src='{watermark_data_uri}' alt='Watermark'/>
+                <div class='watermark-text'>powered by Pfire</div>
+            </div>
+        """
 
     html = f"<html><head>{styles}</head><body>{watermark_html}<div class='pdf-content'>"
-    modelo_nome = modelo.get("modelo_nome", "Relatório Técnico")
+    modelo_nome = modelo.get("modelo_nome", "Relatorio Tecnico")
+    
+    # Formato da data de emissão
+    data_emissao = datetime.now().strftime("%d/%m/%Y")
 
-    # Header com logo (se existir)
     if empresa_logo:
         logo_src = (
             empresa_logo
             if empresa_logo.startswith("data:")
             else f"data:image/png;base64,{empresa_logo}"
         )
-        html += f"<div class='header'><img class='logo' src='{logo_src}' alt='Logo'/><h2>RELATÓRIO TÉCNICO: {modelo_nome}</h2></div>"
+        html += f"<div class='header'><img class='logo' src='{logo_src}' alt='Logo'/><h2>RELATORIO TECNICO: {modelo_nome}</h2></div>"
     else:
-        html += f"<h2 style='text-align:center;'>RELATÓRIO TÉCNICO: {modelo_nome}</h2>"
+        html += f"<h2 style='text-align:center;'>RELATORIO TECNICO: {modelo_nome}</h2>"
+    
+    html += f"<p style='text-align:center; margin: 5px 0; color: #666;'><strong>Data de Emissão:</strong> {data_emissao}</p>"
 
-    # Bloco de cliente
     html += f"""
     <div class='cliente-info'>
-        <h2 id=cliente-info> Informações do Cliente </h2>
+        <h2 id=cliente-info> Informacoes do Cliente </h2>
         <table>
             <tr><th>Cliente</th><td>{cliente.get('nome', 'N/A')}</td></tr>
             <tr><th>Morada</th><td>{cliente.get('morada', 'N/A')}</td></tr>
@@ -232,15 +244,12 @@ def gerar_pdf(
     </div>
     """
 
-    # Tabela principal
     html += f"<table><thead>{header1}{header2}</thead><tbody>"
     for rel in relatorios:
         html += "<tr>"
         for main_key, sub_key in column_order:
             if sub_key:
-                # Buscar o objeto principal
                 obj = rel.get(main_key, {})
-                # O subcampo já vem com 'custom_' então usar diretamente
                 value = obj.get(sub_key) if isinstance(obj, dict) else None
             else:
                 value = rel.get(main_key)
@@ -248,33 +257,26 @@ def gerar_pdf(
         html += "</tr>"
     html += "</tbody></table>"
 
-    # Nova secção: tabela de critérios (apenas options) - reestruturada por critério
-    html += "<div class='criterios-section'><h3 style='margin-top:8px;'>Lista de Critérios</h3>"
-    # critérios pode ser dict (esperado), lista, dict com key 'criterios' ou None.
+    html += "<div class='criterios-section'><h3 style='margin-top:8px;'>Lista de Criterios</h3>"
     criterios_list = []
     if criterios is None:
         criterios_list = []
     elif isinstance(criterios, list):
         criterios_list = criterios
     elif isinstance(criterios, dict):
-        # Caso seja um único critério (com chaves 'nome'/'options'), embrulha
         if "nome" in criterios or "options" in criterios:
             criterios_list = [criterios]
-        # Se tiver uma chave que contenha a lista de critérios
         elif isinstance(criterios.get("criterios"), list):
             criterios_list = criterios.get("criterios")
         else:
-            # Caso seja um dict id->criterio, iteramos pelos valores
             criterios_list = [v for v in criterios.values() if isinstance(v, dict)]
     else:
-        # Tipo inesperado: tenta tratar como vazio
         criterios_list = []
 
     if criterios_list:
         for criterio in criterios_list:
             nome = criterio.get("nome", "N/A")
             options = criterio.get("options", []) or []
-            # tabela por critério: cabeçalho com nome do critério e linhas key/value
             html += f"<table class='criterio-table' role='table'><thead><tr><th colspan='2'>{nome}</th></tr></thead><tbody>"
             if options:
                 for opt in options:
@@ -282,11 +284,34 @@ def gerar_pdf(
                     val = opt.get("value", "N/A")
                     html += f"<tr><td class='criterio-key'>{key}</td><td class='criterio-value'>{val}</td></tr>"
             else:
-                html += "<tr><td colspan='2'>Nenhuma opção disponível</td></tr>"
+                html += "<tr><td colspan='2'>Nenhuma opcao disponivel</td></tr>"
             html += "</tbody></table>"
     else:
-        html += "<p>Nenhum critério disponível.</p>"
+        html += "<p>Nenhum criterio disponivel.</p>"
     html += "</div></body></html>"
+
+    return html
+
+
+def gerar_pdf(
+    relatorios: list[dict],
+    modelo: dict,
+    cliente: dict,
+    empresa_logo: str | None,
+    criterios: dict,
+    apply_watermark: bool,
+) -> BytesIO:
+    from weasyprint import HTML
+
+    html = _build_pdf_html(
+        relatorios,
+        modelo,
+        cliente,
+        empresa_logo,
+        criterios,
+        apply_watermark=apply_watermark,
+        watermark_data_uri=_load_watermark_data_uri() if apply_watermark else None,
+    )
 
     buffer = BytesIO()
     HTML(string=html).write_pdf(buffer)

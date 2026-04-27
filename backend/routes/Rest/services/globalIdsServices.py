@@ -125,9 +125,9 @@ async def confirm_user(global_id: str, request: Request, captcha_data: GlobalIdM
         str(user_doc["_id"]),
         user_doc.get("isSuperAdmin", False),
         user_doc.get("plano", "free"),
-        user_doc.get("email", ""),
-        user_doc.get("nome", ""),
-        user_doc.get("stripe_customer_id", None),
+        email=user_doc.get("email", ""),
+        nome=user_doc.get("nome", ""),
+        stripe_customer_id=user_doc.get("stripe_customer_id", None),
     )
 
     assinatura_b64 = None
@@ -139,13 +139,11 @@ async def confirm_user(global_id: str, request: Request, captcha_data: GlobalIdM
         "nome": user_doc.get("nome", ""),
         "email": user_doc.get("email", ""),
         "telefone": user_doc.get("telefone", None),
+        "assinatura": assinatura_b64,
         "isSuperAdmin": user_doc.get("isSuperAdmin", False),
         "plano": user_doc.get("plano", "free"),
         "stripeCustomerId": user_doc.get("stripe_customer_id", None),
     }
-
-    if payload.get("assinatura"):
-        payload["assinatura"] = assinatura_b64
 
     response = JSONResponse(content=payload)
     response.set_cookie(

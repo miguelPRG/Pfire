@@ -8,6 +8,7 @@ from typing import Optional
 class Relatorio:
     id: str
     numero_id: int
+    cliente_id: str
     modelo_nome: str
     cliente_nome: str
     cliente_nif: str
