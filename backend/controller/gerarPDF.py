@@ -214,7 +214,7 @@ def _build_pdf_html(
 
     html = f"<html><head>{styles}</head><body>{watermark_html}<div class='pdf-content'>"
     modelo_nome = modelo.get("modelo_nome", "Relatorio Tecnico")
-    
+
     # Formato da data de emissão
     data_emissao = datetime.now().strftime("%d/%m/%Y")
 
@@ -227,7 +227,7 @@ def _build_pdf_html(
         html += f"<div class='header'><img class='logo' src='{logo_src}' alt='Logo'/><h2>RELATORIO TECNICO: {modelo_nome}</h2></div>"
     else:
         html += f"<h2 style='text-align:center;'>RELATORIO TECNICO: {modelo_nome}</h2>"
-    
+
     html += f"<p style='text-align:center; margin: 5px 0; color: #666;'><strong>Data de Emissão:</strong> {data_emissao}</p>"
 
     html += f"""

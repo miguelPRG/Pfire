@@ -47,7 +47,33 @@ async def create_stripe_customer(email: str, name: str) -> str:
         raise Exception(f"Erro ao criar cliente Stripe: {str(error)}")
 
 
-async def create_checkout(user_id: str, plan_id: str, stripe_customer_id: str) -> dict:
+async def get_or_create_stripe_customer_id(
+    existing_customer_id: str = None, email: str = None, name: str = None
+) -> str:
+    """
+    Obtém ou cria um customer Stripe.
+    - Se existing_customer_id for válido, retorna-o
+    - Se não, cria um novo com email e name
+    """
+    # Se já temos um customer, validar que ainda existe
+    if existing_customer_id:
+        try:
+            customer = stripe.Customer.retrieve(existing_customer_id)
+            if customer and not getattr(customer, "deleted", False):
+                return existing_customer_id
+        except stripe.error.InvalidRequestError:
+            pass  # Customer não existe, vai criar novo
+
+    # Criar novo customer
+    if not email or not name:
+        raise Exception("Email e nome são obrigatórios para criar novo Stripe customer")
+
+    return await create_stripe_customer(email=email, name=name)
+
+
+async def create_checkout(
+    user_id: str, plan_id: str, stripe_customer_id: str, has_demo: bool = False
+) -> dict:
     try:
         print(f"Criando sessão de checkout para user_id: {user_id}, plan_id: {plan_id}")
 
@@ -110,30 +136,39 @@ async def create_checkout(user_id: str, plan_id: str, stripe_customer_id: str) -
             print(f"Product ID inválido: {plan_id}")
             raise Exception(f"Produto não encontrado: {plan_id}")
 
-        trial_days = 15 if "pro" in product.name.lower() else 7
-
         URL = os.getenv("SUCCESS_URL", "http://localhost:3000")
+
+        trial_days = 7
+
+        # Construir subscription_data condicionalmente
+        subscription_data = {
+            "metadata": {
+                "user_id": str(user_id),
+                "plano": product.name.lower(),
+            },
+        }
+        if not has_demo:
+            subscription_data["trial_period_days"] = trial_days
 
         session_data = {
             "payment_method_types": ["card"],
             "customer": stripe_customer_id,
             "line_items": [{"price": price_id, "quantity": 1}],
             "mode": "subscription",
-            "subscription_data": {
-                "trial_period_days": trial_days,
-                "metadata": {
-                    "user_id": str(user_id),
-                    "plano": product.name.lower(),
-                },
-            },
+            "subscription_data": subscription_data,
             "success_url": f"{URL}/success",
             "cancel_url": f"{URL}/plans",
             "metadata": {"user_id": str(user_id), "plano": product.name.lower()},
         }
         session = stripe.checkout.Session.create(**session_data)
 
-        print(f"Sessão criada: {session.id} com trial de {trial_days} dias")
-        return {"id": session.id, "url": session.url, "trial_days": trial_days}
+        trial_msg = f" com trial de {trial_days} dias" if has_demo else ""
+        print(f"Sessão criada: {session.id}{trial_msg}")
+        return {
+            "id": session.id,
+            "url": session.url,
+            "trial_days": trial_days if has_demo else None,
+        }
 
     except stripe.error.StripeError as e:
         print(f"Erro Stripe: {str(e)}")
@@ -289,3 +324,62 @@ async def remove_payment_method_not_default(
         return {"ok": True, "removed_payment_method_id": pm_id}
     except Exception as e:
         raise Exception(f"Erro ao remover método de pagamento: {str(e)}")
+
+
+def get_subscription_trial_info(stripe_customer_id: str) -> dict:
+    """
+    Obtém informações sobre trial/subscrição do customer.
+    Retorna: {
+        "has_active_subscription": bool,
+        "is_trialing": bool,
+        "trial_end": int (unix timestamp) ou None,
+        "plan_name": str ou None,
+        "status": str (trialing, active, past_due, etc)
+    }
+    """
+    try:
+        subscriptions = stripe.Subscription.list(customer=stripe_customer_id, limit=1)
+
+        if not subscriptions.data:
+            return {
+                "has_active_subscription": False,
+                "is_trialing": False,
+                "trial_end": None,
+                "plan_name": None,
+                "status": None,
+            }
+
+        sub = subscriptions.data[0]
+        trial_end = getattr(sub, "trial_end", None)
+        status = getattr(sub, "status", None)
+
+        # Obter nome do plano
+        plan_name = None
+        items = getattr(sub, "items", None)
+        if items and items.data:
+            price = getattr(items.data[0], "price", None)
+            if price:
+                product_id = getattr(price, "product", None)
+                if product_id:
+                    try:
+                        product = stripe.Product.retrieve(product_id)
+                        plan_name = getattr(product, "name", None)
+                    except:
+                        pass
+
+        return {
+            "has_active_subscription": True,
+            "is_trialing": status == "trialing",
+            "trial_end": trial_end,
+            "plan_name": plan_name,
+            "status": status,
+        }
+    except Exception as e:
+        print(f"Erro ao obter info de trial: {str(e)}")
+        return {
+            "has_active_subscription": False,
+            "is_trialing": False,
+            "trial_end": None,
+            "plan_name": None,
+            "status": None,
+        }

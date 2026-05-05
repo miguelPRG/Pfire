@@ -25,6 +25,7 @@ import { useTheme } from "@mui/material/styles";
 import { useLazyQuery } from "@apollo/client/react";
 import { GET_USERS } from "../../../graphql/usersQueries";
 import { useAuth } from "../../../hooks/AuthContext";
+import { usePlanLimits } from "../../../hooks/usePlanLimits";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -36,6 +37,8 @@ import { useNavigate } from "react-router-dom";
 import NoDataMessage from "../../../components/NoDataMessage";
 import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
 import client from "../../../graphql/apolloClient";
+import { LimitedButton } from "../../../components/LimitedButton";
+import { LimitIndicator, ResourceCount } from "../../../components/LimitIndicator";
 
 interface User {
   id: string;
@@ -74,6 +77,7 @@ export default function UserManagementTable() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const { empresa, user } = useAuth();
+  const { canCreateUtilizador, messageUtilizador, utilizadoresCount, utilizadoresPorEmpresa } = usePlanLimits();
   const [alert, setAlert] = useState<null | { message: string; isError: boolean }>(null);
   const [roleLoading, setRoleLoading] = useState<{ [userId: string]: boolean }>({});
   const rowsPerPage = 10;
@@ -315,19 +319,30 @@ export default function UserManagementTable() {
           Lista de Funcionários
         </Typography>
 
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={() => setInviteOpen(true)}
-          sx={{
-            textTransform: "none",
-            height: "40px",
-            width: "180px",
-            padding: "5px",
-          }}
-        >
-          Convidar Utilizador
-        </Button>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          <LimitedButton
+            disabled={!canCreateUtilizador}
+            message={messageUtilizador}
+            onClick={() => setInviteOpen(true)}
+            variant="contained"
+            color="primary"
+            sx={{
+              textTransform: "none",
+              height: "40px",
+              width: "180px",
+              padding: "5px",
+            }}
+          >
+            Convidar Utilizador
+          </LimitedButton>
+          <ResourceCount current={utilizadoresCount} limit={utilizadoresPorEmpresa} resourceName="utilizador" />
+          <LimitIndicator
+            current={utilizadoresCount}
+            limit={utilizadoresPorEmpresa}
+            label="Utilizadores"
+            resourceName="utilizador"
+          />
+        </Box>
       </Box>
 
       <Box sx={{ maxWidth: 650, mb: 3, alignSelf: "flex-start" }}>

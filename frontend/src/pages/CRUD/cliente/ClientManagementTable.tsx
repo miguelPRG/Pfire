@@ -26,6 +26,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { GET_CLIENTES_BY_EMPRESA } from "../../../graphql/clientesQueries";
 import { useTheme } from "@mui/material/styles";
 import { useAuth } from "../../../hooks/AuthContext";
+import { usePlanLimits } from "../../../hooks/usePlanLimits";
 import Notification from "../../../components/Notification";
 import LoadingAnimation from "../../../components/LoadingAnimation";
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";

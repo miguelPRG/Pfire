@@ -1,6 +1,6 @@
 [project]
 name = "backend"
-version = "1.8.7"
+version = "1.9.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -10,14 +10,14 @@ dependencies = [
     "brevo-python>=4.0.10",
     "fastapi[standard]>=0.136.1",
     "filetype>=1.2.0",
-    "firebase-admin>=7.3.0",
+    "firebase-admin>=7.4.0",
     "motor>=3.7.1",
     "passlib>=1.7.4",
     "pymongo>=4.17.0",
     "redis>=7.4.0",
     "sib-api-v3-sdk>=7.6.0",
     "starlette>=1.0.0",
-    "strawberry-graphql>=0.315.2",
+    "strawberry-graphql>=0.315.3",
     "stripe>=15.1.0",
     "weasyprint>=68.1",
 ]

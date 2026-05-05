@@ -119,7 +119,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (typeof window === "undefined") return null;
     return localStorage.getItem("empresaId");
   });
-
   const { generateToken } = useRecaptcha();
 
   const { data, error } = useQuery<{ getEmpresas?: { empresas?: Empresa[] } }>(GET_EMPRESAS, {

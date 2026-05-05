@@ -254,7 +254,7 @@ class UserInvitation(BaseModel):
 
 
 class UserConverterPDF(BaseModel):
-    # Este é atributo é obrigatório 
+    # Este é atributo é obrigatório
     modelo_id: str = Field(
         min_length=24,
         max_length=24,

@@ -3,11 +3,12 @@ from fastapi import APIRouter, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from apis.stripe_client import (
     create_checkout,
-    create_stripe_customer,
+    get_or_create_stripe_customer_id,
     get_payment_method,
     create_payment_method_add_session,
     set_default_payment_method,
     remove_payment_method_not_default,
+    get_subscription_trial_info,
 )
 from database import users_collection
 from bson import ObjectId
@@ -16,88 +17,87 @@ from os import getenv
 from datetime import datetime
 from controller.jwtValidation import generate_jwt
 from controller.cookie_settings import get_auth_cookie_settings
+from .stripe.webhook_handlers import (
+    handle_checkout_session_expired,
+    handle_checkout_session_completed,
+    handle_setup_intent_succeeded_with_payment_method,
+    handle_invoice_payment_succeeded,
+    handle_invoice_payment_failed,
+)
 import logging
 
 logger = logging.getLogger(__name__)
 routerPayment = APIRouter(prefix="/user")
 
 
-@routerPayment.post("/checkout/{plan_id}")
-async def create_user_checkout(request: Request, plan_id: str):
+@routerPayment.put("/clear-payment-error")
+async def clear_payment_error(request: Request):
     """
-    Cria sessão de checkout - user DEVE ter stripe_customer_id.
+    Limpa o erro de pagamento do user.
+    Chamado quando o user vê a mensagem de erro e tenta novamente.
     """
     jwt = getattr(request.state, "jwt", None)
     user_id = ObjectId(jwt.get("user_id"))
 
-    # 1️⃣ Tentar obter stripe_customer_id do JWT
-    stripe_customer_id = jwt.get("stripe_customer_id")
+    try:
+        result = await users_collection.update_one(
+            {"_id": user_id},
+            {"$unset": {"payment_error": "", "payment_error_at": ""}},
+        )
 
-    # 2️⃣ Se não estiver no JWT, ir buscar da BD
+        if result.modified_count > 0:
+            logger.info(f"✅ Erro de pagamento limpo para user {user_id}")
+
+        return {"status": "ok"}
+
+    except Exception as e:
+        logger.error(f"Erro ao limpar erro de pagamento: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@routerPayment.post("/checkout/{plan_id}")
+async def create_user_checkout(request: Request, plan_id: str):
+    """
+    Cria sessão de checkout - obtém ou cria stripe_customer_id automaticamente.
+    """
+    jwt = getattr(request.state, "jwt", None)
+    user_id = ObjectId(jwt.get("user_id"))
+
+    # Obter stripe_customer_id existente
+    stripe_customer_id = jwt.get("stripe_customer_id")
     if not stripe_customer_id:
         user = await users_collection.find_one({"_id": user_id})
         if user:
             stripe_customer_id = user.get("stripe_customer_id")
 
-    # 3️⃣ Se encontrou cliente Stripe, validar que ainda existe
-    if stripe_customer_id:
-        logger.info(f"Usando stripe_customer_id existente: {stripe_customer_id}")
-        try:
-            customer = stripe.Customer.retrieve(stripe_customer_id)
-            if customer and not customer.get("deleted", False):
-                logger.info(f"Customer Stripe validado: {stripe_customer_id}")
-                checkout_session = await create_checkout(
-                    str(user_id), plan_id, stripe_customer_id
-                )
-                return checkout_session
-            else:
-                logger.warning(
-                    f"Customer Stripe apagado manualmente: {stripe_customer_id}"
-                )
-                stripe_customer_id = None
-        except Exception as e:
-            # NÃO marcar como inválido só porque falhou a validação
-            logger.warning(
-                f"Aviso ao validar customer Stripe: {str(e)} - tentando mesmo assim"
-            )
-            try:
-                # Tentar usar mesmo assim
-                checkout_session = await create_checkout(
-                    str(user_id), plan_id, stripe_customer_id
-                )
-                return checkout_session
-            except Exception as inner_e:
-                logger.error(
-                    f"Falha ao criar checkout com cliente existente: {str(inner_e)}"
-                )
-                stripe_customer_id = None
+    # Obter ou criar Stripe customer
+    email = jwt.get("email")
+    nome = jwt.get("nome")
+    has_demo = jwt.get("has_demo", False)
 
-    # 4️⃣ Criar novo APENAS se realmente não tiver nenhum
-    if not stripe_customer_id:
-        email = jwt.get("email")
-        nome = jwt.get("nome")
+    try:
+        stripe_customer_id = await get_or_create_stripe_customer_id(
+            existing_customer_id=stripe_customer_id,
+            email=email,
+            name=nome,
+        )
 
-        if not email or not nome:
-            user = await users_collection.find_one({"_id": user_id})
-            if not user:
-                raise HTTPException(status_code=404, detail="User não encontrado")
-            email = email or user.get("email")
-            nome = nome or user.get("nome")
-
-        if not email or not nome:
-            raise HTTPException(status_code=400, detail="Email e nome são obrigatórios")
-
-        logger.info(f"Criando novo Stripe customer para user {user_id}")
-        stripe_customer_id = await create_stripe_customer(email=email, name=nome)
-
+        # Atualizar BD se foi criado novo customer
         await users_collection.update_one(
             {"_id": user_id},
             {"$set": {"stripe_customer_id": stripe_customer_id}},
         )
-        logger.info(f"Novo customer Stripe criado: {stripe_customer_id}")
 
-    checkout_session = await create_checkout(str(user_id), plan_id, stripe_customer_id)
-    return checkout_session
+        checkout_session = await create_checkout(
+            str(user_id), plan_id, stripe_customer_id, has_demo
+        )
+        return checkout_session
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao criar checkout: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @routerPayment.post("/refresh-token-after-payment")
@@ -173,6 +173,40 @@ async def refresh_token_after_payment(request: Request, response: Response):
         raise HTTPException(status_code=400, detail=str(e))
 
 
+@routerPayment.get("/subscription-trial-info")
+async def get_trial_info(request: Request):
+    """Retorna informações sobre o período de trial da subscrição."""
+    jwt = getattr(request.state, "jwt", None)
+
+    logger.info(f"GET /subscription-trial-info - JWT: {jwt}")
+
+    if not jwt or not jwt.get("stripe_customer_id"):
+        logger.info(f"No stripe_customer_id found in JWT")
+        return {
+            "has_active_subscription": False,
+            "is_trialing": False,
+            "trial_end": None,
+            "plan_name": None,
+            "status": None,
+        }
+
+    try:
+        stripe_customer_id = jwt["stripe_customer_id"]
+        logger.info(f"Fetching trial info for customer: {stripe_customer_id}")
+        result = get_subscription_trial_info(stripe_customer_id)
+        logger.info(f"Trial info result: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"Erro ao obter info de trial: {str(e)}")
+        return {
+            "has_active_subscription": False,
+            "is_trialing": False,
+            "trial_end": None,
+            "plan_name": None,
+            "status": None,
+        }
+
+
 @routerPayment.get("/payment-methods")
 async def get_payment_methods(request: Request):
     """Retorna os métodos de pagamento disponíveis."""
@@ -235,7 +269,10 @@ async def delete_payment_method(request: Request, payment_method_id: str):
 
 @routerPayment.post("/stripe/webhook")
 async def stripe_webhook(request: Request):
-    """Processa webhook do Stripe após checkout concluído."""
+    """
+    Processa webhook do Stripe.
+    Valida assinatura e roteia para o handler apropriado baseado no tipo de evento.
+    """
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
 
@@ -253,118 +290,70 @@ async def stripe_webhook(request: Request):
 
     event_type = event["type"]
 
-    # Processa eventos de checkout, pagamento de invoice e setup de método de pagamento
-    if event_type not in {
+    # Eventos suportados
+    SUPPORTED_EVENTS = {
         "checkout.session.completed",
+        "checkout.session.expired",
         "invoice.payment_succeeded",
+        "invoice.payment_failed",
         "setup_intent.succeeded",
-    }:
+    }
+
+    if event_type not in SUPPORTED_EVENTS:
         logger.info(f"Webhook Stripe ignorado: {event_type}")
         return {"status": "ok"}
 
+    # Extrair dados do evento
     stripe_object = event["data"]["object"]
-    metadata = getattr(stripe_object, "metadata", None)
-    if metadata is None:
-        metadata = {}
-
-    # Tentar extrair metadata de forma segura
+    metadata = getattr(stripe_object, "metadata", None) or {}
 
     user_id = getattr(metadata, "user_id", None)
     plano = getattr(metadata, "plano", None)
     customer_id = getattr(stripe_object, "customer", None)
 
-    # 🔄 Processar setup_intent.succeeded - Definir novo método de pagamento como default
-    if event_type == "setup_intent.succeeded":
-        try:
-            # Usar getattr porque stripe_object é StripeObject, não dict
-            payment_method_id = getattr(stripe_object, "payment_method", None)
-
-            if not payment_method_id:
-                logger.warning(f"❌ payment_method_id ausente no setup_intent")
-                return {"status": "ok"}
-
-            if not customer_id:
-                logger.warning(f"❌ customer_id ausente no setup_intent")
-                return {"status": "ok"}
-
-            customer_obj = stripe.Customer.retrieve(customer_id)
-
-            invoice_settings = getattr(customer_obj, "invoice_settings", None)
-            default_pm = None
-
-            if invoice_settings:
-                default_pm = getattr(invoice_settings, "default_payment_method", None)
-                if default_pm and hasattr(default_pm, "id"):
-                    default_pm = default_pm.id
-            else:
-                logger.info(f"   - invoice_settings é None")
-
-            # Se não tem default, definir o novo método como default
-            if not default_pm:
-                logger.info(
-                    f"🚀 Chamando set_default_payment_method({customer_id}, {payment_method_id})"
-                )
-                result = await set_default_payment_method(
-                    customer_id, payment_method_id
-                )
-            else:
-                result = await set_default_payment_method(
-                    customer_id, payment_method_id
-                )
-
-        except Exception as e:
-            logger.error(f"❌ Erro ao processar setup_intent: {str(e)}", exc_info=True)
-
-        # Setup intent não precisa de atualizar plano - return imediatamente
-        return {"status": "ok"}
-
-    query = None
-    if user_id:
-        try:
-            query = {"_id": ObjectId(user_id)}
-        except Exception:
-            logger.warning(f"user_id invalido no metadata Stripe: {user_id}")
-
-    if query is None and customer_id:
-        query = {"stripe_customer_id": customer_id}
-
-    # Extrair chaves da metadata de forma segura
-    metadata_keys = []
-    if isinstance(metadata, dict):
-        metadata_keys = list(metadata.keys())
-    else:
-        # Se for StripeObject, simplesmente ignorar
-        metadata_keys = ["(StripeObject)"]
-
     logger.info(
-        "Webhook Stripe recebido: type=%s object_id=%s customer=%s metadata_keys=%s",
-        event_type,
-        getattr(stripe_object, "id", None),
-        customer_id,
-        metadata_keys,
+        f"📨 Webhook Stripe: type={event_type} customer={customer_id} user_id={user_id}"
     )
 
-    if query is None or not plano:
-        if event_type == "checkout.session.completed":
-            logger.warning(
-                f"Dados insuficientes para atualizar plano no webhook Stripe: user_id={user_id} customer_id={customer_id} plano={plano}"
-            )
-        return {"status": "ok"}
+    # Rotear para o handler apropriado
+    if event_type == "checkout.session.expired":
+        return await handle_checkout_session_expired(
+            customer_id=customer_id,
+            user_id=user_id,
+        )
 
-    # ✅ Atualizar plano do user
+    elif event_type == "checkout.session.completed":
+        return await handle_checkout_session_completed(
+            customer_id=customer_id,
+            user_id=user_id,
+            plano=plano,
+        )
 
-    logger.info(f"Atualizando plano do user ")
+    elif event_type == "setup_intent.succeeded":
+        payment_method_id = getattr(stripe_object, "payment_method", None)
+        return await handle_setup_intent_succeeded_with_payment_method(
+            customer_id=customer_id,
+            payment_method_id=payment_method_id,
+        )
 
-    result = await users_collection.update_one(
-        query,
-        {"$set": {"plano": plano, "updated_at": datetime.now()}},
-    )
+    elif event_type == "invoice.payment_succeeded":
+        return await handle_invoice_payment_succeeded(
+            customer_id=customer_id,
+            user_id=user_id,
+            plano=plano,
+        )
 
-    if result.modified_count > 0:
-        logger.info(f"✅ Plano {plano} atualizado com sucesso")
-    else:
-        logger.warning(
-            f"⚠️ User não encontrado para webhook Stripe (user_id={user_id}, customer_id={customer_id})"
+    elif event_type == "invoice.payment_failed":
+        # Extrair mensagem de erro do Stripe
+        attempt = getattr(stripe_object, "last_payment_error", None)
+        error_message = None
+        if attempt:
+            error_message = getattr(attempt, "message", None)
+
+        return await handle_invoice_payment_failed(
+            customer_id=customer_id,
+            user_id=user_id,
+            error_message=error_message,
         )
 
     return {"status": "ok"}

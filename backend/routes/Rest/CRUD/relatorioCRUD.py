@@ -19,7 +19,7 @@ async def get_next_numero_relatorio(empresa_id: str | ObjectId) -> int:
     """Gera o próximo número de relatório contando os existentes para a empresa."""
     if isinstance(empresa_id, str):
         empresa_id = ObjectId(empresa_id)
-    
+
     count = await relatorios_collection.count_documents({"empresa_id": empresa_id})
     return count + 1
 
@@ -176,9 +176,7 @@ async def create_relatorio(request: Request, relatorio: RelatorioCreate):
 
     data = datetime.now()
     relatorio_data = relatorio.model_dump()
-    relatorio_data["numero_id"] = await get_next_numero_relatorio(
-        relatorio.empresa_id
-    )
+    relatorio_data["numero_id"] = await get_next_numero_relatorio(relatorio.empresa_id)
     relatorio_data["cliente_nome"] = cliente["nome"]
     relatorio_data["cliente_nif"] = cliente["nif"]
     relatorio_data["modelo_nome"] = modelo["modelo_nome"]

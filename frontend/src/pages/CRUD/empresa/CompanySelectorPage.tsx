@@ -1,8 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { Button, Paper, Typography, Box, Pagination, Breadcrumbs } from "@mui/material";
+import { Button, Paper, Typography, Box, Pagination, Breadcrumbs, Tooltip } from "@mui/material";
 import { useLazyQuery } from "@apollo/client/react";
 import { GET_EMPRESAS } from "../../../graphql/empresasQueries";
 import { useAuth } from "../../../hooks/AuthContext";
+import { usePlanLimits } from "../../../hooks/usePlanLimits";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 import LoadingAnimation from "../../../components/LoadingAnimation";
@@ -11,6 +12,7 @@ import HomeIcon from "@mui/icons-material/Home";
 import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
 import NoDataMessage from "../../../components/NoDataMessage";
 import client from "../../../graphql/apolloClient";
+import { LimitIndicator, ResourceCount } from "../../../components/LimitIndicator";
 
 interface Empresa {
   id: string;
@@ -41,9 +43,17 @@ export default function CompanySelectorPage() {
   const [isAdvancedActive, setIsAdvancedActive] = useState(false);
 
   const theme = useTheme();
-  const { chooseCompany, empresa: empresaSel } = useAuth();
+  const { chooseCompany, empresa: empresaSel, user } = useAuth();
+  const { canCreateEmpresa, messageEmpresa } = usePlanLimits();
   const navigate = useNavigate();
   const mounted = useRef(false);
+
+  // Limites por plano
+  const limites = {
+    free: { empresas: 1 },
+    pro: { empresas: 5 },
+    premium: { empresas: Infinity },
+  };
 
   // lazy para todas as buscas
   const [fetchEmpresas, { data, error, loading }] = useLazyQuery<ReturnedData>(GET_EMPRESAS);
@@ -308,68 +318,112 @@ export default function CompanySelectorPage() {
           />
 
           {/* Crear nueva empresa */}
-          <Box sx={{ mb: 5, display: "flex", justifyContent: "center", alignItems: "center" }}>
-            <Paper
-              elevation={theme.palette.mode === "dark" ? 1 : 4}
-              sx={{
-                border: `2px dashed ${theme.palette.mode === "dark" ? theme.palette.primary.dark : "#2196f3"}`,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                cursor: "pointer",
-                width: { xs: "100%", md: "98%" },
-                minHeight: 220,
-                borderRadius: 3,
-                transition: "transform .2s, background .2s, box-shadow .2s",
-                background: theme.palette.mode === "dark" ? "#0b1220" : "#f8fbff",
-                "&:hover": {
-                  backgroundColor: theme.palette.mode === "dark" ? "#0e1730" : "#e3f2fd",
-                  transform: "scale(1.012)",
-                  boxShadow:
-                    theme.palette.mode === "dark" ? "0 8px 18px rgba(0,0,0,0.5)" : "0 8px 18px rgba(0,0,0,0.12)",
-                },
-                py: 5,
-              }}
-              onClick={() => navigate("/create-company")}
-            >
-              <Box
-                sx={{
-                  width: 72,
-                  height: 72,
-                  background: theme.palette.primary.main,
-                  borderRadius: "50%",
-                  color: theme.palette.getContrastText(theme.palette.primary.main),
-                  fontWeight: "bold",
-                  fontSize: 42,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  mb: 2,
-                  boxShadow:
-                    theme.palette.mode === "dark" ? "0 6px 16px rgba(0,0,0,0.6)" : "0 6px 16px rgba(0,0,0,0.12)",
-                }}
-              >
-                +
+          <Box
+            sx={{
+              mb: 5,
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+              gap: 1,
+            }}
+          >
+            <Tooltip title={!canCreateEmpresa ? messageEmpresa : ""} arrow>
+              <Box sx={{ width: { xs: "100%", md: "98%" } }}>
+                <Paper
+                  elevation={theme.palette.mode === "dark" ? 1 : 4}
+                  sx={{
+                    border: `2px dashed ${theme.palette.mode === "dark" ? theme.palette.primary.dark : "#2196f3"}`,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: canCreateEmpresa ? "pointer" : "not-allowed",
+                    width: "100%",
+                    minHeight: 220,
+                    borderRadius: 3,
+                    transition: "transform .2s, background .2s, box-shadow .2s",
+                    background: canCreateEmpresa
+                      ? theme.palette.mode === "dark"
+                        ? "#0b1220"
+                        : "#f8fbff"
+                      : theme.palette.mode === "dark"
+                        ? "#1a1a1a"
+                        : "#f5f5f5",
+                    opacity: canCreateEmpresa ? 1 : 0.5,
+                    "&:hover": canCreateEmpresa
+                      ? {
+                          backgroundColor: theme.palette.mode === "dark" ? "#0e1730" : "#e3f2fd",
+                          transform: "scale(1.012)",
+                          boxShadow:
+                            theme.palette.mode === "dark"
+                              ? "0 8px 18px rgba(0,0,0,0.5)"
+                              : "0 8px 18px rgba(0,0,0,0.12)",
+                        }
+                      : {},
+                    py: 5,
+                  }}
+                  onClick={() => canCreateEmpresa && navigate("/create-company")}
+                >
+                  <Box
+                    sx={{
+                      width: 72,
+                      height: 72,
+                      background: canCreateEmpresa ? theme.palette.primary.main : theme.palette.action.disabled,
+                      borderRadius: "50%",
+                      color: theme.palette.getContrastText(theme.palette.primary.main),
+                      fontWeight: "bold",
+                      fontSize: 42,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      mb: 2,
+                      boxShadow: canCreateEmpresa
+                        ? theme.palette.mode === "dark"
+                          ? "0 6px 16px rgba(0,0,0,0.6)"
+                          : "0 6px 16px rgba(0,0,0,0.12)"
+                        : "none",
+                    }}
+                  >
+                    +
+                  </Box>
+                  <Typography
+                    variant="h5"
+                    align="center"
+                    sx={{
+                      fontWeight: "bold",
+                      color: canCreateEmpresa ? theme.palette.text.primary : theme.palette.text.disabled,
+                    }}
+                  >
+                    {canCreateEmpresa ? "Criar nova empresa" : "Limite atingido"}
+                  </Typography>
+                  <Typography
+                    variant="body1"
+                    align="center"
+                    sx={{
+                      mt: 1,
+                      maxWidth: 500,
+                      color: canCreateEmpresa ? theme.palette.text.secondary : theme.palette.text.disabled,
+                    }}
+                  >
+                    {canCreateEmpresa
+                      ? "Clique aqui para criar uma nova empresa"
+                      : "Faça upgrade para criar mais empresas"}
+                  </Typography>
+                </Paper>
               </Box>
-              <Typography
-                variant="h5"
-                align="center"
-                sx={{
-                  fontWeight: "bold",
-                  color: theme.palette.text.primary,
-                }}
-              >
-                Criar nova empresa
-              </Typography>
-              <Typography
-                variant="body1"
-                align="center"
-                sx={{ mt: 1, maxWidth: 500, color: theme.palette.text.secondary }}
-              >
-                Clique aqui para criar uma nova empresa
-              </Typography>
-            </Paper>
+            </Tooltip>
+            <ResourceCount
+              current={empresas.length}
+              limit={limites[user?.plano?.toLowerCase() as keyof typeof limites]?.empresas || 1}
+              resourceName="empresa"
+            />
+            <LimitIndicator
+              current={empresas.length}
+              limit={limites[user?.plano?.toLowerCase() as keyof typeof limites]?.empresas || 1}
+              label="Empresas"
+              resourceName="empresa"
+            />
           </Box>
 
           {/* Empresas em linhas responsivas */}

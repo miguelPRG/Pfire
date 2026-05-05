@@ -181,6 +181,7 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
         email=user_doc.get("email", None),
         nome=user_doc.get("nome", None),
         stripe_customer_id=user_doc.get("stripe_customer_id", None),
+        has_demo=user_doc.get("has_demo", False),
     )
 
     # Converte a assinatura (se existir) para base64 para o corpo da resposta (não vai no cookie)
@@ -238,6 +239,7 @@ async def login(user: UserLogin, request: Request):
         email=db_user.get("email", None),
         nome=db_user.get("nome", None),
         stripe_customer_id=db_user.get("stripe_customer_id", None),
+        has_demo=db_user.get("has_demo", False),
     )
 
     # Converte a assinatura (se existir) para base64 para o corpo da resposta (não vai no cookie)
@@ -290,19 +292,6 @@ async def auth_user(request: Request, background_tasks: BackgroundTasks):
         )
         return response
 
-    """
-        Dados JWT:
-        {
-            "user_id": "69934130cbe2856ea2149abd",
-            "isSuperAdmin": false,
-            "nome": "Miguel Gonçalves",
-            "email": "miguelprg@ua.pt",
-            "iat": 1775751260.072841,
-            "exp": 1778343260.072841,
-            "plano": "pro"
-        }
-    """
-
     payload = {
         "id": str(user_found["_id"]),
         "nome": user_found.get("nome", ""),
@@ -318,6 +307,9 @@ async def auth_user(request: Request, background_tasks: BackgroundTasks):
         or user_found.get("nome", None) != jwt.get("nome", None)
         or user_found.get("email", None) != jwt.get("email", None)
         or user_found.get("plano", "free") != jwt.get("plano", "free")
+        or user_found.get("stripe_customer_id", None)
+        != jwt.get("stripe_customer_id", None)
+        or user_found.get("has_demo", False) != jwt.get("has_demo", False)
     ):
 
         old_token = request.cookies.get("_fp")
@@ -330,6 +322,7 @@ async def auth_user(request: Request, background_tasks: BackgroundTasks):
             email=user_found.get("email", None),
             nome=user_found.get("nome", None),
             stripe_customer_id=user_found.get("stripe_customer_id", None),
+            has_demo=user_found.get("has_demo", False),
         )
 
         response = JSONResponse(payload)

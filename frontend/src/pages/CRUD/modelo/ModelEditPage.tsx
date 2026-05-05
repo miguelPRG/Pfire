@@ -1,8 +1,8 @@
 // Importações de bibliotecas e componentes necessários
-import { useForm, useFieldArray, Controller } from "react-hook-form"; // Adicione useFormContext se necessário
-import { zodResolver } from "@hookform/resolvers/zod"; // Integração do Zod com react-hook-form
-import { z } from "zod"; // Validação de esquemas
-import { useNavigate, useLocation } from "react-router-dom"; // Navegação entre páginas
+import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   Button,
   Checkbox,
@@ -18,15 +18,22 @@ import {
   FormControl,
   FormHelperText,
   Tooltip,
-  Breadcrumbs, // <--- adicionado
-} from "@mui/material"; // Componentes de UI do Material UI
-import DeleteIcon from "@mui/icons-material/Delete"; // Ícone de deletar
-import { useState, useEffect, useRef } from "react"; // Hooks do React
-import { useAuth } from "../../../hooks/AuthContext"; // Contexto de autenticação
-import { useTheme } from "@mui/material/styles"; // Tema do Material UI
-import ArrowCircleUpIcon from "@mui/icons-material/ArrowCircleUp"; // Ícone de scroll para o topo
-import HomeIcon from "@mui/icons-material/Home"; // <--- adicionado
-import StyledBreadcrumb from "../../../components/StyledBreadCrumbs"; // <--- adicionado
+  Breadcrumbs,
+  Card,
+  CardContent,
+  Divider,
+  Chip,
+  Alert,
+} from "@mui/material";
+import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
+import ArrowCircleUpIcon from "@mui/icons-material/ArrowCircleUp";
+import HomeIcon from "@mui/icons-material/Home";
+import { useState, useEffect, useRef } from "react";
+import { useAuth } from "../../../hooks/AuthContext";
+import { useTheme } from "@mui/material/styles";
+import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
 import Notification from "../../../components/Notification";
 
 // Esquema de validação para um subcampo personalizado
@@ -48,7 +55,7 @@ const fieldSchema = z
   .superRefine((field, ctx) => {
     if (field.datatype === "array" && (!field.items || field.items.length === 0)) {
       ctx.addIssue({
-        code: "custom", // Use the string literal here
+        code: "custom",
         path: ["items"],
         message: "Campos do tipo Lista devem ter pelo menos um elemento.",
       });
@@ -57,49 +64,610 @@ const fieldSchema = z
 
 // Esquema de validação do formulário principal
 const formSchema = z.object({
-  modeloNome: z.string().min(1, "Nome do modelo é obrigatório").trim(), // Nome do modelo obrigatório
-  fields: z.array(fieldSchema), // Array de campos personalizados
+  modeloNome: z.string().min(1, "Nome do modelo é obrigatório").trim(),
+  fields: z.array(fieldSchema),
 });
 
 // Novo schema para validação do nome do campo
 const newFieldNameSchema = z.string().min(3, "Nome do campo deve ter pelo menos 3 caracteres");
 
 // Tipos TypeScript inferidos dos esquemas
-
 type Field = z.infer<typeof fieldSchema>;
 type FormSchema = z.infer<typeof formSchema>;
 
+// ============ COMPONENTE FIELD CARD ============
+interface FieldCardProps {
+  field: Field;
+  index: number;
+  errors: any;
+  register: any;
+  control: any;
+  update: any;
+  remove: any;
+  theme: any;
+  watchedFields: any[];
+  isEditing: boolean;
+  setRemovedFields: any;
+  setError: any;
+  clearErrors: any;
+  fieldRefs: React.RefObject<(HTMLDivElement | null)[]>;
+  isFreePlan: boolean;
+}
+
+const FieldCard = ({
+  field,
+  index,
+  errors,
+  register,
+  control,
+  update,
+  remove,
+  theme,
+  watchedFields,
+  isEditing,
+  setRemovedFields,
+  setError,
+  clearErrors,
+  fieldRefs,
+  isFreePlan,
+}: FieldCardProps & { isFreePlan: boolean }) => {
+  const getDatatypeLabel = (datatype: string, isFreePlan: boolean) => {
+    const types: Record<string, string> = {
+      string: "📝 Texto",
+      number: "🔢 Número",
+      bool: "✓ Sim/Não",
+      date: "📅 Data",
+    };
+
+    if (!isFreePlan) {
+      types.object = "📦 Multicampo";
+      types.array = "📋 Lista";
+      types.critério = "⚙️ Critério";
+    }
+
+    return types[datatype] || datatype;
+  };
+
+  return (
+    <Card
+      ref={(el) => {
+        fieldRefs.current[index] = el;
+      }}
+      elevation={2}
+      sx={{
+        borderRadius: 2,
+        overflow: "hidden",
+        borderLeft: "4px solid",
+        borderLeftColor: field.datatype ? "primary.main" : "warning.main",
+        backgroundColor: theme.palette.mode === "dark" ? "grey.900" : "grey.50",
+        transition: "all 0.3s ease",
+        "&:hover": {
+          boxShadow: 4,
+          transform: "translateY(-2px)",
+        },
+      }}
+    >
+      <CardContent sx={{ p: 3 }}>
+        {/* Header do campo */}
+        <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2.5 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Chip label={`Campo ${index + 1}`} size="small" color="primary" variant="outlined" />
+            {field.datatype && (
+              <Chip
+                label={getDatatypeLabel(field.datatype, isFreePlan)}
+                size="small"
+                variant="filled"
+                color={field.datatype === "object" ? "warning" : "info"}
+              />
+            )}
+          </Box>
+          <IconButton
+            onClick={() => {
+              if (isEditing) {
+                setRemovedFields((prev: string[]) => [...prev, field.name]);
+              }
+              remove(index);
+            }}
+            size="small"
+            sx={{
+              backgroundColor: "error.main",
+              color: "white",
+              "&:hover": { backgroundColor: "error.light" },
+            }}
+          >
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Box>
+
+        <Divider sx={{ mb: 2.5 }} />
+
+        {/* Nome do Campo */}
+        <Box sx={{ mb: 2.5 }}>
+          <TextField
+            label="Nome do Campo"
+            {...register(`fields.${index}.name`)}
+            error={!!errors.fields?.[index]?.name}
+            helperText={errors.fields?.[index]?.name?.message}
+            fullWidth
+            size="small"
+            placeholder="Ex: Nome, Email, Telefone"
+          />
+        </Box>
+
+        {/* Tipo de Dados */}
+        <Box sx={{ mb: 2.5 }}>
+          <FormControl fullWidth size="small" error={!!errors.fields?.[index]?.datatype}>
+            <InputLabel>Tipo de Dados</InputLabel>
+            <Controller
+              control={control}
+              name={`fields.${index}.datatype`}
+              render={({ field: controllerField }) => (
+                <Select
+                  {...controllerField}
+                  label="Tipo de Dados"
+                  onChange={(e) => {
+                    controllerField.onChange(e);
+                    const value = e.target.value;
+                    if (value === "object") {
+                      update(index, {
+                        ...field,
+                        datatype: "object",
+                        subfields: [{ name: "", datatype: "", required: false }],
+                        items: undefined,
+                      });
+                    } else if (value === "array") {
+                      update(index, {
+                        ...field,
+                        datatype: "array",
+                        items: [],
+                        subfields: undefined,
+                      });
+                    } else {
+                      const { subfields, items, ...rest } = field as Field;
+                      update(index, { ...rest, datatype: value });
+                    }
+                  }}
+                  MenuProps={{
+                    slotProps: {
+                      paper: {
+                        style: {
+                          maxHeight: 200, // Limit the height of the dropdown
+                          width: 100, // Match the width of the input field
+                        },
+                        anchorOrigin: {
+                          vertical: "bottom",
+                          horizontal: "left",
+                        },
+                        transformOrigin: {
+                          vertical: "top",
+                          horizontal: "left",
+                        },
+                      },
+                    },
+                  }}
+                >
+                  <MenuItem value="string">📝 Texto</MenuItem>
+                  <MenuItem value="number">🔢 Número</MenuItem>
+                  <MenuItem value="bool">✓ Sim/Não</MenuItem>
+                  <MenuItem value="date">📅 Data</MenuItem>
+                  {!isFreePlan && (
+                    <>
+                      <MenuItem value="object">📦 Multicampo</MenuItem>
+                      <MenuItem value="array">📋 Lista</MenuItem>
+                      <MenuItem value="critério">⚙️ Critério</MenuItem>
+                    </>
+                  )}
+                </Select>
+              )}
+            />
+            {errors.fields?.[index]?.datatype && (
+              <FormHelperText>{errors.fields?.[index]?.datatype?.message}</FormHelperText>
+            )}
+          </FormControl>
+        </Box>
+
+        {/* Checkbox Campo Obrigatório */}
+        {(field as Field)?.datatype !== "object" && (
+          <Box sx={{ mb: 2.5 }}>
+            <FormControlLabel
+              control={
+                <Controller
+                  control={control}
+                  name={`fields.${index}.required`}
+                  render={({ field }) => (
+                    <Checkbox checked={field.value || false} onChange={(e) => field.onChange(e.target.checked)} />
+                  )}
+                />
+              }
+              label="Campo Obrigatório"
+            />
+          </Box>
+        )}
+
+        {/* Seção de Items (para array) */}
+        {(field as Field)?.datatype === "array" && (
+          <ArrayFieldSection
+            index={index}
+            field={field}
+            control={control}
+            fieldState={errors.fields?.[index]?.items}
+            watchedFieldName={watchedFields?.[index]?.name || ""}
+            theme={theme}
+          />
+        )}
+
+        {/* Seção de Subfields (para object) */}
+        {(field as Field)?.datatype === "object" && (
+          <ObjectFieldSection
+            index={index}
+            field={field}
+            control={control}
+            register={register}
+            errors={errors}
+            update={update}
+            theme={theme}
+            setError={setError}
+            clearErrors={clearErrors}
+            watchedFieldName={watchedFields?.[index]?.name || ""}
+          />
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+// ============ COMPONENTE ARRAY FIELD SECTION ============
+interface ArrayFieldSectionProps {
+  index: number;
+  field: Field;
+  control: any;
+  fieldState: any;
+  watchedFieldName: string;
+  theme: any;
+}
+
+const ArrayFieldSection = ({ index, control, watchedFieldName, theme }: ArrayFieldSectionProps) => {
+  return (
+    <Box
+      sx={{
+        mt: 3,
+        p: 2.5,
+        borderRadius: 2,
+        backgroundColor: theme.palette.mode === "dark" ? "rgba(76, 175, 80, 0.1)" : "rgba(76, 175, 80, 0.05)",
+        border: "2px solid",
+        borderColor: "success.light",
+      }}
+    >
+      <Typography variant="subtitle2" sx={{ fontWeight: 700, mb: 2, color: "success.main" }}>
+        📋 Opções de "{watchedFieldName}"
+      </Typography>
+
+      <Controller
+        control={control}
+        name={`fields.${index}.items`}
+        render={({ field: fieldProps }) => {
+          const items: string[] = Array.isArray(fieldProps.value) ? fieldProps.value : [];
+          const [inputValue, setInputValue] = useState("");
+
+          const addItem = () => {
+            const trimmed = inputValue.trim();
+            if (trimmed && items.indexOf(trimmed) === -1) {
+              fieldProps.onChange([...items, trimmed]);
+              setInputValue("");
+            }
+          };
+
+          const removeItem = (removeIdx: number) => {
+            fieldProps.onChange(items.filter((_, idx) => idx !== removeIdx));
+          };
+
+          return (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <TextField
+                  label="Nova opção"
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      addItem();
+                    }
+                  }}
+                  size="small"
+                  fullWidth
+                  placeholder="Digite e pressione Enter"
+                />
+                <Button
+                  variant="contained"
+                  type="button"
+                  size="small"
+                  onClick={addItem}
+                  startIcon={<AddIcon />}
+                  sx={{ minWidth: 100 }}
+                >
+                  Adicionar
+                </Button>
+              </Box>
+
+              {items.length === 0 ? (
+                <Alert severity="info" sx={{ fontSize: "0.85rem" }}>
+                  Nenhuma opção adicionada
+                </Alert>
+              ) : (
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                  {items.map((item, idx) => (
+                    <Box
+                      key={`${item}-${idx}`}
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        p: 1.5,
+                        borderRadius: 1,
+                        backgroundColor: "background.paper",
+                        border: "1px solid",
+                        borderColor: "divider",
+                      }}
+                    >
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {idx + 1}. {item}
+                      </Typography>
+                      <IconButton
+                        size="small"
+                        onClick={() => removeItem(idx)}
+                        sx={{
+                          backgroundColor: "error.light",
+                          color: "error.main",
+                          "&:hover": { backgroundColor: "error.main", color: "white" },
+                        }}
+                      >
+                        <DeleteIcon fontSize="small" />
+                      </IconButton>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+            </Box>
+          );
+        }}
+      />
+    </Box>
+  );
+};
+
+// ============ COMPONENTE OBJECT FIELD SECTION ============
+interface ObjectFieldSectionProps {
+  index: number;
+  field: Field;
+  control: any;
+  register: any;
+  errors: any;
+  update: any;
+  theme: any;
+  setError: any;
+  clearErrors: any;
+  watchedFieldName: string;
+}
+
+const ObjectFieldSection = ({
+  index,
+  field,
+  control,
+  register,
+  errors,
+  update,
+  theme,
+  setError,
+  clearErrors,
+  watchedFieldName,
+}: ObjectFieldSectionProps) => {
+  return (
+    <Box
+      sx={{
+        mt: 3,
+        p: 2.5,
+        borderRadius: 2,
+        backgroundColor: theme.palette.mode === "dark" ? "rgba(255, 193, 7, 0.1)" : "rgba(255, 193, 7, 0.05)",
+        border: "2px solid",
+        borderColor: "warning.light",
+      }}
+    >
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+        <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "warning.main" }}>
+          📦 Subcampos de "{watchedFieldName}"
+        </Typography>
+        <Chip label={`${(field as Field).subfields?.length || 0} subcampo(s)`} size="small" />
+      </Box>
+
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {(field as Field).subfields?.map((subfield, subIdx) => (
+          <SubfieldRow
+            key={subIdx}
+            index={index}
+            subIdx={subIdx}
+            subfield={subfield}
+            register={register}
+            control={control}
+            errors={errors}
+            update={update}
+            field={field}
+            clearErrors={clearErrors}
+          />
+        ))}
+      </Box>
+
+      <Button
+        variant="outlined"
+        size="small"
+        startIcon={<AddIcon />}
+        onClick={() => {
+          const currentSubfields = (field as Field).subfields || [];
+          if (
+            currentSubfields.length > 0 &&
+            (!currentSubfields[currentSubfields.length - 1].name.trim() ||
+              !currentSubfields[currentSubfields.length - 1].datatype.trim())
+          ) {
+            setError(`fields.${index}.subfields.${currentSubfields.length - 1}.name`, {
+              type: "manual",
+              message: "Preencha o nome do subcampo.",
+            });
+            setError(`fields.${index}.subfields.${currentSubfields.length - 1}.datatype`, {
+              type: "manual",
+              message: "Preencha o tipo do subcampo.",
+            });
+            return;
+          }
+          update(index, {
+            ...(field as Field),
+            subfields: [...currentSubfields, { name: "", datatype: "", required: false }],
+          });
+        }}
+        sx={{ mt: 2, alignSelf: "flex-start" }}
+      >
+        Adicionar Subcampo
+      </Button>
+    </Box>
+  );
+};
+
+// ============ COMPONENTE SUBFIELD ROW ============
+interface SubfieldRowProps {
+  index: number;
+  subIdx: number;
+  subfield: any;
+  register: any;
+  control: any;
+  errors: any;
+  update: any;
+  field: Field;
+  clearErrors: any;
+}
+
+const SubfieldRow = ({
+  index,
+  subIdx,
+  subfield,
+  register,
+  control,
+  errors,
+  update,
+  field,
+  clearErrors,
+}: SubfieldRowProps) => {
+  return (
+    <Paper
+      variant="outlined"
+      sx={{
+        p: 2,
+        backgroundColor: "background.paper",
+        border: "1px solid",
+        borderColor: "divider",
+        display: "flex",
+        flexDirection: "column",
+        gap: 1.5,
+      }}
+    >
+      <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Typography variant="caption" sx={{ fontWeight: 600, color: "text.secondary" }}>
+          Subcampo {subIdx + 1}
+        </Typography>
+        <IconButton
+          size="small"
+          onClick={() => {
+            const currentSubfields = (field as Field).subfields || [];
+            const updatedSubfields = currentSubfields.filter((_, i) => i !== subIdx);
+            update(index, {
+              ...(field as Field),
+              subfields: updatedSubfields,
+            });
+          }}
+          sx={{
+            backgroundColor: "error.light",
+            color: "error.main",
+            "&:hover": { backgroundColor: "error.main", color: "white" },
+          }}
+        >
+          <DeleteIcon fontSize="small" />
+        </IconButton>
+      </Box>
+
+      <TextField
+        label="Nome do Subcampo"
+        {...register(`fields.${index}.subfields.${subIdx}.name`)}
+        size="small"
+        fullWidth
+        error={!!errors.fields?.[index]?.subfields?.[subIdx]?.name}
+        helperText={errors.fields?.[index]?.subfields?.[subIdx]?.name?.message}
+        placeholder="Ex: Primeiro Nome"
+      />
+
+      <FormControl size="small" fullWidth error={!!errors.fields?.[index]?.subfields?.[subIdx]?.datatype}>
+        <InputLabel>Tipo do Subcampo</InputLabel>
+        <Select
+          label="Tipo do Subcampo"
+          value={subfield.datatype || ""}
+          onChange={(e) => {
+            const currentSubfields = (field as Field).subfields || [];
+            const updatedSubfield = {
+              ...(currentSubfields[subIdx] || { name: "", datatype: "", required: false }),
+              datatype: e.target.value,
+            };
+            const updatedSubfields = [...currentSubfields];
+            updatedSubfields[subIdx] = updatedSubfield;
+            update(index, {
+              ...(field as Field),
+              subfields: updatedSubfields,
+            });
+            if (e.target.value.trim()) {
+              clearErrors(`fields.${index}.subfields.${subIdx}.datatype`);
+            }
+          }}
+        >
+          <MenuItem value="string">📝 Texto</MenuItem>
+          <MenuItem value="number">🔢 Número</MenuItem>
+          <MenuItem value="bool">✓ Sim/Não</MenuItem>
+          <MenuItem value="date">📅 Data</MenuItem>
+        </Select>
+        {errors.fields?.[index]?.subfields?.[subIdx]?.datatype && (
+          <FormHelperText>{errors.fields?.[index]?.subfields?.[subIdx]?.datatype?.message}</FormHelperText>
+        )}
+      </FormControl>
+
+      <FormControlLabel
+        control={
+          <Controller
+            control={control}
+            name={`fields.${index}.subfields.${subIdx}.required`}
+            render={({ field }) => (
+              <Checkbox checked={!!field.value} onChange={(e) => field.onChange(e.target.checked)} />
+            )}
+          />
+        }
+        label="Obrigatório"
+      />
+    </Paper>
+  );
+};
+
+// ============ COMPONENTE PRINCIPAL ============
 export default function ReportTemplatePage() {
-  // Hook para navegação entre páginas
   const navigate = useNavigate();
   const location = useLocation();
-  // Recupera informações da empresa autenticada
-  const { empresa } = useAuth();
-
-  // Hook para acessar o tema do Material UI
+  const { empresa, user } = useAuth();
   const theme = useTheme();
 
-  // Verifica se está editando um modelo existente
   const editingModel = location.state?.modelo;
   const isEditing = !!editingModel;
 
   const [alert, setAlert] = useState<{ message: string; isError: boolean; onConfirm?: () => void } | null>(null);
-
-  // Estado para controlar o nome do novo campo a ser adicionado
-  const [newFieldName, setNewFieldName] = useState(""); // Nome do novo campo
-  const [newFieldError, setNewFieldError] = useState<string | null>(null); // Erro do novo campo
-
-  // Estado para controlar a visibilidade do botão de scroll
+  const [newFieldName, setNewFieldName] = useState("");
+  const [newFieldError, setNewFieldError] = useState<string | null>(null);
   const [showScrollTop, setShowScrollTop] = useState(false);
-
-  // Estado para controlar campos removidos
   const [removedFields, setRemovedFields] = useState<string[]>([]);
-
-  // Adicione este estado para guardar nomes originais ao editar
   const [originalFieldNames, setOriginalFieldNames] = useState<string[]>([]);
   const [originalSubfieldNames, setOriginalSubfieldNames] = useState<Record<string, string[]>>({});
 
-  // Hook do formulário com valores padrão se estiver editando
   const {
     register,
     handleSubmit,
@@ -121,16 +689,13 @@ export default function ReportTemplatePage() {
         },
   });
 
-  /* Aqui é onde utilizamos o watch para monitorizar o nome dos campos dinâmicos, permitindo atualizações em tempo real nos formulários filhos, caso se trate de um campo do tipo object ou array  */
   const watchedFields = watch("fields");
 
-  // Hook para manipular array de campos dinâmicos (adicionar, remover, atualizar)
   const { fields, append, remove, update } = useFieldArray({
-    control, // Controle do formulário
-    name: "fields", // Nome do campo array
+    control,
+    name: "fields",
   });
 
-  // useEffect para resetar o formulário quando mudar de modelo
   useEffect(() => {
     if (isEditing) {
       const formattedFields = convertCustomFieldsToFormFields(editingModel.customFields);
@@ -138,7 +703,6 @@ export default function ReportTemplatePage() {
         modeloNome: editingModel.modeloNome,
         fields: formattedFields,
       });
-      // Salva nomes originais dos campos e subcampos
       setOriginalFieldNames(formattedFields.map((f: any) => f.name));
       const subfieldsMap: Record<string, string[]> = {};
       formattedFields.forEach((f: any) => {
@@ -150,30 +714,21 @@ export default function ReportTemplatePage() {
     }
   }, [editingModel, isEditing, reset]);
 
-  // Efeito para mostrar/esconder o botão de scroll para o topo conforme o scroll da página
   useEffect(() => {
-    const handleScroll = () => setShowScrollTop(window.scrollY > 100); // Mostra botão se scroll > 100px
-    window.addEventListener("scroll", handleScroll); // Adiciona listener
-    return () => window.removeEventListener("scroll", handleScroll); // Remove listener ao desmontar
+    const handleScroll = () => setShowScrollTop(window.scrollY > 100);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  /**
-   * Adiciona um novo campo personalizado ao array de campos.
-   * Valida se o nome não está vazio e não é duplicado.
-   */
-
-  // Função para converter customFields do backend para o formato do formulário
   const convertCustomFieldsToFormFields = (customFields: any[]) => {
-    function ordenarPorIndice(obj) {
+    function ordenarPorIndice(obj: any) {
       if (obj.datatype === "object") {
-        // Obtem os campos do objeto, excluindo "datatype", "required" e "indice"
         const fixedFields = ["datatype", "required", "indice"];
         const subfields = Object.keys(obj)
-          .filter((k) => !fixedFields.includes(k))
+          .filter((k) => fixedFields.indexOf(k) === -1)
           .sort((a, b) => obj[a].indice - obj[b].indice);
 
-        // Reconstruir objeto na ordem correta
-        const newObj = {};
+        const newObj: Record<string, any> = {};
         fixedFields.forEach((f) => {
           if (obj[f] !== undefined) newObj[f] = obj[f];
         });
@@ -183,27 +738,22 @@ export default function ReportTemplatePage() {
       return obj;
     }
 
-    // Ordena o array principal
     const sortedData = customFields
       .map((item) => ({ ...item, value: ordenarPorIndice(item.value) }))
       .sort((a, b) => a.value.indice - b.value.indice);
 
-    // Remover todos os campos indice dos objetos e subcampos
     return (
       sortedData?.map((field: any) => {
         const fieldName = field.key?.replace(/^custom_/, "") || "";
         const fieldValue = field.value;
 
         if (fieldValue?.datatype === "object") {
-          // Para campos objeto, extrair subcampos
-          const subfields = Object.entries(fieldValue)
-            .filter(([key]) => !["datatype", "required", "indice"].includes(key))
+          const subfields = (Object.entries(fieldValue) as Array<[string, any]>)
+            .filter(([key]) => ["datatype", "required", "indice"].indexOf(key) === -1)
             .map(([key, val]: any) => ({
-              // Remove o prefixo custom_ dos subcampos para exibição ao usuário
               name: key.replace(/^custom_/, ""),
               datatype: val.datatype,
               required: val.required,
-              // Não inclui indice!
             }));
 
           return {
@@ -232,7 +782,6 @@ export default function ReportTemplatePage() {
 
   const addField = () => {
     try {
-      // Validação Zod
       newFieldNameSchema.parse(newFieldName);
       if (fields.some((f) => f.name === newFieldName)) {
         setNewFieldError("Nome do campo já existe!");
@@ -256,9 +805,8 @@ export default function ReportTemplatePage() {
         throw new Error("Adicione pelo menos um campo personalizado.");
       }
 
-      // Monta o objeto de campos personalizados para o backend
       const customFields: Record<string, any> = {};
-      data.fields.forEach((f, idx) => {
+      data.fields.forEach((f) => {
         if (f?.datatype === "object" && Array.isArray(f.subfields)) {
           const subfieldData: Record<string, any> = {};
           f.subfields.forEach((sub) => {
@@ -286,31 +834,23 @@ export default function ReportTemplatePage() {
         }
       });
 
-      // Adiciona os campos removidos como null ao payload
       removedFields.forEach((fieldName) => {
         customFields[`custom_${fieldName}`] = null;
       });
 
-      // --- NOVO: Detecta renomeações de campos e subcampos ---
       if (isEditing) {
-        // Campos renomeados
-        originalFieldNames.forEach((origName, idx) => {
+        originalFieldNames.forEach((origName) => {
           const exists = data.fields.some((f) => f.name === origName);
           if (!exists) {
-            // Campo foi renomeado ou removido
             customFields[`custom_${origName}`] = null;
           }
         });
-        // Subcampos renomeados
-        Object.entries(originalSubfieldNames).forEach(([parent, origSubs]) => {
-          // Procura o campo atual correspondente
+        (Object.entries(originalSubfieldNames) as Array<[string, string[]]>).forEach(([parent, origSubs]) => {
           const currentField = data.fields.find((f) => f.name === parent && f.datatype === "object");
           if (currentField && Array.isArray(currentField.subfields)) {
-            origSubs.forEach((origSub) => {
+            (origSubs as string[]).forEach((origSub: string) => {
               const exists = currentField.subfields?.some((sf) => sf.name === origSub);
               if (!exists) {
-                // Subcampo foi renomeado ou removido
-                // Envia a chave antiga do subcampo como null dentro do campo pai
                 if (!customFields[`custom_${parent}`]) {
                   customFields[`custom_${parent}`] = { datatype: "object", required: currentField.required };
                 }
@@ -320,16 +860,13 @@ export default function ReportTemplatePage() {
           }
         });
       }
-      // --- FIM NOVO ---
 
-      // Monta o payload completo
       const payload = {
         modelo_nome: data.modeloNome,
         empresa_id: typeof empresa === "object" ? empresa?.id : empresa,
         ...customFields,
       };
 
-      // Usa PUT para edição ou POST para criação
       const method = isEditing ? "PUT" : "POST";
       const url = isEditing ? `/backend/modelo/${editingModel.id}` : "/backend/modelo/";
 
@@ -345,7 +882,6 @@ export default function ReportTemplatePage() {
       const result = await res.json();
       if (!res.ok) throw new Error(result.detail || `Erro ao ${isEditing ? "atualizar" : "criar"} modelo`);
 
-      // Navega de volta com mensagem de sucesso
       navigate("/report-models", {
         state: {
           message: {
@@ -355,28 +891,23 @@ export default function ReportTemplatePage() {
         },
       });
     } catch (err: any) {
-      // Mostra erro na tela
       setAlert({ message: err.message || `Erro ao ${isEditing ? "atualizar" : "criar"} modelo`, isError: true });
     }
   };
 
-  // Refs para scroll
   const modeloNomeRef = useRef<HTMLInputElement>(null);
   const fieldRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-  // Atualize o handleSubmit para scrollar até o erro
   const handleFormSubmit = handleSubmit(
     async (data) => {
       await onSubmit(data);
     },
     (formErrors) => {
-      // 1. Checa se há erro no nome do modelo
       if (formErrors.modeloNome) {
         modeloNomeRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
         modeloNomeRef.current?.focus();
         return;
       }
-      // 2. Checa erros nos campos personalizados
       if (formErrors.fields && Array.isArray(formErrors.fields)) {
         for (let i = 0; i < formErrors.fields.length; i++) {
           if (formErrors.fields[i]) {
@@ -388,565 +919,277 @@ export default function ReportTemplatePage() {
     }
   );
 
-  // Renderização do componente
   return (
-    <>
-      {/* Notification para mostrar erros/sucesso */}
+    <Box
+      sx={{
+        minHeight: "100vh",
+        background:
+          theme.palette.mode === "dark"
+            ? "linear-gradient(135deg, #1e1e2e 0%, #0f3460 100%)"
+            : "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+        py: 4,
+      }}
+    >
       <Notification alert={alert} setAlert={setAlert} />
 
-      {/* Breadcrumbs */}
-      <Box sx={{ width: "100%", display: "flex", flexDirection: "column", padding: 2 }}>
-        <Breadcrumbs
-          aria-label="breadcrumb"
+      <Box sx={{ maxWidth: 900, mx: "auto", px: { xs: 2, md: 0 } }}>
+        {/* Breadcrumbs */}
+        <Box sx={{ mb: 3 }}>
+          <Breadcrumbs
+            aria-label="breadcrumb"
+            sx={{
+              backgroundColor: "background.paper",
+              borderRadius: 2,
+              p: 1.5,
+              boxShadow: 1,
+              backdropFilter: "blur(10px)",
+              display: "inline-flex",
+            }}
+          >
+            <StyledBreadcrumb
+              onClick={() => navigate("/")}
+              icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
+            />
+            <StyledBreadcrumb label="Modelos" onClick={() => navigate("/report-models")} />
+            <StyledBreadcrumb label={isEditing ? "Editar Modelo" : "Novo Modelo"} />
+          </Breadcrumbs>
+        </Box>
+
+        {/* Card Principal */}
+        <Card
+          elevation={4}
           sx={{
-            mr: "auto",
-            mb: 3,
+            borderRadius: 3,
+            overflow: "hidden",
             backgroundColor: "background.paper",
-            maxWidth: 320,
-            borderRadius: 5,
-            p: 0.5,
-            boxShadow: 1,
+            boxShadow: theme.palette.mode === "dark" ? "0 8px 32px rgba(0,0,0,0.4)" : "0 8px 32px rgba(0,0,0,0.1)",
           }}
         >
-          <StyledBreadcrumb
-            component="a"
-            sx={{ cursor: "pointer" }}
-            onClick={() => navigate("/")}
-            icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
-          />
-          <StyledBreadcrumb
-            component="a"
-            sx={{ cursor: "pointer", fontSize: "0.9rem" }}
-            label="Modelos"
-            onClick={() => navigate("/report-models")}
-          />
-          <StyledBreadcrumb
-            component="span"
-            sx={{ fontSize: "0.9rem" }}
-            label={isEditing ? "Editar Modelo" : "Novo Modelo"}
-          />
-        </Breadcrumbs>
-
-        {/* Card principal do formulário */}
-        <Paper elevation={3} sx={{ maxWidth: 700, mx: "auto", mt: 4, p: 3, mb: 10 }}>
+          {/* Header */}
           <Box
-            component="form"
-            onSubmit={handleFormSubmit} // <-- use o novo handleFormSubmit
-            sx={{ display: "flex", flexDirection: "column", gap: 2 }}
+            sx={{
+              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              p: 3,
+              color: "white",
+            }}
           >
-            {/* Título do formulário */}
-            <Typography variant="h6">{isEditing ? "Editar Modelo" : "Criar Modelo"}</Typography>
+            <Typography variant="h4" sx={{ fontWeight: 700 }}>
+              {isEditing ? "📝 Editar Modelo" : "✨ Criar Novo Modelo"}
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 0.5, opacity: 0.9 }}>
+              {isEditing
+                ? "Atualize as configurações e campos do seu modelo"
+                : "Configure os campos personalizados do seu modelo"}
+            </Typography>
+          </Box>
 
-            {/* Campo para nome do modelo */}
-            <TextField
-              label="Nome do Modelo"
-              {...register("modeloNome")}
-              error={!!errors.modeloNome}
-              helperText={errors.modeloNome?.message}
-            />
+          {/* Conteúdo */}
+          <CardContent sx={{ p: 4 }}>
+            <Box component="form" onSubmit={handleFormSubmit} sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              {/* Seção 1: Nome do Modelo */}
+              <Box>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    fontWeight: 700,
+                    mb: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    color: "primary.main",
+                  }}
+                >
+                  <EditIcon sx={{ fontSize: "1.3rem" }} />
+                  Informações Básicas
+                </Typography>
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 3,
+                    backgroundColor: theme.palette.mode === "dark" ? "grey.900" : "grey.50",
+                    borderLeft: "4px solid",
+                    borderLeftColor: "primary.main",
+                  }}
+                >
+                  <TextField
+                    label="Nome do Modelo"
+                    placeholder="Ex: Relatório de Vendas, Formulário de Cadastro"
+                    {...register("modeloNome")}
+                    error={!!errors.modeloNome}
+                    helperText={errors.modeloNome?.message}
+                    fullWidth
+                    size="medium"
+                    inputRef={modeloNomeRef}
+                  />
+                </Paper>
+              </Box>
 
-            {/* Título dos campos personalizados */}
-            <Typography variant="h6">Campos Personalizados</Typography>
+              <Divider sx={{ my: 1 }} />
 
-            {/* Adição de novo campo personalizado */}
-            <Box sx={{ display: "flex", flexDirection: "column", gap: 1, width: "100%" }}>
-              <TextField
-                label="Nome do novo campo"
-                value={newFieldName}
-                onChange={(e) => {
-                  setNewFieldName(e.target.value);
-                  if (newFieldError) setNewFieldError(null); // Limpa erro ao digitar
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault(); // Previne o submit do formulário
-                    addField(); // Chama a função de adicionar campo
-                  }
-                }}
-                error={!!newFieldError}
-                helperText={newFieldError}
-                fullWidth
-              />
-              <Button variant="contained" onClick={addField} type="button" fullWidth>
-                Adicionar
-              </Button>
-            </Box>
+              {/* Seção 2: Campos Personalizados */}
+              <Box>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontWeight: 700,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      color: "primary.main",
+                    }}
+                  >
+                    <AddIcon sx={{ fontSize: "1.3rem" }} />
+                    Campos Personalizados
+                  </Typography>
+                  <Chip
+                    label={`${fields.length} campo${fields.length !== 1 ? "s" : ""}`}
+                    color="primary"
+                    variant="outlined"
+                    size="small"
+                  />
+                </Box>
 
-            {/* Renderização dos campos personalizados adicionados */}
-            <Box sx={{ width: "100%" }}>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2, width: "100%" }}>
-                {fields
-                  .map((field, index) => ({ field, index }))
-                  .filter(
-                    ({ field }) => field && typeof field === "object" && field.name !== undefined && field.name !== null
-                  )
-                  .map(({ field, index }) => (
-                    <Box
-                      key={field.id}
-                      sx={{
-                        border: "1px solid #ccc",
-                        p: 2,
-                        borderRadius: 2,
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 1,
-                        width: "100%",
-                        mb: 2,
-                        minWidth: 250,
-                        boxSizing: "border-box",
+                {/* Input para adicionar novo campo */}
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2.5,
+                    mb: 3,
+                    backgroundColor: theme.palette.mode === "dark" ? "grey.900" : "grey.50",
+                    borderLeft: "4px solid",
+                    borderLeftColor: "success.main",
+                  }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 600, mb: 1.5, color: "text.secondary" }}>
+                    Adicionar novo campo
+                  </Typography>
+                  <Box sx={{ display: "flex", gap: 1.5 }}>
+                    <TextField
+                      label="Nome do novo campo"
+                      value={newFieldName}
+                      onChange={(e) => {
+                        setNewFieldName(e.target.value);
+                        if (newFieldError) setNewFieldError(null);
                       }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addField();
+                        }
+                      }}
+                      error={!!newFieldError}
+                      helperText={newFieldError}
+                      placeholder="Ex: Nome, Email, Telefone"
+                      size="small"
+                      fullWidth
+                    />
+                    <Button
+                      variant="contained"
+                      onClick={addField}
+                      type="button"
+                      startIcon={<AddIcon />}
+                      sx={{ minWidth: 120, height: 40 }}
                     >
-                      {/* Campo para nome do campo personalizado */}
-                      <TextField
-                        label="Nome do Campo"
-                        {...register(`fields.${index}.name`)}
-                        error={!!errors.fields?.[index]?.name}
-                        helperText={errors.fields?.[index]?.name?.message}
-                        fullWidth
-                      />
+                      Adicionar
+                    </Button>
+                  </Box>
+                </Paper>
 
-                      {/* Select para tipo de dado */}
-                      <FormControl fullWidth error={!!errors.fields?.[index]?.datatype}>
-                        <InputLabel>Tipo de Dados</InputLabel>
-                        <Controller
+                {/* Lista de campos */}
+                {fields.length === 0 ? (
+                  <Alert severity="info">Nenhum campo adicionado ainda. Comece adicionando um novo campo acima.</Alert>
+                ) : (
+                  <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
+                    {fields
+                      .map((field, index) => ({ field, index }))
+                      .filter(
+                        ({ field }) =>
+                          field && typeof field === "object" && field.name !== undefined && field.name !== null
+                      )
+                      .map(({ field, index }) => (
+                        <FieldCard
+                          key={field.id}
+                          field={field}
+                          index={index}
+                          errors={errors}
+                          register={register}
                           control={control}
-                          name={`fields.${index}.datatype`}
-                          render={({ field: controllerField }) => (
-                            <Select
-                              {...controllerField}
-                              label="Tipo de Dados"
-                              sx={{
-                                width: "100%",
-                                color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
-                                bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
-                              }}
-                              MenuProps={{
-                                PaperProps: {
-                                  sx: {
-                                    width: "35%",
-                                    bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
-                                    color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
-                                  },
-                                },
-                              }}
-                              onChange={(e) => {
-                                controllerField.onChange(e);
-                                const value = e.target.value;
-                                if (value === "object") {
-                                  update(index, {
-                                    ...fields[index],
-                                    datatype: "object",
-                                    subfields: [{ name: "", datatype: "", required: false }],
-                                    items: undefined, // limpa items se existia
-                                  });
-                                } else if (value === "array") {
-                                  update(index, {
-                                    ...fields[index],
-                                    datatype: "array",
-                                    items: [],
-                                    subfields: undefined, // limpa subfields se existia
-                                  });
-                                } else {
-                                  // Limpa subfields e items se existiam
-                                  const { subfields, items, ...rest } = fields[index] as Field;
-                                  update(index, { ...rest, datatype: value });
-                                }
-                              }}
-                            >
-                              <MenuItem value="string">Texto</MenuItem>
-                              <MenuItem value="number">Número</MenuItem>
-                              <MenuItem value="bool">Sim/Não</MenuItem>
-                              <MenuItem value="date">Data</MenuItem>
-                              <MenuItem value="object">Multicampo</MenuItem>
-                              <MenuItem value="array">Lista</MenuItem>
-                              <MenuItem value="critério">Critério</MenuItem>
-                            </Select>
-                          )}
+                          update={update}
+                          remove={remove}
+                          theme={theme}
+                          watchedFields={watchedFields}
+                          isEditing={isEditing}
+                          setRemovedFields={setRemovedFields}
+                          setError={setError}
+                          clearErrors={clearErrors}
+                          fieldRefs={fieldRefs}
+                          isFreePlan={user?.plano == "free"}
                         />
-                        {errors.fields?.[index]?.datatype && (
-                          <FormHelperText>{errors.fields?.[index]?.datatype?.message}</FormHelperText>
-                        )}
-                      </FormControl>
-                      {(fields[index] as Field)?.datatype !== "object" && (
-                        <FormControlLabel
-                          control={
-                            <Controller
-                              control={control}
-                              name={`fields.${index}.required`}
-                              render={({ field }) => (
-                                <Checkbox
-                                  checked={field.value || false} // Garante que o valor inicial seja booleano
-                                  onChange={(e) => field.onChange(e.target.checked)} // Atualiza o estado corretamente
-                                />
-                              )}
-                            />
-                          }
-                          label="Campo Obrigatório"
-                        />
-                      )}
-                      {/* Renderiza UI para inserir opções do campo array */}
-                      {(fields[index] as Field)?.datatype === "array" && (
-                        <Box
-                          sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 2,
-                            width: "100%",
-                            mt: 2,
-                            border: "2px solid #ccc",
-                            borderRadius: 1,
-                            p: 2,
-                            boxShadow: 2,
-                          }}
-                        >
-                          <Typography
-                            variant="h6"
-                            sx={{
-                              textAlign: "center",
-                              fontWeight: "bold",
-                              color: "primary.main",
-                              letterSpacing: 1,
-                              mb: 1,
-                            }}
-                          >
-                            Opções de <strong>{watchedFields?.[index]?.name || ""}</strong>
-                          </Typography>
-                          <Controller
-                            control={control}
-                            name={`fields.${index}.items`}
-                            render={({ field, fieldState }) => {
-                              const items: string[] = Array.isArray(field.value) ? field.value : [];
-                              const [inputValue, setInputValue] = useState("");
+                      ))}
+                  </Box>
+                )}
+              </Box>
 
-                              const addItem = () => {
-                                const trimmed = inputValue.trim();
-                                if (trimmed && !items.includes(trimmed)) {
-                                  field.onChange([...items, trimmed]);
-                                  setInputValue("");
-                                }
-                              };
+              <Divider sx={{ my: 1 }} />
 
-                              const removeItem = (removeIdx: number) => {
-                                field.onChange(items.filter((_, idx) => idx !== removeIdx));
-                              };
-
-                              return (
-                                <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, alignItems: "center" }}>
-                                    <TextField
-                                      label="Nova opção"
-                                      value={inputValue}
-                                      onChange={(e) => setInputValue(e.target.value)}
-                                      size="small"
-                                      fullWidth
-                                      error={!!fieldState.error}
-                                      helperText={fieldState.error?.message}
-                                    />
-                                    <Button variant="contained" type="button">
-                                      Adicionar
-                                    </Button>
-                                  </Box>
-                                  <Box
-                                    sx={{
-                                      display: "flex",
-                                      flexDirection: "column",
-                                      width: "100%",
-                                      gap: 1,
-                                      mt: 1,
-                                    }}
-                                  >
-                                    {items.length === 0 && (
-                                      <Typography variant="body2" sx={{ color: "text.secondary", textAlign: "center" }}>
-                                        Nenhuma opção adicionada ainda.
-                                      </Typography>
-                                    )}
-                                    {items.map((item, idx) => (
-                                      <Box
-                                        key={item + idx}
-                                        sx={{
-                                          display: "flex",
-                                          flexDirection: "row",
-                                          alignItems: "center",
-                                          width: "100%",
-                                          justifyContent: "space-between",
-                                          bgcolor: theme.palette.mode === "dark" ? "grey.800" : "grey.200",
-                                          borderRadius: 1,
-                                          px: 2,
-                                          py: 1,
-                                          boxShadow: 1,
-                                        }}
-                                      >
-                                        <Typography
-                                          variant="body1"
-                                          sx={{
-                                            fontWeight: 500,
-                                            color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
-                                          }}
-                                        >
-                                          {idx + 1}- {item}
-                                        </Typography>
-                                        <IconButton
-                                          size="small"
-                                          onClick={() => removeItem(idx)}
-                                          sx={{
-                                            backgroundColor: "error.main",
-                                            color: "white",
-                                            "&:hover": { bgcolor: "error.dark" },
-                                            alignSelf: "center",
-                                          }}
-                                        >
-                                          <DeleteIcon fontSize="small" />
-                                        </IconButton>
-                                      </Box>
-                                    ))}
-                                  </Box>
-                                </Box>
-                              );
-                            }}
-                          />
-                        </Box>
-                      )}
-                      {/* Renderiza UI para campos do tipo objeto */}
-                      {(fields[index] as Field)?.datatype === "object" && (
-                        <Box
-                          sx={{
-                            mt: 2,
-                            pl: 2,
-                            border: "1px solid #ccc",
-                            borderRadius: 1,
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 2,
-                            width: "100%",
-                          }}
-                        >
-                          <Typography variant="h6" sx={{ mt: 1 }}>
-                            Subcampos de <strong>{watchedFields?.[index]?.name || ""}</strong>
-                          </Typography>
-                          {/* Renderiza todos os subfields */}
-                          {(fields[index] as Field).subfields?.map((subfield, subIdx) => (
-                            <Box
-                              key={subIdx}
-                              sx={{
-                                mb: 2,
-                                display: "flex",
-                                flexDirection: "column",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                width: "100%",
-                              }}
-                            >
-                              <Controller
-                                control={control}
-                                name={`fields.${index}.subfields.${subIdx}.name`}
-                                render={({ field }) => (
-                                  <TextField
-                                    label={`Nome do Subcampo ${subIdx + 1}`}
-                                    {...register(`fields.${index}.subfields.${subIdx}.name`)}
-                                    size="small"
-                                    fullWidth
-                                    sx={{ mb: 1 }}
-                                    error={!!errors.fields?.[index]?.subfields?.[subIdx]?.name}
-                                    helperText={errors.fields?.[index]?.subfields?.[subIdx]?.name?.message}
-                                  />
-                                )}
-                              />
-                              <FormControl
-                                size="small"
-                                fullWidth
-                                sx={{ mb: 1 }}
-                                error={!!errors.fields?.[index]?.subfields?.[subIdx]?.datatype}
-                              >
-                                <InputLabel>Tipo do Subcampo</InputLabel>
-                                <Select
-                                  label="Tipo do Subcampo"
-                                  value={subfield.datatype || ""}
-                                  onChange={(e) => {
-                                    const currentSubfields = (fields[index] as Field).subfields || [];
-                                    const updatedSubfield = {
-                                      ...(currentSubfields[subIdx] || { name: "", datatype: "", required: false }),
-                                      datatype: e.target.value,
-                                    };
-                                    const updatedSubfields = [...currentSubfields];
-                                    updatedSubfields[subIdx] = updatedSubfield;
-                                    update(index, {
-                                      ...(fields[index] as Field),
-                                      subfields: updatedSubfields,
-                                    });
-                                    // Limpa erro se preenchido
-                                    if (e.target.value.trim()) {
-                                      clearErrors(`fields.${index}.subfields.${subIdx}.datatype`);
-                                    }
-                                  }}
-                                  sx={{
-                                    color: theme.palette.mode === "dark" ? "grey.100" : "grey.900",
-                                    bgcolor: theme.palette.mode === "dark" ? "grey.900" : "grey.100",
-                                  }}
-                                  MenuProps={{
-                                    PaperProps: {
-                                      sx: {
-                                        width: "35%",
-                                      },
-                                    },
-                                  }}
-                                >
-                                  <MenuItem value="string">Texto</MenuItem>
-                                  <MenuItem value="number">Número</MenuItem>
-                                  <MenuItem value="bool">Sim/Não</MenuItem>
-                                  <MenuItem value="date">Data</MenuItem>
-                                </Select>
-                                {errors.fields?.[index]?.subfields?.[subIdx]?.datatype && (
-                                  <FormHelperText>
-                                    {errors.fields?.[index]?.subfields?.[subIdx]?.datatype?.message}
-                                  </FormHelperText>
-                                )}
-                              </FormControl>
-                              <Controller
-                                control={control}
-                                name={`fields.${index}.subfields.${subIdx}.required`}
-                                render={({ field }) => (
-                                  <FormControlLabel
-                                    control={
-                                      <Checkbox
-                                        checked={!!field.value}
-                                        onChange={(e) => field.onChange(e.target.checked)}
-                                      />
-                                    }
-                                    label="Subcampo Obrigatório"
-                                  />
-                                )}
-                              />
-                              {/* Botão para remover subfield */}
-                              <IconButton
-                                size="small"
-                                onClick={() => {
-                                  const currentSubfields = (fields[index] as Field).subfields || [];
-                                  const updatedSubfields = currentSubfields.filter((_, i) => i !== subIdx);
-                                  update(index, {
-                                    ...(fields[index] as Field),
-                                    subfields: updatedSubfields,
-                                  });
-                                }}
-                                sx={{
-                                  backgroundColor: "error.main",
-                                  color: "white",
-                                  "&:hover": { bgcolor: "error.dark" },
-                                  alignSelf: "center",
-                                  mt: 1,
-                                }}
-                              >
-                                <DeleteIcon fontSize="small" />
-                              </IconButton>
-                            </Box>
-                          ))}
-                          {/* Botão para adicionar novo subfield */}
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            onClick={() => {
-                              const currentSubfields = (fields[index] as Field).subfields || [];
-                              if (
-                                currentSubfields.length > 0 &&
-                                (!currentSubfields[currentSubfields.length - 1].name.trim() ||
-                                  !currentSubfields[currentSubfields.length - 1].datatype.trim())
-                              ) {
-                                setError(`fields.${index}.subfields.${currentSubfields.length - 1}.name`, {
-                                  type: "manual",
-                                  message: "Preencha o nome do subcampo.",
-                                });
-                                setError(`fields.${index}.subfields.${currentSubfields.length - 1}.datatype`, {
-                                  type: "manual",
-                                  message: "Preencha o tipo do subcampo.",
-                                });
-                                return;
-                              }
-                              update(index, {
-                                ...(fields[index] as Field),
-                                subfields: [...currentSubfields, { name: "", datatype: "", required: false }],
-                              });
-                            }}
-                            sx={{ mt: 1, alignSelf: "flex-start" }}
-                          >
-                            Adicionar Subcampo
-                          </Button>
-                        </Box>
-                      )}
-                      {/* Botão para remover campo */}
-                      <IconButton
-                        onClick={() => {
-                          if (isEditing) {
-                            setRemovedFields((prev) => [...prev, fields[index].name]);
-                          }
-                          remove(index); // Remove do formulário sempre
-                        }}
-                        type="button"
-                        sx={{
-                          backgroundColor: "error.main",
-                          color: "white",
-                          "&:hover": { bgcolor: "error.dark" },
-                          alignSelf: "center",
-                        }}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </Box>
-                  ))}
+              {/* Botões de ação */}
+              <Box sx={{ display: "flex", gap: 2, mt: 4 }}>
+                <Button
+                  variant="outlined"
+                  onClick={() => navigate("/report-models")}
+                  sx={{
+                    flex: 1,
+                    height: 48,
+                    fontWeight: 600,
+                    borderColor: "divider",
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  variant="contained"
+                  type="submit"
+                  sx={{
+                    flex: 1,
+                    height: 48,
+                    fontWeight: 600,
+                  }}
+                >
+                  {isEditing ? "💾 Atualizar Modelo" : "💾 Salvar Modelo"}
+                </Button>
               </Box>
             </Box>
-
-            {/* Botões de ação do formulário */}
-            <Box sx={{ display: "flex", gap: 2, width: "100%" }}>
-              <Button
-                variant="outlined"
-                onClick={() => navigate("/report-models")}
-                sx={{ flex: 1, height: 48, "&:hover": { bgcolor: "grey.300" } }}
-              >
-                Cancelar
-              </Button>
-              <Button variant="contained" type="submit" color="success" sx={{ flex: 1, height: 48 }}>
-                {isEditing ? "Atualizar Modelo" : "Salvar Modelo"}
-              </Button>
-            </Box>
-          </Box>
-        </Paper>
+          </CardContent>
+        </Card>
       </Box>
 
       {/* Botão flutuante para rolar para o topo */}
       {showScrollTop && (
-        <Tooltip
-          title="Adicionar novo campo"
-          placement="top"
-          slotProps={{
-            popper: {
-              modifiers: [
-                {
-                  name: "offset",
-                  options: {
-                    offset: [10, -3], // leve espaço vertical apenas, sem deslocamento lateral
-                  },
-                },
-              ],
-            },
-          }}
-        >
-          <Box sx={{ position: "fixed", bottom: 18, left: 45, zIndex: 1300 }}>
+        <Tooltip title="Voltar ao topo" placement="left">
+          <Box sx={{ position: "fixed", bottom: 30, right: 30, zIndex: 1300 }}>
             <IconButton
               color="primary"
-              size="small"
+              size="large"
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
               sx={{
                 bgcolor: "primary.main",
                 color: "white",
-                "&:hover": { bgcolor: "primary.dark" },
-                width: 45,
-                height: 45,
+                boxShadow: 3,
+                "&:hover": {
+                  bgcolor: "primary.dark",
+                  transform: "scale(1.1)",
+                },
+                transition: "all 0.3s ease",
+                width: 56,
+                height: 56,
               }}
             >
-              <ArrowCircleUpIcon fontSize="small" />
+              <ArrowCircleUpIcon fontSize="large" />
             </IconButton>
           </Box>
         </Tooltip>
       )}
-    </>
+    </Box>
   );
 }

@@ -248,6 +248,9 @@ function EditProfilePage() {
     company: boolean;
   }>({ info: false, password: false, company: false });
 
+  // Estado para erro de pagamento
+  const [paymentErrorMessage, setPaymentErrorMessage] = useState<string | null>(null);
+
   // Estado para confirmação de desativação (REST v1)
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
@@ -401,6 +404,36 @@ function EditProfilePage() {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, [globalMessage]);
+
+  // ✅ Verificar se há erro de pagamento do user
+  useEffect(() => {
+    if (user && (user as any).payment_error) {
+      setPaymentErrorMessage((user as any).payment_error);
+    } else {
+      setPaymentErrorMessage(null);
+    }
+  }, [user?.id, (user as any)?.payment_error]);
+
+  const clearPaymentError = async () => {
+    try {
+      const response = await fetch("/backend/user/clear-payment-error", {
+        method: "PUT",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao limpar mensagem de erro");
+      }
+
+      // Recarregar dados do user para remover o erro
+      if (user?.id) {
+        // Força refresh do user context
+        window.location.reload();
+      }
+    } catch (error: any) {
+      console.error("Erro ao limpar erro de pagamento:", error);
+    }
+  };
 
   const handleSubmitUserUpdate: SubmitHandler<UserInfoFormType> = async (data) => {
     setSubmitting((s) => ({ ...s, info: true }));
@@ -766,6 +799,26 @@ function EditProfilePage() {
       </SectionForm>
       <SectionForm title="Métodos de Pagamento" onSubmit={(e) => e.preventDefault()}>
         <Grid container spacing={2} sx={{ maxWidth: "450px", mx: "auto" }}>
+          {paymentErrorMessage && (
+            <Grid size={{ xs: 12 }}>
+              <Alert
+                severity="error"
+                variant="outlined"
+                onClose={() => clearPaymentError()}
+                sx={{
+                  backgroundColor: "error.lighter",
+                  borderColor: "error.main",
+                  "& .MuiAlert-message": {
+                    color: "error.dark",
+                    fontWeight: 500,
+                  },
+                }}
+              >
+                ❌ {paymentErrorMessage}
+              </Alert>
+            </Grid>
+          )}
+
           {hasExpiredPaymentMethods && (
             <Grid size={{ xs: 12 }}>
               <Alert severity="error" variant="outlined">

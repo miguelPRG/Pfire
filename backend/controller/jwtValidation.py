@@ -54,25 +54,28 @@ def generate_jwt(
     email: str,
     nome: str,
     stripe_customer_id: str = None,
+    has_demo: bool = False,
 ):
-    expire_delta = (
-        SUPER_ADMIN_DAYS * 12 * 60 * 60
-        if is_super_admin
-        else NORMAL_USER_DAYS * 24 * 60 * 60
-    )
+    if is_super_admin:
+        expire_delta = SUPER_ADMIN_DAYS * 12 * 60 * 60
+    else:
+        expire_delta = NORMAL_USER_DAYS * 24 * 60 * 60
 
     now = datetime.now().timestamp()
     expire = now + expire_delta
 
     to_encode = {
-        "user_id": str(id),
-        "isSuperAdmin": bool(is_super_admin),
+        "user_id": id,
         "nome": nome,
         "email": email,
         "iat": now,
         "exp": expire,
-        "plano": plano or "free",
+        "plano": plano,
+        "has_demo": has_demo,
     }
+
+    if is_super_admin:
+        to_encode["isSuperAdmin"] = True
 
     if stripe_customer_id:
         to_encode["stripe_customer_id"] = stripe_customer_id

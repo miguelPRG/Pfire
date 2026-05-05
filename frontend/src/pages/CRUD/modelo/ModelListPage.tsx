@@ -30,6 +30,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 import { GET_MODELOS_RELATORIOS } from "../../../graphql/modelosQueries";
 import { useAuth } from "../../../hooks/AuthContext";
+import { usePlanLimits } from "../../../hooks/usePlanLimits";
 import Notification from "../../../components/Notification";
 import LoadingAnimation from "../../../components/LoadingAnimation";
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
@@ -45,6 +46,8 @@ import { GET_CRITERIA_BY_MODEL } from "../../../graphql/criteriaQueries";
 import React from "react";
 import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
 import NoDataMessage from "../../../components/NoDataMessage";
+import { LimitedButton } from "../../../components/LimitedButton";
+import { LimitIndicator, ResourceCount } from "../../../components/LimitIndicator";
 
 // Função utilitária para formatar tipos de campos
 const formatType = (type: string) => {
@@ -88,6 +91,7 @@ interface CriteriaVars {
 export default function ReportModelListPage() {
   // Recupera informações da empresa autenticada
   const { empresa } = useAuth();
+  const { canCreateModelo, messageModelo, modelosCount, modelosPorEmpresa } = usePlanLimits();
   // Hook para navegação entre rotas
   const navigate = useNavigate();
   // Hook para acessar o tema atual
@@ -556,13 +560,18 @@ export default function ReportModelListPage() {
             Modelos de Relatórios
           </Typography>
           {empresa?.isAdmin && (
-            <Button
-              variant="contained"
-              onClick={() => navigate("/report-templates")}
-              sx={{ textTransform: "none", height: "40px", width: "220px" }}
-            >
-              Adicionar novo Modelo
-            </Button>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+              <LimitedButton
+                disabled={!canCreateModelo}
+                message={messageModelo}
+                onClick={() => navigate("/report-templates")}
+                sx={{ textTransform: "none", height: "40px", width: "220px" }}
+              >
+                Adicionar novo Modelo
+              </LimitedButton>
+              <ResourceCount current={modelosCount} limit={modelosPorEmpresa} resourceName="modelo" />
+              <LimitIndicator current={modelosCount} limit={modelosPorEmpresa} label="Modelos" resourceName="modelo" />
+            </Box>
           )}
         </Box>
 

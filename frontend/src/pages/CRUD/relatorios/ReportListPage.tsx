@@ -702,7 +702,7 @@ export default function ReportListPage() {
       ...(!hasSelectedReport && exportDateStart ? { created_at_gte: exportDateStart } : {}),
       ...(!hasSelectedReport && exportDateEnd ? { created_at_lte: exportDateEnd } : {}),
     };
-    const suggestedFileName = `relatorio_${selectedClienteForExport.nome}_${empresa?.nome || 'export'}.pdf`;
+    const suggestedFileName = `relatorio_${selectedClienteForExport.nome}_${empresa?.nome || "export"}.pdf`;
 
     setExportingAll(true);
     setExportDialogOpen(false);
@@ -1171,10 +1171,7 @@ export default function ReportListPage() {
               }}
               onOpen={() => {
                 if (selectedClienteForExport?.id) {
-                  fetchReportsForExport(
-                    selectedClienteForExport.id,
-                    selectedReportForExport ? "" : reportInputValue
-                  );
+                  fetchReportsForExport(selectedClienteForExport.id, selectedReportForExport ? "" : reportInputValue);
                 }
               }}
               noOptionsText={

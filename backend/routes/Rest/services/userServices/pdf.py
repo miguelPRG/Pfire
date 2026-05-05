@@ -254,7 +254,9 @@ async def converter_relatorio_pdf(request: Request, user: UserConverterPDF):
     empresa_id = _parse_object_id(user.empresa_id, "Empresa")
     modelo_id = _parse_object_id(user.modelo_id, "Modelo")
     cliente_id = _parse_object_id(user.cliente_id, "Cliente")
-    relatorio_ids = [ObjectId(relatorio_id) for relatorio_id in user.relatorio_ids or []]
+    relatorio_ids = [
+        ObjectId(relatorio_id) for relatorio_id in user.relatorio_ids or []
+    ]
 
     jwt, _, _, empresa_doc, modelo_doc, cliente_doc = await _validate_export_context(
         request=request,
@@ -312,7 +314,7 @@ async def converter_relatorio_pdf(request: Request, user: UserConverterPDF):
             jwt.get("plano", "free") == "free",
         )
         final_pdf.seek(0)
-        
+
         pdf_filename = f"relatorio_{cliente_doc.get('nome', 'export')}_{empresa_doc.get('nome', 'export')}.pdf"
 
         pdf_size = len(final_pdf.getvalue())
