@@ -1,9 +1,8 @@
 import { useAuth } from "./AuthContext";
-import { useQuery } from "@apollo/client/react";
-import { GET_EMPRESAS } from "../graphql/empresasQueries";
-import { GET_MODELOS_RELATORIOS } from "../graphql/modelosQueries";
-import { GET_USERS } from "../graphql/usersQueries";
-import { GET_CLIENTES_BY_EMPRESA } from "../graphql/clientesQueries";
+import { useEmpresasQuery } from "../features/empresas/hooks";
+import { useModelosQuery } from "../features/modelos/hooks";
+import { useUsersQuery } from "../features/users/hooks";
+import { useClientesQuery } from "../features/clientes/hooks";
 
 interface PlanLimits {
   empresas: number;
@@ -27,31 +26,19 @@ export function usePlanLimits(): PlanLimits {
   const { user, empresa } = useAuth();
 
   // Query para contar empresas
-  const { data: empresasData } = useQuery(GET_EMPRESAS, {
-    fetchPolicy: "cache-first",
-    skip: !user,
-  });
+  const { data: empresasData } = useEmpresasQuery<any>({ start: 0 }, Boolean(user));
 
   // Query para contar modelos
-  const { data: modelosData } = useQuery(GET_MODELOS_RELATORIOS, {
-    variables: { empresaId: empresa?.id, start: 0 },
-    fetchPolicy: "cache-first",
-    skip: !empresa?.id,
-  });
+  const { data: modelosData } = useModelosQuery<any>({ empresaId: empresa?.id || "", start: 0 }, Boolean(empresa?.id));
 
   // Query para contar utilizadores
-  const { data: usersData } = useQuery(GET_USERS, {
-    variables: { empresaId: empresa?.id, start: 0 },
-    fetchPolicy: "cache-first",
-    skip: !empresa?.id,
-  });
+  const { data: usersData } = useUsersQuery<any>({ empresaId: empresa?.id || "", start: 0 }, Boolean(empresa?.id));
 
   // Query para contar clientes
-  const { data: clientesData } = useQuery(GET_CLIENTES_BY_EMPRESA, {
-    variables: { empresaId: empresa?.id, start: 0 },
-    fetchPolicy: "cache-first",
-    skip: !empresa?.id,
-  });
+  const { data: clientesData } = useClientesQuery<any>(
+    { empresaId: empresa?.id || "", start: 0 },
+    Boolean(empresa?.id)
+  );
 
   const plano = user?.plano?.toLowerCase() || "free";
 

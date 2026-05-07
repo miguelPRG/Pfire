@@ -4,6 +4,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { useAuth } from "../hooks/AuthContext";
 import { useTheme } from "@mui/material/styles";
 import { useState } from "react";
+import { useCheckoutMutation } from "../features/billing/hooks";
 
 interface Feature {
   name: string;
@@ -16,6 +17,7 @@ export default function PricingPage() {
   const theme = useTheme();
   const { user, empresa } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState<string | null>(null);
+  const checkoutMutation = useCheckoutMutation<{ url?: string }>();
 
   const plans = [
     {
@@ -146,19 +148,7 @@ export default function PricingPage() {
       if (!priceId) return;
 
       // Chamar backend para criar a sessão
-      const res = await fetch(`/backend/user/checkout/${priceId}`, {
-        method: "POST",
-        credentials: "include",
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json();
-        alert(errorData.detail || "Erro ao criar a sessão de checkout.");
-        setLoadingPlan(null);
-        return;
-      }
-
-      const data = await res.json();
+      const data = await checkoutMutation.mutateAsync(priceId);
 
       if (data.url) {
         window.location.href = data.url;

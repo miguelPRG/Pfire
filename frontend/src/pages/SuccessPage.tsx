@@ -2,21 +2,16 @@ import { useEffect } from "react";
 import { Box, Container, Typography } from "@mui/material";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import { useNavigate } from "react-router-dom";
+import { useRefreshTokenAfterPaymentMutation } from "../features/billing/hooks";
 
 export default function SuccessPage() {
   const navigate = useNavigate();
+  const refreshTokenMutation = useRefreshTokenAfterPaymentMutation<any>();
 
   useEffect(() => {
     const refreshTokenAfterPayment = async () => {
       try {
-        const res = await fetch("/backend/user/refresh-token-after-payment", {
-          method: "POST",
-          credentials: "include",
-        });
-
-        if (!res.ok) {
-          console.error("Falha no refresh token após pagamento");
-        }
+        await refreshTokenMutation.mutateAsync();
       } catch (err) {
         console.error("Erro ao refresh token:", err);
       } finally {
@@ -27,7 +22,7 @@ export default function SuccessPage() {
     };
 
     refreshTokenAfterPayment();
-  }, []);
+  }, [navigate, refreshTokenMutation]);
 
   return (
     <Container maxWidth="sm">

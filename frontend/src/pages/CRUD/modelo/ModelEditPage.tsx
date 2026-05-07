@@ -35,6 +35,7 @@ import { useAuth } from "../../../hooks/AuthContext";
 import { useTheme } from "@mui/material/styles";
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
 import Notification from "../../../components/Notification";
+import { useCreateModeloMutation, useUpdateModeloMutation } from "../../../features/modelos/hooks";
 
 // Esquema de validação para um subcampo personalizado
 const subfieldSchema = z.object({
@@ -667,6 +668,8 @@ export default function ReportTemplatePage() {
   const [removedFields, setRemovedFields] = useState<string[]>([]);
   const [originalFieldNames, setOriginalFieldNames] = useState<string[]>([]);
   const [originalSubfieldNames, setOriginalSubfieldNames] = useState<Record<string, string[]>>({});
+  const createModeloMutation = useCreateModeloMutation<any>();
+  const updateModeloMutation = useUpdateModeloMutation<any>();
 
   const {
     register,
@@ -867,20 +870,12 @@ export default function ReportTemplatePage() {
         ...customFields,
       };
 
-      const method = isEditing ? "PUT" : "POST";
-      const url = isEditing ? `/backend/modelo/${editingModel.id}` : "/backend/modelo/";
-
       console.log("Payload enviado:", payload);
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload),
-      });
-
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.detail || `Erro ao ${isEditing ? "atualizar" : "criar"} modelo`);
+      if (isEditing) {
+        await updateModeloMutation.mutateAsync({ id: editingModel.id, payload });
+      } else {
+        await createModeloMutation.mutateAsync(payload);
+      }
 
       navigate("/report-models", {
         state: {

@@ -37,6 +37,8 @@ import mastercardLogo from "../assets/images/cards/mastercard.png";
 import amexLogo from "../assets/images/cards/americanExpress.png";
 import discoverLogo from "../assets/images/cards/discover.png";
 import genericCardLogo from "../assets/images/logo.png";
+import { billingApi } from "../features/billing/api";
+import { usersApi } from "../features/users/api";
 
 // Schemas
 const userInfoSchema = z.object({
@@ -313,16 +315,7 @@ function EditProfilePage() {
 
     setLoadingPaymentMethod(true);
     try {
-      const response = await fetch("/backend/user/payment-methods", {
-        method: "GET",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Não foi possível carregar o cartão");
-      }
-
-      const data = await response.json();
+      const data = await billingApi.listPaymentMethods<any>();
 
       console.log("Dados brutos do método de pagamento:", data);
 
@@ -346,15 +339,7 @@ function EditProfilePage() {
 
     setUpdatingDefaultPaymentId(paymentMethodId);
     try {
-      const response = await fetch(`/backend/user/payment-method/default/${paymentMethodId}`, {
-        method: "PUT",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => null);
-        throw new Error(error?.detail || "Não foi possível definir o cartão como padrão.");
-      }
+      await billingApi.setDefaultPaymentMethod<any>(paymentMethodId);
 
       await fetchPaymentMethods();
       setGlobalMessage({ error: false, message: "Cartão definido como padrão." });
@@ -375,15 +360,7 @@ function EditProfilePage() {
 
     setRemovingPaymentId(paymentMethodId);
     try {
-      const response = await fetch(`/backend/user/payment-method/${paymentMethodId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const error = await response.json().catch(() => null);
-        throw new Error(error?.detail || "Não foi possível remover o método de pagamento.");
-      }
+      await billingApi.removePaymentMethod<any>(paymentMethodId);
 
       await fetchPaymentMethods();
       setGlobalMessage({ error: false, message: "Método de pagamento removido." });
@@ -416,14 +393,7 @@ function EditProfilePage() {
 
   const clearPaymentError = async () => {
     try {
-      const response = await fetch("/backend/user/clear-payment-error", {
-        method: "PUT",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("Erro ao limpar mensagem de erro");
-      }
+      await billingApi.clearPaymentError<any>();
 
       // Recarregar dados do user para remover o erro
       if (user?.id) {
@@ -495,21 +465,9 @@ function EditProfilePage() {
     setDeactivating(true);
     try {
       // Fazer a requisição ao endpoint PATCH /user/deactivate
-      const response = await fetch("backend/user", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include", // Importante para enviar o cookie _fp
-        body: JSON.stringify({
-          id: user.id,
-        }),
+      await usersApi.deactivateSelf<any>({
+        id: user.id,
       });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.detail || "Erro ao desativar conta");
-      }
 
       setGlobalMessage({
         error: false,
@@ -561,17 +519,7 @@ function EditProfilePage() {
   const handleOpenPaymentUpdate = async () => {
     setRedirectingToBilling(true);
     try {
-      const response = await fetch("/backend/user/payment-method/update-session", {
-        method: "POST",
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error?.detail || "Erro ao abrir atualização do cartão");
-      }
-
-      const data = await response.json();
+      const data = await billingApi.createPaymentMethodUpdateSession<{ url?: string }>();
       if (!data?.url) {
         throw new Error("URL de atualização indisponível");
       }

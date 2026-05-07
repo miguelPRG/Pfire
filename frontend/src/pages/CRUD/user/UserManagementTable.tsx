@@ -22,8 +22,13 @@ import {
 } from "@mui/material";
 import { Delete } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
-import { useLazyQuery } from "@apollo/client/react";
-import { GET_USERS } from "../../../graphql/usersQueries";
+import {
+  useUsersQuery,
+  useExpelUserMutation,
+  useInviteUserMutation,
+  useRevokeAdminMutation,
+  useSetAdminMutation,
+} from "../../../features/users/hooks";
 import { useAuth } from "../../../hooks/AuthContext";
 import { usePlanLimits } from "../../../hooks/usePlanLimits";
 import { z } from "zod";
@@ -36,7 +41,6 @@ import HomeIcon from "@mui/icons-material/Home";
 import { useNavigate } from "react-router-dom";
 import NoDataMessage from "../../../components/NoDataMessage";
 import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
-import client from "../../../graphql/apolloClient";
 import { LimitedButton } from "../../../components/LimitedButton";
 import { LimitIndicator, ResourceCount } from "../../../components/LimitIndicator";
 
@@ -93,69 +97,35 @@ export default function UserManagementTable() {
   ];
 
   const [isAdvancedSearch, setIsAdvancedSearch] = useState(false);
-  const [users, setUsers] = useState<User[]>([]);
-  const [totalUsers, setTotalUsers] = useState(0);
-
-  const [fetchUsers, { data, loading }] = useLazyQuery<returnedData>(GET_USERS);
-
-  useEffect(() => {
-    const run = async () => {
-      await client.clearStore();
-      fetchUsers({
-        variables: { empresaId: empresa?.id, start: 0 },
-        fetchPolicy: "network-only",
-      });
-    };
-    run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
-    if (data) {
-      setUsers(data.getUsers.users || []);
-      setTotalUsers(data.getUsers.totalUsers || 0);
-    }
-  }, [data]);
-
-  useEffect(() => {
-    fetchUsers({
-      variables: {
-        empresaId: empresa?.id,
-        start: page * rowsPerPage,
-        ...(isAdvancedSearch && advValue.text.trim() ? { filter: { [advValue.field]: advValue.text.trim() } } : {}),
-      },
-      fetchPolicy: "cache-first",
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
+  const [serverFilter, setServerFilter] = useState<Record<string, unknown>>({});
+  const usersQueryVars = {
+    empresaId: empresa?.id || "",
+    start: page * rowsPerPage,
+    ...(Object.keys(serverFilter).length ? { filter: serverFilter } : {}),
+  };
+  const {
+    data,
+    isLoading: loading,
+    refetch,
+  } = useUsersQuery<returnedData>(usersQueryVars, Boolean(empresa?.id), `${page}-${JSON.stringify(serverFilter)}`);
+  const users = data?.getUsers?.users || [];
+  const totalUsers = data?.getUsers?.totalUsers || 0;
+  const inviteUserMutation = useInviteUserMutation<any>();
+  const expelUserMutation = useExpelUserMutation<any>();
+  const setAdminMutation = useSetAdminMutation<any>();
+  const revokeAdminMutation = useRevokeAdminMutation<any>();
 
   const applyAdvancedFilterUsers = () => {
     setIsAdvancedSearch(true);
     setPage(0);
-    fetchUsers({
-      variables: {
-        empresaId: empresa?.id,
-        start: 0,
-        filter: advValue.text.trim() ? { [advValue.field]: advValue.text.trim() } : {},
-      },
-      fetchPolicy: "cache-first",
-    });
+    setServerFilter(advValue.text.trim() ? { [advValue.field]: advValue.text.trim() } : {});
   };
 
   const clearAdvancedFilter = async () => {
     setIsAdvancedSearch(false);
     setAdvValue({ field: "", text: "" });
     setPage(0);
-    try {
-      const result = await fetchUsers({
-        variables: { empresaId: empresa?.id, start: 0 },
-        fetchPolicy: "cache-first",
-      });
-      setUsers(result?.data.getUsers.users || []);
-      setTotalUsers(result?.data.getUsers.totalUsers || 0);
-    } catch (err) {
-      console.error("Erro ao limpar filtro avançado:", err);
-    }
+    setServerFilter({});
   };
 
   const pageCount = Math.ceil(totalUsers / rowsPerPage);
@@ -166,22 +136,13 @@ export default function UserManagementTable() {
       return;
     }
     setRoleLoading((prev) => ({ ...prev, [usr.id]: true }));
-    const endpoint = usr.role == "Admin" ? "/backend/user/revoke_admin" : "/backend/user/set_admin";
     try {
-      const res = await fetch(endpoint, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          user_id: usr.id,
-          empresa_id: empresa?.id,
-        }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.detail || "Erro ao alterar papel.");
-      setUsers((prev) =>
-        prev.map((u) => (u.id === usr.id ? { ...u, role: usr.role === "Admin" ? "Técnico" : "Admin" } : u))
-      );
+      if (usr.role == "Admin") {
+        await revokeAdminMutation.mutateAsync({ user_id: usr.id, empresa_id: empresa?.id });
+      } else {
+        await setAdminMutation.mutateAsync({ user_id: usr.id, empresa_id: empresa?.id });
+      }
+      await refetch();
       setAlert({ message: "Papel alterado com sucesso!", isError: false });
     } catch (err) {
       setAlert({ message: err instanceof Error ? err.message : "Erro ao alterar papel.", isError: true });
@@ -234,18 +195,11 @@ export default function UserManagementTable() {
       return;
     }
     try {
-      const res = await fetch("/backend/user/invite", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          email: values.email,
-          empresa_nome: empresa?.nome,
-          empresa_id: empresa?.id,
-        }),
+      await inviteUserMutation.mutateAsync({
+        email: values.email,
+        empresa_nome: empresa?.nome,
+        empresa_id: empresa?.id,
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.detail || "Erro ao enviar convite.");
       setAlert({ message: "Convite enviado com sucesso!", isError: false });
       reset();
     } catch (err: any) {
@@ -257,23 +211,9 @@ export default function UserManagementTable() {
 
   const handleDelete = async (id: string) => {
     try {
-      const res = await fetch("/backend/user/expel", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ user_id: id, empresa_id: empresa?.id }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.detail || "Erro ao expulsar utilizador.");
-      setAlert({ message: json.detail || "Utilizador expulso com sucesso.", isError: false });
-      await fetchUsers({
-        variables: {
-          empresaId: empresa?.id,
-          start: page * rowsPerPage,
-          ...(isAdvancedSearch && advValue.text.trim() ? { filter: { [advValue.field]: advValue.text.trim() } } : {}),
-        },
-        fetchPolicy: "network-only",
-      });
+      const json = await expelUserMutation.mutateAsync({ user_id: id, empresa_id: empresa?.id });
+      setAlert({ message: json?.detail || "Utilizador expulso com sucesso.", isError: false });
+      await refetch();
     } catch (err: any) {
       setAlert({ message: err.message || "Erro ao eliminar utilizador.", isError: true });
     }
@@ -398,7 +338,7 @@ export default function UserManagementTable() {
                   </TableCell>
                 </TableRow>
               ) : (
-                sortedRows.slice(page * rowsPerPage, (page + 1) * rowsPerPage).map((user, index) => (
+                sortedRows.map((user) => (
                   <TableRow key={user.id} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
                     <TableCell>{user.nome}</TableCell>
                     <TableCell>{user.telefone}</TableCell>

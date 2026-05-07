@@ -11,7 +11,9 @@ from urllib.parse import urlparse
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+from starlette.requests import ClientDisconnect
+from starlette.types import ASGIApp, Scope, Receive, Send
 from bson import ObjectId
 
 load_dotenv(Path(__file__).parent / ".env")
@@ -151,6 +153,7 @@ ALLOWED_ORIGINS = [
     "https://pfire.miguelgoncalves2024.workers.dev",
 ]
 
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
@@ -158,6 +161,40 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["Content-Type", "Host", "Cookie"],
 )
+
+"""
+    Este middleware e handler foram implementados para suprimir os erros de ClientDisconnect que ocorrem quando o cliente desconecta após a resposta ser enviada. O middleware captura as exceções no nível ASGI, enquanto o handler lida com elas no nível FastAPI, garantindo que o servidor não registre erros desnecessários para desconexões normais dos clientes.
+"""
+
+
+@app.exception_handler(ClientDisconnect)
+async def client_disconnect_handler(request: Request, exc: ClientDisconnect):
+    """Suppress ClientDisconnect errors that occur after response is sent."""
+    request_logger.debug(f"Client disconnected: {request.method} {request.url.path}")
+    # Return empty response - connection is already closed
+    return Response(status_code=200)
+
+
+class ClientDisconnectSuppressMiddleware:
+    """Suppress ClientDisconnect errors at the ASGI level."""
+
+    def __init__(self, app: ASGIApp):
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        try:
+            await self.app(scope, receive, send)
+        except ClientDisconnect:
+            request_logger.debug(
+                f"ASGI: Client disconnected for {scope.get('path', 'unknown')}"
+            )
+            # Suppress the error - client already disconnected
+            pass
+        except Exception as exception:
+            request_logger.debug(
+                f"Error in ASGI middleware for {scope.get('path', 'unknown')}: {exception}"
+            )
+            raise
 
 
 @app.middleware("http")
@@ -247,9 +284,13 @@ async def fast_api_http_middleware(request: Request, call_next):
         log_request_to_file_if_needed(request, response.status_code, start_time)
         return response
 
-    response = await call_next(request)
-    log_request_to_file_if_needed(request, response.status_code, start_time)
-    return response
+    try:
+        response = await call_next(request)
+        log_request_to_file_if_needed(request, response.status_code, start_time)
+        return response
+    except ClientDisconnect:
+        # Suppress - will be handled by ASGI middleware
+        raise
 
 
 @app.on_event("startup")
@@ -286,3 +327,7 @@ async def root(request: Request):
         "message": "Bem-vindo ao backend com FastAPI e MongoDB!",
         "user": jwt["nome"] if jwt else None,
     }
+
+
+# Wrap the entire app with ClientDisconnect suppression middleware
+app.add_middleware(ClientDisconnectSuppressMiddleware)

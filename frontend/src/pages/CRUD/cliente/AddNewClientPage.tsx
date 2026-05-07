@@ -18,6 +18,7 @@ import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useAuth } from "../../../hooks/AuthContext";
 import { useState } from "react";
+import { useCreateClienteMutation, useUpdateClienteMutation } from "../../../features/clientes/hooks";
 import GlobalPhone from "../../../components/GlobalPhone";
 import validarNIF from "../../utils/isValidNIF";
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
@@ -53,6 +54,8 @@ export default function AddNewClientPage() {
   const { empresa } = useAuth();
   const navigate = useNavigate();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const createClienteMutation = useCreateClienteMutation<any>();
+  const updateClienteMutation = useUpdateClienteMutation<any>();
 
   const {
     register,
@@ -75,14 +78,7 @@ export default function AddNewClientPage() {
   });
 
   const enviarNovoCliente = async (dados: AddClientFormInputs) => {
-    const response = await fetch(`/backend/cliente/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ ...dados, empresa_id: empresa?.id }),
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || "Erro ao criar cliente");
+    await createClienteMutation.mutateAsync({ ...dados, empresa_id: empresa?.id });
     navigate("/clients-list", { state: { message: { error: false, text: "Novo cliente adicionado com sucesso!" } } });
   };
 
@@ -91,14 +87,10 @@ export default function AddNewClientPage() {
       throw new Error("ID da empresa inválido ou não fornecido.");
     if (!dados.id || !/^[a-f\\d]{24}$/i.test(dados.id)) throw new Error("ID do cliente inválido ou não fornecido.");
 
-    const response = await fetch(`/backend/cliente/update/${dados.id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ ...dados, empresa_id: empresa.id }),
+    await updateClienteMutation.mutateAsync({
+      id: dados.id,
+      payload: { ...dados, empresa_id: empresa.id },
     });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.detail || "Erro ao atualizar cliente");
     navigate("/clients-list", { state: { message: { error: false, text: "Cliente atualizado com sucesso!" } } });
   };
 

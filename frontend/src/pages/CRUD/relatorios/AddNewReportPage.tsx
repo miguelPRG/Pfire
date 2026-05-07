@@ -23,10 +23,8 @@ import {
 import HomeIcon from "@mui/icons-material/Home";
 // Importa o hook de autenticação personalizado
 import { useAuth } from "../../../hooks/AuthContext";
-// Importa o hook useQuery do Apollo Client para consultas GraphQL
-import { useLazyQuery } from "@apollo/client/react";
-// Importa a query GraphQL para buscar clientes por empresa
-import { GET_CLIENTES_BY_EMPRESA } from "../../../graphql/clientesQueries";
+import { useClientesQuery } from "../../../features/clientes/hooks";
+import { useCreateRelatorioMutation } from "../../../features/relatorios/hooks";
 // Importa a biblioteca zod para validação de dados
 import { z } from "zod";
 import ArrowCircleUpIcon from "@mui/icons-material/ArrowCircleUp"; // Ícone de scroll para o topo
@@ -102,18 +100,21 @@ function AddNewReportPage() {
   // Estado para mensagem de erro geral
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [clienteInputValue, setClienteInputValue] = useState(""); // <-- Adicione esta linha
+  const [clienteFilter, setClienteFilter] = useState<Record<string, unknown>>({});
   const [showScrollTop, setShowScrollTop] = useState(false);
   const formTopRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
+  const createRelatorioMutation = useCreateRelatorioMutation<any>();
 
-  // Executa a query GraphQL para buscar clientes da empresa
-  const [getClientes, { data, loading }] = useLazyQuery(GET_CLIENTES_BY_EMPRESA, {
-    fetchPolicy: "cache-first",
-  });
-
-  useEffect(() => {
-    if (empresa?.id) getClientes({ variables: { empresaId: empresa.id } });
-  }, [empresa, getClientes]);
+  const clientesVariables = {
+    empresaId: empresa?.id || "",
+    start: 0,
+    ...(Object.keys(clienteFilter).length ? { filter: clienteFilter } : {}),
+  };
+  const { data, isLoading: loading } = useClientesQuery<{ getClientes: { clientes: any[] } }>(
+    clientesVariables,
+    Boolean(empresa?.id)
+  );
 
   // Efeito para mostrar/esconder o botão de scroll para o topo conforme o scroll da página
   useEffect(() => {
@@ -233,18 +234,7 @@ function AddNewReportPage() {
 
       console.log("Payload final:", payload);
 
-      const response = await fetch("/backend/relatorio/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload),
-      });
-
-      // Se houver erro na resposta, lança exceção
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || "Erro ao adicionar o relatório.");
-      }
+      await createRelatorioMutation.mutateAsync(payload);
 
       // Navega para página de relatórios com sucesso
       navigate("/report-models", {
@@ -605,13 +595,10 @@ function AddNewReportPage() {
                   inputValue={clienteInputValue}
                   onInputChange={(_, newInputValue, reason) => {
                     setClienteInputValue(newInputValue);
-                    if (reason === "input") {
-                      getClientes({ variables: { empresaId: empresa?.id, nome: newInputValue } });
-                    }
+                    if (reason === "input") setClienteFilter(newInputValue ? { nome: newInputValue } : {});
                   }}
                   onOpen={() => {
-                    // Busca os primeiros 3 clientes ao abrir (sem filtro de nome)
-                    getClientes({ variables: { empresaId: empresa?.id, limit: 3 } });
+                    setClienteFilter({});
                   }}
                   slotProps={{
                     clearIndicator: {

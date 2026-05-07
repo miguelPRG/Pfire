@@ -5,6 +5,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Box, Button, Typography, Paper } from "@mui/material";
 import { useState, useEffect } from "react";
 import PasswordField from "../../components/PasswordField";
+import { usersApi } from "../../features/users/api";
 
 const newPasswordSchema = z
   .object({
@@ -42,12 +43,7 @@ export default function NewPasswordPage() {
   useEffect(() => {
     async function checkGlobalId() {
       try {
-        const response = await fetch(`/backend/user/get-global-id/${GLOBAL_ID}`);
-        if (!response.ok) {
-          throw new Error("Global ID inválido ou expirado");
-        }
-
-        const globalIdData = await response.json();
+        const globalIdData = await usersApi.getGlobalIdInfo<any>(String(GLOBAL_ID));
 
         if (!globalIdData) {
           throw new Error("Dados do Global ID inválidos");
@@ -69,26 +65,11 @@ export default function NewPasswordPage() {
 
   const onSubmit = async (data: NewPasswordFormInputs) => {
     try {
-      const response = await fetch(`/backend/user/email/change-password/`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          password: data.password,
-          confirmPassword: data.confirmPassword,
-          global_id: GLOBAL_ID,
-        }),
+      await usersApi.changePasswordByEmail<any>({
+        password: data.password,
+        confirmPassword: data.confirmPassword,
+        global_id: GLOBAL_ID,
       });
-
-      if (!response.ok) {
-        const res = await response.json();
-        setUserConfirmation({
-          isConfirmed: false,
-          message: res.message,
-        });
-        return;
-      }
 
       setUserConfirmation({
         isConfirmed: true,

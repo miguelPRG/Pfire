@@ -1,6 +1,5 @@
 import { Box, FormControl, InputLabel, Select, MenuItem } from "@mui/material";
-import { useQuery } from "@apollo/client/react";
-import { GET_CRITERIA_BY_MODEL } from "../../../graphql/criteriaQueries";
+import { useCriteriosByModeloQuery } from "../../../features/criterios/hooks";
 
 interface CriteriaSelectFieldProps {
   modelId: string;
@@ -17,10 +16,9 @@ export default function CriteriaSelectField({
   label = "Critério",
   error,
 }: CriteriaSelectFieldProps) {
-  const { data } = useQuery(GET_CRITERIA_BY_MODEL, {
-    variables: { modelId },
-    fetchPolicy: "cache-first",
-  });
+  const { data } = useCriteriosByModeloQuery<{
+    getCriteria: Array<{ options: Array<{ key: string; value: string }> }>;
+  }>(modelId, Boolean(modelId));
 
   // Extrai opções
   const options = data?.getCriteria[0]?.options || [];

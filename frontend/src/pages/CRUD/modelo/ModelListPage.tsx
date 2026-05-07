@@ -1,5 +1,6 @@
 // Importa hooks e componentes do Apollo Client e Material UI
-import { useQuery, useLazyQuery } from "@apollo/client/react";
+import { useCriteriosByModeloQuery } from "../../../features/criterios/hooks";
+import { useCloneModeloMutation, useDeleteModeloMutation, useModelosQuery } from "../../../features/modelos/hooks";
 import {
   Box,
   Button,
@@ -28,7 +29,6 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
-import { GET_MODELOS_RELATORIOS } from "../../../graphql/modelosQueries";
 import { useAuth } from "../../../hooks/AuthContext";
 import { usePlanLimits } from "../../../hooks/usePlanLimits";
 import Notification from "../../../components/Notification";
@@ -42,7 +42,6 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogActions from "@mui/material/DialogActions";
 import CircularProgress from "@mui/material/CircularProgress";
 import AddCommentIcon from "@mui/icons-material/AddComment";
-import { GET_CRITERIA_BY_MODEL } from "../../../graphql/criteriaQueries";
 import React from "react";
 import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
 import NoDataMessage from "../../../components/NoDataMessage";
@@ -111,28 +110,30 @@ export default function ReportModelListPage() {
   const [selectedModelId, setSelectedModelId] = useState<string | null>(null);
   const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
   const [modelToCloneId, setModelToCloneId] = useState<string | null>(null);
+  const [serverSearch, setServerSearch] = useState("");
+  const deleteModeloMutation = useDeleteModeloMutation<any>();
+  const cloneModeloMutation = useCloneModeloMutation<any>();
 
   const { control } = useForm();
 
   // Consulta inicial (cache/página)
-  const { data, loading, error, refetch } = useQuery<returnedData>(GET_MODELOS_RELATORIOS, {
-    variables: { empresaId: empresa?.id, start: page * rowsPerPage, name: "" },
-    skip: !empresa,
-    fetchPolicy: "cache-and-network",
-  });
+  const {
+    data,
+    isLoading: loading,
+    error,
+    refetch,
+  } = useModelosQuery<returnedData>(
+    {
+      empresaId: empresa?.id || "",
+      start: page * rowsPerPage,
+      name: serverSearch || undefined,
+    },
+    Boolean(empresa?.id),
+    `${page}-${serverSearch}`
+  );
 
-  // Lazy query para busca avançada
-  const [fetchModelos, { data: searchData }] = useLazyQuery<returnedData>(GET_MODELOS_RELATORIOS, {
-    fetchPolicy: "network-only", // garante dados atualizados ao paginar / filtrar
-  });
-
-  // Decide qual lista mostrar
-  const modelos: any[] = isAdvancedActive ? searchData?.getModelos?.modelos || [] : data?.getModelos?.modelos || [];
-
-  // Decide o total de modelos para paginação
-  const totalModelos: number = isAdvancedActive
-    ? searchData?.getModelos?.totalModelos || 0
-    : data?.getModelos?.totalModelos || 0;
+  const modelos: any[] = data?.getModelos?.modelos || [];
+  const totalModelos: number = data?.getModelos?.totalModelos || 0;
 
   const pageCount = Math.max(1, Math.ceil(totalModelos / rowsPerPage));
 
@@ -140,19 +141,6 @@ export default function ReportModelListPage() {
   const baseColumns = 3; // Nome, Data de Criação, Ações (ajuste se necessário)
   const customFieldsCount = modelos[0]?.customFields?.length || 0;
   const totalColumns = baseColumns + customFieldsCount;
-
-  // Pesquisa remota: a execução da busca avançada é controlada pelo AdvancedSearchBar (sem debounce).
-  useEffect(() => {
-    // quando pagina muda e não estamos em modo avançado, refaz a query padrão
-
-    if (!isAdvancedActive) {
-      refetch?.({ empresaId: empresa?.id, start: page * rowsPerPage, name: undefined });
-    } else {
-      // em modo avançado, mantém a lista atual (página avançada será solicitada quando aplicar)
-      fetchModelos({ variables: { empresaId: empresa?.id, start: page * rowsPerPage, name: advValue.text } });
-    }
-    // eslint-disable-next-line
-  }, [empresa, page]);
 
   useEffect(() => {
     // Será true após a criação ou atualização de um modelo
@@ -177,15 +165,6 @@ export default function ReportModelListPage() {
     setPage(nextPage);
 
     // Se busca avançada estiver ativa, faz nova busca para a página selecionada
-    if (isAdvancedActive) {
-      fetchModelos({
-        variables: {
-          empresaId: empresa?.id,
-          start: nextPage * rowsPerPage,
-          name: advValue.text || "", // usar a variável 'name' esperada pela query
-        },
-      });
-    }
   };
 
   // Função para deletar um modelo de relatório
@@ -193,20 +172,10 @@ export default function ReportModelListPage() {
     setDeleteId(id);
 
     try {
-      const res = await fetch(`/backend/modelo`, {
-        method: "DELETE",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id,
-          empresa_id: typeof empresa === "object" ? empresa?.id : empresa,
-        }),
+      await deleteModeloMutation.mutateAsync({
+        id,
+        empresa_id: typeof empresa === "object" ? empresa?.id : empresa,
       });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Erro ao apagar modelo");
 
       setAlert({
         message: "Modelo apagado com sucesso!",
@@ -226,31 +195,7 @@ export default function ReportModelListPage() {
   const handleClone = async (modeloId: string) => {
     setCloningId(modeloId);
     try {
-      const res = await fetch("/backend/modelo/clone", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          id: modeloId,
-        }),
-      });
-
-      // Lee el texto de la respuesta SOLO UNA VEZ
-      const text = await res.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch (err) {
-        data = text;
-      }
-
-      if (!res.ok) {
-        if (typeof data === "string") {
-          throw new Error(data || "Erro ao clonar modelo");
-        } else {
-          throw new Error(data.detail || "Erro ao clonar modelo");
-        }
-      }
+      await cloneModeloMutation.mutateAsync({ id: modeloId });
 
       setAlert({
         message: "Modelo clonado com sucesso!",
@@ -397,12 +342,9 @@ export default function ReportModelListPage() {
   const CriteriaTable: React.FC<{ modelo: any }> = ({ modelo }) => {
     const {
       data,
-      loading: critLoading,
+      isLoading: critLoading,
       error: critError,
-    } = useQuery<CriteriaData, CriteriaVars>(GET_CRITERIA_BY_MODEL, {
-      variables: { modelId: modelo.id },
-      skip: !modelo?.id,
-    });
+    } = useCriteriosByModeloQuery<CriteriaData>(modelo.id, Boolean(modelo?.id));
 
     const criterios: any[] = data?.getCriteria || [];
 
@@ -592,18 +534,20 @@ export default function ReportModelListPage() {
               if ((advValue.text || "").trim() === "") {
                 setIsAdvancedActive(false);
                 setPage(0);
-                refetch?.({ empresaId: empresa?.id, start: 0, name: undefined });
+                setServerSearch("");
+                refetch?.();
               } else {
                 setIsAdvancedActive(true);
                 setPage(0);
-                fetchModelos({ variables: { empresaId: empresa?.id, start: 0, name: advValue.text } });
+                setServerSearch(advValue.text);
               }
             }}
             onClear={() => {
               setAdvValue({ field: "", text: "" });
               setIsAdvancedActive(false);
               setPage(0);
-              refetch?.({ empresaId: empresa?.id, start: 0, name: undefined });
+              setServerSearch("");
+              refetch?.();
             }}
             booleanFields={[]}
           />

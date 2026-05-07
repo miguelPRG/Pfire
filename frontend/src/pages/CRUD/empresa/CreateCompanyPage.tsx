@@ -9,6 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import isValidNIF from "../../utils/isValidNIF";
 import GlobalPhone from "../../../components/GlobalPhone";
 import SaveCancelBar from "../../../components/SaveCancelBar";
+import { useCreateEmpresaMutation } from "../../../features/empresas/hooks";
 
 const empresaSchema = z.object({
   nome: z.string().nonempty("O nome da empresa é obrigatório").trim(),
@@ -35,6 +36,7 @@ export default function CreateCompanyPage() {
   const [alert, setAlert] = useState<{ message: string; isError: boolean } | null>(null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const createEmpresaMutation = useCreateEmpresaMutation<any>();
 
   const {
     register,
@@ -50,21 +52,7 @@ export default function CreateCompanyPage() {
   const onSubmit = async (data: EmpresaFormInputs) => {
     setLoading(true);
     try {
-      const res = await fetch("/backend/empresa/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(data),
-      });
-      if (!res.ok) {
-        let err;
-        try {
-          err = await res.json();
-        } catch {
-          throw new Error("Erro desconhecido do backend");
-        }
-        throw new Error(err.detail || "Erro ao criar empresa");
-      }
+      await createEmpresaMutation.mutateAsync(data);
       setAlert({ message: "Empresa criada com sucesso!", isError: false });
       setTimeout(() => {
         navigate("/choose-company");

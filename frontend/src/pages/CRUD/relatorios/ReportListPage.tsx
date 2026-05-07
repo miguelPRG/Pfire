@@ -24,10 +24,14 @@ import { Add } from "@mui/icons-material";
 import HomeIcon from "@mui/icons-material/Home";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
-import { useLazyQuery } from "@apollo/client/react";
 import { useAuth } from "../../../hooks/AuthContext";
-import { GET_REPORTS_BY_MODEL } from "../../../graphql/reportsQueries";
-import { GET_CLIENTES_BY_EMPRESA } from "../../../graphql/clientesQueries";
+import { useClientesQuery } from "../../../features/clientes/hooks";
+import { useRelatoriosQuery } from "../../../features/relatorios/hooks";
+import {
+  useActivateRelatorioMutation,
+  useDeactivateRelatorioMutation,
+  useHardDeleteRelatorioMutation,
+} from "../../../features/relatorios/hooks";
 import Notification from "../../../components/Notification";
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
 import LoadingAnimation from "../../../components/LoadingAnimation";
@@ -215,6 +219,10 @@ export default function ReportListPage() {
   const [loadingReportId, setLoadingReportId] = useState<string | null>(null); // rastrear qual relatório está carregando
   const [reports, setReports] = useState<Report[]>([]);
   const [totalReports, setTotalReports] = useState(0);
+  const [clienteSearchFilter, setClienteSearchFilter] = useState<Record<string, unknown>>({});
+  const activateRelatorioMutation = useActivateRelatorioMutation<any>();
+  const deactivateRelatorioMutation = useDeactivateRelatorioMutation<any>();
+  const hardDeleteRelatorioMutation = useHardDeleteRelatorioMutation<any>();
   // estilo reutilizável para linhas entre células (vertical + horizontal)
   // usa cor cinza no modo light para as linhas (mais visível), mantém o divider do tema no dark
   const dividerColor = theme.palette.mode === "light" ? "#bdbdbd" : theme.palette.divider;
@@ -229,38 +237,35 @@ export default function ReportListPage() {
     fontWeight: "bold",
   };
 
-  // Query GraphQL: obtém relatórios por modelo (pode receber filtro e paginação)
-  const [getReports, { loading, error }] = useLazyQuery<returnedData>(GET_REPORTS_BY_MODEL, {
-    fetchPolicy: "cache-and-network",
-  });
-
-  // Query para buscar clientes
-  const [getClientes, { data: clientesData, loading: clientesLoading }] = useLazyQuery(GET_CLIENTES_BY_EMPRESA, {
-    fetchPolicy: "cache-first",
-  });
+  const {
+    data: reportsData,
+    isLoading: loading,
+    error,
+  } = useRelatoriosQuery<returnedData>(
+    {
+      empresaId: empresa?.id || "",
+      modeloId: location.state?.filter?.modeloId || "",
+      start: page * rowsPerPage,
+      filter: reportFilter,
+    },
+    Boolean(empresa?.id && location.state?.filter?.modeloId)
+  );
+  const { data: clientesData, isLoading: clientesLoading } = useClientesQuery<{ getClientes: { clientes: any[] } }>(
+    {
+      empresaId: empresa?.id || "",
+      start: 0,
+      ...(Object.keys(clienteSearchFilter).length ? { filter: clienteSearchFilter } : {}),
+    },
+    Boolean(empresa?.id)
+  );
 
   // Carrega relatórios ao mudar pagina/filtro/modelo
   useEffect(() => {
     if (!empresa?.id || !location.state?.filter?.modeloId) return;
 
-    getReports({
-      variables: {
-        empresaId: empresa.id,
-        modeloId: location.state.filter.modeloId,
-        start: page * rowsPerPage,
-        filter: reportFilter,
-      },
-    })
-      .then((response) => {
-        if (response.data?.getRelatorios) {
-          setReports(response.data.getRelatorios.relatorios || []);
-          setTotalReports(response.data.getRelatorios.totalRelatorios || 0);
-        }
-      })
-      .catch((fetchError) => {
-        console.error("Erro ao buscar relatórios:", fetchError);
-      });
-  }, [empresa?.id, location.state?.filter?.modeloId, page, reportFilter, rowsPerPage, getReports]);
+    setReports(reportsData?.getRelatorios?.relatorios || []);
+    setTotalReports(reportsData?.getRelatorios?.totalRelatorios || 0);
+  }, [reportsData]);
 
   // Calcula total de relatórios para paginação (valor retornado pela API)
   const pageCount = Math.max(1, Math.ceil(totalReports / rowsPerPage)); // Isso deve funcionar corretamente
@@ -386,40 +391,21 @@ export default function ReportListPage() {
   // Soft delete - desativar relatório
   const toggleReportStatus = async (reportId: string, currentStatus: boolean | undefined) => {
     try {
-      let endpoint = "";
-      let method: "PUT" | "DELETE";
-
       if (currentStatus) {
         // Desativar (soft delete)
         setReports((prev) => prev.map((r) => (r.id === reportId ? { ...r, isActive: false } : r)));
-        endpoint = "/backend/relatorio/";
-        method = "DELETE";
-      } else {
-        // Reativar
-        endpoint = "/backend/relatorio/activate";
-        method = "PUT";
       }
-
-      const response = await fetch(endpoint, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          id: reportId,
-          empresa_id: empresa?.id,
-          recaptchaToken: "",
-        }),
-      });
-
-      const json = await response.json();
-
-      if (!response.ok) {
-        // revert se falha desativação
-        if (currentStatus) {
-          setReports((prev) => prev.map((r) => (r.id === reportId ? { ...r, isActive: true } : r)));
-        }
-        throw new Error(json.detail || `Erro ao ${currentStatus ? "desativar" : "ativar"} relatório.`);
-      }
+      const json = currentStatus
+        ? await deactivateRelatorioMutation.mutateAsync({
+            id: reportId,
+            empresa_id: empresa?.id,
+            recaptchaToken: "",
+          })
+        : await activateRelatorioMutation.mutateAsync({
+            id: reportId,
+            empresa_id: empresa?.id,
+            recaptchaToken: "",
+          });
 
       setAlert({
         message: json.message || `Relatório ${currentStatus ? "desativado" : "ativado"} com sucesso!`,
@@ -441,17 +427,10 @@ export default function ReportListPage() {
   // Hard delete - apagar permanentemente
   const hardDeleteReport = async (report: Report) => {
     try {
-      const response = await fetch("/backend/relatorio/hard-delete", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          id: report.id,
-          empresa_id: empresa?.id,
-        }),
+      const json = await hardDeleteRelatorioMutation.mutateAsync({
+        id: report.id,
+        empresa_id: empresa?.id,
       });
-      const json = await response.json();
-      if (!response.ok) throw new Error(json.detail || "Erro ao apagar relatório permanentemente.");
       setAlert({ message: json.message || "Relatório apagado permanentemente com sucesso!", isError: false });
 
       // Atualizar tabela local após exclusão permanente
@@ -569,10 +548,7 @@ export default function ReportListPage() {
   const handleOpenExportDialog = () => {
     setExportDialogOpen(true);
     resetExportFilters();
-    // Busca os primeiros clientes ao abrir
-    if (empresa?.id) {
-      getClientes({ variables: { empresaId: empresa.id, start: 0 } });
-    }
+    setClienteSearchFilter({});
   };
 
   const handleCloseExportDialog = () => {
@@ -721,15 +697,6 @@ export default function ReportListPage() {
       resetExportFilters();
     }
   };
-
-  // Atualiza lista de clientes ao mudar a página ou aplicar filtro
-  useEffect(() => {
-    if (empresa?.id) {
-      getClientes({ variables: { empresaId: empresa.id, start: 0 } });
-    }
-  }, [empresa, page, advFilter, getClientes]);
-
-  // Remover useEffect que atualiza clientes ao mudar a página (já está no acima)
 
   // Render do componente
   return (
@@ -1115,19 +1082,11 @@ export default function ReportListPage() {
               onInputChange={(_, newInputValue, reason) => {
                 setClienteInputValue(newInputValue);
                 if (reason === "input" && empresa?.id) {
-                  getClientes({
-                    variables: {
-                      empresaId: empresa.id,
-                      start: 0,
-                      filter: newInputValue ? { nome: newInputValue } : {},
-                    },
-                  });
+                  setClienteSearchFilter(newInputValue ? { nome: newInputValue } : {});
                 }
               }}
               onOpen={() => {
-                if (empresa?.id) {
-                  getClientes({ variables: { empresaId: empresa.id, start: 0 } });
-                }
+                setClienteSearchFilter({});
               }}
               slotProps={autocompleteIconSlotProps}
             />

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../hooks/AuthContext";
 import { useRecaptcha } from "../hooks/RecaptchaContext";
 import LoadingAnimation from "./LoadingAnimation";
+import { usersApi } from "../features/users/api";
 
 type ConfirmationState = {
   isConfirmed: boolean;
@@ -30,14 +31,6 @@ function EmailOperation() {
       navigate("/login", { state, replace: true });
     };
 
-    const parseResponse = async (response: Response) => {
-      const data = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(data.detail || data.message || "Erro ao efetuar operacao. O link do email ja nao funciona.");
-      }
-      return data;
-    };
-
     const createCaptchaPayload = async () => ({
       global_id: GLOBAL_ID,
       recaptchaToken: await generateToken("register"),
@@ -55,16 +48,7 @@ function EmailOperation() {
       const operationsMap: Record<string, () => Promise<void>> = {
         registo: async () => {
           const payload = await createCaptchaPayload();
-          const response = await fetch(`/backend/user/email/activate/${GLOBAL_ID}`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-            body: JSON.stringify(payload),
-          });
-
-          await parseResponse(response);
+          await usersApi.activateByEmail<any>(String(GLOBAL_ID), payload);
 
           try {
             await refreshAuth();
@@ -80,10 +64,7 @@ function EmailOperation() {
           navigate(`/new-password/${GLOBAL_ID}`, { replace: true });
         },
         convite: async () => {
-          const globalIdResponse = await fetch(`/backend/user/get-global-id/${GLOBAL_ID}`, {
-            credentials: "include",
-          });
-          const globalIdData = await parseResponse(globalIdResponse);
+          const globalIdData = await usersApi.getGlobalIdInfo<any>(String(GLOBAL_ID));
 
           if (globalIdData?.operation !== "convite") {
             throw new Error("Esta operacao nao e um convite.");
@@ -98,15 +79,7 @@ function EmailOperation() {
           }
 
           const payload = await createCaptchaPayload();
-          const response = await fetch(`/backend/user/email/accept-invite/${GLOBAL_ID}`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-            body: JSON.stringify(payload),
-          });
-          const data = await parseResponse(response);
+          const data = await usersApi.acceptInviteByEmail<any>(String(GLOBAL_ID), payload);
 
           redirectToLogin({
             isConfirmed: true,

@@ -1,6 +1,5 @@
 // src/pages/CRUD/cliente/ClientManagementTable.tsx
 import { useState, useEffect } from "react";
-import { useLazyQuery } from "@apollo/client/react";
 import {
   Table,
   TableBody,
@@ -23,7 +22,12 @@ import {
   CircularProgress,
 } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
-import { GET_CLIENTES_BY_EMPRESA } from "../../../graphql/clientesQueries";
+import { useClientesQuery } from "../../../features/clientes/hooks";
+import {
+  useActivateClienteMutation,
+  useDeactivateClienteMutation,
+  useHardDeleteClienteMutation,
+} from "../../../features/clientes/hooks";
 import { useTheme } from "@mui/material/styles";
 import { useAuth } from "../../../hooks/AuthContext";
 import { usePlanLimits } from "../../../hooks/usePlanLimits";
@@ -33,7 +37,6 @@ import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
 import HomeIcon from "@mui/icons-material/Home";
 import NoDataMessage from "../../../components/NoDataMessage";
 import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
-import client from "../../../graphql/apolloClient";
 
 export interface Cliente {
   id: string;
@@ -82,29 +85,28 @@ export default function ClientManagementTable() {
 
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [totalClientes, setTotalClientes] = useState(0);
+  const [serverFilter, setServerFilter] = useState<Record<string, unknown>>({});
 
-  const [fetchClientes, { data, loading, error }] = useLazyQuery<returnedData>(GET_CLIENTES_BY_EMPRESA, {
-    fetchPolicy: "cache-and-network",
-  });
+  const queryVars = {
+    empresaId: empresa?.id || "",
+    start: page * rowsPerPage,
+    ...(Object.keys(serverFilter).length ? { filter: serverFilter } : {}),
+  };
+  const { data, isLoading: loading, error, refetch } = useClientesQuery<returnedData>(queryVars, Boolean(empresa?.id));
   const [isAdvancedSearch, setIsAdvancedSearch] = useState(false);
+  const activateClienteMutation = useActivateClienteMutation<any>();
+  const deactivateClienteMutation = useDeactivateClienteMutation<any>();
+  const hardDeleteClienteMutation = useHardDeleteClienteMutation<any>();
 
   useEffect(() => {
-    const run = async () => {
-      await client.clearStore();
-      if (location.state?.message) {
-        setAlert({
-          message: location.state.message.text,
-          isError: location.state.message.error,
-        });
-        window.history.replaceState({}, document.title);
-      }
-      fetchClientes({
-        variables: { empresaId: empresa?.id, start: 0 },
+    if (location.state?.message) {
+      setAlert({
+        message: location.state.message.text,
+        isError: location.state.message.error,
       });
-    };
-    run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     if (data) {
@@ -114,42 +116,17 @@ export default function ClientManagementTable() {
     }
   }, [data, initialLoaded]);
 
-  useEffect(() => {
-    if (page == 0) {
-      return;
-    }
-
-    fetchClientes({
-      variables: {
-        empresaId: empresa?.id,
-        start: page * rowsPerPage,
-        ...(isAdvancedSearch && advValue.text.trim() ? { filter: { [advValue.field]: advValue.text.trim() } } : {}),
-      },
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page]);
-
   const applyAdvancedFilter = () => {
     setIsAdvancedSearch(true);
     setPage(0);
-    fetchClientes({
-      variables: {
-        empresaId: empresa?.id,
-        start: 0,
-        filter: advValue.text.trim() ? { [advValue.field]: advValue.text.trim() } : {},
-      },
-    });
+    setServerFilter(advValue.text.trim() ? { [advValue.field]: advValue.text.trim() } : {});
   };
 
   const clearAdvancedFilter = async () => {
     setIsAdvancedSearch(false);
     setAdvValue({ field: "", text: "" });
     setPage(0);
-    const result = await fetchClientes({
-      variables: { empresaId: empresa?.id, start: 0 },
-    });
-    setClientes(result?.data.getClientes.clientes || []);
-    setTotalClientes(result?.data.getClientes.totalClientes || 0);
+    setServerFilter({});
   };
 
   const pageCount = Math.ceil(totalClientes / rowsPerPage);
@@ -169,17 +146,10 @@ export default function ClientManagementTable() {
 
   const apagarCliente = async (cliente: Cliente) => {
     try {
-      const res = await fetch("/backend/cliente/hard-delete", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          id: cliente.id,
-          empresa_id: empresa?.id,
-        }),
+      const json = await hardDeleteClienteMutation.mutateAsync({
+        id: cliente.id,
+        empresa_id: empresa?.id,
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.detail || "Erro ao apagar cliente.");
       setAlert({ message: json.message || "Cliente apagado com sucesso!", isError: false });
       setIsAdvancedSearch(false);
       setAdvValue({ field: "", text: "" });
@@ -188,12 +158,7 @@ export default function ClientManagementTable() {
       // Pequeno delay para garantir sincronização com a base de dados
       await new Promise((resolve) => setTimeout(resolve, 500));
 
-      const result = await fetchClientes({
-        variables: {
-          empresaId: empresa?.id,
-          start: 0,
-        },
-      });
+      const result = await refetch();
 
       // Atualizar o estado com os dados retornados
       if (result?.data?.getClientes) {
@@ -207,38 +172,20 @@ export default function ClientManagementTable() {
 
   const toggleClienteStatus = async (clienteId: string, currentStatus: boolean | undefined) => {
     try {
-      let endpoint = "";
-      let method: "PUT" | "DELETE";
-
       if (currentStatus) {
         // Desativar (optimistic)
         setClientes((prev) => prev.map((c) => (c.id === clienteId ? { ...c, isActive: false } : c)));
-        endpoint = "/backend/cliente/";
-        method = "DELETE";
-      } else {
-        endpoint = "/backend/cliente/activate";
-        method = "PUT";
       }
 
-      const response = await fetch(endpoint, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          id: clienteId,
-          empresa_id: empresa?.id,
-        }),
-      });
-
-      const json = await response.json();
-
-      if (!response.ok) {
-        // revert se falha desativação
-        if (currentStatus) {
-          setClientes((prev) => prev.map((c) => (c.id === clienteId ? { ...c, isActive: true } : c)));
-        }
-        throw new Error(json.detail || `Erro ao ${currentStatus ? "desativar" : "ativar"} cliente.`);
-      }
+      const json = currentStatus
+        ? await deactivateClienteMutation.mutateAsync({
+            id: clienteId,
+            empresa_id: empresa?.id,
+          })
+        : await activateClienteMutation.mutateAsync({
+            id: clienteId,
+            empresa_id: empresa?.id,
+          });
 
       setAlert({
         message: json.message || `Cliente ${currentStatus ? "desativado" : "ativado"} com sucesso!`,

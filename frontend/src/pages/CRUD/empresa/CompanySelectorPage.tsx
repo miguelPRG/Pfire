@@ -1,7 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Button, Paper, Typography, Box, Pagination, Breadcrumbs, Tooltip } from "@mui/material";
-import { useLazyQuery } from "@apollo/client/react";
-import { GET_EMPRESAS } from "../../../graphql/empresasQueries";
+import { useEmpresasQuery } from "../../../features/empresas/hooks";
 import { useAuth } from "../../../hooks/AuthContext";
 import { usePlanLimits } from "../../../hooks/usePlanLimits";
 import { useNavigate } from "react-router-dom";
@@ -11,7 +10,6 @@ import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
 import HomeIcon from "@mui/icons-material/Home";
 import AdvancedSearchBar from "../../../components/AdvancedSearchBar";
 import NoDataMessage from "../../../components/NoDataMessage";
-import client from "../../../graphql/apolloClient";
 import { LimitIndicator, ResourceCount } from "../../../components/LimitIndicator";
 
 interface Empresa {
@@ -41,6 +39,7 @@ export default function CompanySelectorPage() {
     text: "",
   });
   const [isAdvancedActive, setIsAdvancedActive] = useState(false);
+  const [serverFilter, setServerFilter] = useState<Record<string, unknown>>({});
 
   const theme = useTheme();
   const { chooseCompany, empresa: empresaSel, user } = useAuth();
@@ -55,8 +54,15 @@ export default function CompanySelectorPage() {
     premium: { empresas: Infinity },
   };
 
-  // lazy para todas as buscas
-  const [fetchEmpresas, { data, error, loading }] = useLazyQuery<ReturnedData>(GET_EMPRESAS);
+  const queryVars = {
+    start: page * rowsPerPage,
+    ...(Object.keys(serverFilter).length ? { filter: serverFilter } : {}),
+  };
+  const {
+    data,
+    error,
+    isLoading: loading,
+  } = useEmpresasQuery<ReturnedData>(queryVars, true, `${page}-${JSON.stringify(serverFilter)}`);
 
   // Estado para largura da tela
   const [larguraTela, setLarguraTela] = useState(window.innerWidth);
@@ -67,47 +73,17 @@ export default function CompanySelectorPage() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Busca inicial sempre network-only
-  useEffect(() => {
-    const run = async () => {
-      // limpa a cache global do Apollo (promise)
-      await client.clearStore(); // ou client.resetStore() se quiser que queries ativas sejam re-executadas
-
-      // busca inicial forçando rede
-      fetchEmpresas({
-        variables: { start: 0 },
-        fetchPolicy: "network-only",
-      });
-    };
-
-    run();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   // Busca avançada
   const handleApplyAdvanced = () => {
     setIsAdvancedActive(true);
     setPage(0);
-    fetchEmpresas({
-      variables: {
-        start: 0,
-        filter: adv.text.trim() ? { [adv.field]: adv.text.trim() } : {},
-      },
-      fetchPolicy: "cache-first",
-    });
+    setServerFilter(adv.text.trim() ? { [adv.field]: adv.text.trim() } : {});
   };
 
   // Paginação
   const handlePageChange = (_: any, value: number) => {
     const nextPage = value - 1;
     setPage(nextPage);
-    fetchEmpresas({
-      variables: {
-        start: nextPage * rowsPerPage,
-        ...(isAdvancedActive && adv.text.trim() ? { filter: { [adv.field]: adv.text.trim() } } : {}),
-      },
-      fetchPolicy: "cache-first",
-    });
   };
 
   // dados que se mostram

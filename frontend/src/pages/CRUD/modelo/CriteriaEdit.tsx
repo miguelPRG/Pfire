@@ -14,6 +14,7 @@ import LoadingAnimation from "../../../components/LoadingAnimation";
 import { CircularProgress } from "@mui/material";
 import ArrowCircleUpIcon from "@mui/icons-material/ArrowCircleUp";
 import Tooltip from "@mui/material/Tooltip";
+import { useCreateCriterioMutation, useUpdateCriterioMutation } from "../../../features/criterios/hooks";
 // ---------------------- ZOD SCHEMA ----------------------
 // Validação Zod para cada opção: key deve ser uma letra única, value não pode ser vazio
 const optionsSchema = z.object({
@@ -75,6 +76,8 @@ export default function CreateCriteriaPage() {
   const [alert, setAlert] = useState<{ message: string; isError: boolean } | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const createCriterioMutation = useCreateCriterioMutation<any>();
+  const updateCriterioMutation = useUpdateCriterioMutation<any>();
 
   useEffect(() => {
     const handleScroll = () => setShowScrollTop(window.scrollY > 100);
@@ -100,38 +103,18 @@ export default function CreateCriteriaPage() {
 
       console.log("Payload to be sent:", payload);
 
-      let res;
-
       if (criterioID) {
-        res = await fetch(`/backend/criterio/${criterioID}`, {
-          method: "PUT",
-          body: JSON.stringify(payload),
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        });
+        await updateCriterioMutation.mutateAsync({ criterioId: criterioID, payload });
       } else {
-        res = await fetch(`/backend/criterio`, {
-          method: "POST",
-          body: JSON.stringify(payload),
-          credentials: "include",
-          headers: { "Content-Type": "application/json" },
-        });
+        await createCriterioMutation.mutateAsync(payload);
       }
-
-      const result = await res.json();
-
-      if (!res.ok) {
-        console.log("Error response from server:", result);
-
-        throw new Error(result.detail || "Erro ao criar/atualizar critérios");
-      }
-
-      setAlert({ message: result.message || "Critérios criados com sucesso!", isError: false });
+      const successMessage = criterioID ? "Critério atualizado com sucesso!" : "Critérios criados com sucesso!";
+      setAlert({ message: successMessage, isError: false });
       // Navega para a lista de modelos e envia mensagem via state
       navigate("/report-models", {
         state: {
           message: {
-            text: result.message || "Critérios criados com sucesso!",
+            text: successMessage,
             error: false,
           },
           reload: true, // se quiser forçar reload

@@ -6,6 +6,7 @@ import { Box, Button, Container, TextField, Typography, Paper, Fade, Alert } fro
 import { useNavigate } from "react-router-dom";
 import logo from "../../assets/images/logo.png";
 import { useRecaptcha } from "../../hooks/RecaptchaContext";
+import { useForgotPasswordMutation } from "../../features/users/hooks";
 
 // Esquema de validação com Zod
 const forgotPasswordSchema = z.object({
@@ -20,6 +21,7 @@ function ForgotPassword() {
   const [alertMsg, setAlertMsg] = useState("");
   const [alertType, setAlertType] = useState<"success" | "error">("success");
   const { generateToken } = useRecaptcha();
+  const forgotPasswordMutation = useForgotPasswordMutation<any>();
 
   const {
     register,
@@ -33,28 +35,15 @@ function ForgotPassword() {
     try {
       const recaptchaToken = await generateToken("forgot-password");
 
-      const response = await fetch("/backend/user/forgot-password", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: data.email,
-          recaptchaToken,
-        }),
+      await forgotPasswordMutation.mutateAsync({
+        email: data.email,
+        recaptchaToken,
       });
-
-      if (response.ok) {
-        setAlertType("success");
-        setAlertMsg("Foi enviado um email para poder confirmar o pedido de alteração da password.");
-      } else {
-        const res = await response.json();
-        setAlertType("error");
-        setAlertMsg(res.detail || "Ocorreu um erro ao enviar o pedido.");
-      }
+      setAlertType("success");
+      setAlertMsg("Foi enviado um email para poder confirmar o pedido de alteração da password.");
     } catch (err) {
       setAlertType("error");
-      setAlertMsg("Ocorreu um erro ao enviar o pedido.");
+      setAlertMsg(err instanceof Error ? err.message : "Ocorreu um erro ao enviar o pedido.");
     }
     setOpen(true);
   }

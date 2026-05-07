@@ -14,11 +14,11 @@ import {
   CardContent,
 } from "@mui/material";
 import { useTheme } from "@mui/material/styles";
-import { useQuery } from "@apollo/client/react";
 import { PieChart, BarChart } from "@mui/x-charts";
-import { GET_RELATORIES_COUNT_BY_CLIENTES, GET_RELATORIES_COUNT_BY_MODELO } from "../graphql/reportsQueries";
+import { useRelatoriosCountByClientesQuery, useRelatoriosCountByModeloQuery } from "../features/relatorios/hooks";
+import { useTrialInfoQuery } from "../features/billing/hooks";
 import NoDataMessage from "../components/NoDataMessage";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 
 interface ReportCliente {
   clienteId: string;
@@ -45,79 +45,37 @@ function HomePage() {
   const theme = useTheme();
   const isXs = useMediaQuery(theme.breakpoints.down("sm"));
   const isSm = useMediaQuery(theme.breakpoints.between("sm", "md"));
-  const [trialInfo, setTrialInfo] = useState<TrialInfo | null>(null);
-  const [trialLoading, setTrialLoading] = useState(true);
+  const { data: trialInfo, isLoading: trialLoading } = useTrialInfoQuery<TrialInfo>(Boolean(user));
 
   const userPlan = user?.plano?.trim() ? user.plano : "Sem plano";
 
-  // Obter informações de trial
-  useEffect(() => {
-    const fetchTrialInfo = async () => {
-      try {
-        console.log("Fetching trial info...");
+  const { data: chart1Data, isLoading: pieLoading } = useRelatoriosCountByClientesQuery<{
+    getRelatoriosCountByClientes: ReportCliente[];
+  }>(empresa?.id);
 
-        const response = await fetch("/user/subscription-trial-info", {
-          method: "GET",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
+  const { data: chart2Data, isLoading: barLoading } = useRelatoriosCountByModeloQuery<{
+    getRelatoriosCountByModelo: ReportModelo[];
+  }>(empresa?.id);
 
-        console.log("Trial info response status:", response.status);
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log("Trial info data:", data);
-          setTrialInfo(data);
-        } else {
-          console.warn("Failed to fetch trial info:", response.statusText);
-          const errorText = await response.text();
-          console.warn("Error response:", errorText);
-        }
-      } catch (error) {
-        console.error("Erro ao obter info de trial:", error);
-      } finally {
-        setTrialLoading(false);
-      }
-    };
-
-    fetchTrialInfo();
-  }, []);
-
-  // Query para o PieChart
-  const { data: chart1Data, loading: pieLoading } = useQuery<{ reports: ReportCliente[] }>(
-    GET_RELATORIES_COUNT_BY_CLIENTES,
-    {
-      variables: { empresaId: empresa?.id },
-      skip: !empresa?.id,
-      fetchPolicy: "network-only",
-    }
+  const pieData = useMemo(
+    () =>
+      chart1Data?.getRelatoriosCountByClientes?.map((r) => ({
+        id: r.clienteId,
+        label: r.clienteNome,
+        value: r.count,
+      })) || [],
+    [chart1Data]
   );
 
-  // Query para o BarChart
-  const { data: chart2Data, loading: barLoading } = useQuery<{ reports: ReportModelo[] }>(
-    GET_RELATORIES_COUNT_BY_MODELO,
-    {
-      variables: { empresaId: empresa?.id },
-      skip: !empresa?.id,
-      fetchPolicy: "network-only",
-    }
+  const barData = useMemo(
+    () =>
+      chart2Data?.getRelatoriosCountByModelo?.map((r) => ({
+        id: r.modeloId,
+        value: r.count,
+        label: r.modeloNome,
+      })) || [],
+    [chart2Data]
   );
-
-  const pieData =
-    chart1Data?.getRelatoriosCountByClientes?.map((r) => ({
-      id: r.clienteId,
-      label: r.clienteNome,
-      value: r.count,
-    })) || [];
-
-  const barData =
-    chart2Data?.getRelatoriosCountByModelo?.map((r) => ({
-      id: r.modeloId,
-      value: r.count,
-      label: r.modeloNome,
-    })) || [];
 
   // Responsividade do gráfico
   let chartSize = 250;

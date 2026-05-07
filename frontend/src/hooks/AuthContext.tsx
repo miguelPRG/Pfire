@@ -1,8 +1,9 @@
 import { createContext, useState, useContext, ReactNode, useEffect, useCallback } from "react";
-import { useQuery } from "@apollo/client/react";
 import { FirebaseLogin } from "../firebase";
-import { GET_EMPRESAS } from "../graphql/empresasQueries";
 import { useRecaptcha } from "./RecaptchaContext";
+import { useEmpresasQuery } from "../features/empresas/hooks";
+import { authApi } from "../features/auth/api";
+import { empresasApi } from "../features/empresas/api";
 
 type ApiResponsePayload = {
   detail?: string;
@@ -121,11 +122,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
   const { generateToken } = useRecaptcha();
 
-  const { data, error } = useQuery<{ getEmpresas?: { empresas?: Empresa[] } }>(GET_EMPRESAS, {
-    variables: { id: empresaId },
-    skip: !user || !empresaId,
-    fetchPolicy: "network-only",
-  });
+  const { data, error } = useEmpresasQuery<{ getEmpresas?: { empresas?: Empresa[] } }>(
+    { id: empresaId || undefined, start: 0 },
+    Boolean(user && empresaId)
+  );
 
   const buildUserState = useCallback(
     (userData: UserLoggedIn): UserLoggedIn => ({
@@ -170,18 +170,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
 
     try {
-      const response = await fetch("/backend/user/auth", {
-        method: "GET",
-        credentials: "include",
-      });
-
-      const userData = (await response.json().catch(() => ({}))) as ApiResponsePayload;
-
-      if (!response.ok) {
-        throw new Error(getResponseErrorMessage(response, userData, "Erro ao verificar autenticacao."));
-      }
-
-      setAuthenticatedUser(userData as unknown as UserLoggedIn);
+      const userData = (await authApi.getAuthUser<ApiResponsePayload>()) as unknown as UserLoggedIn;
+      setAuthenticatedUser(userData);
     } catch (error) {
       setUser(null);
       setEmpresa(null);
@@ -255,23 +245,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     try {
       const token = await generateToken("login");
-      const response = await fetch("/backend/user/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          email,
-          password,
-          recaptchaToken: token,
-        }),
-      });
-
-      const data = (await response.json().catch(() => ({}))) as ApiResponsePayload;
-      if (!response.ok) {
-        throw new Error(getResponseErrorMessage(response, data, "Erro desconhecido do servidor"));
-      }
+      const data = (await authApi.login<ApiResponsePayload>({
+        email,
+        password,
+        recaptchaToken: token,
+      })) as ApiResponsePayload;
 
       setLoading(true);
       setAuthenticatedUser(data as unknown as UserLoggedIn);
@@ -302,20 +280,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       console.log("Payload do registo:", payload);
 
-      const response = await fetch("/backend/user/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(payload),
-      });
-
-      const data = (await response.json().catch(() => ({}))) as ApiResponsePayload;
-
-      if (!response.ok) {
-        throw new Error(getResponseErrorMessage(response, data, "Erro desconhecido do backend"));
-      }
+      await authApi.register<ApiResponsePayload>(payload);
     } catch (error) {
       console.error("Erro ao registrar usuario:", error);
       throw error;
@@ -325,25 +290,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   async function loginWithOAuth(provider: "google" | "microsoft", global_id?: string): Promise<boolean> {
     try {
       const { idToken } = await FirebaseLogin(provider);
-      const response = await fetch("/backend/user/login-oauth", {
-        method: "POST",
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          firebase_token: idToken,
-          global_id,
-        }),
-      });
-
-      const data = (await response.json().catch(() => ({}))) as ApiResponsePayload;
+      const data = (await authApi.loginOAuth<ApiResponsePayload>({
+        firebase_token: idToken,
+        global_id,
+      })) as ApiResponsePayload;
 
       console.log("Dados do login com OAuth:", data);
-
-      if (!response.ok) {
-        throw new Error(getResponseErrorMessage(response, data, "OAuth login falhou"));
-      }
 
       setLoading(true);
       setAuthenticatedUser(data as unknown as UserLoggedIn);
@@ -368,10 +320,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setEmpresaId(null);
 
     try {
-      await fetch("/backend/user/logout", {
-        method: "POST",
-        credentials: "include",
-      });
+      await authApi.logout<void>();
     } catch {
       console.error("Erro ao fazer logout");
     } finally {
@@ -409,19 +358,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     try {
-      const response = await fetch("/backend/user/", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body,
-      });
-
-      if (!response.ok) {
-        const data = (await response.json().catch(() => ({}))) as ApiResponsePayload;
-        throw new Error(getResponseErrorMessage(response, data, "Erro ao atualizar usuario"));
-      }
+      await authApi.updateUser<void>(JSON.parse(body));
 
       setUser((prevUser) => {
         if (!prevUser) return prevUser;
@@ -440,23 +377,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updatePassword = useCallback(async (passwordUpdate: PasswordUpdate) => {
     try {
-      const response = await fetch("/backend/user/update-password", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify({
-          password: passwordUpdate.password,
-          newPassword: passwordUpdate.newPassword,
-          confirmPassword: passwordUpdate.confirmPassword,
-        }),
+      await authApi.updatePassword<void>({
+        password: passwordUpdate.password,
+        newPassword: passwordUpdate.newPassword,
+        confirmPassword: passwordUpdate.confirmPassword,
       });
-
-      if (!response.ok) {
-        const data = (await response.json().catch(() => ({}))) as ApiResponsePayload;
-        throw new Error(getResponseErrorMessage(response, data, "Erro ao atualizar senha"));
-      }
     } catch (error) {
       console.error("Erro ao atualizar password:", error);
       throw error;
@@ -468,28 +393,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const recaptchaToken = await generateToken("update");
 
       try {
-        const response = await fetch(`/backend/empresa/${id}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            recaptchaToken,
-            nome: empresaToUpdate.nome,
-            nif: empresaToUpdate.nif,
-            telefone: empresaToUpdate.telefone,
-            morada: empresaToUpdate.morada,
-            localidade: empresaToUpdate.localidade,
-            codigo_postal: empresaToUpdate.codigoPostal,
-            logo: empresaToUpdate.logo,
-          }),
+        await empresasApi.update<void>(id, {
+          recaptchaToken,
+          nome: empresaToUpdate.nome,
+          nif: empresaToUpdate.nif,
+          telefone: empresaToUpdate.telefone,
+          morada: empresaToUpdate.morada,
+          localidade: empresaToUpdate.localidade,
+          codigo_postal: empresaToUpdate.codigoPostal,
+          logo: empresaToUpdate.logo,
         });
-
-        if (!response.ok) {
-          const data = (await response.json().catch(() => ({}))) as ApiResponsePayload;
-          throw new Error(getResponseErrorMessage(response, data, "Erro ao atualizar empresa"));
-        }
 
         setEmpresa((prevEmpresa) => {
           if (!prevEmpresa) return prevEmpresa;
