@@ -13,7 +13,7 @@ class Relatorio:
     cliente_nome: str
     cliente_nif: str
     created_at: datetime
-    created_by: Optional[str] = None
+    created_by_name: Optional[str] = None
     custom_fields: list[JSON]
     isActive: Optional[bool] = None
 

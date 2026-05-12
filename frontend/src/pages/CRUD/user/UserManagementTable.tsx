@@ -84,7 +84,7 @@ export default function UserManagementTable() {
   const { canCreateUtilizador, messageUtilizador, utilizadoresCount, utilizadoresPorEmpresa } = usePlanLimits();
   const [alert, setAlert] = useState<null | { message: string; isError: boolean }>(null);
   const [roleLoading, setRoleLoading] = useState<{ [userId: string]: boolean }>({});
-  const rowsPerPage = 10;
+  const rowsPerPage = 8;
   const navigate = useNavigate();
 
   const [advValue, setAdvValue] = useState<{ field: string; text: string }>({ field: "", text: "" });

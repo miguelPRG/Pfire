@@ -15,7 +15,7 @@ class ClienteQuery:
         self, info: Info, empresa_id: str, start: int = 0, filter: ClienteFilter = None
     ) -> ClienteList:
 
-        lmt = 10  # Limite padrão de resultados por página
+        lmt = 8  # Limite padrão de resultados por página
 
         if start < 0:
             start = 0

@@ -22,7 +22,7 @@ import {
 } from "@mui/material";
 import { Add } from "@mui/icons-material";
 import HomeIcon from "@mui/icons-material/Home";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, data } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 import { useAuth } from "../../../hooks/AuthContext";
 import { useClientesQuery } from "../../../features/clientes/hooks";
@@ -76,7 +76,7 @@ export interface Report {
   clienteNome: string;
   clienteNif: string;
   createdAt: string;
-  createdBy?: string;
+  createdByName?: string;
   customFields: { key: string; value: any }[];
   isActive?: boolean;
 }
@@ -115,7 +115,6 @@ interface DatePresetOption {
 
 const EXPORT_REPORT_OPTIONS_LIMIT = 25;
 const EXPORT_CREATOR_OPTIONS_LIMIT = 15;
-const PDF_REPORTS_PER_PAGE = 12;
 const DATE_PRESET_OPTIONS: DatePresetOption[] = [
   { id: "custom", label: "Personalizado" },
   { id: "last-day", label: "Último dia" },
@@ -188,6 +187,12 @@ export default function ReportListPage() {
     field: "clienteNome",
     text: "",
   }); // AdvancedSearchBar: campo + texto
+  const rowsPerPage = 8; // número de linhas por página
+  const navigate = useNavigate(); // navegação de rotas
+  const theme = useTheme(); // tema MUI
+  const { empresa, user } = useAuth(); // contexto de autenticação/empresa
+  const isCompanyAdmin = Boolean(empresa?.isAdmin) || Boolean(user?.isSuperAdmin);
+
   const [reportFilter, setReportFilter] = useState<Record<string, any>>({});
   const [page, setPage] = useState(0); // página atual (0-index)
   const [alert, setAlert] = useState<{ message: string; isError: boolean } | null>(null); // notificações
@@ -208,11 +213,6 @@ export default function ReportListPage() {
   );
   const [exportDateStart, setExportDateStart] = useState("");
   const [exportDateEnd, setExportDateEnd] = useState("");
-  const rowsPerPage = 15; // número de linhas por página
-  const navigate = useNavigate(); // navegação de rotas
-  const theme = useTheme(); // tema MUI
-  const { empresa, user } = useAuth(); // contexto de autenticação/empresa
-  const isCompanyAdmin = Boolean(empresa?.isAdmin) || Boolean(user?.isSuperAdmin);
   const [hardDeleteDialogOpen, setHardDeleteDialogOpen] = useState(false); // dialogo de hard delete
   const location = useLocation(); // leitura de estado passado pela navegação
   const [selectedReport, setSelectedReport] = useState<Report | null>(null); // relatório selecionado p/ delete
@@ -220,6 +220,8 @@ export default function ReportListPage() {
   const [reports, setReports] = useState<Report[]>([]);
   const [totalReports, setTotalReports] = useState(0);
   const [clienteSearchFilter, setClienteSearchFilter] = useState<Record<string, unknown>>({});
+
+  // mutations para ativar/desativar (soft delete) e apagar permanentemente relatórios
   const activateRelatorioMutation = useActivateRelatorioMutation<any>();
   const deactivateRelatorioMutation = useDeactivateRelatorioMutation<any>();
   const hardDeleteRelatorioMutation = useHardDeleteRelatorioMutation<any>();
@@ -258,6 +260,8 @@ export default function ReportListPage() {
     },
     Boolean(empresa?.id)
   );
+
+  console.log(reportsData);
 
   // Carrega relatórios ao mudar pagina/filtro/modelo
   useEffect(() => {
@@ -748,7 +752,7 @@ export default function ReportListPage() {
               mb: 3,
             }}
           >
-            Relatórios
+            Relatórios{reports.length > 0 && reports[0].modeloNome ? ` - ${reports[0].modeloNome}` : ""}
           </Typography>
           {/* Cabeçalho com título e botões (Novo Relatório, Exportar Todos) */}
           <Box
@@ -805,6 +809,7 @@ export default function ReportListPage() {
               { value: "numeroId", label: "NÃºmero do RelatÃ³rio" },
               { value: "clienteNome", label: "Nome do Cliente" },
               { value: "clienteNif", label: "NIF do Cliente" },
+              { value: "createdByName", label: "Criado Por" },
             ]}
             value={advFilter}
             onChange={setAdvFilter}
@@ -841,7 +846,7 @@ export default function ReportListPage() {
                     NIF
                   </TableCell>
                   <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }}>
-                    Modelo
+                    Criado Por
                   </TableCell>
 
                   {(() => {
@@ -895,9 +900,11 @@ export default function ReportListPage() {
                       Estado
                     </TableCell>
                   )}
-                  <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }} align="center">
-                    Ações
-                  </TableCell>
+                  {isCompanyAdmin && (
+                    <TableCell rowSpan={2} sx={{ ...headerCell, color: theme.palette.common.white }} align="center">
+                      Ações
+                    </TableCell>
+                  )}
                 </TableRow>
 
                 <TableRow>
@@ -922,7 +929,7 @@ export default function ReportListPage() {
                     <TableCell sx={cellBorders}>{report.numeroId}</TableCell>
                     <TableCell sx={cellBorders}>{report.clienteNome}</TableCell>
                     <TableCell sx={cellBorders}>{report.clienteNif || "-"}</TableCell>
-                    <TableCell sx={cellBorders}>{report.modeloNome}</TableCell>
+                    <TableCell sx={cellBorders}>{report.createdByName || "-"}</TableCell>
 
                     {/* renderiza primeiro os campos personalizados simples (uma célula each) */}
                     {customFieldKeys

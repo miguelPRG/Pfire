@@ -77,7 +77,7 @@ export default function ClientManagementTable() {
     { value: "localidade", label: "Localidade" },
   ];
 
-  const rowsPerPage = 10;
+  const rowsPerPage = 8;
   const theme = useTheme();
   const navigate = useNavigate();
   const location = useLocation();

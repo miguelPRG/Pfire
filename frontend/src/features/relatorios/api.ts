@@ -12,7 +12,7 @@ const GET_RELATORIOS_QUERY = `
         clienteNome
         clienteNif
         createdAt
-        createdBy
+        createdByName
         customFields
         isActive
       }

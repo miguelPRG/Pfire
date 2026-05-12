@@ -181,9 +181,7 @@ async def create_relatorio(request: Request, relatorio: RelatorioCreate):
     relatorio_data["cliente_nif"] = cliente["nif"]
     relatorio_data["modelo_nome"] = modelo["modelo_nome"]
     relatorio_data["created_by"] = user_id
-    relatorio_data["updated_by"] = user_id
     relatorio_data["created_at"] = data
-    relatorio_data["updated_at"] = data
     relatorio_data["isActive"] = True
 
     try:

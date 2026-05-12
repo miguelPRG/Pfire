@@ -35,7 +35,7 @@ class RelatorioQuery:
 
         user_empresa = None
 
-        lmt = 15  # Limite padrão de resultados Relatório por página
+        lmt = 8  # Limite padrão de resultados Relatório por página
 
         if start < 0:
             start = 0
@@ -74,16 +74,43 @@ class RelatorioQuery:
 
         if user_empresa and not user_empresa.get("isAdmin", False):
             filtro["isActive"] = True
+            filtro["created_by"] = user_id
+
+        # Pipeline de agregação com lookup para trazer o nome do user
+        pipeline = [
+            {"$match": filtro},
+            {
+                "$lookup": {
+                    "from": "users",
+                    "localField": "created_by",
+                    "foreignField": "_id",
+                    "as": "user_info",
+                }
+            },
+            {
+                "$addFields": {
+                    "created_by_name": {
+                        "$ifNull": [
+                            {"$arrayElemAt": ["$user_info.nome", 0]},
+                            "Utilizador desconhecido",
+                        ]
+                    }
+                }
+            },
+            {"$skip": start},
+            {"$limit": lmt},
+        ]
 
         # Buscar relatórios no banco de dados
-        async for relatorio in (
-            relatorios_collection.find(filtro).skip(start).limit(lmt)
-        ):
+        async for relatorio in relatorios_collection.aggregate(pipeline):
             custom_fields = [
                 {"key": k, "value": v}
                 for k, v in relatorio.items()
                 if k.startswith("custom_")
             ]
+
+            # Extrair nome do user (vem do $addFields na agregação)
+            created_by_name = relatorio.get("created_by_name")
 
             relatorio_data = {
                 "id": str(relatorio.get("_id")),
@@ -96,27 +123,18 @@ class RelatorioQuery:
                 "modelo_nome": relatorio.get("modelo_nome"),
                 "cliente_nome": relatorio.get("cliente_nome"),
                 "cliente_nif": relatorio.get("cliente_nif"),
-                "created_by": (
-                    str(relatorio.get("created_by"))
-                    if relatorio.get("created_by")
-                    else None
-                ),
+                "created_by_name": created_by_name or "Utilizador desconhecido",
                 "created_at": relatorio.get("created_at"),
                 "custom_fields": custom_fields,
                 "isActive": relatorio.get("isActive"),
             }
-
-            if not jwt.get("isSuperAdmin", False):
-                relatorio_data = {
-                    k: v for k, v in relatorio_data.items() if k not in ["created_by"]
-                }
 
             relatorios.append(Relatorio(**filter_null_fields(relatorio_data)))
 
         total_relatorios = await relatorios_collection.count_documents(filtro)
         return RelatorioList(relatorios=relatorios, totalRelatorios=total_relatorios)
 
-    # Esta query Ã© utilizada para o grÃ¡fico de relatÃ³rios por cliente
+    # Esta query Ã© utilizada para o grÃ¡fico de relatórios por cliente
     @strawberry.field
     async def getRelatoriosCountByClientes(
         self, info: Info, empresa_id: str
