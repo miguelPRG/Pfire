@@ -1,3 +1,6 @@
+from venv import logger
+import firebase_admin
+from firebase_admin import credentials
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, Response
 from fastapi.responses import JSONResponse
 from controller.jwtValidation import generate_jwt
@@ -28,6 +31,9 @@ from uuid import uuid4
 from apis.brevo_client import enviar_email
 from pymongo.errors import DuplicateKeyError
 from controller.cookie_settings import clear_auth_cookie, get_auth_cookie_settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 routerAuth = APIRouter(prefix="/user")
 
@@ -37,7 +43,8 @@ pwd_context = CryptContext(
     argon2__memory_cost=262144,
     argon2__time_cost=5,
 )
-
+cred = credentials.Certificate("/etc/secrets/serviceAccountKey.json")
+firebase_admin.initialize_app(cred)
 
 async def blacklist_token_after_delay(
     token: str | None, exp: int | float | None, delay_seconds: float = 5.0
@@ -50,7 +57,6 @@ async def blacklist_token_after_delay(
 
     await add_token_to_blacklist(token, exp)
 
-
 # 🚀 Login via Firebase OAuth
 @routerAuth.post("/login-oauth")
 async def login_oauth(request: Request, user: UserLoginWithOAuth):
@@ -60,6 +66,7 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
         firebase_data = await verify_firebase_token(user.firebase_token)
         # firebase_data: { "uid", "email", "name", "phone" }
     except Exception as e:
+        logger.error(f"Erro ao verificar token Firebase: {e}")
         raise HTTPException(status_code=401, detail=f"Token Firebase inválido: {e}")
 
     uid = firebase_data.get("uid")

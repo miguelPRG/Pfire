@@ -7,7 +7,7 @@ const firebaseConfig = {
   projectId: "pfire-390df",
   storageBucket: "pfire-390df.firebasestorage.app",
   messagingSenderId: "267766735341",
-  appId: "1:267766735341:web:292af01d64f13561c087e4",
+  appId: "1:267766735341:web:292af01d64f13561c087e4"
 };
 
 // Inicializa Firebase
