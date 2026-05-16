@@ -365,7 +365,7 @@ def get_subscription_trial_info(stripe_customer_id: str) -> dict:
                         product = stripe.Product.retrieve(product_id)
                         plan_name = getattr(product, "name", None)
                     except:
-                        pass
+                        raise Exception(f"Produto do plano não encontrado: {product_id}")
 
         return {
             "has_active_subscription": True,

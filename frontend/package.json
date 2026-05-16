@@ -1,7 +1,7 @@
 {
   "name": "pfire",
   "private": true,
-  "version": "1.10.2",
+  "version": "1.10.3",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,16 +17,16 @@
     "@hookform/resolvers": "^5.2.2",
     "@mui/icons-material": "^9.0.1",
     "@mui/material": "^9.0.1",
-    "@mui/x-charts": "9.1.0",
-    "@stripe/stripe-js": "^9.4.0",
-    "@tanstack/react-query": "^5.100.9",
+    "@mui/x-charts": "9.2.0",
+    "@stripe/stripe-js": "^9.5.0",
+    "@tanstack/react-query": "^5.100.10",
     "firebase": "^12.13.0",
     "graphql": "^16.14.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-hook-form": "^7.75.0",
+    "react-hook-form": "^7.76.0",
     "react-phone-number-input": "^3.4.16",
-    "react-router-dom": "^7.15.0",
+    "react-router-dom": "^7.15.1",
     "rxjs": "^7.8.2",
     "zod": "^4.4.3"
   },
@@ -34,13 +34,13 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/estree": "^1.0.9",
-    "@types/jsdom": "^28.0.1",
+    "@types/jsdom": "^28.0.3",
     "@types/react-dom": "^19.2.3",
-    "@vitejs/plugin-react-swc": "^4.3.0",
+    "@vitejs/plugin-react-swc": "^4.3.1",
     "esbuild": "^0.28.0",
     "jsdom": "^29.1.1",
     "prettier": "^3.8.3",
-    "vite": "^8.0.11",
-    "vitest": "^4.1.5"
+    "vite": "^8.0.13",
+    "vitest": "^4.1.6"
   }
 }
