@@ -5,6 +5,7 @@ import { TemaProvider } from "./hooks/TemaContext";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RecaptchaProvider } from "./hooks/RecaptchaContext";
 import App from "./App";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 
 function loadRecaptcha(siteKey: string) {
   const id = "recaptcha-v3";
@@ -40,6 +41,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <AuthProvider>
             <App />
           </AuthProvider>
+{/**/}    {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
         </QueryClientProvider>
       </RecaptchaProvider>
     </TemaProvider>

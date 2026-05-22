@@ -46,6 +46,7 @@ pwd_context = CryptContext(
 cred = credentials.Certificate("/etc/secrets/serviceAccountKey.json")
 firebase_admin.initialize_app(cred)
 
+
 async def blacklist_token_after_delay(
     token: str | None, exp: int | float | None, delay_seconds: float = 5.0
 ):

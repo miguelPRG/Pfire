@@ -1,4 +1,5 @@
 import { createContext, useState, useContext, ReactNode, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { FirebaseLogin } from "../firebase";
 import { useRecaptcha } from "./RecaptchaContext";
 import { useEmpresasQuery } from "../features/empresas/hooks";
@@ -94,14 +95,6 @@ interface AuthContextType {
   updateCompany: (empresa: EmpresaUpdate, id: string) => Promise<void>;
 }
 
-function getResponseErrorMessage(response: Response, data: ApiResponsePayload, fallback: string): string {
-  return (
-    (typeof data.detail === "string" && data.detail) ||
-    (typeof data.message === "string" && data.message) ||
-    (response.status >= 500 ? "Erro interno do backend. Confirma se o servidor FastAPI esta levantado." : fallback)
-  );
-}
-
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function killAuthCookie() {
@@ -121,6 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return localStorage.getItem("empresaId");
   });
   const { generateToken } = useRecaptcha();
+  const queryClient = useQueryClient();
 
   const { data, error } = useEmpresasQuery<{ getEmpresas?: { empresas?: Empresa[] } }>(
     { id: empresaId || undefined, start: 0 },
@@ -150,6 +144,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem("empresaId");
         setEmpresaId(null);
         setEmpresa(null);
+        queryClient.clear();
       }
 
       localStorage.setItem("userId", userData.id);
@@ -163,7 +158,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       }
     },
-    [buildUserState]
+    [buildUserState, queryClient]
   );
 
   const refreshAuth = useCallback(async () => {
