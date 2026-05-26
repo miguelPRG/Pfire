@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   useTheme,
   useScrollTrigger,
+  useMediaQuery,
   AppBar,
   Box,
   Toolbar,
@@ -19,6 +20,7 @@ import Sidebar from "./Sidebar";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import BusinessIcon from "@mui/icons-material/Business";
 import LogoutIcon from "@mui/icons-material/Logout";
+import MenuIcon from "@mui/icons-material/Menu";
 import "../assets/styles/ResponsiveAppBar.css";
 
 interface NavLinkProps {
@@ -49,6 +51,7 @@ function ResponsiveAppBar() {
   const [anchorElUser, setAnchorElUser] = useState<null | HTMLElement>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const theme = useTheme();
+  const iconColor = theme.palette.mode === "dark" ? "#fff" : "#000";
   const navigate = useNavigate();
 
   const openUserMenu = (event: React.MouseEvent<HTMLElement>) => {
@@ -61,6 +64,8 @@ function ResponsiveAppBar() {
     setSidebarOpen(!sidebarOpen);
   };
 
+  const isMobile = useMediaQuery("(max-width:780px)");
+
   const trigger = useScrollTrigger({
     disableHysteresis: true,
     threshold: 0,
@@ -69,17 +74,17 @@ function ResponsiveAppBar() {
   const userSettings = [
     {
       label: "Perfil",
-      icon: <AccountCircleIcon fontSize="small" sx={{ mr: 1 }} />,
+      icon: <AccountCircleIcon fontSize="small" sx={{ mr: 1, color: iconColor }} />,
       action: () => navigate("/edit-profile"),
     },
     {
       label: "Mudar de empresa",
-      icon: <BusinessIcon fontSize="small" sx={{ mr: 1 }} />,
+      icon: <BusinessIcon fontSize="small" sx={{ mr: 1, color: iconColor }} />,
       action: () => navigate("/choose-company"),
     },
     {
       label: "Logout",
-      icon: <LogoutIcon fontSize="small" sx={{ mr: 1 }} />,
+      icon: <LogoutIcon fontSize="small" sx={{ mr: 1, color: iconColor }} />,
       action: async () => {
         await logout();
         navigate("/login", { replace: true });
@@ -109,6 +114,16 @@ function ResponsiveAppBar() {
         >
           {/* Box 1: Sidebar + Logo */}
           <Box sx={{ display: "flex", alignItems: "center", flex: "0 0 auto" }}>
+            {isMobile && (
+              <IconButton
+                color="inherit"
+                aria-label="abrir menu"
+                onClick={toggleSidebar}
+                sx={{ mr: 0.5 }}
+              >
+                <MenuIcon />
+              </IconButton>
+            )}
             <Box sx={{ display: "flex", alignItems: "center" }}>
               <Box
                 component="img"
