@@ -9,7 +9,11 @@ export const billingApi = {
     httpRequest<TData>("/backend/user/refresh-token-after-payment", {
       method: "POST",
     }),
-  getTrialInfo: <TData>() => httpRequest<TData>("/user/subscription-trial-info"),
+  getTrialInfo: <TData>() => httpRequest<TData>("/backend/user/subscription-trial-info"),
+  cancelSubscriptionAtPeriodEnd: <TData>() =>
+    httpRequest<TData>("/backend/user/subscription/cancel-at-period-end", {
+      method: "POST",
+    }),
   clearPaymentError: <TData>() =>
     httpRequest<TData>("/backend/user/clear-payment-error", {
       method: "PUT",

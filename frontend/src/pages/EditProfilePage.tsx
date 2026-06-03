@@ -104,6 +104,24 @@ type PaymentMethodType = {
   isDefault: boolean;
 };
 
+type SubscriptionInfoType = {
+  has_active_subscription: boolean;
+  is_trialing: boolean;
+  trial_end: number | null;
+  current_period_end: number | null;
+  cancel_at_period_end: boolean;
+  canceled_at: number | null;
+  plan_name: string | null;
+  status: string | null;
+};
+
+type CancelSubscriptionResponseType = {
+  ok: boolean;
+  current_period_end: number | null;
+  cancel_at_period_end: boolean;
+  already_scheduled?: boolean;
+};
+
 function normalizePaymentMethods(data: any): PaymentMethodType[] {
   // Helper to extract actual data from Stripe SDK objects
   function extractData(obj: any): any {
@@ -202,6 +220,18 @@ function getPaymentExpiryLabel(paymentMethod: PaymentMethodType): string {
   return `${month}/${shortYear}`;
 }
 
+function formatStripeDate(timestamp: number | null | undefined): string {
+  if (!timestamp) {
+    return "Indisponível";
+  }
+
+  return new Date(timestamp * 1000).toLocaleDateString("pt-PT", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+}
+
 interface SectionFormProps {
   title: string;
   onSubmit: React.InputEventHandler<HTMLFormElement>;
@@ -263,6 +293,10 @@ function EditProfilePage() {
   const [redirectingToBilling, setRedirectingToBilling] = useState(false);
   const [updatingDefaultPaymentId, setUpdatingDefaultPaymentId] = useState<string | null>(null);
   const [removingPaymentId, setRemovingPaymentId] = useState<string | null>(null);
+  const [subscriptionInfo, setSubscriptionInfo] = useState<SubscriptionInfoType | null>(null);
+  const [loadingSubscriptionInfo, setLoadingSubscriptionInfo] = useState(false);
+  const [cancelSubscriptionOpen, setCancelSubscriptionOpen] = useState(false);
+  const [cancelingSubscription, setCancelingSubscription] = useState(false);
 
   // Ref para o topo da página
   const topRef = useRef<HTMLDivElement>(null);
@@ -328,9 +362,31 @@ function EditProfilePage() {
     }
   }, [user]);
 
+  const fetchSubscriptionInfo = useCallback(async () => {
+    if (!user) {
+      setSubscriptionInfo(null);
+      return;
+    }
+
+    setLoadingSubscriptionInfo(true);
+    try {
+      const data = await billingApi.getTrialInfo<SubscriptionInfoType>();
+      setSubscriptionInfo(data);
+    } catch (error) {
+      console.error("Erro ao obter informação da subscrição:", error);
+      setSubscriptionInfo(null);
+    } finally {
+      setLoadingSubscriptionInfo(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     fetchPaymentMethods();
   }, [fetchPaymentMethods]);
+
+  useEffect(() => {
+    fetchSubscriptionInfo();
+  }, [fetchSubscriptionInfo]);
 
   const handleSetDefaultPaymentMethod = async (paymentMethodId: string) => {
     if (!paymentMethodId || paymentMethodId === "legacy") {
@@ -535,9 +591,87 @@ function EditProfilePage() {
     }
   };
 
+  const handleCancelSubscriptionAtPeriodEnd = async () => {
+    setCancelingSubscription(true);
+    try {
+      const result = await billingApi.cancelSubscriptionAtPeriodEnd<CancelSubscriptionResponseType>();
+      await fetchSubscriptionInfo();
+      setCancelSubscriptionOpen(false);
+      setGlobalMessage({
+        error: false,
+        message: result.already_scheduled
+          ? `O cancelamento já estava agendado para ${formatStripeDate(result.current_period_end)}.`
+          : `Subscrição agendada para cancelamento em ${formatStripeDate(result.current_period_end)}.`,
+      });
+    } catch (error: any) {
+      setGlobalMessage({
+        error: true,
+        message: error?.message || "Erro ao agendar cancelamento da subscrição.",
+      });
+    } finally {
+      setCancelingSubscription(false);
+    }
+  };
+
   const hasExpiredPaymentMethods = paymentMethods.some(isPaymentMethodExpired);
   const expiredPaymentMessage = "Existe um cartão expirado. Atualize ou adicione um novo método de pagamento.";
   const defaultPaymentMethod = paymentMethods.find((method) => method.isDefault) || null;
+  const billingPeriodEnd = subscriptionInfo?.current_period_end || subscriptionInfo?.trial_end || null;
+  const subscriptionCanBeCanceled =
+    Boolean(subscriptionInfo?.has_active_subscription) && !subscriptionInfo?.cancel_at_period_end;
+  const subscriptionDetails = loadingSubscriptionInfo ? (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+      <CircularProgress size={16} />
+      <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
+        A carregar informação da subscrição...
+      </Typography>
+    </Box>
+  ) : subscriptionInfo?.has_active_subscription ? (
+    <Stack spacing={1} sx={{ width: "100%" }}>
+      <Box sx={{ display: "flex", justifyContent: "space-between", gap: 1.5, flexWrap: "wrap" }}>
+        <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 700 }}>
+          {subscriptionInfo.cancel_at_period_end ? "Termina em" : "Próxima cobrança"}
+        </Typography>
+        <Typography variant="caption" sx={{ color: "text.primary", fontWeight: 700 }}>
+          {formatStripeDate(billingPeriodEnd)}
+        </Typography>
+      </Box>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5, flexWrap: "wrap" }}>
+        <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
+          {subscriptionInfo.plan_name || user?.plano || "Subscrição ativa"}
+        </Typography>
+        <Chip
+          size="small"
+          color={subscriptionInfo.cancel_at_period_end ? "warning" : "success"}
+          label={subscriptionInfo.cancel_at_period_end ? "Cancelamento agendado" : "Plano ativo"}
+          sx={{ height: 20, fontWeight: 700, fontSize: "0.65rem" }}
+        />
+      </Box>
+      {subscriptionInfo.cancel_at_period_end ? (
+        <Typography variant="caption" sx={{ color: "warning.main", fontWeight: 600 }}>
+          O plano continua ativo até {formatStripeDate(billingPeriodEnd)}.
+        </Typography>
+      ) : (
+        <Button
+          variant="outlined"
+          color="error"
+          size="small"
+          onClick={(event) => {
+            event.stopPropagation();
+            setCancelSubscriptionOpen(true);
+          }}
+          disabled={!subscriptionCanBeCanceled || cancelingSubscription}
+          sx={{ alignSelf: "flex-start", mt: 0.5 }}
+        >
+          Cancelar subscrição
+        </Button>
+      )}
+    </Stack>
+  ) : (
+    <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 700 }}>
+      Não tem nenhum plano ativo de momento.
+    </Typography>
+  );
 
   return (
     <Container maxWidth={false} sx={{ mt: 5 }}>
@@ -789,108 +923,121 @@ function EditProfilePage() {
                 <Typography variant="body2">A carregar métodos de pagamento...</Typography>
               </Box>
             ) : defaultPaymentMethod ? (
-              <Paper
-                elevation={1}
-                onClick={() => setPaymentDialogOpen(true)}
-                sx={{
-                  p: 1.5,
-                  borderRadius: 2,
-                  cursor: "pointer",
-                  border: "1px solid",
-                  borderColor: isPaymentMethodExpired(defaultPaymentMethod) ? "error.main" : "success.main",
-                  bgcolor: "action.selected",
-                  transition: "box-shadow 0.2s, transform 0.2s",
-                  "&:hover": {
-                    boxShadow: 4,
-                    transform: "translateY(-1px)",
-                  },
-                }}
-              >
-                <Box
+              <>
+                <Paper
+                  elevation={1}
+                  onClick={() => setPaymentDialogOpen(true)}
                   sx={{
-                    display: "flex",
-                    flexDirection: { xs: "column", sm: "row" },
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    gap: 2,
+                    p: 1.5,
+                    borderRadius: 2,
+                    cursor: "pointer",
+                    border: "1px solid",
+                    borderColor: isPaymentMethodExpired(defaultPaymentMethod) ? "error.main" : "success.main",
+                    bgcolor: "action.selected",
+                    transition: "box-shadow 0.2s, transform 0.2s",
+                    "&:hover": {
+                      boxShadow: 4,
+                      transform: "translateY(-1px)",
+                    },
                   }}
                 >
                   <Box
                     sx={{
                       display: "flex",
-                      flexDirection: "column",
-                      alignItems: "flex-start",
-                      gap: 0.5,
-                      flex: 1,
-                      minWidth: 0,
+                      flexDirection: { xs: "column", sm: "row" },
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 2,
                     }}
                   >
                     <Box
                       sx={{
                         display: "flex",
-                        alignItems: "center",
-                        gap: 1,
+                        flexDirection: "column",
+                        alignItems: "flex-start",
+                        gap: 0.5,
+                        flex: 1,
                         minWidth: 0,
                       }}
                     >
-                      <Typography
-                        variant="body1"
+                      <Box
                         sx={{
-                          color: "text.primary",
-                          fontWeight: 700,
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          minWidth: 0,
                         }}
                       >
-                        {getPaymentBrandName(defaultPaymentMethod.brand)}{" "}
-                        {defaultPaymentMethod.maskedNumber.replace("**** **** **** ", "•••• ")}
-                      </Typography>
+                        <Typography
+                          variant="body1"
+                          sx={{
+                            color: "text.primary",
+                            fontWeight: 700,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {getPaymentBrandName(defaultPaymentMethod.brand)}{" "}
+                          {defaultPaymentMethod.maskedNumber.replace("**** **** **** ", "•••• ")}
+                        </Typography>
+                      </Box>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          flexWrap: "wrap",
+                        }}
+                      >
+                        <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
+                          Expires {getPaymentExpiryLabel(defaultPaymentMethod)}
+                        </Typography>
+                        <Chip
+                          size="small"
+                          color="success"
+                          label="Padrão"
+                          sx={{ height: 18, fontWeight: 700, fontSize: "0.65rem" }}
+                        />
+                      </Box>
+                      {isPaymentMethodExpired(defaultPaymentMethod) && (
+                        <Typography
+                          variant="caption"
+                          sx={{
+                            color: "error.main",
+                            fontWeight: 600,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          Cartão expirado
+                        </Typography>
+                      )}
                     </Box>
                     <Box
+                      component="img"
+                      src={getPaymentBrandImage(defaultPaymentMethod.brand)}
+                      alt={getPaymentBrandName(defaultPaymentMethod.brand)}
                       sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                        flexWrap: "wrap",
+                        height: "auto",
+                        width: 45,
+                        objectFit: "contain",
+                        flexShrink: 0,
                       }}
-                    >
-                      <Typography variant="caption" sx={{ color: "text.secondary", fontWeight: 600 }}>
-                        Expires {getPaymentExpiryLabel(defaultPaymentMethod)}
-                      </Typography>
-                      <Chip
-                        size="small"
-                        color="success"
-                        label="Padrão"
-                        sx={{ height: 18, fontWeight: 700, fontSize: "0.65rem" }}
-                      />
-                    </Box>
-                    {isPaymentMethodExpired(defaultPaymentMethod) && (
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          color: "error.main",
-                          fontWeight: 600,
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        Cartão expirado
-                      </Typography>
-                    )}
+                    />
                   </Box>
-                  <Box
-                    component="img"
-                    src={getPaymentBrandImage(defaultPaymentMethod.brand)}
-                    alt={getPaymentBrandName(defaultPaymentMethod.brand)}
-                    sx={{
-                      height: "auto",
-                      width: 45,
-                      objectFit: "contain",
-                      flexShrink: 0,
-                    }}
-                  />
-                </Box>
-              </Paper>
+                  <Box sx={{ mt: 1.5, pt: 1.5, borderTop: "1px solid", borderColor: "divider" }}>
+                    {subscriptionDetails}
+                  </Box>
+                </Paper>
+                {isPaymentMethodExpired(defaultPaymentMethod) && (
+                  <Box sx={{ mt: 1.5 }}>
+                    <Alert severity="error" variant="outlined">
+                      Seu cartão padrão está expirado. Atualize-o ou adicione um novo método de pagamento para evitar
+                      problemas com sua subscrição.
+                    </Alert>
+                  </Box>
+                )}
+              </>
             ) : paymentMethods.length > 0 ? (
               <Paper
                 onClick={() => setPaymentDialogOpen(true)}
@@ -903,14 +1050,17 @@ function EditProfilePage() {
                   borderColor: "divider",
                 }}
               >
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "text.secondary",
-                  }}
-                >
-                  Nenhum método padrão definido. Clique para escolher um método padrão.
-                </Typography>
+                <Stack spacing={1.5}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "text.secondary",
+                    }}
+                  >
+                    Nenhum método padrão definido. Clique para escolher um método padrão.
+                  </Typography>
+                  <Box sx={{ pt: 1.5, borderTop: "1px solid", borderColor: "divider" }}>{subscriptionDetails}</Box>
+                </Stack>
               </Paper>
             ) : (
               <Paper
@@ -924,14 +1074,17 @@ function EditProfilePage() {
                   borderColor: "divider",
                 }}
               >
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: "text.secondary",
-                  }}
-                >
-                  Nenhum cartão guardado. Clique para adicionar um novo método de pagamento.
-                </Typography>
+                <Stack spacing={1.5}>
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      color: "text.secondary",
+                    }}
+                  >
+                    Nenhum cartão guardado. Clique para adicionar um novo método de pagamento.
+                  </Typography>
+                  <Box sx={{ pt: 1.5, borderTop: "1px solid", borderColor: "divider" }}>{subscriptionDetails}</Box>
+                </Stack>
               </Paper>
             )}
           </Grid>
@@ -1373,6 +1526,31 @@ function EditProfilePage() {
             disabled={redirectingToBilling}
           >
             Cancelar
+          </Button>
+        </DialogActions>
+      </Dialog>
+      <Dialog open={cancelSubscriptionOpen} onClose={() => setCancelSubscriptionOpen(false)} maxWidth="xs" fullWidth>
+        <DialogTitle>Cancelar subscrição</DialogTitle>
+        <DialogContent>
+          <Typography sx={{ mb: 2 }}>
+            O cancelamento será agendado para {formatStripeDate(billingPeriodEnd)}. A conta mantém o plano ativo até
+            essa data e não será cobrada novamente depois disso.
+          </Typography>
+          <Alert severity="warning" variant="outlined">
+            Esta ação cancela a subscrição correspondente na Stripe no fim do período de cobrança atual.
+          </Alert>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCancelSubscriptionOpen(false)} disabled={cancelingSubscription}>
+            Manter subscrição
+          </Button>
+          <Button
+            variant="contained"
+            color="error"
+            onClick={handleCancelSubscriptionAtPeriodEnd}
+            disabled={cancelingSubscription}
+          >
+            {cancelingSubscription ? "A agendar..." : "Confirmar cancelamento"}
           </Button>
         </DialogActions>
       </Dialog>

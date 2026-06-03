@@ -1,5 +1,5 @@
 import stripe
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from apis.stripe_client import (
     create_checkout,
@@ -9,12 +9,12 @@ from apis.stripe_client import (
     set_default_payment_method,
     remove_payment_method_not_default,
     get_subscription_trial_info,
+    schedule_subscription_cancel_at_period_end,
 )
 from database import users_collection
 from bson import ObjectId
 from stripe import Webhook, SignatureVerificationError
 from os import getenv
-from datetime import datetime
 from controller.jwtValidation import generate_jwt
 from controller.cookie_settings import get_auth_cookie_settings
 from .stripe.webhook_handlers import (
@@ -23,6 +23,7 @@ from .stripe.webhook_handlers import (
     handle_setup_intent_succeeded_with_payment_method,
     handle_invoice_payment_succeeded,
     handle_invoice_payment_failed,
+    handle_customer_subscription_deleted,
 )
 import logging
 
@@ -101,7 +102,7 @@ async def create_user_checkout(request: Request, plan_id: str):
 
 
 @routerPayment.post("/refresh-token-after-payment")
-async def refresh_token_after_payment(request: Request, response: Response):
+async def refresh_token_after_payment(request: Request):
     """
     ✅ Endpoint chamado pelo frontend após sucesso do pagamento
     Valida o flag needs_jwt_refresh e gera novo JWT
@@ -126,6 +127,7 @@ async def refresh_token_after_payment(request: Request, response: Response):
                 stripe_customer_id=user.get("stripe_customer_id", None),
                 email=user.get("email", None),
                 nome=user.get("nome", None),
+                has_demo=user.get("has_demo", False),
             )
             refreshed = True
 
@@ -155,16 +157,7 @@ async def refresh_token_after_payment(request: Request, response: Response):
             f"JWT {'atualizado' if refreshed else 'mantido'} para user {user_id} com plano {user.get('plano')}"
         )
 
-        refreshed = True
-
-        return {
-            "message": (
-                "JWT atualizado com sucesso."
-                if refreshed
-                else "Sem necessidade de refresh."
-            ),
-            "refreshed": refreshed,
-        }
+        return response
 
     except HTTPException:
         raise
@@ -186,6 +179,9 @@ async def get_trial_info(request: Request):
             "has_active_subscription": False,
             "is_trialing": False,
             "trial_end": None,
+            "current_period_end": None,
+            "cancel_at_period_end": False,
+            "canceled_at": None,
             "plan_name": None,
             "status": None,
         }
@@ -202,9 +198,28 @@ async def get_trial_info(request: Request):
             "has_active_subscription": False,
             "is_trialing": False,
             "trial_end": None,
+            "current_period_end": None,
+            "cancel_at_period_end": False,
+            "canceled_at": None,
             "plan_name": None,
             "status": None,
         }
+
+
+@routerPayment.post("/subscription/cancel-at-period-end")
+async def cancel_subscription_at_period_end(request: Request):
+    """Agenda o cancelamento da subscrição para o fim do período de cobrança."""
+    jwt = getattr(request.state, "jwt", None)
+    if not jwt or not jwt.get("stripe_customer_id"):
+        raise HTTPException(status_code=400, detail="User sem Stripe customer")
+
+    try:
+        return await schedule_subscription_cancel_at_period_end(
+            jwt["stripe_customer_id"]
+        )
+    except Exception as e:
+        logger.error(f"Erro ao agendar cancelamento da subscrição: {str(e)}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @routerPayment.get("/payment-methods")
@@ -297,6 +312,7 @@ async def stripe_webhook(request: Request):
         "invoice.payment_succeeded",
         "invoice.payment_failed",
         "setup_intent.succeeded",
+        "customer.subscription.deleted",
     }
 
     if event_type not in SUPPORTED_EVENTS:
@@ -354,6 +370,15 @@ async def stripe_webhook(request: Request):
             customer_id=customer_id,
             user_id=user_id,
             error_message=error_message,
+        )
+
+    elif event_type == "customer.subscription.deleted":
+        cancellation_details = getattr(stripe_object, "cancellation_details", None)
+        cancellation_reason = getattr(cancellation_details, "reason", None)
+        return await handle_customer_subscription_deleted(
+            customer_id=customer_id,
+            user_id=user_id,
+            cancellation_reason=cancellation_reason,
         )
 
     return {"status": "ok"}

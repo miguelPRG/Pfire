@@ -1,8 +1,4 @@
 import { useAuth } from "./AuthContext";
-import { useEmpresasQuery } from "../features/empresas/hooks";
-import { useModelosQuery } from "../features/modelos/hooks";
-import { useUsersQuery } from "../features/users/hooks";
-import { useClientesQuery } from "../features/clientes/hooks";
 
 interface PlanLimits {
   empresas: number;
@@ -22,23 +18,13 @@ interface PlanLimits {
   messageCliente: string;
 }
 
+/**
+ * Hook para obter limites de plano
+ * NÃO faz queries - apenas retorna limites e valores padrão
+ * Cada página é responsável por fazer suas próprias queries quando necessário
+ */
 export function usePlanLimits(): PlanLimits {
-  const { user, empresa } = useAuth();
-
-  // Query para contar empresas
-  const { data: empresasData } = useEmpresasQuery<any>({ start: 0 }, Boolean(user));
-
-  // Query para contar modelos
-  const { data: modelosData } = useModelosQuery<any>({ empresaId: empresa?.id || "", start: 0 }, Boolean(empresa?.id));
-
-  // Query para contar utilizadores
-  const { data: usersData } = useUsersQuery<any>({ empresaId: empresa?.id || "", start: 0 }, Boolean(empresa?.id));
-
-  // Query para contar clientes
-  const { data: clientesData } = useClientesQuery<any>(
-    { empresaId: empresa?.id || "", start: 0 },
-    Boolean(empresa?.id)
-  );
+  const { user } = useAuth();
 
   const plano = user?.plano?.toLowerCase() || "free";
 
@@ -51,16 +37,17 @@ export function usePlanLimits(): PlanLimits {
 
   const planLimits = limites[plano as keyof typeof limites] || limites.free;
 
-  // Contar recursos atuais
-  const empresasCount = empresasData?.getEmpresas?.totalEmpresas || 0;
-  const modelosCount = modelosData?.getModelos?.totalModelos || 0;
-  const utilizadoresCount = usersData?.getUsers?.totalUsers || 0;
-  const clientesCount = clientesData?.getClientes?.totalClientes || 0;
+  // Contar recursos atuais - todos retornam 0
+  // Cada página é responsável por fazer suas queries e passar os valores quando necessário
+  const empresasCount = 0; // Página de empresas faz sua própria query
+  const modelosCount = 0; // Página de modelos faz sua própria query
+  const utilizadoresCount = 0; // Página de utilizadores faz sua própria query
+  const clientesCount = 0; // Página de clientes faz sua própria query
 
-  // Validar se pode criar
-  const canCreateEmpresa = empresasCount < planLimits.empresas;
-  const canCreateModelo = modelosCount < planLimits.modelosPorEmpresa;
-  const canCreateUtilizador = utilizadoresCount < planLimits.utilizadoresPorEmpresa;
+  // Validações padrão - páginas podem sobrescrever com dados reais
+  const canCreateEmpresa = true; // Página de empresas validará com seus dados
+  const canCreateModelo = true; // Página de modelos validará com seus dados
+  const canCreateUtilizador = true; // Página de utilizadores validará com seus dados
   const canCreateCliente = true; // Sem limite
 
   // Mensagens motivacionais

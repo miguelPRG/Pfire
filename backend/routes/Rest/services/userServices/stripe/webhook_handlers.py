@@ -114,7 +114,7 @@ async def handle_checkout_session_completed(
 
     result = await users_collection.update_one(
         query,
-        {"$set": {"plano": plano, "updated_at": datetime.now()}},
+        {"$set": {"plano": plano, "has_demo": True, "updated_at": datetime.now()}},
     )
 
     if result.modified_count > 0:
@@ -299,6 +299,72 @@ async def handle_invoice_payment_failed(
     else:
         logger.warning(
             f"⚠️ User não encontrado para registar erro de pagamento "
+            f"(user_id={user_id}, customer_id={customer_id})"
+        )
+
+    return {"status": "ok"}
+
+
+async def handle_customer_subscription_deleted(
+    customer_id: str = None,
+    user_id: str = None,
+    cancellation_reason: str = None,
+) -> dict:
+    """
+    🔴 Processa cancelamento/eliminação de subscrição pelo Stripe.
+    Altera o plano do user para 'free'.
+
+    Args:
+        customer_id: ID do customer Stripe
+        user_id: ID do user
+        cancellation_reason: razão do cancelamento enviada pela Stripe
+
+    Returns:
+        dict: Status da operação
+    """
+    logger.warning(
+        f"🔴 Subscrição cancelada pelo Stripe para customer={customer_id}, user_id={user_id}. "
+        f"Alterando plano para 'free'."
+    )
+
+    query = await get_user_query(user_id, customer_id)
+
+    if not query:
+        logger.warning(
+            f"⚠️ Não foi possível identificar o user para cancelamento de subscrição "
+            f"(user_id={user_id}, customer_id={customer_id})"
+        )
+        return {"status": "ok"}
+
+    is_user_requested = cancellation_reason == "cancellation_requested"
+    update = {
+        "$set": {
+            "plano": "free",
+            "updated_at": datetime.now(),
+        }
+    }
+
+    if is_user_requested:
+        update["$unset"] = {"payment_error": "", "payment_error_at": ""}
+    else:
+        error_message = "Sua subscrição foi cancelada automaticamente devido a múltiplas falhas de pagamento. Por favor, atualize seu método de pagamento."
+        update["$set"].update(
+            {
+                "payment_error": error_message,
+                "payment_error_at": datetime.now(),
+            }
+        )
+
+    result = await users_collection.update_one(
+        query,
+        update,
+    )
+
+    if result.modified_count > 0:
+        logger.info(f"✅ Plano alterado para 'free' para user {user_id}")
+    else:
+        logger.warning(
+            f"⚠️ User não encontrado para atualizar após cancelamento de subscrição "
             f"(user_id={user_id}, customer_id={customer_id})"
         )
 

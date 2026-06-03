@@ -30,7 +30,7 @@ import {
   useSetAdminMutation,
 } from "../../../features/users/hooks";
 import { useAuth } from "../../../hooks/AuthContext";
-import { usePlanLimits } from "../../../hooks/usePlanLimits";
+import { useUtilizadorLimits } from "../../../hooks/useUtilizadorLimits";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -110,6 +110,10 @@ export default function UserManagementTable() {
   } = useUsersQuery<returnedData>(usersQueryVars, Boolean(empresa?.id), `${page}-${JSON.stringify(serverFilter)}`);
   const users = data?.getUsers?.users || [];
   const totalUsers = data?.getUsers?.totalUsers || 0;
+
+  // Usar dados da query para validar limites
+  const { canCreateUtilizador, messageUtilizador, utilizadoresPorEmpresa } = useUtilizadorLimits(totalUsers);
+
   const inviteUserMutation = useInviteUserMutation<any>();
   const expelUserMutation = useExpelUserMutation<any>();
   const setAdminMutation = useSetAdminMutation<any>();
@@ -275,9 +279,9 @@ export default function UserManagementTable() {
           >
             Convidar Utilizador
           </LimitedButton>
-          <ResourceCount current={utilizadoresCount} limit={utilizadoresPorEmpresa} resourceName="utilizador" />
+          <ResourceCount current={totalUsers} limit={utilizadoresPorEmpresa} resourceName="utilizador" />
           <LimitIndicator
-            current={utilizadoresCount}
+            current={totalUsers}
             limit={utilizadoresPorEmpresa}
             label="Utilizadores"
             resourceName="utilizador"

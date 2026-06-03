@@ -18,6 +18,8 @@ import {
   Link,
   Tooltip,
   Breadcrumbs,
+  Chip,
+  Alert,
 } from "@mui/material";
 import {
   ExpandLess,
@@ -25,12 +27,13 @@ import {
   Delete,
   ContentCopy as ContentCopyIcon,
   Description as DescriptionIcon,
+  Lock as LockIcon,
 } from "@mui/icons-material";
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 import { useAuth } from "../../../hooks/AuthContext";
-import { usePlanLimits } from "../../../hooks/usePlanLimits";
+import { useModelLimits } from "../../../hooks/useModelLimits";
 import Notification from "../../../components/Notification";
 import LoadingAnimation from "../../../components/LoadingAnimation";
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
@@ -89,8 +92,8 @@ interface CriteriaVars {
 // Componente principal da página de listagem de modelos de relatórios
 export default function ReportModelListPage() {
   // Recupera informações da empresa autenticada
-  const { empresa } = useAuth();
-  const { canCreateModelo, messageModelo, modelosCount, modelosPorEmpresa } = usePlanLimits();
+  const { empresa, user } = useAuth();
+
   // Hook para navegação entre rotas
   const navigate = useNavigate();
   // Hook para acessar o tema atual
@@ -135,10 +138,16 @@ export default function ReportModelListPage() {
   const modelos: any[] = data?.getModelos?.modelos || [];
   const totalModelos: number = data?.getModelos?.totalModelos || 0;
 
+  // Usar dados da query de modelos para validar limites
+  const { canCreateModelo, messageModelo, modelosPorEmpresa } = useModelLimits(totalModelos);
+  const isFreePlan = (user?.plano || "free").toLowerCase() === "free";
+  const hasLockedModels = isFreePlan && totalModelos > modelosPorEmpresa;
+  const isExtraFreeModel = (index: number) => isFreePlan && page * rowsPerPage + index >= modelosPorEmpresa;
+
   const pageCount = Math.max(1, Math.ceil(totalModelos / rowsPerPage));
 
   // número total de colunas da tabela (ajusta colspan quando não há modelos)
-  const baseColumns = 3; // Nome, Data de Criação, Ações (ajuste se necessário)
+  const baseColumns = 4; // Nome, Data de Criação, Estado, Ações
   const customFieldsCount = modelos[0]?.customFields?.length || 0;
   const totalColumns = baseColumns + customFieldsCount;
 
@@ -511,11 +520,17 @@ export default function ReportModelListPage() {
               >
                 Adicionar novo Modelo
               </LimitedButton>
-              <ResourceCount current={modelosCount} limit={modelosPorEmpresa} resourceName="modelo" />
-              <LimitIndicator current={modelosCount} limit={modelosPorEmpresa} label="Modelos" resourceName="modelo" />
+              <ResourceCount current={totalModelos} limit={modelosPorEmpresa} resourceName="modelo" />
+              <LimitIndicator current={totalModelos} limit={modelosPorEmpresa} label="Modelos" resourceName="modelo" />
             </Box>
           )}
         </Box>
+
+        {hasLockedModels && (
+          <Alert severity="info" sx={{ mb: 2 }}>
+            O plano Free permite 1 modelo ativo por empresa. Os modelos adicionais ficam bloqueados até fazer upgrade.
+          </Alert>
+        )}
 
         {/* Barra de pesquisa (enter para pesquisar) */}
         <Box
@@ -570,6 +585,7 @@ export default function ReportModelListPage() {
               <TableRow>
                 <TableCell sx={{ fontWeight: 700 }}>Nome</TableCell>
                 <TableCell sx={{ fontWeight: 700 }}>Data de Criação</TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>Estado</TableCell>
                 {Array.isArray(modelos[0]?.customFields) &&
                   modelos[0].customFields.map((field: any, index: number) => (
                     <TableCell key={index} sx={{ fontWeight: 700 }}>
@@ -591,33 +607,52 @@ export default function ReportModelListPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                modelos.map((modelo: any) => (
+                modelos.map((modelo: any, index: number) => (
                   <TableRow key={modelo.id} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
                     <TableCell>
                       {empresa?.isAdmin ? (
-                        <Link
-                          component="button"
-                          onClick={() =>
-                            navigate("/report-templates", {
-                              state: {
-                                modelo: {
-                                  id: modelo.id,
-                                  modeloNome: modelo.modeloNome,
-                                  customFields: modelo.customFields,
-                                  createdAt: modelo.createdAt,
+                        modelo.isLocked ? (
+                          <Tooltip title={modelo.lockReason || "Modelo bloqueado no seu plano."} placement="top">
+                            <Box component="span" sx={{ color: "text.secondary", cursor: "not-allowed" }}>
+                              {modelo.modeloNome}
+                            </Box>
+                          </Tooltip>
+                        ) : (
+                          <Link
+                            component="button"
+                            onClick={() =>
+                              navigate("/report-templates", {
+                                state: {
+                                  modelo: {
+                                    id: modelo.id,
+                                    modeloNome: modelo.modeloNome,
+                                    customFields: modelo.customFields,
+                                    createdAt: modelo.createdAt,
+                                    isLocked: modelo.isLocked,
+                                    lockReason: modelo.lockReason,
+                                  },
                                 },
-                              },
-                            })
-                          }
-                          sx={{ cursor: "pointer", textDecoration: "none" }}
-                        >
-                          {modelo.modeloNome}
-                        </Link>
+                              })
+                            }
+                            sx={{ cursor: "pointer", textDecoration: "none" }}
+                          >
+                            {modelo.modeloNome}
+                          </Link>
+                        )
                       ) : (
                         <span>{modelo.modeloNome}</span>
                       )}
                     </TableCell>
                     <TableCell>{new Date(modelo.createdAt).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      {modelo.isLocked ? (
+                        <Tooltip title={modelo.lockReason || "Modelo bloqueado no seu plano."} placement="top">
+                          <Chip icon={<LockIcon />} label="Bloqueado" color="info" variant="outlined" size="small" />
+                        </Tooltip>
+                      ) : (
+                        <Chip label="Ativo" color="success" variant="outlined" size="small" />
+                      )}
+                    </TableCell>
                     {Array.isArray(modelo.customFields) &&
                       modelo.customFields.map((field: any, index: number) => (
                         <TableCell key={index}>
@@ -660,80 +695,126 @@ export default function ReportModelListPage() {
                     <TableCell align="center">
                       <Box sx={{ display: "flex", gap: 2, justifyContent: "space-between" }}>
                         <Tooltip title="Adicionar Relatório" placement="top">
-                          <IconButton
-                            onClick={() =>
-                              navigate("/add-new-report", {
-                                state: {
-                                  selectedModel: modelo,
-                                },
-                              })
-                            }
-                            sx={{
-                              color: "#fff",
-                              backgroundColor: "primary.main",
-                              border: "1px solid",
-                              borderColor: "primary.main",
-                              "&:hover": {
-                                backgroundColor: "primary.dark",
-                                color: "#fff",
-                              },
-                              width: 40,
-                              height: 40,
-                            }}
-                          >
-                            <Typography
-                              component="span"
+                          <span>
+                            <IconButton
+                              disabled={modelo.isLocked}
+                              onClick={() =>
+                                navigate("/add-new-report", {
+                                  state: {
+                                    selectedModel: modelo,
+                                  },
+                                })
+                              }
                               sx={{
-                                fontSize: 26,
-                                fontWeight: "bold",
                                 color: "#fff",
+                                backgroundColor: modelo.isLocked ? "info.main" : "primary.main",
+                                border: "1px solid",
+                                borderColor: modelo.isLocked ? "info.main" : "primary.main",
+                                "&:hover": {
+                                  backgroundColor: modelo.isLocked ? "info.dark" : "primary.dark",
+                                  color: "#fff",
+                                },
+                                "&.Mui-disabled": {
+                                  backgroundColor: "info.main",
+                                  borderColor: "info.main",
+                                  color: "#fff",
+                                },
+                                width: 40,
+                                height: 40,
                               }}
                             >
-                              +
-                            </Typography>
-                          </IconButton>
+                              {modelo.isLocked ? (
+                                <LockIcon sx={{ fontSize: 24, color: "#fff" }} />
+                              ) : (
+                                <Typography
+                                  component="span"
+                                  sx={{
+                                    fontSize: 26,
+                                    fontWeight: "bold",
+                                    color: "#fff",
+                                  }}
+                                >
+                                  +
+                                </Typography>
+                              )}
+                            </IconButton>
+                          </span>
                         </Tooltip>
 
                         <Tooltip title="Ver relatórios" placement="top">
-                          <IconButton
-                            aria-label="Ver relatórios"
-                            onClick={() =>
-                              navigate("/reports-list", {
-                                state: {
-                                  filter: {
-                                    modeloId: modelo.id,
+                          <span>
+                            <IconButton
+                              aria-label="Ver relatórios"
+                              disabled={modelo.isLocked || isExtraFreeModel(index)}
+                              onClick={() =>
+                                navigate("/reports-list", {
+                                  state: {
+                                    filter: {
+                                      modeloId: modelo.id,
+                                    },
                                   },
-                                },
-                              })
-                            }
-                            sx={{
-                              color: "#fff",
-                              backgroundColor: "primary.main",
-                              border: "1px solid",
-                              borderColor: "primary.main",
-                              "&:hover": {
-                                backgroundColor: "primary.dark",
+                                })
+                              }
+                              sx={{
                                 color: "#fff",
-                              },
-                              width: 40,
-                              height: 40,
-                            }}
-                          >
-                            <DescriptionIcon sx={{ fontSize: 24, color: "#fff" }} />
-                          </IconButton>
+                                backgroundColor:
+                                  modelo.isLocked || isExtraFreeModel(index) ? "info.main" : "primary.main",
+                                border: "1px solid",
+                                borderColor: modelo.isLocked || isExtraFreeModel(index) ? "info.main" : "primary.main",
+                                "&:hover": {
+                                  backgroundColor:
+                                    modelo.isLocked || isExtraFreeModel(index) ? "info.dark" : "primary.dark",
+                                  color: "#fff",
+                                },
+                                "&.Mui-disabled": {
+                                  backgroundColor: "info.main",
+                                  borderColor: "info.main",
+                                  color: "#fff",
+                                },
+                                width: 40,
+                                height: 40,
+                              }}
+                            >
+                              {modelo.isLocked || isExtraFreeModel(index) ? (
+                                <LockIcon sx={{ fontSize: 24, color: "#fff" }} />
+                              ) : (
+                                <DescriptionIcon sx={{ fontSize: 24, color: "#fff" }} />
+                              )}
+                            </IconButton>
+                          </span>
                         </Tooltip>
 
                         {empresa?.isAdmin && (
                           <>
                             <Tooltip title="Clonar Modelo" placement="top" sx={{ width: 40, height: 40 }}>
-                              <IconButton onClick={() => requestClone(modelo.id)} disabled={cloningId === modelo.id}>
-                                <ContentCopyIcon />
-                              </IconButton>
+                              <span>
+                                <IconButton
+                                  onClick={() => requestClone(modelo.id)}
+                                  disabled={cloningId === modelo.id || modelo.isLocked || !canCreateModelo}
+                                  sx={{
+                                    width: 40,
+                                    height: 40,
+                                    color: modelo.isLocked || !canCreateModelo ? "#fff" : "inherit",
+                                    backgroundColor: modelo.isLocked || !canCreateModelo ? "info.main" : "transparent",
+                                    "&:hover": {
+                                      backgroundColor:
+                                        modelo.isLocked || !canCreateModelo ? "info.dark" : "action.hover",
+                                    },
+                                    "&.Mui-disabled": {
+                                      backgroundColor: "info.main",
+                                      color: "#fff",
+                                    },
+                                  }}
+                                >
+                                  {modelo.isLocked || !canCreateModelo ? <LockIcon /> : <ContentCopyIcon />}
+                                </IconButton>
+                              </span>
                             </Tooltip>
 
                             <Tooltip title="Excluir modelo" placement="top">
                               <IconButton
                                 onClick={() => requestDelete(modelo.id)}
+                                disabled={modelo.isLocked}
                                 sx={{
                                   backgroundColor: "error.main",
                                   color: "#fff",
@@ -744,7 +825,7 @@ export default function ReportModelListPage() {
                                   height: 40,
                                 }}
                               >
-                                <Delete fontSize="small" />
+                                {modelo.isLocked ? <LockIcon fontSize="small" /> : <Delete fontSize="small" />}
                               </IconButton>
                             </Tooltip>
                           </>
@@ -759,9 +840,9 @@ export default function ReportModelListPage() {
         </TableContainer>
 
         {/* Renderiza tabela de critérios por modelo */}
-        {modelos.map((modelo: any) => (
-          <CriteriaTable key={`criteria-${modelo.id}`} modelo={modelo} />
-        ))}
+        {modelos.map((modelo: any) =>
+          modelo.isLocked ? null : <CriteriaTable key={`criteria-${modelo.id}`} modelo={modelo} />
+        )}
 
         {pageCount > 1 && (
           <Box

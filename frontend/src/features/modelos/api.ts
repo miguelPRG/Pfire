@@ -7,6 +7,8 @@ const GET_MODELOS_QUERY = `
       modelos {
         id
         modeloNome
+        isLocked
+        lockReason
         createdAt
         customFields {
           key

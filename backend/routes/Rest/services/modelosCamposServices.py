@@ -3,6 +3,8 @@ from bson import ObjectId
 from datetime import datetime
 from database import modelos_collection, users_empresas_collection
 from models.modeloCamposModels import ModelosCamposClone
+from controller.modelo_access import FREE_MODEL_LOCK_REASON, is_model_locked_for_plan
+from controller.plan_utils import is_free_plan
 
 routerModelo = APIRouter(prefix="/modelo")
 
@@ -20,10 +22,28 @@ async def clone_report_template(request: Request, data: ModelosCamposClone):
     user_id = ObjectId(jwt.get("user_id"))
     if not jwt.get("isSuperAdmin"):
         user = await users_empresas_collection.find_one(
-            {"_id": user_id, "isAdmin": True}
+            {
+                "empresa_id": modelo_found["empresa_id"],
+                "user_id": user_id,
+                "isAdmin": True,
+            }
         )
         if not user:
             raise HTTPException(403, detail="Usuário não autorizado a clonar modelos")
+
+    if await is_model_locked_for_plan(modelo_found, jwt.get("plano")):
+        raise HTTPException(403, detail=FREE_MODEL_LOCK_REASON)
+
+    if not jwt.get("isSuperAdmin") and is_free_plan(jwt.get("plano")):
+        modelos_count = await modelos_collection.count_documents(
+            {"empresa_id": modelo_found["empresa_id"]}
+        )
+        if modelos_count >= 1:
+            raise HTTPException(
+                403,
+                detail="Limite de modelos atingido para o plano gratis. Por favor, atualize seu plano para criar mais modelos.",
+            )
+
     date = datetime.now()
     # Converter o modelo found para o dicionario
 

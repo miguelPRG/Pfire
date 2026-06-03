@@ -90,11 +90,19 @@ function HomePage() {
   // Determinar cor baseada nos dias restantes
   const isUrgent = daysRemaining <= 3;
   const alertSeverity = isUrgent ? "error" : "info";
-  const progressColor = isUrgent ? "error" : "primary";
 
   return (
     <Container maxWidth="lg">
       <Stack spacing={3}>
+        {user?.isSuperAdmin && (
+          <Alert severity="warning" sx={{ mt: 1, mb: 0 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+              ⚡ Super Administrador: Você tem acesso total a todas as funcionalidades e dados. Use com
+              responsabilidade!
+            </Typography>
+          </Alert>
+        )}
+
         {/* Header com saudação */}
         <Paper
           elevation={2}
@@ -216,13 +224,6 @@ function HomePage() {
                     Plano ativo e em uso
                   </Typography>
                 </Box>
-                {user?.isSuperAdmin && (
-                  <Alert severity="warning" sx={{ mt: 1, mb: 0 }}>
-                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                      ⚡ Acesso global ativo - gestão avançada habilitada
-                    </Typography>
-                  </Alert>
-                )}
               </Stack>
             </CardContent>
           </Card>
@@ -251,24 +252,35 @@ function HomePage() {
                 borderRadius: "50%",
               }}
             />
-            <CardContent sx={{ position: "relative", zIndex: 1 }}>
+            <CardContent
+              sx={{
+                position: "relative",
+                zIndex: 1,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+              }}
+            >
               <Typography variant="body2" color="textSecondary" sx={{ mb: 1.5, fontWeight: 600 }}>
                 🏢 Empresa
               </Typography>
-              <Stack spacing={2} alignItems="center">
+              <Stack spacing={2} alignItems="center" sx={{ width: "100%" }}>
                 {empresa?.logo && (
-                  <img
-                    src={`data:image/png;base64,${empresa.logo}`}
-                    alt="Logo"
-                    style={{
-                      borderRadius: "50%",
-                      maxWidth: "80px",
-                      height: "80px",
-                      objectFit: "cover",
-                      border: "2px solid #ddd",
-                      background: "#fff",
-                    }}
-                  />
+                  <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
+                    <Box
+                      component="img"
+                      src={`data:image/png;base64,${empresa.logo}`}
+                      alt="Logo"
+                      sx={{
+                        borderRadius: "50%",
+                        width: 80,
+                        height: 80,
+                        objectFit: "cover",
+                        border: "2px solid #ddd",
+                        background: "#fff",
+                      }}
+                    />
+                  </Box>
                 )}
                 <Box sx={{ textAlign: "center" }}>
                   <Typography variant="body1" sx={{ fontWeight: 700 }}>

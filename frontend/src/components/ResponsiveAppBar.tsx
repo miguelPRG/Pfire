@@ -115,12 +115,7 @@ function ResponsiveAppBar() {
           {/* Box 1: Sidebar + Logo */}
           <Box sx={{ display: "flex", alignItems: "center", flex: "0 0 auto" }}>
             {isMobile && (
-              <IconButton
-                color="inherit"
-                aria-label="abrir menu"
-                onClick={toggleSidebar}
-                sx={{ mr: 0.5 }}
-              >
+              <IconButton color="inherit" aria-label="abrir menu" onClick={toggleSidebar} sx={{ mr: 0.5 }}>
                 <MenuIcon />
               </IconButton>
             )}

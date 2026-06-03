@@ -9,6 +9,8 @@ from fastapi import HTTPException
 import strawberry
 from strawberry.types import Info
 from bson import ObjectId
+from controller.plan_utils import is_free_plan
+from controller.modelo_access import FREE_MODEL_LOCK_REASON, get_unlocked_free_model_id
 
 
 @strawberry.type
@@ -46,8 +48,23 @@ class ModeloQuery:
             filtro["modelo_nome"] = {"$regex": f"{name}", "$options": "i"}
 
         modelos = []
+        is_free_user = is_free_plan(jwt.get("plano"))
+        unlocked_model_id = None
 
-        async for modelo in modelos_collection.find(filtro).skip(start).limit(lmt):
+        if is_free_user:
+            unlocked_model_id = await get_unlocked_free_model_id(empresa_id)
+
+        async for modelo in (
+            modelos_collection.find(filtro)
+            .sort([("created_at", 1), ("_id", 1)])
+            .skip(start)
+            .limit(lmt)
+        ):
+            is_locked = bool(
+                is_free_user
+                and unlocked_model_id
+                and modelo.get("_id") != unlocked_model_id
+            )
 
             # Extraia os campos personalizados (chaves que começam com "custom_")
             # Mapeia os campos personalizados como uma lista de instâncias de CustomField
@@ -61,6 +78,8 @@ class ModeloQuery:
             modelo_data = {
                 "id": str(modelo.get("_id")),
                 "modelo_nome": modelo.get("modelo_nome"),
+                "is_locked": is_locked,
+                "lock_reason": FREE_MODEL_LOCK_REASON if is_locked else None,
                 "created_by": (
                     str(modelo.get("created_by")) if modelo.get("created_by") else None
                 ),

@@ -660,6 +660,8 @@ export default function ReportTemplatePage() {
 
   const editingModel = location.state?.modelo;
   const isEditing = !!editingModel;
+  const isModelLocked = Boolean(editingModel?.isLocked);
+  const isFreePlan = (user?.plano || "free").toLowerCase() === "free";
 
   const [alert, setAlert] = useState<{ message: string; isError: boolean; onConfirm?: () => void } | null>(null);
   const [newFieldName, setNewFieldName] = useState("");
@@ -804,6 +806,15 @@ export default function ReportTemplatePage() {
 
   const onSubmit = async (data: FormSchema) => {
     try {
+      if (isModelLocked) {
+        throw new Error(editingModel?.lockReason || "Este modelo está bloqueado no seu plano.");
+      }
+
+      if (!isEditing) {
+        // Validação de limites já foi feita em ModelListPage
+        // Aqui apenas criamos o modelo
+      }
+
       if (fields.length === 0) {
         throw new Error("Adicione pelo menos um campo personalizado.");
       }
@@ -980,6 +991,11 @@ export default function ReportTemplatePage() {
 
           {/* Conteúdo */}
           <CardContent sx={{ p: 4 }}>
+            {isModelLocked && (
+              <Alert severity="warning" sx={{ mb: 3 }}>
+                {editingModel?.lockReason || "Este modelo está bloqueado no seu plano."}
+              </Alert>
+            )}
             <Box component="form" onSubmit={handleFormSubmit} sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
               {/* Seção 1: Nome do Modelo */}
               <Box>
@@ -1078,12 +1094,14 @@ export default function ReportTemplatePage() {
                       placeholder="Ex: Nome, Email, Telefone"
                       size="small"
                       fullWidth
+                      disabled={isModelLocked}
                     />
                     <Button
                       variant="contained"
                       onClick={addField}
                       type="button"
                       startIcon={<AddIcon />}
+                      disabled={isModelLocked}
                       sx={{ minWidth: 120, height: 40 }}
                     >
                       Adicionar
@@ -1119,7 +1137,7 @@ export default function ReportTemplatePage() {
                           setError={setError}
                           clearErrors={clearErrors}
                           fieldRefs={fieldRefs}
-                          isFreePlan={user?.plano == "free"}
+                          isFreePlan={isFreePlan}
                         />
                       ))}
                   </Box>
@@ -1145,6 +1163,7 @@ export default function ReportTemplatePage() {
                 <Button
                   variant="contained"
                   type="submit"
+                  disabled={isModelLocked}
                   sx={{
                     flex: 1,
                     height: 48,

@@ -5,7 +5,7 @@ from fastapi.responses import JSONResponse
 
 # Configurações de limitação
 LIMIT = 20  # Máximo de 20 requisições por TIME_FRAME
-TIME_FRAME = 10  # Tempo em segundos para contar as requisições (10 segundos)
+TIME_FRAME = 5  # Tempo em segundos para contar as requisições (10 segundos)
 BLOCK_DURATION = 120  # Tempo em segundos para bloquear o IP (2 minutos)
 
 rate_limiter = {}  # {ip: [timestamps]}

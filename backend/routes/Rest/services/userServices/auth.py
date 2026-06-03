@@ -208,7 +208,6 @@ async def login_oauth(request: Request, user: UserLoginWithOAuth):
         "firebaseUID": uid,
         "assinatura": assinatura_b64,  # <- vai apenas no corpo da resposta
         "plano": user_doc.get("plano", "free"),
-        "stripeCustomerId": user_doc.get("stripe_customer_id", None),
     }
 
     response = JSONResponse(content=response_payload)
@@ -264,7 +263,6 @@ async def login(user: UserLogin, request: Request):
             "assinatura": assinatura_b64,  # <- vai apenas no corpo da resposta
             "isSuperAdmin": db_user.get("isSuperAdmin", False),
             "plano": db_user.get("plano", "free"),
-            "stripeCustomerId": db_user.get("stripe_customer_id", None),
         }
     )
     response.set_cookie(
@@ -307,7 +305,6 @@ async def auth_user(request: Request, background_tasks: BackgroundTasks):
         "telefone": user_found.get("telefone"),
         "isSuperAdmin": user_found.get("isSuperAdmin", False),
         "plano": user_found.get("plano", "free"),
-        "stripeCustomerId": user_found.get("stripe_customer_id"),
     }
 
     if (
@@ -317,7 +314,7 @@ async def auth_user(request: Request, background_tasks: BackgroundTasks):
         or user_found.get("plano", "free") != jwt.get("plano", "free")
         or user_found.get("stripe_customer_id", None)
         != jwt.get("stripe_customer_id", None)
-        or user_found.get("has_demo", False) != jwt.get("has_demo", False)
+        or user_found.get("has_demo", None) != jwt.get("has_demo", None)
     ):
 
         old_token = request.cookies.get("_fp")

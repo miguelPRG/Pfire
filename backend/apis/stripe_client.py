@@ -333,24 +333,46 @@ def get_subscription_trial_info(stripe_customer_id: str) -> dict:
         "has_active_subscription": bool,
         "is_trialing": bool,
         "trial_end": int (unix timestamp) ou None,
+        "current_period_end": int (unix timestamp) ou None,
+        "cancel_at_period_end": bool,
+        "canceled_at": int (unix timestamp) ou None,
         "plan_name": str ou None,
         "status": str (trialing, active, past_due, etc)
     }
     """
     try:
-        subscriptions = stripe.Subscription.list(customer=stripe_customer_id, limit=1)
+        subscriptions = stripe.Subscription.list(
+            customer=stripe_customer_id,
+            status="all",
+            limit=10,
+        )
+        active_statuses = {"active", "trialing", "past_due", "unpaid"}
+        subscription_list = list(getattr(subscriptions, "data", []) or [])
+        sub = next(
+            (
+                item
+                for item in subscription_list
+                if getattr(item, "status", None) in active_statuses
+            ),
+            subscription_list[0] if subscription_list else None,
+        )
 
-        if not subscriptions.data:
+        if not sub:
             return {
                 "has_active_subscription": False,
                 "is_trialing": False,
                 "trial_end": None,
+                "current_period_end": None,
+                "cancel_at_period_end": False,
+                "canceled_at": None,
                 "plan_name": None,
                 "status": None,
             }
 
-        sub = subscriptions.data[0]
         trial_end = getattr(sub, "trial_end", None)
+        current_period_end = getattr(sub, "current_period_end", None)
+        cancel_at_period_end = bool(getattr(sub, "cancel_at_period_end", False))
+        canceled_at = getattr(sub, "canceled_at", None)
         status = getattr(sub, "status", None)
 
         # Obter nome do plano
@@ -370,9 +392,12 @@ def get_subscription_trial_info(stripe_customer_id: str) -> dict:
                         )
 
         return {
-            "has_active_subscription": True,
+            "has_active_subscription": status in active_statuses,
             "is_trialing": status == "trialing",
             "trial_end": trial_end,
+            "current_period_end": current_period_end,
+            "cancel_at_period_end": cancel_at_period_end,
+            "canceled_at": canceled_at,
             "plan_name": plan_name,
             "status": status,
         }
@@ -382,6 +407,66 @@ def get_subscription_trial_info(stripe_customer_id: str) -> dict:
             "has_active_subscription": False,
             "is_trialing": False,
             "trial_end": None,
+            "current_period_end": None,
+            "cancel_at_period_end": False,
+            "canceled_at": None,
             "plan_name": None,
             "status": None,
         }
+
+
+async def schedule_subscription_cancel_at_period_end(stripe_customer_id: str) -> dict:
+    """
+    Agenda o cancelamento da subscrição ativa no fim do período corrente.
+    O acesso/plano mantém-se ativo até current_period_end.
+    """
+    try:
+        customer_id = str(stripe_customer_id or "").strip()
+        if not customer_id:
+            raise Exception("stripe_customer_id inválido")
+
+        subscriptions = stripe.Subscription.list(
+            customer=customer_id,
+            status="all",
+            limit=10,
+        )
+        active_statuses = {"active", "trialing", "past_due", "unpaid"}
+        sub = next(
+            (
+                item
+                for item in getattr(subscriptions, "data", []) or []
+                if getattr(item, "status", None) in active_statuses
+            ),
+            None,
+        )
+
+        if not sub:
+            raise Exception("Não existe subscrição ativa para cancelar.")
+
+        if getattr(sub, "cancel_at_period_end", False):
+            return {
+                "ok": True,
+                "subscription_id": getattr(sub, "id", None),
+                "cancel_at_period_end": True,
+                "current_period_end": getattr(sub, "current_period_end", None),
+                "status": getattr(sub, "status", None),
+                "already_scheduled": True,
+            }
+
+        updated = stripe.Subscription.modify(
+            getattr(sub, "id"),
+            cancel_at_period_end=True,
+        )
+
+        return {
+            "ok": True,
+            "subscription_id": getattr(updated, "id", None),
+            "cancel_at_period_end": bool(
+                getattr(updated, "cancel_at_period_end", False)
+            ),
+            "current_period_end": getattr(updated, "current_period_end", None),
+            "status": getattr(updated, "status", None),
+            "already_scheduled": False,
+        }
+    except Exception as e:
+        raise Exception(f"Erro ao agendar cancelamento da subscrição: {str(e)}")

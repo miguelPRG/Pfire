@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Button, Paper, Typography, Box, Pagination, Breadcrumbs, Tooltip } from "@mui/material";
 import { useEmpresasQuery } from "../../../features/empresas/hooks";
 import { useAuth } from "../../../hooks/AuthContext";
-import { usePlanLimits } from "../../../hooks/usePlanLimits";
+import { useEmpresaLimits } from "../../../hooks/useEmpresaLimits";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 import LoadingAnimation from "../../../components/LoadingAnimation";
@@ -47,13 +47,6 @@ export default function CompanySelectorPage() {
   const navigate = useNavigate();
   const mounted = useRef(false);
 
-  // Limites por plano
-  const limites = {
-    free: { empresas: 1 },
-    pro: { empresas: 5 },
-    premium: { empresas: Infinity },
-  };
-
   const queryVars = {
     start: page * rowsPerPage,
     ...(Object.keys(serverFilter).length ? { filter: serverFilter } : {}),
@@ -63,6 +56,14 @@ export default function CompanySelectorPage() {
     error,
     isLoading: loading,
   } = useEmpresasQuery<ReturnedData>(queryVars, true, `${page}-${JSON.stringify(serverFilter)}`);
+
+  // dados que se mostram
+  const empresas: Empresa[] = data?.getEmpresas?.empresas || [];
+  const totalEmpresas: number = data?.getEmpresas?.totalEmpresas || 0;
+  const pageCount = Math.ceil(totalEmpresas / rowsPerPage);
+
+  // Usar dados da query para validar limites
+  const { empresas: empresaLimit, canCreateEmpresa, messageEmpresa } = useEmpresaLimits(totalEmpresas);
 
   // Estado para largura da tela
   const [larguraTela, setLarguraTela] = useState(window.innerWidth);
@@ -85,13 +86,6 @@ export default function CompanySelectorPage() {
     const nextPage = value - 1;
     setPage(nextPage);
   };
-
-  // dados que se mostram
-  const empresas: Empresa[] = data?.getEmpresas?.empresas || [];
-  const totalEmpresas: number = data?.getEmpresas?.totalEmpresas || 0;
-  const pageCount = Math.ceil(totalEmpresas / rowsPerPage);
-
-  // selecionar empresa recordada
   useLayoutEffect(() => {
     if (!mounted.current) {
       mounted.current = true;
@@ -389,17 +383,8 @@ export default function CompanySelectorPage() {
                 </Paper>
               </Box>
             </Tooltip>
-            <ResourceCount
-              current={empresas.length}
-              limit={limites[user?.plano?.toLowerCase() as keyof typeof limites]?.empresas || 1}
-              resourceName="empresa"
-            />
-            <LimitIndicator
-              current={empresas.length}
-              limit={limites[user?.plano?.toLowerCase() as keyof typeof limites]?.empresas || 1}
-              label="Empresas"
-              resourceName="empresa"
-            />
+            <ResourceCount current={totalEmpresas} limit={empresaLimit} resourceName="empresa" />
+            <LimitIndicator current={totalEmpresas} limit={empresaLimit} label="Empresas" resourceName="empresa" />
           </Box>
 
           {/* Empresas em linhas responsivas */}

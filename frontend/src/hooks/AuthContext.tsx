@@ -19,7 +19,6 @@ interface UserLoggedIn {
   telefone?: string;
   assinatura?: string;
   isSuperAdmin?: boolean;
-  stripeCustomerId?: string;
   plano?: string;
   firebaseUID?: string;
 }
@@ -129,7 +128,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       telefone: userData.telefone,
       assinatura: userData.assinatura,
       isSuperAdmin: userData.isSuperAdmin,
-      stripeCustomerId: userData.stripeCustomerId,
       plano: userData.plano,
       firebaseUID: userData.firebaseUID,
     }),
@@ -177,13 +175,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     refreshAuth().catch((authError) => {
+      const message = authError instanceof Error ? authError.message : "";
+      if (message === "Acesso Negado!") {
+        return;
+      }
+
       console.error("Erro ao verificar autenticacao:", authError);
     });
   }, [refreshAuth]);
 
   useEffect(() => {
     if (!user) {
-      console.log("Utilizador nao autenticado");
       return;
     }
 

@@ -13,6 +13,8 @@ from database import (
 from bson import ObjectId
 from datetime import datetime
 from asyncio import gather
+from controller.modelo_access import FREE_MODEL_LOCK_REASON, is_model_locked_for_plan
+from controller.plan_utils import is_free_plan
 
 routerModelo = APIRouter(prefix="/modelo", tags=["modelo"])
 
@@ -28,11 +30,13 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
 
     if not jwt.get("isSuperAdmin", False) and jwt.get("plano") != "premium":
 
-        modelos_count = await modelos_collection.count_documents(
-            {"created_by": user_id, "empresa_id": empresa_id}
-        )
+        modelos_filter = {"empresa_id": empresa_id}
+        if not is_free_plan(jwt.get("plano")):
+            modelos_filter["created_by"] = user_id
 
-        if modelos_count >= 1 and jwt.get("plano") == "free":
+        modelos_count = await modelos_collection.count_documents(modelos_filter)
+
+        if modelos_count >= 1 and is_free_plan(jwt.get("plano")):
             raise HTTPException(
                 status_code=403,
                 detail="Limite de modelos atingido para o plano gratis. Por favor, atualize seu plano para criar mais modelos.",
@@ -67,11 +71,15 @@ async def criar_modelo(modelo: ModelosCamposCreate, request: Request):
         ).to_list(None)
 
         # Contar modelos do utilizador atual
-        modelos_count = sum(1 for m in modelos_empresa if m["created_by"] == user_id)
+        modelos_count = (
+            len(modelos_empresa)
+            if is_free_plan(jwt.get("plano"))
+            else sum(1 for m in modelos_empresa if m["created_by"] == user_id)
+        )
 
         # Verificar limite de modelos baseado no plano
-        if (
-            modelos_count >= 1 and jwt.get("plano") == "free"
+        if modelos_count >= 1 and is_free_plan(
+            jwt.get("plano")
         ):  # Limite de 1 modelo para plano free
             raise HTTPException(
                 status_code=403,
@@ -154,6 +162,14 @@ async def update_modelo(request: Request, modelo: ModelosCamposUpdate, id: str):
     modelo_found = await modelos_collection.find_one({"_id": id})
     if not modelo_found:
         raise HTTPException(status_code=404, detail="Modelo não encontrado.")
+
+    if modelo_found.get("empresa_id") != empresa_id:
+        raise HTTPException(
+            status_code=403, detail="Não tem permissão para atualizar este modelo!"
+        )
+
+    if await is_model_locked_for_plan(modelo_found, jwt.get("plano")):
+        raise HTTPException(status_code=403, detail=FREE_MODEL_LOCK_REASON)
 
     # 5) Preparar dados do Pydantic
     data = modelo.model_dump(exclude_unset=True, by_alias=True)

@@ -1,6 +1,6 @@
 [project]
 name = "backend"
-version = "1.10.5"
+version = "1.11.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -14,10 +14,10 @@ dependencies = [
     "motor>=3.7.1",
     "passlib>=1.7.4",
     "pymongo>=4.17.0",
-    "redis>=7.4.0",
+    "redis>=8.0.0",
     "sib-api-v3-sdk>=7.6.0",
-    "starlette>=1.0.1",
+    "starlette>=1.2.0",
     "strawberry-graphql>=0.316.0",
-    "stripe>=15.1.0",
+    "stripe>=15.2.0",
     "weasyprint>=68.1",
 ]

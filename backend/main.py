@@ -21,7 +21,8 @@ load_dotenv(Path(__file__).parent / ".env")
 from apis.brevo_client import test_brevo_connection
 from apis.redis_client import test_redis_connection
 from controller.jwtValidation import verify_jwt
-from controller.token_blacklist import is_token_revoked
+from controller.cookie_settings import clear_auth_cookie
+from controller.token_blacklist import add_token_to_blacklist, is_token_revoked
 from database import (
     database_cleaner_scheduler,
     start_database_cleaner_scheduler,
@@ -251,7 +252,7 @@ async def fast_api_http_middleware(request: Request, call_next):
         return response
 
     try:
-        user_data = verify_jwt(token)
+        jwt = verify_jwt(token)
 
         if await is_token_revoked(token):
             response = JSONResponse(
@@ -262,8 +263,16 @@ async def fast_api_http_middleware(request: Request, call_next):
             return response
 
         user_doc = await users_collection.find_one(
-            {"_id": ObjectId(user_data["user_id"]), "isActive": True},
-            {"isSuperAdmin": 1, "plano": 1},
+            {"_id": ObjectId(jwt["user_id"]), "isActive": True},
+            {
+                "nome": 1,
+                "email": 1,
+                "isSuperAdmin": 1,
+                "plano": 1,
+                "stripe_customer_id": 1,
+                "has_demo": 1,
+                "isActive": 1,
+            },
         )
         if not user_doc:
             response = JSONResponse(
@@ -273,9 +282,27 @@ async def fast_api_http_middleware(request: Request, call_next):
             log_request_to_file_if_needed(request, response.status_code, start_time)
             return response
 
-        user_data["isSuperAdmin"] = user_doc.get("isSuperAdmin", False)
-        user_data["plano"] = user_doc.get("plano", "free")
-        request.state.jwt = user_data
+        if (
+            user_doc.get("isSuperAdmin", False) != jwt.get("isSuperAdmin", False)
+            or user_doc.get("nome", None) != jwt.get("nome", None)
+            or user_doc.get("email", None) != jwt.get("email", None)
+            or user_doc.get("plano", "free") != jwt.get("plano", "free")
+            or user_doc.get("stripe_customer_id", None)
+            != jwt.get("stripe_customer_id", None)
+            or user_doc.get("has_demo", False) != jwt.get("has_demo", False)
+        ):
+            await add_token_to_blacklist(token, jwt["exp"])
+            response = JSONResponse(
+                status_code=401,
+                content={
+                    "detail": "Sessão desatualizada. Faça login novamente.",
+                },
+            )
+            clear_auth_cookie(response, request)
+            log_request_to_file_if_needed(request, response.status_code, start_time)
+            return response
+
+        request.state.jwt = jwt
 
     except Exception:
         response = JSONResponse(
