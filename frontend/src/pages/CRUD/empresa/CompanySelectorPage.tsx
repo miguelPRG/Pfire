@@ -42,8 +42,7 @@ export default function CompanySelectorPage() {
   const [serverFilter, setServerFilter] = useState<Record<string, unknown>>({});
 
   const theme = useTheme();
-  const { chooseCompany, empresa: empresaSel, user } = useAuth();
-  const { canCreateEmpresa, messageEmpresa } = usePlanLimits();
+  const { chooseCompany, empresa: empresaSel } = useAuth();
   const navigate = useNavigate();
   const mounted = useRef(false);
 

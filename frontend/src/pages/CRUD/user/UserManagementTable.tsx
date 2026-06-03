@@ -81,7 +81,6 @@ export default function UserManagementTable() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const { empresa, user } = useAuth();
-  const { canCreateUtilizador, messageUtilizador, utilizadoresCount, utilizadoresPorEmpresa } = usePlanLimits();
   const [alert, setAlert] = useState<null | { message: string; isError: boolean }>(null);
   const [roleLoading, setRoleLoading] = useState<{ [userId: string]: boolean }>({});
   const rowsPerPage = 8;

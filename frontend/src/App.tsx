@@ -159,6 +159,25 @@ const ThemeToggleButton = () => {
   );
 };
 
+const VersionLabel = () => (
+  <Box
+    component="span"
+    aria-label={`Versão ${__APP_VERSION__}, commit ${__APP_COMMIT_HASH__}`}
+    sx={{
+      position: "fixed",
+      left: 10,
+      bottom: 8,
+      zIndex: (theme) => theme.zIndex.tooltip,
+      color: "text.secondary",
+      fontSize: "1rem",
+      pointerEvents: "none",
+      userSelect: "none",
+    }}
+  >
+    v{__APP_VERSION__}, build {__APP_COMMIT_HASH__} web
+  </Box>
+);
+
 // 🚀 App principal
 function App() {
   const { user, empresa } = useAuth();
@@ -201,6 +220,7 @@ function App() {
           </Routes>
         </Layout>
       </Suspense>
+      <VersionLabel />
       <ThemeToggleButton />
     </Router>
   );

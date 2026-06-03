@@ -49,4 +49,5 @@ node_test:
     - cd frontend
     - npm install
     - npm audit --audit-level=high || true
+    - npm run build
   allow_failure: true

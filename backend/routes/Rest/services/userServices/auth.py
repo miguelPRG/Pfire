@@ -58,6 +58,7 @@ async def blacklist_token_after_delay(
 
     await add_token_to_blacklist(token, exp)
 
+
 # 🚀 Login via Firebase OAuth
 @routerAuth.post("/login-oauth")
 async def login_oauth(request: Request, user: UserLoginWithOAuth):
