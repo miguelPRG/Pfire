@@ -440,26 +440,12 @@ function EditProfilePage() {
 
   // ✅ Verificar se há erro de pagamento do user
   useEffect(() => {
-    if (user && (user as any).payment_error) {
-      setPaymentErrorMessage((user as any).payment_error);
+    if (user?.payment_error) {
+      setPaymentErrorMessage(user.payment_error);
     } else {
       setPaymentErrorMessage(null);
     }
-  }, [user?.id, (user as any)?.payment_error]);
-
-  const clearPaymentError = async () => {
-    try {
-      await billingApi.clearPaymentError<any>();
-
-      // Recarregar dados do user para remover o erro
-      if (user?.id) {
-        // Força refresh do user context
-        window.location.reload();
-      }
-    } catch (error: any) {
-      console.error("Erro ao limpar erro de pagamento:", error);
-    }
-  };
+  }, [user?.id, user?.payment_error]);
 
   const handleSubmitUserUpdate: SubmitHandler<UserInfoFormType> = async (data) => {
     setSubmitting((s) => ({ ...s, info: true }));
@@ -613,9 +599,20 @@ function EditProfilePage() {
     }
   };
 
-  const hasExpiredPaymentMethods = paymentMethods.some(isPaymentMethodExpired);
-  const expiredPaymentMessage = "Existe um cartão expirado. Atualize ou adicione um novo método de pagamento.";
   const defaultPaymentMethod = paymentMethods.find((method) => method.isDefault) || null;
+  const canForceExpiredCard = import.meta.env.DEV || __APP_BRANCH__ !== "main";
+  const forceExpiredCard =
+    canForceExpiredCard && new URLSearchParams(window.location.search).get("forceExpiredCard") === "true";
+  const isPaymentMethodExpiredForUi = (paymentMethod: PaymentMethodType) =>
+    forceExpiredCard || isPaymentMethodExpired(paymentMethod);
+  const hasExpiredPaymentMethods = paymentMethods.some(isPaymentMethodExpiredForUi);
+  const hasExpiredDefaultPaymentMethod = Boolean(
+    defaultPaymentMethod && isPaymentMethodExpiredForUi(defaultPaymentMethod)
+  );
+  const expiredPaymentMessage = "Existe um cartão expirado. Atualize ou adicione um novo método de pagamento.";
+  const paymentValidationMessage = hasExpiredDefaultPaymentMethod
+    ? "Este cartão está expirado. Atualize o método de pagamento."
+    : paymentErrorMessage || null;
   const billingPeriodEnd = subscriptionInfo?.current_period_end || subscriptionInfo?.trial_end || null;
   const subscriptionCanBeCanceled =
     Boolean(subscriptionInfo?.has_active_subscription) && !subscriptionInfo?.cancel_at_period_end;
@@ -881,34 +878,6 @@ function EditProfilePage() {
       </SectionForm>
       <SectionForm title="Métodos de Pagamento" onSubmit={(e) => e.preventDefault()}>
         <Grid container spacing={2} sx={{ maxWidth: "450px", mx: "auto" }}>
-          {paymentErrorMessage && (
-            <Grid size={{ xs: 12 }}>
-              <Alert
-                severity="error"
-                variant="outlined"
-                onClose={() => clearPaymentError()}
-                sx={{
-                  backgroundColor: "error.lighter",
-                  borderColor: "error.main",
-                  "& .MuiAlert-message": {
-                    color: "error.dark",
-                    fontWeight: 500,
-                  },
-                }}
-              >
-                ❌ {paymentErrorMessage}
-              </Alert>
-            </Grid>
-          )}
-
-          {hasExpiredPaymentMethods && (
-            <Grid size={{ xs: 12 }}>
-              <Alert severity="error" variant="outlined">
-                {expiredPaymentMessage}
-              </Alert>
-            </Grid>
-          )}
-
           <Grid size={{ xs: 9 }} sx={{ mx: "auto" }}>
             {loadingPaymentMethod ? (
               <Box
@@ -932,7 +901,7 @@ function EditProfilePage() {
                     borderRadius: 2,
                     cursor: "pointer",
                     border: "1px solid",
-                    borderColor: isPaymentMethodExpired(defaultPaymentMethod) ? "error.main" : "success.main",
+                    borderColor: hasExpiredDefaultPaymentMethod ? "error.main" : "success.main",
                     bgcolor: "action.selected",
                     transition: "box-shadow 0.2s, transform 0.2s",
                     "&:hover": {
@@ -1000,7 +969,7 @@ function EditProfilePage() {
                           sx={{ height: 18, fontWeight: 700, fontSize: "0.65rem" }}
                         />
                       </Box>
-                      {isPaymentMethodExpired(defaultPaymentMethod) && (
+                      {hasExpiredDefaultPaymentMethod && (
                         <Typography
                           variant="caption"
                           sx={{
@@ -1029,63 +998,107 @@ function EditProfilePage() {
                     {subscriptionDetails}
                   </Box>
                 </Paper>
-                {isPaymentMethodExpired(defaultPaymentMethod) && (
-                  <Box sx={{ mt: 1.5 }}>
-                    <Alert severity="error" variant="outlined">
-                      Seu cartão padrão está expirado. Atualize-o ou adicione um novo método de pagamento para evitar
-                      problemas com sua subscrição.
-                    </Alert>
-                  </Box>
+                {paymentValidationMessage && (
+                  <Typography
+                    variant="caption"
+                    role="alert"
+                    sx={{
+                      display: "block",
+                      color: "error.main",
+                      fontWeight: 400,
+                      lineHeight: 1.66,
+                      mx: "14px",
+                      mt: "3px",
+                    }}
+                  >
+                    {paymentValidationMessage}
+                  </Typography>
                 )}
               </>
             ) : paymentMethods.length > 0 ? (
-              <Paper
-                onClick={() => setPaymentDialogOpen(true)}
-                elevation={0}
-                sx={{
-                  p: 2,
-                  borderRadius: 2,
-                  cursor: "pointer",
-                  border: "1px dashed",
-                  borderColor: "divider",
-                }}
-              >
-                <Stack spacing={1.5}>
+              <>
+                <Paper
+                  onClick={() => setPaymentDialogOpen(true)}
+                  elevation={0}
+                  sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    cursor: "pointer",
+                    border: "1px dashed",
+                    borderColor: paymentValidationMessage ? "error.main" : "divider",
+                  }}
+                >
+                  <Stack spacing={1.5}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: "text.secondary",
+                      }}
+                    >
+                      Nenhum método padrão definido. Clique para escolher um método padrão.
+                    </Typography>
+                    <Box sx={{ pt: 1.5, borderTop: "1px solid", borderColor: "divider" }}>{subscriptionDetails}</Box>
+                  </Stack>
+                </Paper>
+                {paymentValidationMessage && (
                   <Typography
-                    variant="body2"
+                    variant="caption"
+                    role="alert"
                     sx={{
-                      color: "text.secondary",
+                      display: "block",
+                      color: "error.main",
+                      fontWeight: 400,
+                      lineHeight: 1.66,
+                      mx: "14px",
+                      mt: "3px",
                     }}
                   >
-                    Nenhum método padrão definido. Clique para escolher um método padrão.
+                    {paymentValidationMessage}
                   </Typography>
-                  <Box sx={{ pt: 1.5, borderTop: "1px solid", borderColor: "divider" }}>{subscriptionDetails}</Box>
-                </Stack>
-              </Paper>
+                )}
+              </>
             ) : (
-              <Paper
-                onClick={() => setPaymentDialogOpen(true)}
-                elevation={0}
-                sx={{
-                  p: 2,
-                  borderRadius: 2,
-                  cursor: "pointer",
-                  border: "1px dashed",
-                  borderColor: "divider",
-                }}
-              >
-                <Stack spacing={1.5}>
+              <>
+                <Paper
+                  onClick={() => setPaymentDialogOpen(true)}
+                  elevation={0}
+                  sx={{
+                    p: 2,
+                    borderRadius: 2,
+                    cursor: "pointer",
+                    border: "1px dashed",
+                    borderColor: paymentValidationMessage ? "error.main" : "divider",
+                  }}
+                >
+                  <Stack spacing={1.5}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: "text.secondary",
+                      }}
+                    >
+                      Nenhum cartão guardado. Clique para adicionar um novo método de pagamento.
+                    </Typography>
+                    <Box sx={{ pt: 1.5, borderTop: "1px solid", borderColor: "divider" }}>{subscriptionDetails}</Box>
+                  </Stack>
+                </Paper>
+                {paymentValidationMessage && (
                   <Typography
-                    variant="body2"
+                    variant="caption"
+                    role="alert"
                     sx={{
-                      color: "text.secondary",
+                      display: "block",
+                      color: "error.main",
+                      fontWeight: 400,
+                      lineHeight: 1.66,
+                      mx: "14px",
+                      mt: "3px",
                     }}
                   >
-                    Nenhum cartão guardado. Clique para adicionar um novo método de pagamento.
+                    {paymentValidationMessage}
                   </Typography>
-                  <Box sx={{ pt: 1.5, borderTop: "1px solid", borderColor: "divider" }}>{subscriptionDetails}</Box>
-                </Stack>
-              </Paper>
+                )}
+              </>
             )}
           </Grid>
         </Grid>
@@ -1359,7 +1372,7 @@ function EditProfilePage() {
           >
             {paymentMethods.length > 0 ? (
               paymentMethods.map((item) => {
-                const isExpired = isPaymentMethodExpired(item);
+                const isExpired = isPaymentMethodExpiredForUi(item);
                 return (
                   <Paper
                     key={`dialog-${item.id}`}

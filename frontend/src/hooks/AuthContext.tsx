@@ -21,6 +21,7 @@ interface UserLoggedIn {
   isSuperAdmin?: boolean;
   plano?: string;
   firebaseUID?: string;
+  payment_error?: string | null;
 }
 
 interface UserRegistered {
@@ -130,6 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isSuperAdmin: userData.isSuperAdmin,
       plano: userData.plano,
       firebaseUID: userData.firebaseUID,
+      payment_error: userData.payment_error ?? null,
     }),
     []
   );

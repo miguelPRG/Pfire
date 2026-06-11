@@ -183,6 +183,7 @@ function App() {
   const { user, empresa } = useAuth();
   let userId = user ? user.id : null;
   let empresaID = empresa ? empresa.id : null;
+  const showVersionLabel = __APP_BRANCH__ !== "main";
 
   return (
     <Router>
@@ -220,7 +221,7 @@ function App() {
           </Routes>
         </Layout>
       </Suspense>
-      <VersionLabel />
+      {showVersionLabel && <VersionLabel />}
       <ThemeToggleButton />
     </Router>
   );

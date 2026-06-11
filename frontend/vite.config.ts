@@ -11,12 +11,25 @@ const commitHash = (() => {
   }
 })();
 
+const branchName = (() => {
+  if (process.env.CI_COMMIT_REF_NAME) {
+    return process.env.CI_COMMIT_REF_NAME;
+  }
+
+  try {
+    return execSync("git rev-parse --abbrev-ref HEAD", { encoding: "utf-8" }).trim();
+  } catch {
+    return "unknown";
+  }
+})();
+
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __APP_COMMIT_HASH__: JSON.stringify(commitHash),
+    __APP_BRANCH__: JSON.stringify(branchName),
   },
 
   test: {

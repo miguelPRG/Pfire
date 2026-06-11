@@ -114,7 +114,10 @@ async def handle_checkout_session_completed(
 
     result = await users_collection.update_one(
         query,
-        {"$set": {"plano": plano, "has_demo": True, "updated_at": datetime.now()}},
+        {
+            "$set": {"plano": plano, "has_demo": True, "updated_at": datetime.now()},
+            "$unset": {"payment_error": "", "payment_error_at": ""},
+        },
     )
 
     if result.modified_count > 0:
@@ -233,7 +236,10 @@ async def handle_invoice_payment_succeeded(
 
     result = await users_collection.update_one(
         query,
-        {"$set": {"plano": plano, "updated_at": datetime.now()}},
+        {
+            "$set": {"plano": plano, "updated_at": datetime.now()},
+            "$unset": {"payment_error": "", "payment_error_at": ""},
+        },
     )
 
     if result.modified_count > 0:

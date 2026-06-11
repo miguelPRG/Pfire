@@ -306,6 +306,7 @@ async def auth_user(request: Request, background_tasks: BackgroundTasks):
         "telefone": user_found.get("telefone"),
         "isSuperAdmin": user_found.get("isSuperAdmin", False),
         "plano": user_found.get("plano", "free"),
+        "payment_error": user_found.get("payment_error"),
     }
 
     if (

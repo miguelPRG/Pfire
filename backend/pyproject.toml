@@ -1,6 +1,6 @@
 [project]
 name = "backend"
-version = "1.11.1"
+version = "1.11.2"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -8,7 +8,7 @@ dependencies = [
     "apscheduler>=3.11.2",
     "argon2-cffi>=25.1.0",
     "brevo-python>=4.0.10",
-    "fastapi[standard]>=0.136.1",
+    "fastapi[standard]>=0.136.3",
     "filetype>=1.2.0",
     "firebase-admin>=7.4.0",
     "motor>=3.7.1",
@@ -16,8 +16,8 @@ dependencies = [
     "pymongo>=4.17.0",
     "redis>=8.0.0",
     "sib-api-v3-sdk>=7.6.0",
-    "starlette>=1.2.0",
+    "starlette>=1.2.1",
     "strawberry-graphql>=0.316.0",
     "stripe>=15.2.0",
-    "weasyprint>=68.1",
+    "weasyprint>=69.0",
 ]

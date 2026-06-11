@@ -1,7 +1,7 @@
 {
   "name": "pfire",
   "private": true,
-  "version": "1.11.1",
+  "version": "1.11.2",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -16,21 +16,21 @@
     "@hookform/resolvers": "^5.4.0",
     "@mui/icons-material": "^9.0.1",
     "@mui/material": "^9.0.1",
-    "@mui/x-charts": "9.3.0",
+    "@mui/x-charts": "9.4.0",
     "@stripe/stripe-js": "^9.7.0",
-    "@tanstack/react-query": "^5.100.14",
+    "@tanstack/react-query": "^5.101.0",
     "firebase": "^12.14.0",
-    "graphql": "^16.14.0",
-    "react": "^19.2.6",
-    "react-dom": "^19.2.6",
-    "react-hook-form": "^7.76.1",
-    "react-phone-number-input": "^3.4.16",
-    "react-router-dom": "^7.16.0",
+    "graphql": "^16.14.1",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "react-hook-form": "^7.77.0",
+    "react-phone-number-input": "^3.4.17",
+    "react-router-dom": "^7.17.0",
     "rxjs": "^7.8.2",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@tanstack/react-query-devtools": "^5.100.14",
+    "@tanstack/react-query-devtools": "^5.101.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/estree": "^1.0.9",
@@ -40,7 +40,7 @@
     "esbuild": "^0.28.0",
     "jsdom": "^29.1.1",
     "prettier": "^3.8.3",
-    "vite": "^8.0.14",
-    "vitest": "^4.1.7"
+    "vite": "^8.0.16",
+    "vitest": "^4.1.8"
   }
 }
