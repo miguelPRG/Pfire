@@ -326,9 +326,15 @@ async def stripe_webhook(request: Request):
     user_id = getattr(metadata, "user_id", None)
     plano = getattr(metadata, "plano", None)
     customer_id = getattr(stripe_object, "customer", None)
+    subscription_id = getattr(stripe_object, "subscription", None)
+    if subscription_id and hasattr(subscription_id, "id"):
+        subscription_id = subscription_id.id
+    if event_type == "customer.subscription.deleted":
+        subscription_id = getattr(stripe_object, "id", None)
 
     logger.info(
-        f"📨 Webhook Stripe: type={event_type} customer={customer_id} user_id={user_id}"
+        f"📨 Webhook Stripe: type={event_type} customer={customer_id} "
+        f"user_id={user_id} subscription_id={subscription_id}"
     )
 
     # Rotear para o handler apropriado
@@ -343,6 +349,7 @@ async def stripe_webhook(request: Request):
             customer_id=customer_id,
             user_id=user_id,
             plano=plano,
+            subscription_id=subscription_id,
         )
 
     elif event_type == "setup_intent.succeeded":
@@ -357,6 +364,7 @@ async def stripe_webhook(request: Request):
             customer_id=customer_id,
             user_id=user_id,
             plano=plano,
+            subscription_id=subscription_id,
         )
 
     elif event_type == "invoice.payment_failed":
@@ -378,6 +386,7 @@ async def stripe_webhook(request: Request):
         return await handle_customer_subscription_deleted(
             customer_id=customer_id,
             user_id=user_id,
+            subscription_id=subscription_id,
             cancellation_reason=cancellation_reason,
         )
 

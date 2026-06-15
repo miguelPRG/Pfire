@@ -12,6 +12,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+SWITCH_CANCELABLE_STATUSES = {"active", "past_due", "unpaid"}
+
 
 async def get_user_query(user_id: str = None, customer_id: str = None) -> dict:
     """
@@ -39,13 +41,53 @@ async def get_user_query(user_id: str = None, customer_id: str = None) -> dict:
     return query
 
 
+def get_stripe_id(value) -> str | None:
+    if not value:
+        return None
+    return value.id if hasattr(value, "id") else value
+
+
+async def cancel_previous_paid_subscriptions(
+    customer_id: str,
+    current_subscription_id: str = None,
+) -> None:
+    if not customer_id or not current_subscription_id:
+        return
+
+    subscriptions = stripe.Subscription.list(
+        customer=customer_id,
+        status="all",
+        limit=100,
+    )
+
+    for sub in getattr(subscriptions, "data", []) or []:
+        sub_id = get_stripe_id(sub)
+        sub_status = getattr(sub, "status", None)
+
+        if sub_id == current_subscription_id or sub_status not in SWITCH_CANCELABLE_STATUSES:
+            continue
+
+        try:
+            logger.info(
+                f"Cancelando subscrição antiga {sub_id} do customer {customer_id} "
+                f"após troca para {current_subscription_id}"
+            )
+            stripe.Subscription.delete(sub_id)
+        except stripe.error.StripeError as e:
+            logger.error(
+                f"Erro Stripe ao cancelar subscrição antiga {sub_id}: {str(e)}",
+                exc_info=True,
+            )
+            raise
+
+
 async def handle_checkout_session_expired(
     customer_id: str = None,
     user_id: str = None,
 ) -> dict:
     """
     🔴 Processa cancelamento/expiração de sessão de checkout.
-    Altera o plano do user para 'free'.
+    Não altera a subscrição atual: um checkout expirado não cancela planos ativos.
 
     Args:
         customer_id: ID do customer Stripe
@@ -55,31 +97,9 @@ async def handle_checkout_session_expired(
         dict: Status da operação
     """
     logger.info(
-        f"🔴 Checkout cancelado/expirado para customer={customer_id}, user_id={user_id}. "
-        f"Alterando plano para 'free'."
+        f"Checkout cancelado/expirado para customer={customer_id}, user_id={user_id}. "
+        f"Sem alteração ao plano atual."
     )
-
-    query = await get_user_query(user_id, customer_id)
-
-    if not query:
-        logger.warning(
-            f"⚠️ Não foi possível identificar o user para cancelamento de checkout "
-            f"(user_id={user_id}, customer_id={customer_id})"
-        )
-        return {"status": "ok"}
-
-    result = await users_collection.update_one(
-        query,
-        {"$set": {"plano": "free", "updated_at": datetime.now()}},
-    )
-
-    if result.modified_count > 0:
-        logger.info(f"✅ Plano alterado para 'free' após cancelamento de checkout")
-    else:
-        logger.warning(
-            f"⚠️ User não encontrado para atualizar para plano 'free' "
-            f"(user_id={user_id}, customer_id={customer_id})"
-        )
 
     return {"status": "ok"}
 
@@ -88,6 +108,7 @@ async def handle_checkout_session_completed(
     customer_id: str = None,
     user_id: str = None,
     plano: str = None,
+    subscription_id: str = None,
 ) -> dict:
     """
     ✅ Processa conclusão de sessão de checkout.
@@ -97,6 +118,7 @@ async def handle_checkout_session_completed(
         customer_id: ID do customer Stripe
         user_id: ID do user
         plano: Novo plano a ser atribuído
+        subscription_id: ID da nova subscrição criada pelo checkout
 
     Returns:
         dict: Status da operação
@@ -110,18 +132,29 @@ async def handle_checkout_session_completed(
         )
         return {"status": "ok"}
 
-    logger.info(f"Atualizando plano do user para: {plano}")
+    logger.info(
+        f"Atualizando plano do user para: {plano}; subscription_id={subscription_id}"
+    )
+
+    update_fields = {
+        "plano": plano,
+        "has_demo": True,
+        "updated_at": datetime.now(),
+    }
+    if subscription_id:
+        update_fields["stripe_subscription_id"] = subscription_id
 
     result = await users_collection.update_one(
         query,
         {
-            "$set": {"plano": plano, "has_demo": True, "updated_at": datetime.now()},
+            "$set": update_fields,
             "$unset": {"payment_error": "", "payment_error_at": ""},
         },
     )
 
-    if result.modified_count > 0:
+    if result.matched_count > 0:
         logger.info(f"✅ Plano {plano} atualizado com sucesso")
+        await cancel_previous_paid_subscriptions(customer_id, subscription_id)
     else:
         logger.warning(
             f"⚠️ User não encontrado para webhook Stripe "
@@ -210,6 +243,7 @@ async def handle_invoice_payment_succeeded(
     customer_id: str = None,
     user_id: str = None,
     plano: str = None,
+    subscription_id: str = None,
 ) -> dict:
     """
     💳 Processa sucesso de pagamento de invoice.
@@ -219,6 +253,7 @@ async def handle_invoice_payment_succeeded(
         customer_id: ID do customer Stripe
         user_id: ID do user
         plano: Novo plano a ser atribuído
+        subscription_id: ID da subscrição associada ao invoice
 
     Returns:
         dict: Status da operação
@@ -232,12 +267,29 @@ async def handle_invoice_payment_succeeded(
         )
         return {"status": "ok"}
 
+    user = await users_collection.find_one(query)
+    current_subscription_id = user.get("stripe_subscription_id") if user else None
+    if (
+        current_subscription_id
+        and subscription_id
+        and current_subscription_id != subscription_id
+    ):
+        logger.info(
+            f"Ignorando invoice.payment_succeeded de subscrição antiga "
+            f"{subscription_id}; atual={current_subscription_id}"
+        )
+        return {"status": "ok"}
+
     logger.info(f"💳 Pagamento de invoice confirmado. Atualizando plano para: {plano}")
+
+    update_fields = {"plano": plano, "updated_at": datetime.now()}
+    if subscription_id and not current_subscription_id:
+        update_fields["stripe_subscription_id"] = subscription_id
 
     result = await users_collection.update_one(
         query,
         {
-            "$set": {"plano": plano, "updated_at": datetime.now()},
+            "$set": update_fields,
             "$unset": {"payment_error": "", "payment_error_at": ""},
         },
     )
@@ -314,6 +366,7 @@ async def handle_invoice_payment_failed(
 async def handle_customer_subscription_deleted(
     customer_id: str = None,
     user_id: str = None,
+    subscription_id: str = None,
     cancellation_reason: str = None,
 ) -> dict:
     """
@@ -323,14 +376,15 @@ async def handle_customer_subscription_deleted(
     Args:
         customer_id: ID do customer Stripe
         user_id: ID do user
+        subscription_id: ID da subscrição cancelada
         cancellation_reason: razão do cancelamento enviada pela Stripe
 
     Returns:
         dict: Status da operação
     """
-    logger.warning(
-        f"🔴 Subscrição cancelada pelo Stripe para customer={customer_id}, user_id={user_id}. "
-        f"Alterando plano para 'free'."
+    logger.info(
+        f"Subscrição cancelada pelo Stripe para customer={customer_id}, "
+        f"user_id={user_id}, subscription_id={subscription_id}."
     )
 
     query = await get_user_query(user_id, customer_id)
@@ -342,16 +396,35 @@ async def handle_customer_subscription_deleted(
         )
         return {"status": "ok"}
 
+    user = await users_collection.find_one(query)
+    current_subscription_id = user.get("stripe_subscription_id") if user else None
+    if (
+        current_subscription_id
+        and subscription_id
+        and current_subscription_id != subscription_id
+    ):
+        logger.info(
+            f"Ignorando cancelamento de subscrição antiga {subscription_id}; "
+            f"subscrição atual={current_subscription_id}"
+        )
+        return {"status": "ok"}
+
+    logger.warning(
+        f"Subscrição atual cancelada para customer={customer_id}, user_id={user_id}. "
+        f"Alterando plano para 'free'."
+    )
+
     is_user_requested = cancellation_reason == "cancellation_requested"
     update = {
         "$set": {
             "plano": "free",
             "updated_at": datetime.now(),
-        }
+        },
+        "$unset": {"stripe_subscription_id": ""},
     }
 
     if is_user_requested:
-        update["$unset"] = {"payment_error": "", "payment_error_at": ""}
+        update["$unset"].update({"payment_error": "", "payment_error_at": ""})
     else:
         error_message = "Sua subscrição foi cancelada automaticamente devido a múltiplas falhas de pagamento. Por favor, atualize seu método de pagamento."
         update["$set"].update(

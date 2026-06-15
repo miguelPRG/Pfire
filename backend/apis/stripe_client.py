@@ -98,16 +98,6 @@ async def create_checkout(
         except stripe.error.InvalidRequestError:
             raise Exception(f"Customer Stripe {stripe_customer_id} nao existe")
 
-        subscriptions = stripe.Subscription.list(
-            customer=stripe_customer_id, status="active"
-        )
-        if subscriptions.data:
-            active_sub = subscriptions.data[0]
-            print(f"User {user_id} já tem subscrição ativa: {active_sub.id}")
-            raise Exception(
-                f"Voce ja tem um plano ativo ({active_sub.status}). Cancele o atual antes de contratar outro."
-            )
-
         trial_subs = stripe.Subscription.list(
             customer=stripe_customer_id, status="trialing"
         )
@@ -115,7 +105,7 @@ async def create_checkout(
             trial_sub = trial_subs.data[0]
             print(f"User {user_id} já tem subscrição em trial: {trial_sub.id}")
             raise Exception(
-                f"Voce ja tem um plano em periodo de teste. Cancele o atual antes de contratar outro."
+                "Já estás num plano em período de teste. Deves esperar o fim do trial antes de subscrever outro plano."
             )
 
         try:
@@ -139,6 +129,7 @@ async def create_checkout(
         URL = os.getenv("SUCCESS_URL", "http://localhost:3000")
 
         trial_days = 7
+        has_trial = not has_demo
 
         # Construir subscription_data condicionalmente
         subscription_data = {
@@ -147,7 +138,7 @@ async def create_checkout(
                 "plano": product.name.lower(),
             },
         }
-        if not has_demo:
+        if has_trial:
             subscription_data["trial_period_days"] = trial_days
 
         session_data = {
@@ -162,12 +153,12 @@ async def create_checkout(
         }
         session = stripe.checkout.Session.create(**session_data)
 
-        trial_msg = f" com trial de {trial_days} dias" if has_demo else ""
+        trial_msg = f" com trial de {trial_days} dias" if has_trial else ""
         print(f"Sessão criada: {session.id}{trial_msg}")
         return {
             "id": session.id,
             "url": session.url,
-            "trial_days": trial_days if has_demo else None,
+            "trial_days": trial_days if has_trial else None,
         }
 
     except stripe.error.StripeError as e:
