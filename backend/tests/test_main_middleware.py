@@ -100,7 +100,10 @@ def load_main_module():
     fake_redis_client.test_redis_connection = fake_test_redis_connection
 
     fake_jwt_validation = types.ModuleType("controller.jwtValidation")
-    fake_jwt_validation.verify_jwt = lambda token: {"user_id": token, "nome": "Test User"}
+    fake_jwt_validation.verify_jwt = lambda token: {
+        "user_id": token,
+        "nome": "Test User",
+    }
 
     fake_token_blacklist = types.ModuleType("controller.token_blacklist")
 
@@ -139,7 +142,9 @@ def load_main_module():
     fake_services_package = types.ModuleType("routes.Rest.services")
     fake_services_package.globalIdsServices = SimpleNamespace(routerUser=object())
     fake_services_package.modelosCamposServices = SimpleNamespace(routerModelo=object())
-    fake_services_package.userEmpresaServices = SimpleNamespace(routerUserEmpresa=object())
+    fake_services_package.userEmpresaServices = SimpleNamespace(
+        routerUserEmpresa=object()
+    )
 
     fake_auth_router = types.ModuleType("routes.Rest.services.userServices.auth")
     fake_auth_router.routerAuth = object()
@@ -221,8 +226,10 @@ def build_call_next(status_code=200):
 def test_middleware_rejects_disallowed_origin():
     module = load_main_module()
     logs = []
-    module.log_request_to_file_if_needed = lambda request, status_code, _start_time: logs.append(
-        (request.url.path, status_code)
+    module.log_request_to_file_if_needed = (
+        lambda request, status_code, _start_time: logs.append(
+            (request.url.path, status_code)
+        )
     )
     calls, call_next = build_call_next()
 
@@ -242,12 +249,16 @@ def test_middleware_rejects_disallowed_origin():
 # Verifica o cen?rio em que middleware allows options requests without authentication.
 def test_middleware_allows_options_requests_without_authentication():
     module = load_main_module()
-    module.rate_limit = lambda _request: (_ for _ in ()).throw(AssertionError("rate_limit should not be called"))
+    module.rate_limit = lambda _request: (_ for _ in ()).throw(
+        AssertionError("rate_limit should not be called")
+    )
     calls, call_next = build_call_next(status_code=204)
 
     response = asyncio.run(
         module.fast_api_http_middleware(
-            build_request(method="OPTIONS", headers={"origin": module.ALLOWED_ORIGINS[0]}),
+            build_request(
+                method="OPTIONS", headers={"origin": module.ALLOWED_ORIGINS[0]}
+            ),
             call_next,
         )
     )
@@ -269,7 +280,9 @@ def test_middleware_allows_excluded_path_without_cookie():
 
     response = asyncio.run(
         module.fast_api_http_middleware(
-            build_request(path="/user/login", headers={"origin": module.ALLOWED_ORIGINS[0]}),
+            build_request(
+                path="/user/login", headers={"origin": module.ALLOWED_ORIGINS[0]}
+            ),
             call_next,
         )
     )

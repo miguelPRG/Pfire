@@ -84,7 +84,6 @@ vi.mock("@/components/Notification", () => ({
 
 // Agrupa os testes de ClientManagementTable.
 describe("ClientManagementTable", () => {
-
   // Reinicia os mocks e globais compartilhados antes de cada cen?rio.
   beforeEach(() => {
     clientManagementMocks.useClientesQueryMock.mockReset();

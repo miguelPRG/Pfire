@@ -28,7 +28,6 @@ function createResponse(ok: boolean) {
 
 // Agrupa os testes de SuccessPage.
 describe("SuccessPage", () => {
-
   // Reinicia os mocks e globais compartilhados antes de cada cen?rio.
   beforeEach(() => {
     vi.useFakeTimers();

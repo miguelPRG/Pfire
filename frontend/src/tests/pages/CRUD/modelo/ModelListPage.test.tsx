@@ -104,7 +104,6 @@ vi.mock("@/components/Notification", () => ({
 
 // Agrupa os testes de ModelListPage.
 describe("ModelListPage", () => {
-
   // Reinicia os mocks e globais compartilhados antes de cada cen?rio.
   beforeEach(() => {
     modelListMocks.useModelosQueryMock.mockReset();

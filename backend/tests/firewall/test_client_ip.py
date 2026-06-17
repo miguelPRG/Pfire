@@ -38,7 +38,9 @@ def load_client_ip_module():
     try:
         sys.modules.update(fake_modules)
         module_name = f"client_ip_under_test_{uuid.uuid4().hex}"
-        spec = importlib.util.spec_from_file_location(module_name, CLIENT_IP_MODULE_PATH)
+        spec = importlib.util.spec_from_file_location(
+            module_name, CLIENT_IP_MODULE_PATH
+        )
         module = importlib.util.module_from_spec(spec)
         assert spec.loader is not None
         spec.loader.exec_module(module)
@@ -68,7 +70,9 @@ def build_request(path="/secure", forwarded_for=None, client_host="127.0.0.1"):
 def test_get_client_ip_prefers_forwarded_for_header():
     module = load_client_ip_module()
 
-    request = build_request(forwarded_for="203.0.113.10, 198.51.100.10", client_host="10.0.0.7")
+    request = build_request(
+        forwarded_for="203.0.113.10, 198.51.100.10", client_host="10.0.0.7"
+    )
 
     assert module.get_client_ip(request) == "203.0.113.10"
 
@@ -86,7 +90,9 @@ def test_rate_limit_skips_excluded_paths():
     module.rate_limiter.clear()
     module.blocked_ips.clear()
 
-    response = asyncio.run(module.rate_limit(build_request(path="/user/stripe/webhook")))
+    response = asyncio.run(
+        module.rate_limit(build_request(path="/user/stripe/webhook"))
+    )
 
     assert response is None
     assert module.rate_limiter == {}
@@ -128,7 +134,9 @@ def test_rate_limit_blocks_ip_after_exceeding_limit():
     response = asyncio.run(module.rate_limit(build_request(client_host=ip)))
 
     assert response.status_code == 429
-    assert response.content == {"message": f"IP bloqueado por {module.BLOCK_DURATION} segundos."}
+    assert response.content == {
+        "message": f"IP bloqueado por {module.BLOCK_DURATION} segundos."
+    }
     assert module.blocked_ips[ip] == 100
     assert len(module.rate_limiter[ip]) == module.LIMIT + 1
     assert len(scheduled) == 1
@@ -141,7 +149,9 @@ def test_rate_limit_returns_temporary_block_response_for_blocked_ip():
     module.blocked_ips.clear()
     module.blocked_ips["198.51.100.12"] = 90
 
-    response = asyncio.run(module.rate_limit(build_request(client_host="198.51.100.12")))
+    response = asyncio.run(
+        module.rate_limit(build_request(client_host="198.51.100.12"))
+    )
 
     assert response.status_code == 429
     assert response.content == {"message": "IP bloqueado temporariamente. Aguarde."}

@@ -8,7 +8,9 @@ import uuid
 from pathlib import Path
 
 
-TOKEN_BLACKLIST_PATH = Path(__file__).resolve().parents[2] / "controller" / "token_blacklist.py"
+TOKEN_BLACKLIST_PATH = (
+    Path(__file__).resolve().parents[2] / "controller" / "token_blacklist.py"
+)
 
 
 # Dubl? leve usado nos cen?rios desta su?te.
@@ -76,9 +78,7 @@ def test_add_token_to_blacklist_sets_ttl_in_redis():
 
     asyncio.run(module.add_token_to_blacklist("jwt-token", 160))
 
-    assert module._redis_client.set_calls == [
-        ("blacklist:jwt-token", "revoked", 60)
-    ]
+    assert module._redis_client.set_calls == [("blacklist:jwt-token", "revoked", 60)]
 
 
 # Verifica o cen?rio em que add token to blacklist skips expired tokens.

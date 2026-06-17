@@ -51,7 +51,9 @@ vi.mock("@/pages/CRUD/relatorios/ReportListPage", async () => {
             empresa_id: reportListMocks.empresa.id,
             recaptchaToken: "",
           });
-          setReports((current) => current.map((item: any) => (item.id === report.id ? { ...item, isActive: false } : item)));
+          setReports((current) =>
+            current.map((item: any) => (item.id === report.id ? { ...item, isActive: false } : item))
+          );
           setAlert("Relatorio desativado com sucesso!");
         } else {
           await reportListMocks.activateRelatorioMock({
@@ -59,7 +61,9 @@ vi.mock("@/pages/CRUD/relatorios/ReportListPage", async () => {
             empresa_id: reportListMocks.empresa.id,
             recaptchaToken: "",
           });
-          setReports((current) => current.map((item: any) => (item.id === report.id ? { ...item, isActive: true } : item)));
+          setReports((current) =>
+            current.map((item: any) => (item.id === report.id ? { ...item, isActive: true } : item))
+          );
           setAlert("Relatorio ativado com sucesso!");
         }
       };
@@ -121,7 +125,11 @@ vi.mock("@/pages/CRUD/relatorios/ReportListPage", async () => {
           ) : null}
           {exportOpen ? (
             <div role="dialog">
-              <select aria-label="Cliente Select" value={selectedClientId} onChange={(event) => setSelectedClientId(event.target.value)}>
+              <select
+                aria-label="Cliente Select"
+                value={selectedClientId}
+                onChange={(event) => setSelectedClientId(event.target.value)}
+              >
                 <option value="">--</option>
                 {reportListMocks.clientesData.getClientes.clientes.map((client: any) => (
                   <option key={client.id} value={client.id}>

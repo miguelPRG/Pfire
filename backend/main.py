@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+
 try:
     from fastapi import Response
 except ImportError:
@@ -20,6 +21,7 @@ except ImportError:
 
         def __init__(self, status_code=200):
             self.status_code = status_code
+
 
 from starlette.requests import ClientDisconnect
 from starlette.types import ASGIApp, Scope, Receive, Send
@@ -30,12 +32,14 @@ load_dotenv(Path(__file__).parent / ".env")
 from apis.brevo_client import test_brevo_connection
 from apis.redis_client import test_redis_connection
 from controller.jwtValidation import verify_jwt
+
 try:
     from controller.cookie_settings import clear_auth_cookie
 except ImportError:
 
     def clear_auth_cookie(_response, _request) -> None:
         return None
+
 
 try:
     from controller.token_blacklist import add_token_to_blacklist
@@ -44,13 +48,14 @@ except ImportError:
     async def add_token_to_blacklist(_token, _exp):
         return None
 
+
 from controller.token_blacklist import is_token_revoked
 from database import (
     database_cleaner_scheduler,
     start_database_cleaner_scheduler,
     testar_database,
-    users_collection,
 )
+
 try:
     from database import users_collection
 except ImportError:

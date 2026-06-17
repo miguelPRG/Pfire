@@ -27,15 +27,7 @@ vi.mock("@/hooks/RecaptchaContext", () => ({
 }));
 
 // Fun??o auxiliar que cria Response para o cen?rio atual.
-function createResponse({
-  ok,
-  status,
-  data,
-}: {
-  ok: boolean;
-  status: number;
-  data: Record<string, unknown>;
-}) {
+function createResponse({ ok, status, data }: { ok: boolean; status: number; data: Record<string, unknown> }) {
   return {
     ok,
     status,
@@ -45,10 +37,8 @@ function createResponse({
 
 // Agrupa os testes de ForgotPasswordPage.
 describe("ForgotPasswordPage", () => {
-
   // Reinicia os mocks e globais compartilhados antes de cada cen?rio.
   beforeEach(() => {
-
     forgotPageMocks.navigateMock.mockReset();
     forgotPageMocks.generateTokenMock.mockReset();
     forgotPageMocks.generateTokenMock.mockResolvedValue("captcha-token");
@@ -76,9 +66,7 @@ describe("ForgotPasswordPage", () => {
     fireEvent.click(screen.getByRole("button", { name: /Recuperar Palavra-Passe/i }));
 
     await waitFor(() => {
-      expect(
-        screen.getByText(/Foi enviado um email para poder confirmar o pedido/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Foi enviado um email para poder confirmar o pedido/i)).toBeInTheDocument();
     });
 
     expect(forgotPageMocks.generateTokenMock).toHaveBeenCalledWith("forgot-password");

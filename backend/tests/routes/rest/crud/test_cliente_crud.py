@@ -16,11 +16,7 @@ from models.clienteModels import ClienteActivion, ClienteCreate, ClienteUpdate
 
 
 MODULE_PATH = (
-    Path(__file__).resolve().parents[4]
-    / "routes"
-    / "Rest"
-    / "CRUD"
-    / "clienteCRUD.py"
+    Path(__file__).resolve().parents[4] / "routes" / "Rest" / "CRUD" / "clienteCRUD.py"
 )
 
 

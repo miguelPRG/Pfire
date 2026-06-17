@@ -146,4 +146,6 @@ def test_enviar_email_builds_template_payload_and_omits_empty_company(capsys):
         "GLOBAL_ID": "global-1",
         "OPERATION": "registo",
     }
-    assert "E-mail enviado com sucesso para miguel@example.com" in capsys.readouterr().out
+    assert (
+        "E-mail enviado com sucesso para miguel@example.com" in capsys.readouterr().out
+    )

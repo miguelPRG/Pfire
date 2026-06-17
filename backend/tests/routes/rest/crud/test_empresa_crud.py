@@ -16,11 +16,7 @@ from models.empresaModels import EmpresaCreateAsLoggedUser, EmpresaUpdate
 
 
 MODULE_PATH = (
-    Path(__file__).resolve().parents[4]
-    / "routes"
-    / "Rest"
-    / "CRUD"
-    / "empresaCRUD.py"
+    Path(__file__).resolve().parents[4] / "routes" / "Rest" / "CRUD" / "empresaCRUD.py"
 )
 
 

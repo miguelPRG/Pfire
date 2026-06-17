@@ -6,7 +6,6 @@ import StatusToggle from "@/pages/CRUD/cliente/StatusToggle";
 
 // Agrupa os testes de StatusToggle.
 describe("StatusToggle", () => {
-
   // Verifica o cen?rio: shows the active label and triggers onToggle.
   it("shows the active label and triggers onToggle", () => {
     const onToggle = vi.fn();

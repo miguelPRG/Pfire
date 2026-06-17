@@ -16,11 +16,7 @@ from models.userModels import UserActivation, UserUpdate
 
 
 MODULE_PATH = (
-    Path(__file__).resolve().parents[4]
-    / "routes"
-    / "Rest"
-    / "CRUD"
-    / "userCRUD.py"
+    Path(__file__).resolve().parents[4] / "routes" / "Rest" / "CRUD" / "userCRUD.py"
 )
 
 
@@ -124,7 +120,8 @@ def test_update_user_rejects_invalid_signature_type():
     with pytest.raises(HTTPException) as exc_info:
         asyncio.run(
             module.update_user(
-                UserUpdate(assinatura="YWJj"), build_request({"user_id": str(ObjectId())})
+                UserUpdate(assinatura="YWJj"),
+                build_request({"user_id": str(ObjectId())}),
             )
         )
 

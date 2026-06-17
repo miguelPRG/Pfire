@@ -253,6 +253,7 @@ def test_confirm_user_activates_user_and_sets_auth_cookie():
         "nome": "Miguel",
         "email": "miguel@example.com",
         "telefone": "+351912345678",
+        "assinatura": "c2lnbmF0dXJl",
         "isSuperAdmin": False,
         "plano": "free",
         "stripeCustomerId": None,

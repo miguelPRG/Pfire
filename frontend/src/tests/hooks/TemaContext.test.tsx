@@ -5,10 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Agrupa os testes de TemaContext.
 describe("TemaContext", () => {
-
   // Reinicia os mocks e globais compartilhados antes de cada cen?rio.
   beforeEach(() => {
-
     vi.useFakeTimers();
     localStorage.clear();
   });

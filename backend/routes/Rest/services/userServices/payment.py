@@ -3,14 +3,13 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import JSONResponse
 from apis.stripe_client import (
     create_checkout,
-    get_or_create_stripe_customer_id,
+    create_stripe_customer,
     get_payment_method,
     create_payment_method_add_session,
     set_default_payment_method,
     remove_payment_method_not_default,
-    get_subscription_trial_info,
-    schedule_subscription_cancel_at_period_end,
 )
+
 try:
     from apis.stripe_client import get_or_create_stripe_customer_id
 except ImportError:
@@ -21,6 +20,7 @@ except ImportError:
         if existing_customer_id:
             return existing_customer_id
         return await create_stripe_customer(email, name)
+
 
 try:
     from apis.stripe_client import get_subscription_trial_info
@@ -38,23 +38,29 @@ except ImportError:
             "status": None,
         }
 
+
 try:
     from apis.stripe_client import schedule_subscription_cancel_at_period_end
 except ImportError:
 
-    async def schedule_subscription_cancel_at_period_end(_stripe_customer_id: str) -> dict:
+    async def schedule_subscription_cancel_at_period_end(
+        _stripe_customer_id: str,
+    ) -> dict:
         return {
             "ok": False,
             "current_period_end": None,
             "cancel_at_period_end": False,
             "already_scheduled": False,
         }
+
+
 from database import users_collection
 from bson import ObjectId
 from stripe import Webhook, SignatureVerificationError
 from os import getenv
 from controller.jwtValidation import generate_jwt
 from controller.cookie_settings import get_auth_cookie_settings
+
 try:
     from .stripe.webhook_handlers import (
         handle_checkout_session_expired,

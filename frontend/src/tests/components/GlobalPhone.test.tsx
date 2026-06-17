@@ -39,7 +39,6 @@ function renderGlobalPhone({
   defaultValue?: string;
   errors?: Record<string, unknown>;
 }) {
-
   // Fun??o auxiliar usada pelos cen?rios desta su?te.
   function Wrapper() {
     const { control, watch } = useForm({
@@ -63,7 +62,6 @@ function renderGlobalPhone({
 
 // Agrupa os testes de GlobalPhone.
 describe("GlobalPhone", () => {
-
   // Verifica o cen?rio: normalizes a local number for display and keeps the raw form value.
   it("normalizes a local number for display and keeps the raw form value", () => {
     renderGlobalPhone({ defaultValue: "912345678" });

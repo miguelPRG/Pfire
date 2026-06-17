@@ -150,7 +150,9 @@ def test_create_checkout_returns_session_url_and_trial_days(monkeypatch):
     monkeypatch.setenv("SUCCESS_URL", "https://frontend.example")
     module = load_stripe_module(monkeypatch, api_key="sk_test_123")
 
-    module.stripe.Customer.retrieve = lambda _customer_id: types.SimpleNamespace(deleted=False)
+    module.stripe.Customer.retrieve = lambda _customer_id: types.SimpleNamespace(
+        deleted=False
+    )
     module.stripe.Subscription.list = lambda **_kwargs: make_list_response([])
     module.stripe.Product.retrieve = lambda _plan_id: types.SimpleNamespace(
         id="prod_1", name="Pro Plan"
@@ -177,7 +179,9 @@ def test_set_default_payment_method_attaches_orphan_method(monkeypatch):
     attached = []
     modified = []
 
-    module.stripe.PaymentMethod.retrieve = lambda _pm_id: types.SimpleNamespace(customer=None)
+    module.stripe.PaymentMethod.retrieve = lambda _pm_id: types.SimpleNamespace(
+        customer=None
+    )
     module.stripe.PaymentMethod.attach = lambda pm_id, **kwargs: attached.append(
         (pm_id, kwargs)
     )

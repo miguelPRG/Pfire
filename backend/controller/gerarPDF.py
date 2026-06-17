@@ -311,7 +311,9 @@ def gerar_pdf(
         apply_watermark = kwargs.pop("watterMark", apply_watermark)
     if kwargs:
         unexpected = next(iter(kwargs))
-        raise TypeError(f"gerar_pdf() got an unexpected keyword argument '{unexpected}'")
+        raise TypeError(
+            f"gerar_pdf() got an unexpected keyword argument '{unexpected}'"
+        )
 
     html = _build_pdf_html(
         relatorios,

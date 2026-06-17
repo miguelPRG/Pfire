@@ -22,7 +22,12 @@ from models.userModels import (
 
 
 AUTH_MODULE_PATH = (
-    Path(__file__).resolve().parents[5] / "routes" / "Rest" / "services" / "userServices" / "auth.py"
+    Path(__file__).resolve().parents[5]
+    / "routes"
+    / "Rest"
+    / "services"
+    / "userServices"
+    / "auth.py"
 )
 
 
@@ -273,11 +278,12 @@ def test_login_rejects_invalid_credentials():
 def test_login_returns_payload_and_cookie_on_success():
     module = load_auth_module()
     recaptcha_calls = []
-    module.validar_recaptcha_token = (
-        lambda token, action: recaptcha_calls.append((token, action)) or asyncio.sleep(0)
-    )
+    module.validar_recaptcha_token = lambda token, action: recaptcha_calls.append(
+        (token, action)
+    ) or asyncio.sleep(0)
     module.pwd_context = SimpleNamespace(
-        verify=lambda password, hashed: password == "Password123" and hashed == "hashed-password"
+        verify=lambda password, hashed: password == "Password123"
+        and hashed == "hashed-password"
     )
     module.users_collection.find_one_results = [
         {
@@ -427,7 +433,9 @@ def test_logout_user_blacklists_token_and_clears_cookie():
         blacklist_calls.append((token, exp))
 
     module.add_token_to_blacklist = fake_add_token_to_blacklist
-    module.clear_auth_cookie = lambda response, request: cleared.append((response, request))
+    module.clear_auth_cookie = lambda response, request: cleared.append(
+        (response, request)
+    )
 
     response = Response()
     result = asyncio.run(
@@ -459,9 +467,9 @@ def test_register_user_creates_user_empresa_and_confirmation_email():
     module = load_auth_module()
     recaptcha_calls = []
     sent_emails = []
-    module.validar_recaptcha_token = (
-        lambda token, action: recaptcha_calls.append((token, action)) or asyncio.sleep(0)
-    )
+    module.validar_recaptcha_token = lambda token, action: recaptcha_calls.append(
+        (token, action)
+    ) or asyncio.sleep(0)
     module.pwd_context = SimpleNamespace(hash=lambda password: f"hashed::{password}")
 
     # Dubl? usado para isolar a unidade testada.
@@ -472,15 +480,21 @@ def test_register_user_creates_user_empresa_and_confirmation_email():
     module.enviar_email = lambda *args: sent_emails.append(args)
 
     module.users_collection.insert_one_results = [FakeResult(inserted_id="user-id")]
-    module.empresas_collection.insert_one_results = [FakeResult(inserted_id="empresa-id")]
-    module.users_empresas_collection.insert_one_results = [FakeResult(inserted_id="ue-id")]
+    module.empresas_collection.insert_one_results = [
+        FakeResult(inserted_id="empresa-id")
+    ]
+    module.users_empresas_collection.insert_one_results = [
+        FakeResult(inserted_id="ue-id")
+    ]
     module.global_ids_collection.insert_one_results = [FakeResult(inserted_id="gid-id")]
 
     result = asyncio.run(module.register_user(make_register_payload(), build_request()))
 
     assert result == {"message": "Conta criada! Verifique seu email para ativação."}
     assert recaptcha_calls == [("captcha-token", "register")]
-    assert module.users_collection.insert_one_calls[0]["password"] == "hashed::Password123"
+    assert (
+        module.users_collection.insert_one_calls[0]["password"] == "hashed::Password123"
+    )
     assert module.empresas_collection.insert_one_calls[0]["created_by"] == "user-id"
     assert module.users_empresas_collection.insert_one_calls
     assert module.global_ids_collection.insert_one_calls
@@ -496,7 +510,9 @@ def test_forgot_password_requires_existing_active_user():
         asyncio.run(
             module.forgot_password(
                 build_request(),
-                UserForgotPassword(email="miguel@example.com", recaptchaToken="captcha-token"),
+                UserForgotPassword(
+                    email="miguel@example.com", recaptchaToken="captcha-token"
+                ),
             )
         )
 
@@ -510,14 +526,21 @@ def test_forgot_password_creates_global_id_and_sends_email():
     sent_emails = []
     module.enviar_email = lambda *args: sent_emails.append(args)
     module.users_collection.find_one_results = [
-        {"_id": "user-id", "nome": "Miguel", "email": "miguel@example.com", "isActive": True}
+        {
+            "_id": "user-id",
+            "nome": "Miguel",
+            "email": "miguel@example.com",
+            "isActive": True,
+        }
     ]
     module.global_ids_collection.insert_one_results = [FakeResult(inserted_id="gid-id")]
 
     result = asyncio.run(
         module.forgot_password(
             build_request(),
-            UserForgotPassword(email="miguel@example.com", recaptchaToken="captcha-token"),
+            UserForgotPassword(
+                email="miguel@example.com", recaptchaToken="captcha-token"
+            ),
         )
     )
 

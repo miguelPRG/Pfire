@@ -77,7 +77,9 @@ class RelatorioQuery:
             filtro["created_by"] = user_id
 
         # Buscar relatórios no banco de dados
-        async for relatorio in relatorios_collection.find(filtro).skip(start).limit(lmt):
+        async for relatorio in (
+            relatorios_collection.find(filtro).skip(start).limit(lmt)
+        ):
             custom_fields = [
                 {"key": k, "value": v}
                 for k, v in relatorio.items()

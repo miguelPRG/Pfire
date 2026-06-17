@@ -490,7 +490,13 @@ export default function ReportModelListPage() {
                   </Box>
 
                   {optionKeys.length > 0 && (
-                    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" }, gap: 1 }}>
+                    <Box
+                      sx={{
+                        display: "grid",
+                        gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" },
+                        gap: 1,
+                      }}
+                    >
                       {optionKeys.map((k) => {
                         const opt = Array.isArray(crit.options)
                           ? crit.options.find((o: any) => String(o.key) === k)
@@ -571,7 +577,10 @@ export default function ReportModelListPage() {
         {/* Cabeçalho com título e botão de adicionar */}
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3, gap: 8, alignItems: "flex-start" }}>
           <Box>
-            <Typography variant="h5" sx={{ fontWeight: "bold", fontSize: 30, color: theme.palette.text.primary, mb: 2 }}>
+            <Typography
+              variant="h5"
+              sx={{ fontWeight: "bold", fontSize: 30, color: theme.palette.text.primary, mb: 2 }}
+            >
               Modelos de Relatórios
             </Typography>
             <Box sx={{ maxWidth: 650 }}>
@@ -650,7 +659,9 @@ export default function ReportModelListPage() {
                 }}
               >
                 <th style={{ padding: "16px", textAlign: "left", fontWeight: "bold", minWidth: 200 }}>Nome</th>
-                <th style={{ padding: "16px", textAlign: "center", fontWeight: "bold", minWidth: 150 }}>Data de Criação</th>
+                <th style={{ padding: "16px", textAlign: "center", fontWeight: "bold", minWidth: 150 }}>
+                  Data de Criação
+                </th>
                 <th style={{ padding: "16px", textAlign: "center", fontWeight: "bold", minWidth: 120 }}>Estado</th>
                 {Array.isArray(modelos[0]?.customFields) &&
                   modelos[0].customFields.map((field: any, index: number) => (
@@ -684,7 +695,9 @@ export default function ReportModelListPage() {
                             : "#fafafa",
                     }}
                   >
-                    <td style={{ padding: "16px", textAlign: "left", fontWeight: 500, color: theme.palette.text.primary }}>
+                    <td
+                      style={{ padding: "16px", textAlign: "left", fontWeight: 500, color: theme.palette.text.primary }}
+                    >
                       {empresa?.isAdmin ? (
                         modelo.isLocked ? (
                           <Tooltip title={modelo.lockReason || "Modelo bloqueado no seu plano."} placement="top">
@@ -732,7 +745,10 @@ export default function ReportModelListPage() {
                     </td>
                     {Array.isArray(modelo.customFields) &&
                       modelo.customFields.map((field: any, idx: number) => (
-                        <td key={idx} style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>
+                        <td
+                          key={idx}
+                          style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}
+                        >
                           {(() => {
                             const val = field.value;
                             if (val === null || val === undefined) return "-";

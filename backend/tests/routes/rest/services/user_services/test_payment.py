@@ -200,7 +200,7 @@ def test_create_user_checkout_creates_customer_when_missing():
     user_id = str(ObjectId())
     module.users_collection.find_one_results = [
         {"_id": ObjectId(user_id), "email": "miguel@example.com", "nome": "Miguel"},
-        {"_id": ObjectId(user_id), "email": "miguel@example.com", "nome": "Miguel"}
+        {"_id": ObjectId(user_id), "email": "miguel@example.com", "nome": "Miguel"},
     ]
     module.users_collection.update_one_results = [FakeResult(modified_count=1)]
     create_customer_calls = []
@@ -246,7 +246,9 @@ def test_get_payment_methods_requires_paid_customer():
     module = load_payment_module()
 
     with pytest.raises(HTTPException) as exc_info:
-        asyncio.run(module.get_payment_methods(build_request({"stripe_customer_id": None})))
+        asyncio.run(
+            module.get_payment_methods(build_request({"stripe_customer_id": None}))
+        )
 
     assert exc_info.value.status_code == 400
     assert "Stripe customer" in exc_info.value.detail

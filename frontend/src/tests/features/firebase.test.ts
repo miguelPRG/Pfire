@@ -24,7 +24,6 @@ vi.mock("firebase/auth", () => ({
 
 describe("firebase", () => {
   beforeEach(() => {
-
     firebaseAuthMocks.signInWithPopup.mockReset();
     firebaseAuthMocks.signOut.mockReset();
     firebaseAuthMocks.getIdToken.mockReset();

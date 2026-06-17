@@ -20,11 +20,7 @@ from models.modeloCamposModels import (
 
 
 MODULE_PATH = (
-    Path(__file__).resolve().parents[4]
-    / "routes"
-    / "Rest"
-    / "CRUD"
-    / "modelosCRUD.py"
+    Path(__file__).resolve().parents[4] / "routes" / "Rest" / "CRUD" / "modelosCRUD.py"
 )
 
 
@@ -161,16 +157,23 @@ def test_criar_modelo_rejects_duplicate_name_within_company():
     empresa_id = str(ObjectId())
     user_id = str(ObjectId())
     module.modelos_collection.count_documents_results = [0]
-    module.empresas_collection.find_one_results = [{"_id": ObjectId(empresa_id)}, {"_id": ObjectId(empresa_id)}]
+    module.empresas_collection.find_one_results = [
+        {"_id": ObjectId(empresa_id)},
+        {"_id": ObjectId(empresa_id)},
+    ]
     module.users_empresas_collection.find_one_results = [{"isAdmin": True}]
-    module.modelos_collection.find_batches = [[{"modelo_nome": "Modelo A", "created_by": ObjectId(user_id)}]]
+    module.modelos_collection.find_batches = [
+        [{"modelo_nome": "Modelo A", "created_by": ObjectId(user_id)}]
+    ]
     module.modelos_collection.find_one_results = [None, {"_id": ObjectId()}]
 
     with pytest.raises(HTTPException) as exc_info:
         asyncio.run(
             module.criar_modelo(
                 valid_modelo_create(empresa_id),
-                build_request({"user_id": user_id, "isSuperAdmin": False, "plano": "pro"}),
+                build_request(
+                    {"user_id": user_id, "isSuperAdmin": False, "plano": "pro"}
+                ),
             )
         )
 
@@ -215,4 +218,7 @@ def test_apagar_modelo_blocks_delete_when_reports_exist():
         )
 
     assert exc_info.value.status_code == 400
-    assert "relatórios associados" in exc_info.value.detail or "relatorios associados" in exc_info.value.detail
+    assert (
+        "relatórios associados" in exc_info.value.detail
+        or "relatorios associados" in exc_info.value.detail
+    )

@@ -521,7 +521,10 @@ def test_get_relatorios_and_count_queries_map_results():
     assert relatorios.relatorios[0].numero_id == 7
     assert not hasattr(relatorios.relatorios[0], "created_by")
     assert modules.db.relatorios_collection.find_calls[0]["isActive"] is True
-    assert modules.db.relatorios_collection.find_calls[0]["cliente_nif"]["$regex"] == "^123"
+    assert (
+        modules.db.relatorios_collection.find_calls[0]["cliente_nif"]["$regex"]
+        == "^123"
+    )
     assert count_by_cliente[0].cliente_nome == "Cliente A"
     assert count_by_cliente[0].count == 3
     assert count_by_modelo[0].modelo_nome == "Modelo A"

@@ -44,15 +44,7 @@ vi.mock("@/components/PasswordField", async () => {
 });
 
 // Fun??o auxiliar que cria Response para o cen?rio atual.
-function createResponse({
-  ok,
-  status,
-  data,
-}: {
-  ok: boolean;
-  status: number;
-  data: Record<string, unknown>;
-}) {
+function createResponse({ ok, status, data }: { ok: boolean; status: number; data: Record<string, unknown> }) {
   return {
     ok,
     status,
@@ -62,10 +54,8 @@ function createResponse({
 
 // Agrupa os testes de NewPasswordPage.
 describe("NewPasswordPage", () => {
-
   // Reinicia os mocks e globais compartilhados antes de cada cen?rio.
   beforeEach(() => {
-
     newPasswordMocks.navigateMock.mockReset();
   });
 
@@ -175,9 +165,7 @@ describe("NewPasswordPage", () => {
       });
     });
 
-    const updatePasswordCall = fetchMock.mock.calls.find(
-      ([url]) => url === "/backend/user/email/change-password/"
-    );
+    const updatePasswordCall = fetchMock.mock.calls.find(([url]) => url === "/backend/user/email/change-password/");
     expect(JSON.parse(String(updatePasswordCall?.[1]?.body))).toEqual({
       password: "Password123",
       confirmPassword: "Password123",

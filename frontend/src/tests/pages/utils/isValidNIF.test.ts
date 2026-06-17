@@ -5,7 +5,6 @@ import isValidNIF from "@/pages/utils/isValidNIF";
 
 // Agrupa os testes de isValidNIF.
 describe("isValidNIF", () => {
-
   // Verifica o cen?rio: accepts a valid nif passed as number or formatted string.
   it("accepts a valid nif passed as number or formatted string", () => {
     expect(isValidNIF(512345678)).toBe(true);

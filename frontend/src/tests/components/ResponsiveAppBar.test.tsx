@@ -3,7 +3,6 @@
 import { fireEvent, render, screen, waitFor } from "@/tests/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-
 // Mant?m o estado dos mocks hoisted para que a su?te possa reconfigur?-los entre os casos.
 const appBarMocks = vi.hoisted(() => ({
   navigateMock: vi.fn(),
@@ -47,10 +46,8 @@ vi.mock("@/components/Sidebar", () => ({
 
 // Agrupa os testes de ResponsiveAppBar.
 describe("ResponsiveAppBar", () => {
-
   // Reinicia os mocks e globais compartilhados antes de cada cen?rio.
   beforeEach(() => {
-
     appBarMocks.navigateMock.mockReset();
     appBarMocks.logoutMock.mockResolvedValue(undefined);
     appBarMocks.authState = {

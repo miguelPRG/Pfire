@@ -13,10 +13,8 @@ function buildGrecaptcha(executeImpl: () => Promise<string>) {
 
 // Agrupa os testes de RecaptchaContext.
 describe("RecaptchaContext", () => {
-
   // Reinicia os mocks e globais compartilhados antes de cada cen?rio.
   beforeEach(() => {
-
     vi.stubEnv("VITE_RECAPTCHA_SITE_KEY", "site-key-test");
   });
 
@@ -113,8 +111,6 @@ describe("RecaptchaContext", () => {
       return <div>consumer</div>;
     }
 
-    expect(() => render(<Consumer />)).toThrow(
-      "useRecaptcha deve ser usado dentro de RecaptchaProvider"
-    );
+    expect(() => render(<Consumer />)).toThrow("useRecaptcha deve ser usado dentro de RecaptchaProvider");
   });
 });

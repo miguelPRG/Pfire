@@ -30,7 +30,9 @@ class FakeResponse:
 
 # Dubl? leve usado nos cen?rios desta su?te.
 class FakeAsyncClient:
-    next_response = FakeResponse(200, {"success": True, "action": "login", "score": 0.9})
+    next_response = FakeResponse(
+        200, {"success": True, "action": "login", "score": 0.9}
+    )
     post_calls = []
 
     # Fun??o auxiliar usada pelos cen?rios desta su?te.
@@ -95,7 +97,9 @@ def test_validar_recaptcha_token_rejects_non_200_response():
 # Verifica o cen?rio em que validar reCAPTCHA token rejects unsuccessful result.
 def test_validar_recaptcha_token_rejects_unsuccessful_result():
     module = load_recaptcha_module()
-    FakeAsyncClient.next_response = FakeResponse(200, {"success": False, "action": "login", "score": 0.9})
+    FakeAsyncClient.next_response = FakeResponse(
+        200, {"success": False, "action": "login", "score": 0.9}
+    )
 
     with pytest.raises(HTTPException) as exc_info:
         asyncio.run(module.validar_recaptcha_token("token", "login"))
@@ -107,7 +111,9 @@ def test_validar_recaptcha_token_rejects_unsuccessful_result():
 # Verifica o cen?rio em que validar reCAPTCHA token rejects mismatched action.
 def test_validar_recaptcha_token_rejects_mismatched_action():
     module = load_recaptcha_module()
-    FakeAsyncClient.next_response = FakeResponse(200, {"success": True, "action": "register", "score": 0.9})
+    FakeAsyncClient.next_response = FakeResponse(
+        200, {"success": True, "action": "register", "score": 0.9}
+    )
 
     with pytest.raises(HTTPException) as exc_info:
         asyncio.run(module.validar_recaptcha_token("token", "login"))
@@ -119,7 +125,9 @@ def test_validar_recaptcha_token_rejects_mismatched_action():
 # Verifica o cen?rio em que validar reCAPTCHA token rejects low score.
 def test_validar_recaptcha_token_rejects_low_score():
     module = load_recaptcha_module()
-    FakeAsyncClient.next_response = FakeResponse(200, {"success": True, "action": "register", "score": 0.5})
+    FakeAsyncClient.next_response = FakeResponse(
+        200, {"success": True, "action": "register", "score": 0.5}
+    )
 
     with pytest.raises(HTTPException) as exc_info:
         asyncio.run(module.validar_recaptcha_token("token", "register"))
@@ -132,7 +140,9 @@ def test_validar_recaptcha_token_rejects_low_score():
 def test_validar_recaptcha_token_accepts_valid_response_and_posts_payload():
     module = load_recaptcha_module()
     FakeAsyncClient.post_calls = []
-    FakeAsyncClient.next_response = FakeResponse(200, {"success": True, "action": "update", "score": 0.8})
+    FakeAsyncClient.next_response = FakeResponse(
+        200, {"success": True, "action": "update", "score": 0.8}
+    )
 
     asyncio.run(module.validar_recaptcha_token("token-ok", "update"))
 

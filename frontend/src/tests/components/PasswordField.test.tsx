@@ -16,10 +16,8 @@ vi.mock("@/hooks/TemaContext", () => ({
 
 // Agrupa os testes de PasswordField.
 describe("PasswordField", () => {
-
   // Reinicia os mocks e globais compartilhados antes de cada cen?rio.
   beforeEach(() => {
-
     passwordFieldMocks.useTemaMock.mockReturnValue({
       darkMode: false,
     });

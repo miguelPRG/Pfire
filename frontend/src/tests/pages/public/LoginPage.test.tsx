@@ -57,10 +57,8 @@ vi.mock("@/components/PasswordField", async () => {
 
 // Agrupa os testes de LoginPage.
 describe("LoginPage", () => {
-
   // Reinicia os mocks e globais compartilhados antes de cada cen?rio.
   beforeEach(() => {
-
     loginPageMocks.loginMock.mockReset();
     loginPageMocks.loginWithOAuthMock.mockReset();
     loginPageMocks.navigateMock.mockReset();

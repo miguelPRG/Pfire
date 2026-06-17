@@ -96,4 +96,6 @@ def test_redis_connection_reports_errors_without_raising(monkeypatch, capsys):
     module = load_redis_module(fake_client)
     asyncio.run(module.test_redis_connection())
 
-    assert "Erro ao conectar-se com o Redis: connection refused" in capsys.readouterr().out
+    assert (
+        "Erro ao conectar-se com o Redis: connection refused" in capsys.readouterr().out
+    )

@@ -65,8 +65,8 @@ export default function DeleteAccountSection({
       </Stack>
 
       <Typography variant="body1" sx={{ mb: 2 }}>
-        A sua conta será apagada e o sistema terminará a sessão automaticamente. Será retida por 30 dias até ser
-        apagada permanentemente.
+        A sua conta será apagada e o sistema terminará a sessão automaticamente. Será retida por 30 dias até ser apagada
+        permanentemente.
       </Typography>
 
       <Box

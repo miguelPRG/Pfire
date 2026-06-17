@@ -64,7 +64,9 @@ def load_jwt_module(monkeypatch, *, encode_impl=None, decode_impl=None):
     fake_cryptography = types.ModuleType("cryptography")
     fake_hazmat = types.ModuleType("cryptography.hazmat")
     fake_primitives = types.ModuleType("cryptography.hazmat.primitives")
-    fake_serialization = types.ModuleType("cryptography.hazmat.primitives.serialization")
+    fake_serialization = types.ModuleType(
+        "cryptography.hazmat.primitives.serialization"
+    )
 
     # Dubl? usado para isolar a unidade testada.
     def fake_load_pem_public_key(raw, backend=None):
@@ -170,7 +172,10 @@ def test_generate_jwt_includes_identity_fields_and_super_admin_ttl(monkeypatch):
 def test_verify_jwt_returns_decoded_payload(monkeypatch):
     module, _, _, decode_calls = load_jwt_module(
         monkeypatch,
-        decode_impl=lambda token, _public_key, _algorithms: {"token": token, "ok": True},
+        decode_impl=lambda token, _public_key, _algorithms: {
+            "token": token,
+            "ok": True,
+        },
     )
 
     payload = module.verify_jwt("jwt-token")

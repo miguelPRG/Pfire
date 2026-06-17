@@ -141,7 +141,6 @@ async function renderApp(pathname: string) {
 
 // Agrupa os testes de App.
 describe("App", () => {
-
   // Reinicia os mocks e globais compartilhados antes de cada cen?rio.
   beforeEach(() => {
     appMocks.authState.user = null;

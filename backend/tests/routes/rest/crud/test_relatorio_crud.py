@@ -156,7 +156,9 @@ def test_validate_custom_fields_rejects_missing_required_fields():
         )
 
     assert exc_info.value.status_code == 400
-    assert "obrigatório" in exc_info.value.detail or "obrigatorio" in exc_info.value.detail
+    assert (
+        "obrigatório" in exc_info.value.detail or "obrigatorio" in exc_info.value.detail
+    )
 
 
 # Verifica o cen?rio em que create relatorio populates metadata and inserts.

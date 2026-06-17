@@ -5,11 +5,15 @@ from re import escape
 
 from bson import ObjectId
 from fastapi import APIRouter, HTTPException, Request
+
 try:
     from fastapi import Query
 except ImportError:
+
     def Query(default=None, **_kwargs):
         return default
+
+
 from fastapi.responses import StreamingResponse
 
 from controller.gerarPDF import gerar_pdf

@@ -58,10 +58,8 @@ vi.mock("@/hooks/AuthContext", () => ({
 
 // Agrupa os testes de Sidebar.
 describe("Sidebar", () => {
-
   // Reinicia os mocks e globais compartilhados antes de cada cen?rio.
   beforeEach(() => {
-
     sidebarMocks.navigateMock.mockReset();
     sidebarMocks.authState.empresa = { isAdmin: true };
   });

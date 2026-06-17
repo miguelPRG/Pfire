@@ -42,13 +42,7 @@ vi.mock("@/components/LoadingAnimation", () => ({
 }));
 
 // Fun??o auxiliar que cria Response para o cen?rio atual.
-function createResponse({
-  ok,
-  data,
-}: {
-  ok: boolean;
-  data: Record<string, unknown>;
-}) {
+function createResponse({ ok, data }: { ok: boolean; data: Record<string, unknown> }) {
   return {
     ok,
     json: vi.fn().mockResolvedValue(data),
@@ -57,10 +51,8 @@ function createResponse({
 
 // Agrupa os testes de EmailOperation.
 describe("EmailOperation", () => {
-
   // Reinicia os mocks e globais compartilhados antes de cada cen?rio.
   beforeEach(() => {
-
     emailOperationMocks.navigateMock.mockReset();
     emailOperationMocks.refreshAuthMock.mockReset();
     emailOperationMocks.generateTokenMock.mockReset();

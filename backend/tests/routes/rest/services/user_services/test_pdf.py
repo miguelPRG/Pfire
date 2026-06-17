@@ -12,7 +12,12 @@ from types import SimpleNamespace
 
 
 PDF_MODULE_PATH = (
-    Path(__file__).resolve().parents[5] / "routes" / "Rest" / "services" / "userServices" / "pdf.py"
+    Path(__file__).resolve().parents[5]
+    / "routes"
+    / "Rest"
+    / "services"
+    / "userServices"
+    / "pdf.py"
 )
 SIZE_20_MB = 20 * 1024 * 1024
 
@@ -153,6 +158,8 @@ def load_pdf_module(gerar_pdf_impl):
     fake_controller.__path__ = []
     fake_gerar_pdf = types.ModuleType("controller.gerarPDF")
     fake_gerar_pdf.gerar_pdf = gerar_pdf_impl
+    fake_relatorio_utils = types.ModuleType("controller.relatorio_utils")
+    fake_relatorio_utils.extract_numero_relatorio = lambda _relatorio: None
 
     fake_database = types.ModuleType("database")
     fake_database.users_collection = AsyncCollection()
@@ -173,6 +180,7 @@ def load_pdf_module(gerar_pdf_impl):
         "models.userModels": fake_user_models,
         "controller": fake_controller,
         "controller.gerarPDF": fake_gerar_pdf,
+        "controller.relatorio_utils": fake_relatorio_utils,
         "database": fake_database,
         "bson": fake_bson,
     }
@@ -210,16 +218,31 @@ def build_user_payload():
 
 # Fun??o auxiliar usada pelos cen?rios desta su?te.
 def configure_happy_path_collections(module, *, is_super_admin=False):
-    module.users_collection = AsyncCollection(find_one_result={"_id": "user-1", "isActive": True})
-    module.empresas_collection = AsyncCollection(find_one_result={"_id": "empresa-1", "logo": b"logo-bytes"})
-    module.modelos_collection = AsyncCollection(find_one_result={"_id": "modelo-1", "modelo_nome": "Modelo Teste"})
-    module.clientes_collection = AsyncCollection(find_one_result={"_id": "cliente-1", "nome": "Cliente Teste"})
-    module.relatorios_collection = AsyncCollection(find_docs=[{"custom_resultado": "OK"}])
+    module.users_collection = AsyncCollection(
+        find_one_result={"_id": "user-1", "isActive": True}
+    )
+    module.empresas_collection = AsyncCollection(
+        find_one_result={"_id": "empresa-1", "logo": b"logo-bytes"}
+    )
+    module.modelos_collection = AsyncCollection(
+        find_one_result={"_id": "modelo-1", "modelo_nome": "Modelo Teste"}
+    )
+    module.clientes_collection = AsyncCollection(
+        find_one_result={"_id": "cliente-1", "nome": "Cliente Teste"}
+    )
+    module.relatorios_collection = AsyncCollection(
+        find_docs=[{"custom_resultado": "OK"}]
+    )
     module.criterios_collection = AsyncCollection(
-        find_one_result={"nome": "Criticidade", "options": [{"key": "Nivel", "value": "Alto"}]}
+        find_one_result={
+            "nome": "Criticidade",
+            "options": [{"key": "Nivel", "value": "Alto"}],
+        }
     )
     module.users_empresas_collection = AsyncCollection(
-        find_one_result=None if is_super_admin else {"empresa_id": "empresa-1", "user_id": "user-1"}
+        find_one_result=(
+            None if is_super_admin else {"empresa_id": "empresa-1", "user_id": "user-1"}
+        )
     )
 
 
@@ -228,7 +251,9 @@ def test_converter_relatorio_pdf_requires_jwt():
     module = load_pdf_module(lambda *_args, **_kwargs: BytesIO(b"%PDF-1.7"))
 
     with pytest_raises_http_exception(module.HTTPException, 401, "Token JWT ausente"):
-        asyncio.run(module.converter_relatorio_pdf(build_request(), build_user_payload()))
+        asyncio.run(
+            module.converter_relatorio_pdf(build_request(), build_user_payload())
+        )
 
 
 # Verifica o cen?rio em que converter relatorio PDF returns streaming response for authorized user.
@@ -236,8 +261,17 @@ def test_converter_relatorio_pdf_returns_streaming_response_for_authorized_user(
     calls = {}
 
     # Fun??o auxiliar usada pelos cen?rios desta su?te.
-    def gerar_pdf_mock(relatorios, modelo, cliente, empresa_logo, criterio_found, is_free_plan):
-        calls["args"] = (relatorios, modelo, cliente, empresa_logo, criterio_found, is_free_plan)
+    def gerar_pdf_mock(
+        relatorios, modelo, cliente, empresa_logo, criterio_found, is_free_plan
+    ):
+        calls["args"] = (
+            relatorios,
+            modelo,
+            cliente,
+            empresa_logo,
+            criterio_found,
+            is_free_plan,
+        )
         return BytesIO(b"%PDF-1.7")
 
     module = load_pdf_module(gerar_pdf_mock)
@@ -258,9 +292,13 @@ def test_converter_relatorio_pdf_returns_streaming_response_for_authorized_user(
 
     assert isinstance(response, module.StreamingResponse)
     assert response.media_type == "application/pdf"
-    assert response.headers == {"Content-Disposition": "attachment;"}
+    assert response.headers == {
+        "Content-Disposition": 'attachment; filename="relatorio_Cliente Teste_export.pdf"'
+    }
 
-    relatorios, modelo, cliente, empresa_logo, criterio_found, is_free_plan = calls["args"]
+    relatorios, modelo, cliente, empresa_logo, criterio_found, is_free_plan = calls[
+        "args"
+    ]
     assert relatorios == [{"custom_resultado": "OK"}]
     assert modelo["modelo_nome"] == "Modelo Teste"
     assert cliente["nome"] == "Cliente Teste"
@@ -275,7 +313,9 @@ def test_converter_relatorio_pdf_blocks_access_without_company_permission():
     configure_happy_path_collections(module)
     module.users_empresas_collection = AsyncCollection(find_one_result=None)
 
-    with pytest_raises_http_exception(module.HTTPException, 403, "Acesso negado!") as exc:
+    with pytest_raises_http_exception(
+        module.HTTPException, 403, "Acesso negado!"
+    ) as exc:
         asyncio.run(
             module.converter_relatorio_pdf(
                 build_request(
@@ -296,7 +336,9 @@ def test_converter_relatorio_pdf_rejects_pdf_larger_than_20_mb():
     module = load_pdf_module(lambda *_args, **_kwargs: FakePDFPayload(SIZE_20_MB + 1))
     configure_happy_path_collections(module, is_super_admin=True)
 
-    with pytest_raises_http_exception(module.HTTPException, 413, "PDF demasiado pesado"):
+    with pytest_raises_http_exception(
+        module.HTTPException, 413, "PDF demasiado pesado"
+    ):
         asyncio.run(
             module.converter_relatorio_pdf(
                 build_request(

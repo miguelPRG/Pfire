@@ -7,7 +7,6 @@ import AdvancedSearchBar from "@/components/AdvancedSearchBar";
 
 // Agrupa os testes de AdvancedSearchBar.
 describe("AdvancedSearchBar", () => {
-
   // Verifica o cen?rio: trims text before applying the filter.
   it("trims text before applying the filter", () => {
     const onApply = vi.fn();

@@ -115,7 +115,9 @@ def test_validate_field_accepts_basic_custom_field():
 # Verifica o cen?rio em que validate field rejects pro type on free plan.
 def test_validate_field_rejects_pro_type_on_free_plan():
     with pytest.raises(HTTPException) as exc_info:
-        validate_field("custom_criterio", {"datatype": "critério", "required": False}, plano="free")
+        validate_field(
+            "custom_criterio", {"datatype": "critério", "required": False}, plano="free"
+        )
 
     assert exc_info.value.status_code == 400
     assert "Não tem permissão" in exc_info.value.detail

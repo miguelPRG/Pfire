@@ -28,15 +28,7 @@ vi.mock("@/firebase", () => ({
 }));
 
 // Fun??o auxiliar que cria Response para o cen?rio atual.
-function createResponse({
-  ok,
-  status,
-  data,
-}: {
-  ok: boolean;
-  status: number;
-  data: Record<string, unknown>;
-}) {
+function createResponse({ ok, status, data }: { ok: boolean; status: number; data: Record<string, unknown> }) {
   return {
     ok,
     status,
@@ -46,10 +38,8 @@ function createResponse({
 
 // Agrupa os testes de AuthContext.
 describe("AuthContext", () => {
-
   // Reinicia os mocks e globais compartilhados antes de cada cen?rio.
   beforeEach(() => {
-
     authMocks.useQueryMock.mockReturnValue({
       data: undefined,
       error: undefined,
@@ -65,12 +55,12 @@ describe("AuthContext", () => {
   it("getResponseErrorMessage prioritizes detail, then message, then backend fallback", async () => {
     const { getResponseErrorMessage } = await import("@/hooks/AuthContext");
 
-    expect(
-      getResponseErrorMessage({ status: 400 } as Response, { detail: "detail-error" }, "fallback")
-    ).toBe("detail-error");
-    expect(
-      getResponseErrorMessage({ status: 400 } as Response, { message: "message-error" }, "fallback")
-    ).toBe("message-error");
+    expect(getResponseErrorMessage({ status: 400 } as Response, { detail: "detail-error" }, "fallback")).toBe(
+      "detail-error"
+    );
+    expect(getResponseErrorMessage({ status: 400 } as Response, { message: "message-error" }, "fallback")).toBe(
+      "message-error"
+    );
     expect(getResponseErrorMessage({ status: 500 } as Response, {}, "fallback")).toBe("fallback (500)");
   });
 
@@ -228,10 +218,7 @@ describe("AuthContext", () => {
     fireEvent.click(screen.getByRole("button", { name: "register" }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        "/backend/user/register",
-        expect.objectContaining({ method: "POST" })
-      );
+      expect(fetchMock).toHaveBeenCalledWith("/backend/user/register", expect.objectContaining({ method: "POST" }));
     });
 
     expect(authMocks.generateTokenMock).toHaveBeenCalledWith("register");
@@ -486,9 +473,7 @@ describe("AuthContext", () => {
     });
 
     expect(authMocks.generateTokenMock).toHaveBeenCalledWith("update");
-    const updateCompanyCall = fetchMock.mock.calls.find(
-      ([url]) => url === "/backend/empresa/empresa-1"
-    );
+    const updateCompanyCall = fetchMock.mock.calls.find(([url]) => url === "/backend/empresa/empresa-1");
     expect(JSON.parse(String(updateCompanyCall?.[1]?.body))).toEqual({
       recaptchaToken: "captcha-token",
       nome: "Empresa Nova",

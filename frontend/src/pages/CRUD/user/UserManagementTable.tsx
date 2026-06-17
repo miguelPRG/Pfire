@@ -94,11 +94,7 @@ export default function UserManagementTable() {
     start: page * rowsPerPage,
     ...(Object.keys(serverFilter).length ? { filter: serverFilter } : {}),
   };
-  const {
-    data,
-    isLoading: loading,
-    refetch,
-  } = useUsersQuery<returnedData>(usersQueryVars, Boolean(empresa?.id));
+  const { data, isLoading: loading, refetch } = useUsersQuery<returnedData>(usersQueryVars, Boolean(empresa?.id));
   const users = data?.getUsers?.users || [];
   const totalUsers = data?.getUsers?.totalUsers || 0;
 
@@ -267,7 +263,12 @@ export default function UserManagementTable() {
             Convidar Utilizador
           </LimitedButton>
           <ResourceCount current={totalUsers} limit={utilizadoresPorEmpresa} resourceName="utilizador" />
-          <LimitIndicator current={totalUsers} limit={utilizadoresPorEmpresa} label="Utilizadores" resourceName="utilizador" />
+          <LimitIndicator
+            current={totalUsers}
+            limit={utilizadoresPorEmpresa}
+            label="Utilizadores"
+            resourceName="utilizador"
+          />
         </Box>
       </Box>
 
@@ -337,7 +338,9 @@ export default function UserManagementTable() {
                           : "#fafafa",
                   }}
                 >
-                  <td style={{ padding: "16px", textAlign: "left", fontWeight: 500, color: theme.palette.text.primary }}>
+                  <td
+                    style={{ padding: "16px", textAlign: "left", fontWeight: 500, color: theme.palette.text.primary }}
+                  >
                     {usr.nome}
                   </td>
                   <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>

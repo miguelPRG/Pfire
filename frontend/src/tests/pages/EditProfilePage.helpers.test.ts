@@ -38,7 +38,6 @@ import {
 
 // Agrupa os testes de EditProfilePage payment helpers.
 describe("EditProfilePage payment helpers", () => {
-
   // Reinicia os mocks e globais compartilhados antes de cada cen?rio.
   beforeEach(() => {
     vi.useRealTimers();

@@ -75,7 +75,6 @@ vi.mock("@/components/GlobalPhone", async () => {
 
 // Agrupa os testes de RegisterPage.
 describe("RegisterPage", () => {
-
   // Reinicia os mocks e globais compartilhados antes de cada cen?rio.
   beforeEach(() => {
     navigateMock.mockReset();

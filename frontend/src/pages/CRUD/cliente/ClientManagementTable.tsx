@@ -281,8 +281,22 @@ export default function ClientManagementTable() {
                   "createdAt",
                   ...(canManageClientActions ? ["estado", ""] : []),
                 ].map((key) => {
-                  const isSortable = ["nome","email","telefone","nif","localidade","morada","codigoPostal","createdAt"].includes(key);
-                  const label = key === "codigoPostal" ? "Código Postal" : key === "createdAt" ? "Criado em" : key.charAt(0).toUpperCase() + key.slice(1);
+                  const isSortable = [
+                    "nome",
+                    "email",
+                    "telefone",
+                    "nif",
+                    "localidade",
+                    "morada",
+                    "codigoPostal",
+                    "createdAt",
+                  ].includes(key);
+                  const label =
+                    key === "codigoPostal"
+                      ? "Código Postal"
+                      : key === "createdAt"
+                        ? "Criado em"
+                        : key.charAt(0).toUpperCase() + key.slice(1);
                   return (
                     <th
                       key={key}
@@ -291,9 +305,28 @@ export default function ClientManagementTable() {
                         padding: "16px",
                         textAlign: key === "nome" ? "left" : "center",
                         fontWeight: "bold",
-                        minWidth: ({ nome: 180, email: 200, telefone: 140, nif: 120, localidade: 140, morada: 100, codigoPostal: 130, createdAt: 120, estado: 100, "": 140 } as Record<string, number>)[key] ?? 120,
+                        minWidth:
+                          (
+                            {
+                              nome: 180,
+                              email: 200,
+                              telefone: 140,
+                              nif: 120,
+                              localidade: 140,
+                              morada: 100,
+                              codigoPostal: 130,
+                              createdAt: 120,
+                              estado: 100,
+                              "": 140,
+                            } as Record<string, number>
+                          )[key] ?? 120,
                         cursor: isSortable ? "pointer" : "default",
-                        ...(key === "morada" && { maxWidth: 100, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }),
+                        ...(key === "morada" && {
+                          maxWidth: 100,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }),
                       }}
                     >
                       {label}
@@ -334,7 +367,14 @@ export default function ClientManagementTable() {
                                 : "#fafafa",
                         }}
                       >
-                        <td style={{ padding: "16px", textAlign: "left", fontWeight: 500, color: theme.palette.text.primary }}>
+                        <td
+                          style={{
+                            padding: "16px",
+                            textAlign: "left",
+                            fontWeight: 500,
+                            color: theme.palette.text.primary,
+                          }}
+                        >
                           <Link
                             component="button"
                             onClick={() => navigate("/add-client", { state: { cliente } })}
@@ -343,16 +383,37 @@ export default function ClientManagementTable() {
                             {cliente.nome}
                           </Link>
                         </td>
-                        <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>{cliente.email}</td>
-                        <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>{cliente.telefone}</td>
-                        <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>{cliente.nif}</td>
-                        <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>{cliente.localidade}</td>
-                        <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary, maxWidth: 80, width: 80, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>
+                          {cliente.email}
+                        </td>
+                        <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>
+                          {cliente.telefone}
+                        </td>
+                        <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>
+                          {cliente.nif}
+                        </td>
+                        <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>
+                          {cliente.localidade}
+                        </td>
+                        <td
+                          style={{
+                            padding: "16px",
+                            textAlign: "center",
+                            color: theme.palette.text.secondary,
+                            maxWidth: 80,
+                            width: 80,
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
                           <Tooltip title={cliente.morada || ""} placement="top" arrow>
                             <span>{cliente.morada}</span>
                           </Tooltip>
                         </td>
-                        <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>{cliente.codigoPostal}</td>
+                        <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>
+                          {cliente.codigoPostal}
+                        </td>
                         <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>
                           {cliente.createdAt ? new Date(cliente.createdAt).toLocaleDateString("pt-PT") : ""}
                         </td>

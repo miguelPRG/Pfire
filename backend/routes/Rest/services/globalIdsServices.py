@@ -135,6 +135,12 @@ async def confirm_user(global_id: str, request: Request, captcha_data: GlobalIdM
         stripe_customer_id=user_doc.get("stripe_customer_id", None),
     )
 
+    assinatura_b64 = None
+    if isinstance(user_doc.get("assinatura"), (bytes, bytearray)):
+        from base64 import b64encode
+
+        assinatura_b64 = b64encode(user_doc["assinatura"]).decode("utf-8")
+
     payload = {
         "id": str(user_doc["_id"]),
         "nome": user_doc.get("nome", ""),

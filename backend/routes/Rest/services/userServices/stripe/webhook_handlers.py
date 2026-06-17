@@ -64,7 +64,10 @@ async def cancel_previous_paid_subscriptions(
         sub_id = get_stripe_id(sub)
         sub_status = getattr(sub, "status", None)
 
-        if sub_id == current_subscription_id or sub_status not in SWITCH_CANCELABLE_STATUSES:
+        if (
+            sub_id == current_subscription_id
+            or sub_status not in SWITCH_CANCELABLE_STATUSES
+        ):
             continue
 
         try:
