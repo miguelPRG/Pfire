@@ -1,12 +1,6 @@
 // src/pages/CRUD/cliente/ClientManagementTable.tsx
 import { useState, useEffect } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Paper,
   Box,
   Pagination,
@@ -224,10 +218,21 @@ export default function ClientManagementTable() {
           <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} label="Clientes" />
         </Breadcrumbs>
 
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 10 }}>
-          <Typography variant="h5" sx={{ fontWeight: "bold", fontSize: 30 }}>
-            Clientes
-          </Typography>
+        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3, gap: 10, alignItems: "flex-start" }}>
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: "bold", fontSize: 30, mb: 2 }}>
+              Clientes
+            </Typography>
+            <Box sx={{ maxWidth: 650 }}>
+              <AdvancedSearchBar
+                fields={advFields}
+                value={advValue}
+                onChange={(next) => setAdvValue(next)}
+                onApply={applyAdvancedFilter}
+                onClear={clearAdvancedFilter}
+              />
+            </Box>
+          </Box>
           {empresa?.isAdmin && (
             <Button
               variant="contained"
@@ -242,217 +247,182 @@ export default function ClientManagementTable() {
 
         <Box
           sx={{
-            maxWidth: 650, // largura máxima ajustada
-            mb: 3,
-            alignSelf: "flex-start", // garante alinhamento à esquerda dentro do container
+            overflowX: "auto",
+            borderRadius: 2,
+            border: `1px solid ${theme.palette.divider}`,
+            width: "fit-content",
+            mx: "auto", // centraliza horizontalmente
+            // garante que a tabela ocupe toda a largura disponível
           }}
         >
-          {/* Advanced search bar */}
-          <Box sx={{ width: "100%", maxWidth: 750, mb: 3 }}>
-            <AdvancedSearchBar
-              fields={advFields}
-              value={advValue}
-              onChange={(next) => setAdvValue(next)}
-              onApply={applyAdvancedFilter}
-              onClear={clearAdvancedFilter}
-            />
-          </Box>
-        </Box>
-
-        <div style={{ overflowX: "auto" }}>
-          <TableContainer
-            component={Paper}
-            sx={{
-              width: "100%",
-              boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-              borderRadius: 2,
-              border: "1px solid rgba(0,0,0,0.06)",
-              overflow: "auto", // permite scroll X e Y quando necessário
-              WebkitOverflowScrolling: "touch",
+          <table
+            style={{
+              width: "auto",
+              minWidth: 1300,
+              borderCollapse: "collapse",
+              backgroundColor: theme.palette.background.paper,
             }}
           >
-            <Table sx={{ minWidth: 650 }} size="small" aria-label="dense clients table">
-              <TableHead>
-                <TableRow>
-                  {[
-                    "nome",
-                    "email",
-                    "telefone",
-                    "nif",
-                    "localidade",
-                    "morada",
-                    "codigoPostal",
-                    "createdAt",
-                    ...(canManageClientActions ? ["estado", ""] : []),
-                  ].map((key) => (
-                    <TableCell
+            <thead>
+              <tr
+                style={{
+                  backgroundColor: theme.palette.mode === "dark" ? theme.palette.action.hover : "#f5f5f5",
+                  borderBottom: `2px solid ${theme.palette.divider}`,
+                }}
+              >
+                {[
+                  "nome",
+                  "email",
+                  "telefone",
+                  "nif",
+                  "localidade",
+                  "morada",
+                  "codigoPostal",
+                  "createdAt",
+                  ...(canManageClientActions ? ["estado", ""] : []),
+                ].map((key) => {
+                  const isSortable = ["nome","email","telefone","nif","localidade","morada","codigoPostal","createdAt"].includes(key);
+                  const label = key === "codigoPostal" ? "Código Postal" : key === "createdAt" ? "Criado em" : key.charAt(0).toUpperCase() + key.slice(1);
+                  return (
+                    <th
                       key={key}
-                      onClick={
-                        [
-                          "nome",
-                          "email",
-                          "telefone",
-                          "nif",
-                          "localidade",
-                          "morada",
-                          "codigoPostal",
-                          "createdAt",
-                        ].includes(key)
-                          ? () => handleSort(key as keyof Cliente)
-                          : undefined
-                      }
-                      sx={{
+                      onClick={isSortable ? () => handleSort(key as keyof Cliente) : undefined}
+                      style={{
+                        padding: "16px",
+                        textAlign: key === "nome" ? "left" : "center",
                         fontWeight: "bold",
-                        cursor: [
-                          "nome",
-                          "email",
-                          "telefone",
-                          "nif",
-                          "localidade",
-                          "morada",
-                          "codigoPostal",
-                          "createdAt",
-                          "estado",
-                        ].includes(key)
-                          ? "pointer"
-                          : "default",
-                        ...(key === "morada" && {
-                          maxWidth: 80,
-                          width: 80,
-                          whiteSpace: "nowrap",
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                        }),
-                        textAlign: "left",
+                        minWidth: ({ nome: 180, email: 200, telefone: 140, nif: 120, localidade: 140, morada: 100, codigoPostal: 130, createdAt: 120, estado: 100, "": 140 } as Record<string, number>)[key] ?? 120,
+                        cursor: isSortable ? "pointer" : "default",
+                        ...(key === "morada" && { maxWidth: 100, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }),
                       }}
                     >
-                      {key === "codigoPostal" ? "Código Postal" : key === "createdAt" ? "Criado em" : key.toUpperCase()}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
-
-              <TableBody>
-                {filteredRows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={canManageClientActions ? 11 : 9}>
-                      <Paper sx={{ p: 4, display: "flex", justifyContent: "center" }}>
-                        <NoDataMessage nome="clientes" />
-                      </Paper>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredRows
-                    .sort((a, b) => {
-                      if (!orderBy) return 0;
-                      const aValue = a[orderBy]?.toString() || "";
-                      const bValue = b[orderBy]?.toString() || "";
-                      return order === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
-                    })
-                    .map((cliente) => {
-                      const isClienteAtivo = cliente.isActive === true;
-
-                      return (
-                        <TableRow key={cliente.id} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
-                          <TableCell>
-                            <Link
-                              component="button"
-                              onClick={() => navigate("/add-client", { state: { cliente } })}
-                              sx={{ cursor: "pointer" }}
-                            >
-                              {cliente.nome}
-                            </Link>
-                          </TableCell>
-                          <TableCell>{cliente.email}</TableCell>
-                          <TableCell>{cliente.telefone}</TableCell>
-                          <TableCell>{cliente.nif}</TableCell>
-                          <TableCell>{cliente.localidade}</TableCell>
-                          <TableCell
-                            sx={{
-                              maxWidth: 80,
-                              width: 80,
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                            }}
+                      {label}
+                    </th>
+                  );
+                })}
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRows.length === 0 ? (
+                <tr>
+                  <td colSpan={canManageClientActions ? 10 : 8} style={{ padding: "16px" }}>
+                    <Paper sx={{ p: 4, display: "flex", justifyContent: "center" }}>
+                      <NoDataMessage nome="clientes" />
+                    </Paper>
+                  </td>
+                </tr>
+              ) : (
+                filteredRows
+                  .sort((a, b) => {
+                    if (!orderBy) return 0;
+                    const aValue = a[orderBy]?.toString() || "";
+                    const bValue = b[orderBy]?.toString() || "";
+                    return order === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+                  })
+                  .map((cliente, index) => {
+                    const isClienteAtivo = cliente.isActive === true;
+                    return (
+                      <tr
+                        key={cliente.id}
+                        style={{
+                          borderBottom: `1px solid ${theme.palette.divider}`,
+                          backgroundColor:
+                            index % 2 === 0
+                              ? "transparent"
+                              : theme.palette.mode === "dark"
+                                ? theme.palette.action.hover
+                                : "#fafafa",
+                        }}
+                      >
+                        <td style={{ padding: "16px", textAlign: "left", fontWeight: 500, color: theme.palette.text.primary }}>
+                          <Link
+                            component="button"
+                            onClick={() => navigate("/add-client", { state: { cliente } })}
+                            sx={{ cursor: "pointer" }}
                           >
-                            <Tooltip title={cliente.morada || ""} placement="top" arrow>
-                              <span>{cliente.morada}</span>
-                            </Tooltip>
-                          </TableCell>
-                          <TableCell>{cliente.codigoPostal}</TableCell>
-                          <TableCell>
-                            {cliente.createdAt ? new Date(cliente.createdAt).toLocaleDateString("pt-PT") : ""}
-                          </TableCell>
-                          {canManageClientActions ? (
-                            <>
-                              <TableCell>
+                            {cliente.nome}
+                          </Link>
+                        </td>
+                        <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>{cliente.email}</td>
+                        <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>{cliente.telefone}</td>
+                        <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>{cliente.nif}</td>
+                        <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>{cliente.localidade}</td>
+                        <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary, maxWidth: 80, width: 80, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                          <Tooltip title={cliente.morada || ""} placement="top" arrow>
+                            <span>{cliente.morada}</span>
+                          </Tooltip>
+                        </td>
+                        <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>{cliente.codigoPostal}</td>
+                        <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>
+                          {cliente.createdAt ? new Date(cliente.createdAt).toLocaleDateString("pt-PT") : ""}
+                        </td>
+                        {canManageClientActions ? (
+                          <>
+                            <td style={{ padding: "4px 16px", textAlign: "center" }}>
+                              <Button
+                                variant="contained"
+                                size="small"
+                                sx={{
+                                  width: 55,
+                                  height: 55,
+                                  borderRadius: "50%",
+                                  backgroundColor: isClienteAtivo
+                                    ? theme.palette.success.main
+                                    : theme.palette.error.main,
+                                  color: "#fff",
+                                  fontWeight: "bold",
+                                  fontSize: 15,
+                                  minWidth: 0,
+                                  px: 0,
+                                  position: "relative",
+                                }}
+                                disabled={loadingClienteId === cliente.id}
+                                onClick={async () => {
+                                  setLoadingClienteId(cliente.id);
+                                  await toggleClienteStatus(cliente.id, isClienteAtivo);
+                                  setLoadingClienteId(null);
+                                }}
+                              >
+                                {loadingClienteId === cliente.id ? (
+                                  <CircularProgress size={28} sx={{ color: "#fff" }} />
+                                ) : isClienteAtivo ? (
+                                  "Ativo"
+                                ) : (
+                                  "Inativo"
+                                )}
+                              </Button>
+                            </td>
+                            <td style={{ padding: "4px 16px", textAlign: "center" }}>
+                              {!isClienteAtivo && loadingClienteId !== cliente.id && (
                                 <Button
                                   variant="contained"
+                                  color="error"
                                   size="small"
                                   sx={{
-                                    width: 55,
-                                    height: 55,
-                                    borderRadius: "50%",
-                                    backgroundColor: isClienteAtivo
-                                      ? theme.palette.success.main
-                                      : theme.palette.error.main,
-                                    color: "#fff",
-                                    fontWeight: "bold",
-                                    fontSize: 15,
+                                    borderRadius: "20px",
                                     minWidth: 0,
-                                    px: 0,
-                                    position: "relative",
+                                    px: 1.5,
+                                    width: "auto",
+                                    textTransform: "none",
                                   }}
-                                  disabled={loadingClienteId === cliente.id}
-                                  onClick={async () => {
-                                    setLoadingClienteId(cliente.id);
-                                    await toggleClienteStatus(cliente.id, isClienteAtivo);
-                                    setLoadingClienteId(null);
+                                  onClick={() => {
+                                    setSelectedCliente(cliente);
+                                    setDeleteDialogOpen(true);
                                   }}
                                 >
-                                  {loadingClienteId === cliente.id ? (
-                                    <CircularProgress size={28} sx={{ color: "#fff" }} />
-                                  ) : isClienteAtivo ? (
-                                    "Ativo"
-                                  ) : (
-                                    "Inativo"
-                                  )}
+                                  Apagar permanentemente
                                 </Button>
-                              </TableCell>
-
-                              <TableCell>
-                                {!isClienteAtivo && loadingClienteId !== cliente.id && (
-                                  <Button
-                                    variant="contained"
-                                    color="error"
-                                    size="small"
-                                    sx={{
-                                      borderRadius: "20px",
-                                      minWidth: 0,
-                                      px: 1.5,
-                                      width: "auto",
-                                      textTransform: "none",
-                                    }}
-                                    onClick={() => {
-                                      setSelectedCliente(cliente);
-                                      setDeleteDialogOpen(true);
-                                    }}
-                                  >
-                                    Apagar permanentemente
-                                  </Button>
-                                )}
-                              </TableCell>
-                            </>
-                          ) : null}
-                        </TableRow>
-                      );
-                    })
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </div>
+                              )}
+                            </td>
+                          </>
+                        ) : null}
+                      </tr>
+                    );
+                  })
+              )}
+            </tbody>
+          </table>
+        </Box>
         <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
           {pageCount > 1 && (
             <Pagination

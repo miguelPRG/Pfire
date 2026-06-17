@@ -6,12 +6,6 @@ import {
   Button,
   Pagination,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Typography,
   IconButton,
   Grid,
@@ -84,9 +78,6 @@ interface CriteriaItem {
 }
 interface CriteriaData {
   getCriteria: CriteriaItem[]; // deve refletir exatamente o nome do campo na query GraphQL
-}
-interface CriteriaVars {
-  modelId: string; // nome e tipo conforme variáveis da query
 }
 
 // Componente principal da página de listagem de modelos de relatórios
@@ -220,10 +211,6 @@ export default function ReportModelListPage() {
       setCloningId(null);
     }
   };
-
-  // Função para alternar cor de fundo das linhas (efeito zebra)
-  const zebraColor = (index: number) =>
-    theme.palette.mode === "dark" ? (index % 2 === 0 ? "#252525" : "#1d1d1d") : index % 2 === 0 ? "#f5f5f5" : "#e0e0e0";
 
   // Função recursiva para renderizar campos personalizados, incluindo subcampos
   const renderField = (val: any, namePrefix = "", level = 0): React.ReactNode => {
@@ -370,7 +357,7 @@ export default function ReportModelListPage() {
     }, [criterios]);
 
     return (
-      <Box key={`criteria-${modelo.id}`} sx={{ mt: 2 }}>
+      <Box key={`criteria-${modelo.id}`} sx={{ mt: 2, display: "flex", justifyContent: "center" }}>
         {critLoading ? (
           <Box sx={{ display: "flex", justifyContent: "center", py: 2 }}>
             <CircularProgress />
@@ -378,7 +365,7 @@ export default function ReportModelListPage() {
         ) : critError ? (
           <Typography color="error">{critError.message}</Typography>
         ) : criterios.length === 0 ? (
-          <Paper variant="outlined" sx={{ p: 2, textAlign: "center", maxWidth: "25%" }}>
+          <Paper variant="outlined" sx={{ p: 2, textAlign: "center", width: "100%", maxWidth: 420 }}>
             <Typography
               sx={{
                 color: "text.secondary",
@@ -417,59 +404,135 @@ export default function ReportModelListPage() {
             )}
           </Paper>
         ) : (
-          <TableContainer
-            component={Paper}
+          <Box
             sx={{
-              maxWidth: { xs: "100%", sm: "80%", md: "60%" }, // responsivo
-              mt: 2,
-              boxShadow: "0 8px 20px rgba(0,0,0,0.10)",
-              borderRadius: 2,
-              overflow: "auto", // permite scroll X e Y quando necessário
-              WebkitOverflowScrolling: "touch",
-              border: "1px solid rgba(0,0,0,0.05)",
-              // limita altura em dispositivos pequenos para mostrar scroll vertical
-              maxHeight: { xs: 320, sm: 420, md: "none" },
+              width: "100%",
+              maxWidth: { xs: "100%", sm: 700, md: 780 },
+              mt: 2.5,
+              mx: "auto",
             }}
           >
-            <Table sx={{ minWidth: 650 }} size="small" aria-label="criteria table">
-              <TableHead>
-                <TableRow>
-                  <TableCell>Nome do Critério</TableCell>
-                  {optionKeys.map((k) => (
-                    <TableCell key={k} align="left">
-                      {k}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              </TableHead>
+            <Box
+              sx={{
+                mb: 2,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 1,
+              }}
+            >
+              <Typography
+                component="h2"
+                sx={{
+                  fontSize: 17,
+                  fontWeight: 800,
+                  color: "text.primary",
+                }}
+              >
+                Critérios
+              </Typography>
+              <Chip
+                label={criterios.length}
+                size="small"
+                sx={{
+                  height: 22,
+                  minWidth: 28,
+                  fontWeight: 700,
+                  backgroundColor: theme.palette.action.selected,
+                  color: "text.secondary",
+                }}
+              />
+            </Box>
 
-              <TableBody>
-                {criterios.map((crit: any) => (
-                  <TableRow
-                    key={crit.id || `${modelo.id}-crit-${crit.nome || Math.random()}`}
-                    sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
-                  >
-                    <TableCell component="th" scope="row">
+            <Box component="ul" sx={{ display: "grid", gap: 1.5, m: 0, p: 0, listStyle: "none" }}>
+              {criterios.map((crit: any, index: number) => (
+                <Paper
+                  key={crit.id || `${modelo.id}-crit-${crit.nome || index}`}
+                  component="li"
+                  variant="outlined"
+                  sx={{
+                    p: { xs: 1.75, sm: 2 },
+                    borderRadius: 2,
+                    backgroundColor: "background.paper",
+                    borderColor: theme.palette.mode === "dark" ? "divider" : "rgba(0, 0, 0, 0.08)",
+                    boxShadow: theme.palette.mode === "dark" ? "none" : "0 10px 24px rgba(15, 23, 42, 0.06)",
+                    transition: "border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease",
+                    "&:hover": {
+                      borderColor: "primary.light",
+                      boxShadow:
+                        theme.palette.mode === "dark"
+                          ? "0 0 0 1px rgba(255, 255, 255, 0.04)"
+                          : "0 14px 30px rgba(15, 23, 42, 0.10)",
+                      transform: "translateY(-1px)",
+                    },
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mb: optionKeys.length ? 1.5 : 0 }}>
+                    <Box
+                      sx={{
+                        width: 30,
+                        height: 30,
+                        flexShrink: 0,
+                        display: "grid",
+                        placeItems: "center",
+                        borderRadius: "50%",
+                        fontSize: 13,
+                        fontWeight: 800,
+                        backgroundColor: "primary.main",
+                        color: "primary.contrastText",
+                      }}
+                    >
+                      {index + 1}
+                    </Box>
+                    <Typography sx={{ fontWeight: 800, color: "text.primary", lineHeight: 1.25 }}>
                       {crit.nome || "-"}
-                    </TableCell>
-                    {optionKeys.map((k) => {
-                      const opt = Array.isArray(crit.options)
-                        ? crit.options.find((o: any) => String(o.key) === k)
-                        : undefined;
-                      const v = opt?.value;
-                      const valueText =
-                        v === null || v === undefined ? "-" : typeof v === "object" ? JSON.stringify(v) : String(v);
-                      return (
-                        <TableCell key={`${crit.id || crit.nome}-${k}`} align="left">
-                          {valueText}
-                        </TableCell>
-                      );
-                    })}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                    </Typography>
+                  </Box>
+
+                  {optionKeys.length > 0 && (
+                    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0, 1fr))" }, gap: 1 }}>
+                      {optionKeys.map((k) => {
+                        const opt = Array.isArray(crit.options)
+                          ? crit.options.find((o: any) => String(o.key) === k)
+                          : undefined;
+                        const v = opt?.value;
+                        const valueText =
+                          v === null || v === undefined ? "-" : typeof v === "object" ? JSON.stringify(v) : String(v);
+
+                        return (
+                          <Box
+                            key={`${crit.id || crit.nome}-${k}`}
+                            sx={{
+                              minWidth: 0,
+                              px: 1.25,
+                              py: 1,
+                              borderRadius: 1.5,
+                              backgroundColor: theme.palette.action.hover,
+                              border: `1px solid ${theme.palette.divider}`,
+                            }}
+                          >
+                            <Typography
+                              sx={{
+                                mb: 0.25,
+                                fontSize: 12,
+                                fontWeight: 700,
+                                color: "text.secondary",
+                              }}
+                            >
+                              {k}
+                            </Typography>
+                            <Typography sx={{ fontSize: 14, color: "text.primary", overflowWrap: "anywhere" }}>
+                              {valueText}
+                            </Typography>
+                          </Box>
+                        );
+                      })}
+                    </Box>
+                  )}
+                </Paper>
+              ))}
+            </Box>
+          </Box>
         )}
       </Box>
     );
@@ -506,10 +569,39 @@ export default function ReportModelListPage() {
         </Breadcrumbs>
         {/* Fim Breadcrumbs */}
         {/* Cabeçalho com título e botão de adicionar */}
-        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 8 }}>
-          <Typography variant="h5" sx={{ fontWeight: "bold", fontSize: 30, color: theme.palette.text.primary }}>
-            Modelos de Relatórios
-          </Typography>
+        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3, gap: 8, alignItems: "flex-start" }}>
+          <Box>
+            <Typography variant="h5" sx={{ fontWeight: "bold", fontSize: 30, color: theme.palette.text.primary, mb: 2 }}>
+              Modelos de Relatórios
+            </Typography>
+            <Box sx={{ maxWidth: 650 }}>
+              <AdvancedSearchBar
+                fields={[{ value: "modeloNome", label: "Nome do Modelo" }]}
+                value={advValue}
+                onChange={(next) => setAdvValue(next)}
+                onApply={() => {
+                  if ((advValue.text || "").trim() === "") {
+                    setIsAdvancedActive(false);
+                    setPage(0);
+                    setServerSearch("");
+                    refetch?.();
+                  } else {
+                    setIsAdvancedActive(true);
+                    setPage(0);
+                    setServerSearch(advValue.text);
+                  }
+                }}
+                onClear={() => {
+                  setAdvValue({ field: "", text: "" });
+                  setIsAdvancedActive(false);
+                  setPage(0);
+                  setServerSearch("");
+                  refetch?.();
+                }}
+                booleanFields={[]}
+              />
+            </Box>
+          </Box>
           {empresa?.isAdmin && (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
               <LimitedButton
@@ -532,84 +624,67 @@ export default function ReportModelListPage() {
           </Alert>
         )}
 
-        {/* Barra de pesquisa (enter para pesquisar) */}
         <Box
           sx={{
-            maxWidth: 650, // largura máxima ajustada
-            mb: 3,
-            alignSelf: "flex-start", // garante alinhamento à esquerda dentro do container
-          }}
-        >
-          <AdvancedSearchBar
-            fields={[{ value: "modeloNome", label: "Nome do Modelo" }]}
-            value={advValue}
-            onChange={(next) => setAdvValue(next)}
-            onApply={() => {
-              // aplica filtro: ativa modo avançado e executa a lazy query
-              if ((advValue.text || "").trim() === "") {
-                setIsAdvancedActive(false);
-                setPage(0);
-                setServerSearch("");
-                refetch?.();
-              } else {
-                setIsAdvancedActive(true);
-                setPage(0);
-                setServerSearch(advValue.text);
-              }
-            }}
-            onClear={() => {
-              setAdvValue({ field: "", text: "" });
-              setIsAdvancedActive(false);
-              setPage(0);
-              setServerSearch("");
-              refetch?.();
-            }}
-            booleanFields={[]}
-          />
-        </Box>
-
-        <TableContainer
-          component={Paper}
-          sx={{
             mt: 2,
-            boxShadow: "0 8px 20px rgba(0,0,0,0.10)",
+            overflowX: "auto",
             borderRadius: 2,
-            overflow: "auto", // permite scroll X e Y quando necessário
-            WebkitOverflowScrolling: "touch", //
-            border: "1px solid rgba(0,0,0,0.05)",
-            // limita altura em dispositivos pequenos para mostrar scroll vertical
+            border: `1px solid ${theme.palette.divider}`,
+            width: "fit-content",
+            mx: "auto",
           }}
         >
-          <Table sx={{ minWidth: 650 }} size="small" aria-label="a dense table">
-            <TableHead sx={{ height: "70px" }}>
-              <TableRow>
-                <TableCell sx={{ fontWeight: 700 }}>Nome</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Data de Criação</TableCell>
-                <TableCell sx={{ fontWeight: 700 }}>Estado</TableCell>
+          <table
+            style={{
+              width: "auto",
+              minWidth: 1300,
+              borderCollapse: "collapse",
+              backgroundColor: theme.palette.background.paper,
+            }}
+          >
+            <thead>
+              <tr
+                style={{
+                  backgroundColor: theme.palette.mode === "dark" ? theme.palette.action.hover : "#f5f5f5",
+                  borderBottom: `2px solid ${theme.palette.divider}`,
+                }}
+              >
+                <th style={{ padding: "16px", textAlign: "left", fontWeight: "bold", minWidth: 200 }}>Nome</th>
+                <th style={{ padding: "16px", textAlign: "center", fontWeight: "bold", minWidth: 150 }}>Data de Criação</th>
+                <th style={{ padding: "16px", textAlign: "center", fontWeight: "bold", minWidth: 120 }}>Estado</th>
                 {Array.isArray(modelos[0]?.customFields) &&
                   modelos[0].customFields.map((field: any, index: number) => (
-                    <TableCell key={index} sx={{ fontWeight: 700 }}>
+                    <th key={index} style={{ padding: "16px", textAlign: "center", fontWeight: "bold", minWidth: 160 }}>
                       {field.key?.replace(/^custom_/, "") || "Campo Personalizado"}
-                    </TableCell>
+                    </th>
                   ))}
-                <TableCell align="center" sx={{ fontWeight: 700 }}>
-                  Ações
-                </TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody sx={{ height: "110px" }}>
+                <th style={{ padding: "16px", textAlign: "center", fontWeight: "bold", minWidth: 180 }}>Ações</th>
+              </tr>
+            </thead>
+            <tbody>
               {modelos.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={totalColumns}>
+                <tr>
+                  <td colSpan={totalColumns} style={{ padding: "16px" }}>
                     <Paper sx={{ p: 4, display: "flex", justifyContent: "center" }}>
                       <NoDataMessage nome="modelos" />
                     </Paper>
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               ) : (
                 modelos.map((modelo: any, index: number) => (
-                  <TableRow key={modelo.id} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
-                    <TableCell>
+                  <tr
+                    key={modelo.id}
+                    style={{
+                      borderBottom: `1px solid ${theme.palette.divider}`,
+                      backgroundColor:
+                        index % 2 === 0
+                          ? "transparent"
+                          : theme.palette.mode === "dark"
+                            ? theme.palette.action.hover
+                            : "#fafafa",
+                    }}
+                  >
+                    <td style={{ padding: "16px", textAlign: "left", fontWeight: 500, color: theme.palette.text.primary }}>
                       {empresa?.isAdmin ? (
                         modelo.isLocked ? (
                           <Tooltip title={modelo.lockReason || "Modelo bloqueado no seu plano."} placement="top">
@@ -642,9 +717,11 @@ export default function ReportModelListPage() {
                       ) : (
                         <span>{modelo.modeloNome}</span>
                       )}
-                    </TableCell>
-                    <TableCell>{new Date(modelo.createdAt).toLocaleDateString()}</TableCell>
-                    <TableCell>
+                    </td>
+                    <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>
+                      {new Date(modelo.createdAt).toLocaleDateString()}
+                    </td>
+                    <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>
                       {modelo.isLocked ? (
                         <Tooltip title={modelo.lockReason || "Modelo bloqueado no seu plano."} placement="top">
                           <Chip icon={<LockIcon />} label="Bloqueado" color="info" variant="outlined" size="small" />
@@ -652,20 +729,18 @@ export default function ReportModelListPage() {
                       ) : (
                         <Chip label="Ativo" color="success" variant="outlined" size="small" />
                       )}
-                    </TableCell>
+                    </td>
                     {Array.isArray(modelo.customFields) &&
-                      modelo.customFields.map((field: any, index: number) => (
-                        <TableCell key={index}>
+                      modelo.customFields.map((field: any, idx: number) => (
+                        <td key={idx} style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>
                           {(() => {
                             const val = field.value;
                             if (val === null || val === undefined) return "-";
 
-                            // Primitivos: string, number, boolean
                             if (typeof val === "string" || typeof val === "number" || typeof val === "boolean") {
                               return String(val);
                             }
 
-                            // Objetos com propriedade `datatype`
                             if (typeof val === "object") {
                               if (val.datatype) {
                                 if (val.datatype === "array" && Array.isArray(val.items)) return val.items.join(", ");
@@ -673,14 +748,11 @@ export default function ReportModelListPage() {
                                 if (val.datatype === "date") return "Data";
                                 if (val.datatype === "bool" || val.datatype === "boolean") return "Sim/Não";
                                 if (val.datatype === "number") return "Número";
-                                // fallback: usar label do formatType se existir
                                 return formatType(String(val.datatype));
                               }
 
-                              // objeto com items sem datatype
                               if (Array.isArray(val.items)) return val.items.join(", ");
 
-                              // último recurso: serializar para string (não retorna objeto React)
                               try {
                                 return JSON.stringify(val);
                               } catch {
@@ -690,10 +762,10 @@ export default function ReportModelListPage() {
 
                             return "-";
                           })()}
-                        </TableCell>
+                        </td>
                       ))}
-                    <TableCell align="center">
-                      <Box sx={{ display: "flex", gap: 2, justifyContent: "space-between" }}>
+                    <td style={{ padding: "4px 16px", textAlign: "center" }}>
+                      <Box sx={{ display: "flex", gap: 2, justifyContent: "center" }}>
                         <Tooltip title="Adicionar Relatório" placement="top">
                           <span>
                             <IconButton
@@ -786,7 +858,7 @@ export default function ReportModelListPage() {
 
                         {empresa?.isAdmin && (
                           <>
-                            <Tooltip title="Clonar Modelo" placement="top" sx={{ width: 40, height: 40 }}>
+                            <Tooltip title="Clonar Modelo" placement="top">
                               <span>
                                 <IconButton
                                   onClick={() => requestClone(modelo.id)}
@@ -831,13 +903,13 @@ export default function ReportModelListPage() {
                           </>
                         )}
                       </Box>
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ))
               )}
-            </TableBody>
-          </Table>
-        </TableContainer>
+            </tbody>
+          </table>
+        </Box>
 
         {/* Renderiza tabela de critérios por modelo */}
         {modelos.map((modelo: any) =>

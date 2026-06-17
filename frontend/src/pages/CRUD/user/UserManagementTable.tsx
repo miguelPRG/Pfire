@@ -1,17 +1,10 @@
 // src/pages/CRUD/user/UserManagementTable.tsx
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
   Paper,
   TextField,
   Box,
   Pagination,
-  TableSortLabel,
   Typography,
   Button,
   Dialog,
@@ -95,7 +88,6 @@ export default function UserManagementTable() {
     { value: "acao", label: "Ação" },
   ];
 
-  const [isAdvancedSearch, setIsAdvancedSearch] = useState(false);
   const [serverFilter, setServerFilter] = useState<Record<string, unknown>>({});
   const usersQueryVars = {
     empresaId: empresa?.id || "",
@@ -106,11 +98,10 @@ export default function UserManagementTable() {
     data,
     isLoading: loading,
     refetch,
-  } = useUsersQuery<returnedData>(usersQueryVars, Boolean(empresa?.id), `${page}-${JSON.stringify(serverFilter)}`);
+  } = useUsersQuery<returnedData>(usersQueryVars, Boolean(empresa?.id));
   const users = data?.getUsers?.users || [];
   const totalUsers = data?.getUsers?.totalUsers || 0;
 
-  // Usar dados da query para validar limites
   const { canCreateUtilizador, messageUtilizador, utilizadoresPorEmpresa } = useUtilizadorLimits(totalUsers);
 
   const inviteUserMutation = useInviteUserMutation<any>();
@@ -119,13 +110,11 @@ export default function UserManagementTable() {
   const revokeAdminMutation = useRevokeAdminMutation<any>();
 
   const applyAdvancedFilterUsers = () => {
-    setIsAdvancedSearch(true);
     setPage(0);
     setServerFilter(advValue.text.trim() ? { [advValue.field]: advValue.text.trim() } : {});
   };
 
   const clearAdvancedFilter = async () => {
-    setIsAdvancedSearch(false);
     setAdvValue({ field: "", text: "" });
     setPage(0);
     setServerFilter({});
@@ -168,20 +157,6 @@ export default function UserManagementTable() {
       const bValue = b[orderBy]?.toString() || "";
       return order === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
     });
-
-  const zebraColor = (index: number) =>
-    theme.palette.mode === "dark" ? (index % 2 === 0 ? "#252525" : "#1d1d1d") : index % 2 === 0 ? "#f5f5f5" : "#e0e0e0";
-
-  const columnLabels: { [key in keyof User]?: string } = {
-    nome: "Nome",
-    telefone: "Telefone",
-    isActive: "Status",
-    email: "Email",
-    role: "Papel",
-    acao: "Ação",
-  };
-
-  const columns: (keyof User)[] = ["nome", "telefone", "isActive", "email", "role", "acao"];
 
   const {
     register,
@@ -242,6 +217,15 @@ export default function UserManagementTable() {
 
   if (loading) return <LoadingAnimation />;
 
+  const columns: { key: keyof User; label: string }[] = [
+    { key: "nome", label: "Nome" },
+    { key: "telefone", label: "Telefone" },
+    { key: "isActive", label: "Status" },
+    { key: "email", label: "Email" },
+    { key: "role", label: "Papel" },
+    { key: "acao", label: "Ação" },
+  ];
+
   return (
     <Paper sx={{ width: "100%", p: 2, boxShadow: "none", backgroundColor: theme.palette.background.default }}>
       <Breadcrumbs
@@ -249,19 +233,28 @@ export default function UserManagementTable() {
         sx={{ mb: 3, backgroundColor: "background.paper", maxWidth: "200px", borderRadius: 5, padding: 0.5 }}
       >
         <StyledBreadcrumb
-          component="a"
           sx={{ cursor: "pointer" }}
           onClick={() => navigate("/")}
           icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
         />
-        <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} component="span" label="Utilizadores" />
+        <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} label="Utilizadores" />
       </Breadcrumbs>
 
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2, gap: 10 }}>
-        <Typography variant="h5" sx={{ fontWeight: "bold", fontSize: 30 }}>
-          Lista de Funcionários
-        </Typography>
-
+      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3, gap: 8, alignItems: "flex-start" }}>
+        <Box>
+          <Typography variant="h5" sx={{ fontWeight: "bold", fontSize: 30, mb: 2 }}>
+            Lista de Funcionários
+          </Typography>
+          <Box sx={{ maxWidth: 650 }}>
+            <AdvancedSearchBar
+              fields={advFields}
+              value={advValue}
+              onChange={(next) => setAdvValue(next)}
+              onApply={applyAdvancedFilterUsers}
+              onClear={clearAdvancedFilter}
+            />
+          </Box>
+        </Box>
         <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
           <LimitedButton
             disabled={!canCreateUtilizador}
@@ -269,158 +262,160 @@ export default function UserManagementTable() {
             onClick={() => setInviteOpen(true)}
             variant="contained"
             color="primary"
-            sx={{
-              textTransform: "none",
-              height: "40px",
-              width: "180px",
-              padding: "5px",
-            }}
+            sx={{ textTransform: "none", height: "40px", width: "180px", padding: "5px" }}
           >
             Convidar Utilizador
           </LimitedButton>
           <ResourceCount current={totalUsers} limit={utilizadoresPorEmpresa} resourceName="utilizador" />
-          <LimitIndicator
-            current={totalUsers}
-            limit={utilizadoresPorEmpresa}
-            label="Utilizadores"
-            resourceName="utilizador"
-          />
+          <LimitIndicator current={totalUsers} limit={utilizadoresPorEmpresa} label="Utilizadores" resourceName="utilizador" />
         </Box>
       </Box>
 
-      <Box sx={{ maxWidth: 650, mb: 3, alignSelf: "flex-start" }}>
-        <Box sx={{ width: "100%", maxWidth: 920 }}>
-          <AdvancedSearchBar
-            fields={advFields}
-            value={advValue}
-            onChange={(next) => setAdvValue(next)}
-            onApply={applyAdvancedFilterUsers}
-            onClear={clearAdvancedFilter}
-          />
-        </Box>
-      </Box>
-
-      <div style={{ overflowX: "auto" }}>
-        <TableContainer
-          component={Paper}
-          sx={{
-            width: "100%",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.12)",
-            borderRadius: 2,
-
-            border: "1px solid rgba(0,0,0,0.06)",
-            overflow: "auto", // permite scroll X e Y quando necessário
-            WebkitOverflowScrolling: "touch",
+      <Box
+        sx={{
+          overflowX: "auto",
+          borderRadius: 2,
+          border: `1px solid ${theme.palette.divider}`,
+          width: "fit-content",
+          mx: "auto",
+        }}
+      >
+        <table
+          style={{
+            width: "auto",
+            minWidth: 1300,
+            borderCollapse: "collapse",
+            backgroundColor: theme.palette.background.paper,
           }}
         >
-          <Table sx={{ minWidth: 650 }} size="small" aria-label="dense users table">
-            <TableHead>
-              <TableRow>
-                {columns.map((key) => (
-                  <TableCell
-                    key={key}
-                    onClick={() => handleSort(key)}
-                    sx={{ fontWeight: "bold", cursor: "pointer", textAlign: "left" }}
-                  >
-                    <TableSortLabel active={orderBy === key} direction={orderBy === key ? order : "asc"}>
-                      {columnLabels[key] || key}
-                    </TableSortLabel>
-                  </TableCell>
-                ))}
-                {/* remove extra empty header cell (causava deslocamento da coluna "Ação") */}
-              </TableRow>
-            </TableHead>
-
-            <TableBody>
-              {sortedRows.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={columns.length + 1}>
-                    <Paper sx={{ p: 4, display: "flex", justifyContent: "center" }}>
-                      <NoDataMessage nome="utilizadores" />
-                    </Paper>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                sortedRows.map((user) => (
-                  <TableRow key={user.id} sx={{ "&:last-child td, &:last-child th": { border: 0 } }}>
-                    <TableCell>{user.nome}</TableCell>
-                    <TableCell>{user.telefone}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        sx={{
-                          width: 55,
-                          height: 55,
-                          borderRadius: "50%",
-                          backgroundColor: user.isActive ? theme.palette.success.main : theme.palette.error.main,
-                          color: "#fff",
-                          fontWeight: "bold",
-                          fontSize: 15,
-                          minWidth: 0,
-                          px: 0,
-                        }}
-                        disabled={!!roleLoading[user.id]}
-                      >
-                        {user.isActive ? "Ativo" : "Inativo"}
-                      </Button>
-                    </TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Button
-                        variant="contained"
-                        size="small"
-                        fullWidth={false}
-                        sx={{
-                          borderRadius: "20px",
-                          minWidth: 0,
-                          px: 1.5,
-                          width: "auto",
-                          textTransform: "none",
-                          backgroundColor: "transparent",
-                          border: `1px solid ${theme.palette.divider}`,
-                          color: theme.palette.mode === "light" ? theme.palette.text.primary : "#fff",
-                        }}
-                        onClick={() => handleToggleAdmin(user)}
-                        disabled={!!roleLoading[user.id] || Boolean(user.isOwner)}
-                      >
-                        {roleLoading[user.id] ? "Alterando..." : user.role}
-                      </Button>
-                    </TableCell>
-
-                    <TableCell>
-                      <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-start" }}>
-                        <Button
-                          onClick={() => {
-                            if (user.isOwner) {
-                              setAlert({ message: "O criador da empresa não pode ser expulso.", isError: true });
-                              return;
-                            }
-                            handleOpenDeleteDialog(user.id);
-                          }}
-                          sx={{
-                            minWidth: 0,
-                            width: 36,
-                            height: 36,
-                            borderRadius: "50%",
-                            backgroundColor: "error.main",
-                            color: "#fff",
-                            "&:hover": { backgroundColor: "error.dark" },
-                            px: 0,
-                          }}
-                          disabled={Boolean(user.isOwner)}
-                        >
-                          <Delete fontSize="small" />
-                        </Button>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </div>
+          <thead>
+            <tr
+              style={{
+                backgroundColor: theme.palette.mode === "dark" ? theme.palette.action.hover : "#f5f5f5",
+                borderBottom: `2px solid ${theme.palette.divider}`,
+              }}
+            >
+              {columns.map(({ key, label }) => (
+                <th
+                  key={key}
+                  onClick={() => handleSort(key)}
+                  style={{
+                    padding: "16px",
+                    textAlign: key === "nome" ? "left" : "center",
+                    fontWeight: "bold",
+                    minWidth: key === "nome" || key === "email" ? 180 : 120,
+                    cursor: "pointer",
+                    userSelect: "none",
+                  }}
+                >
+                  {label}
+                  {orderBy === key ? (order === "asc" ? " ▲" : " ▼") : ""}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {sortedRows.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length} style={{ padding: "16px" }}>
+                  <Paper sx={{ p: 4, display: "flex", justifyContent: "center" }}>
+                    <NoDataMessage nome="utilizadores" />
+                  </Paper>
+                </td>
+              </tr>
+            ) : (
+              sortedRows.map((usr, index) => (
+                <tr
+                  key={usr.id}
+                  style={{
+                    borderBottom: `1px solid ${theme.palette.divider}`,
+                    backgroundColor:
+                      index % 2 === 0
+                        ? "transparent"
+                        : theme.palette.mode === "dark"
+                          ? theme.palette.action.hover
+                          : "#fafafa",
+                  }}
+                >
+                  <td style={{ padding: "16px", textAlign: "left", fontWeight: 500, color: theme.palette.text.primary }}>
+                    {usr.nome}
+                  </td>
+                  <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>
+                    {usr.telefone}
+                  </td>
+                  <td style={{ padding: "4px 16px", textAlign: "center" }}>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      sx={{
+                        width: 55,
+                        height: 55,
+                        borderRadius: "50%",
+                        backgroundColor: usr.isActive ? theme.palette.success.main : theme.palette.error.main,
+                        color: "#fff",
+                        fontWeight: "bold",
+                        fontSize: 15,
+                        minWidth: 0,
+                        px: 0,
+                      }}
+                      disabled={!!roleLoading[usr.id]}
+                    >
+                      {usr.isActive ? "Ativo" : "Inativo"}
+                    </Button>
+                  </td>
+                  <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>
+                    {usr.email}
+                  </td>
+                  <td style={{ padding: "4px 16px", textAlign: "center" }}>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      sx={{
+                        borderRadius: "20px",
+                        minWidth: 0,
+                        px: 1.5,
+                        width: "auto",
+                        textTransform: "none",
+                        backgroundColor: "transparent",
+                        border: `1px solid ${theme.palette.divider}`,
+                        color: theme.palette.mode === "light" ? theme.palette.text.primary : "#fff",
+                      }}
+                      onClick={() => handleToggleAdmin(usr)}
+                      disabled={!!roleLoading[usr.id] || Boolean(usr.isOwner)}
+                    >
+                      {roleLoading[usr.id] ? "Alterando..." : usr.role}
+                    </Button>
+                  </td>
+                  <td style={{ padding: "4px 16px", textAlign: "center" }}>
+                    <Button
+                      onClick={() => {
+                        if (usr.isOwner) {
+                          setAlert({ message: "O criador da empresa não pode ser expulso.", isError: true });
+                          return;
+                        }
+                        handleOpenDeleteDialog(usr.id);
+                      }}
+                      sx={{
+                        minWidth: 0,
+                        width: 36,
+                        height: 36,
+                        borderRadius: "50%",
+                        backgroundColor: "error.main",
+                        color: "#fff",
+                        "&:hover": { backgroundColor: "error.dark" },
+                        px: 0,
+                      }}
+                      disabled={Boolean(usr.isOwner)}
+                    >
+                      <Delete fontSize="small" />
+                    </Button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </Box>
 
       <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
         {pageCount > 1 && (

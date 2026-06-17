@@ -10,9 +10,9 @@ if ! command -v uv >/dev/null 2>&1; then
   curl -LsSf https://astral.sh/uv/install.sh | sh
 fi
 
-# 2) Detectar versão de Python (>= 3.12) e verificar instalação
+# 2) Detectar versão de Python (>= 3.14) e verificar instalação
 PYTHON_CMD=""
-for cmd in python3.14 python3.13 python3.12 python3 python; do
+for cmd in python3.14 python3 python; do
   if command -v "$cmd" >/dev/null 2>&1; then
     # Obter versão usando --version
     version=$("$cmd" --version 2>&1 | grep -oP '(?<=Python )\d+\.\d+' || echo "0.0")
@@ -23,7 +23,7 @@ for cmd in python3.14 python3.13 python3.12 python3 python; do
       continue
     fi
     
-    if awk -v ver="$version" 'BEGIN {exit !(ver >= 3.12)}'; then
+    if awk -v ver="$version" 'BEGIN {exit !(ver >= 3.14)}'; then
       PYTHON_CMD="$cmd"
       echo "Python $version encontrado e validado: $cmd"
       break
@@ -32,8 +32,8 @@ for cmd in python3.14 python3.13 python3.12 python3 python; do
 done
 
 if [[ -z "$PYTHON_CMD" ]]; then
-  echo "Erro: É necessário Python >= 3.12 com venv instalado"
-  echo "No Ubuntu/Debian, instale com: sudo apt install python3.12 python3.12-venv"
+  echo "Erro: É necessário Python >= 3.14 com venv instalado"
+  echo "No Ubuntu/Debian, instale com: sudo apt install python3.14 python3.14-venv"
   exit 1
 fi
 

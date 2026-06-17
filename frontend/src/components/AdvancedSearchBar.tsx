@@ -160,7 +160,7 @@ export default function AdvancedSearchBar({
             variant="contained"
             onClick={handleApply}
             sx={{ minWidth: 112 }}
-            disabled={!value.field || !value.text} // Desativa se campo ou valor estiverem vazios
+            disabled={!value.field || !value.text}
           >
             Aplicar
           </Button>
@@ -169,7 +169,7 @@ export default function AdvancedSearchBar({
             color="secondary"
             onClick={handleClear}
             sx={{ minWidth: 112 }}
-            disabled={!value.field || !value.text} // Desativa se campo ou valor estiverem vazios
+            disabled={!value.field || !value.text}
           >
             Limpar
           </Button>
