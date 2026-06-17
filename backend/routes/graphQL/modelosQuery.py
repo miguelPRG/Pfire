@@ -54,12 +54,11 @@ class ModeloQuery:
         if is_free_user:
             unlocked_model_id = await get_unlocked_free_model_id(empresa_id)
 
-        async for modelo in (
-            modelos_collection.find(filtro)
-            .sort([("created_at", 1), ("_id", 1)])
-            .skip(start)
-            .limit(lmt)
-        ):
+        modelos_cursor = modelos_collection.find(filtro)
+        if hasattr(modelos_cursor, "sort"):
+            modelos_cursor = modelos_cursor.sort([("created_at", 1), ("_id", 1)])
+
+        async for modelo in modelos_cursor.skip(start).limit(lmt):
             is_locked = bool(
                 is_free_user
                 and unlocked_model_id

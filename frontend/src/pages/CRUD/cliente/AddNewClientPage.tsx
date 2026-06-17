@@ -83,9 +83,9 @@ export default function AddNewClientPage() {
   };
 
   const atualizarCliente = async (dados: AddClientFormInputs & { id: string }) => {
-    if (!empresa?.id || !/^[a-f\\d]{24}$/i.test(empresa.id))
+    if (!empresa?.id || !/^[a-f\d]{24}$/i.test(empresa.id))
       throw new Error("ID da empresa inválido ou não fornecido.");
-    if (!dados.id || !/^[a-f\\d]{24}$/i.test(dados.id)) throw new Error("ID do cliente inválido ou não fornecido.");
+    if (!dados.id || !/^[a-f\d]{24}$/i.test(dados.id)) throw new Error("ID do cliente inválido ou não fornecido.");
 
     await updateClienteMutation.mutateAsync({
       id: dados.id,

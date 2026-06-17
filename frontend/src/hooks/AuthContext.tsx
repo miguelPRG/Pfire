@@ -105,6 +105,14 @@ export function killAuthCookie() {
   } catch {}
 }
 
+export function getResponseErrorMessage(
+  response: Pick<Response, "status">,
+  payload: ApiResponsePayload,
+  fallback: string
+) {
+  return payload.detail || payload.message || `${fallback} (${response.status})`;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UserLoggedIn | null>(null);
   const [empresa, setEmpresa] = useState<Empresa | null>(null);

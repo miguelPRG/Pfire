@@ -264,7 +264,7 @@ function HomePage() {
               <Typography variant="body2" color="textSecondary" sx={{ mb: 1.5, fontWeight: 600 }}>
                 🏢 Empresa
               </Typography>
-              <Stack spacing={2} alignItems="center" sx={{ width: "100%" }}>
+              <Stack spacing={2} sx={{ width: "100%", alignItems: "center" }}>
                 {empresa?.logo && (
                   <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
                     <Box

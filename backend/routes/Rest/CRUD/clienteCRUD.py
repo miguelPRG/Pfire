@@ -87,7 +87,7 @@ async def atualizar_cliente(cliente: ClienteUpdate, request: Request, id: str):
 
     cliente_data = cliente.model_dump(exclude_unset=True)
     cliente_data.update({"updated_by": user_id, "updated_at": datetime.now()})
-    del cliente_data["recaptchaToken"]
+    cliente_data.pop("recaptchaToken", None)
 
     result = await clientes_collection.update_one(
         {"_id": id, "isActive": True}, {"$set": cliente_data}

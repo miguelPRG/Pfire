@@ -17,7 +17,6 @@ from controller.token_blacklist import add_token_to_blacklist
 from passlib.context import CryptContext
 from asyncio import gather
 from pymongo.errors import DuplicateKeyError
-from base64 import b64encode
 
 routerUser = APIRouter(prefix="/user")
 pwd_context = CryptContext(
@@ -49,22 +48,28 @@ async def get_global_id(global_id: str, request: Request):
     global_id_data["_id"] = str(global_id_data["_id"])
     global_id_data["host_user_id"] = (
         str(global_id_data["host_user_id"])
-        if "host_user_id" in global_id_data
+        if global_id_data.get("host_user_id") is not None
         else None
     )
     global_id_data["guest_user_id"] = (
         str(global_id_data["guest_user_id"])
-        if "guest_user_id" in global_id_data
+        if global_id_data.get("guest_user_id") is not None
         else None
     )
     global_id_data["empresa_id"] = (
-        str(global_id_data["empresa_id"]) if "empresa_id" in global_id_data else None
+        str(global_id_data["empresa_id"])
+        if global_id_data.get("empresa_id") is not None
+        else None
     )
     global_id_data["user_id"] = (
-        str(global_id_data["user_id"]) if "user_id" in global_id_data else None
+        str(global_id_data["user_id"])
+        if global_id_data.get("user_id") is not None
+        else None
     )
     global_id_data["created_by"] = (
-        str(global_id_data["created_by"]) if "created_by" in global_id_data else None
+        str(global_id_data["created_by"])
+        if global_id_data.get("created_by") is not None
+        else None
     )
 
     # Remover campos com valor nulo
@@ -129,10 +134,6 @@ async def confirm_user(global_id: str, request: Request, captcha_data: GlobalIdM
         nome=user_doc.get("nome", ""),
         stripe_customer_id=user_doc.get("stripe_customer_id", None),
     )
-
-    assinatura_b64 = None
-    if isinstance(user_doc.get("assinatura"), (bytes, bytearray)):
-        assinatura_b64 = b64encode(user_doc["assinatura"]).decode("utf-8")
 
     payload = {
         "id": str(user_doc["_id"]),

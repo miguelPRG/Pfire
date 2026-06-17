@@ -23,12 +23,39 @@ merge_develop:
         echo "Estamos na branch $CI_COMMIT_REF_NAME. Nenhum merge necessário.";
       fi
 
+# Backend unit tests
+backend_unit_tests:
+  stage: test
+  image: python:3.14-slim
+  script:
+    - apt-get update && apt-get install -y --no-install-recommends gcc libmariadb-dev pkg-config curl git libglib2.0-0 libpango-1.0-0 libpangoft2-1.0-0 libcairo2 libgdk-pixbuf-2.0-0 shared-mime-info fonts-dejavu-core && rm -rf /var/lib/apt/lists/*
+    - cd backend
+    - rm -rf .venv/
+    - curl -LsSf https://astral.sh/uv/install.sh | sh
+    - source $HOME/.local/bin/env
+    - uv venv
+    - . .venv/bin/activate
+    - uv pip install --upgrade pip
+    - uv sync --extra test --locked
+    - uv pip install bandit
+    - bandit -r . --exclude ./tests,./migrations,./venv,./.venv,./docs,./__pycache__,./controller
+    - uv run pytest -q
+
+# Frontend unit tests
+frontend_unit_tests:
+  stage: test
+  image: node:24-alpine
+  script:
+    - cd frontend
+    - npm ci
+    - npm run test
+
 # Backend Security Check
 python_test:
   image: python:3.14-slim
   stage: security
   script:
-    - apt-get update && apt-get install -y --no-install-recommends gcc libmariadb-dev pkg-config curl git && rm -rf /var/lib/apt/lists/*
+    - apt-get update && apt-get install -y --no-install-recommends gcc libmariadb-dev pkg-config curl git libglib2.0-0 libpango-1.0-0 libpangoft2-1.0-0 libcairo2 libgdk-pixbuf-2.0-0 shared-mime-info fonts-dejavu-core && rm -rf /var/lib/apt/lists/*
     - cd backend
     - rm -rf .venv/
     - curl -LsSf https://astral.sh/uv/install.sh | sh

@@ -76,33 +76,8 @@ class RelatorioQuery:
             filtro["isActive"] = True
             filtro["created_by"] = user_id
 
-        # Pipeline de agregação com lookup para trazer o nome do user
-        pipeline = [
-            {"$match": filtro},
-            {
-                "$lookup": {
-                    "from": "users",
-                    "localField": "created_by",
-                    "foreignField": "_id",
-                    "as": "user_info",
-                }
-            },
-            {
-                "$addFields": {
-                    "created_by_name": {
-                        "$ifNull": [
-                            {"$arrayElemAt": ["$user_info.nome", 0]},
-                            "Utilizador desconhecido",
-                        ]
-                    }
-                }
-            },
-            {"$skip": start},
-            {"$limit": lmt},
-        ]
-
         # Buscar relatórios no banco de dados
-        async for relatorio in relatorios_collection.aggregate(pipeline):
+        async for relatorio in relatorios_collection.find(filtro).skip(start).limit(lmt):
             custom_fields = [
                 {"key": k, "value": v}
                 for k, v in relatorio.items()

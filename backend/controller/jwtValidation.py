@@ -92,10 +92,7 @@ def verify_jwt(token):
         if token in TOKEN_BLACKLIST:
             raise HTTPException(status_code=400, detail="Token inválido!")
 
-        payload = decode(token, public_key, algorithms=[ALGORITHM])
-        payload.setdefault("isSuperAdmin", False)
-        payload.setdefault("plano", "free")
-        return payload
+        return decode(token, public_key, algorithms=[ALGORITHM])
 
     except ExpiredSignatureError:
         raise HTTPException(

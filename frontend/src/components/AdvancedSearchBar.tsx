@@ -71,23 +71,18 @@ export default function AdvancedSearchBar({
             value={value.field}
             onChange={(e) => onChange({ field: e.target.value as string, text: value.text })}
             MenuProps={{
-              PaperProps: {
-                sx: {
-                  maxWidth: 280,
+              slotProps: {
+                paper: {
+                  sx: {
+                    maxWidth: 280,
+                  },
                 },
               },
             }}
-            sx={{
-              bgcolor: isDark ? "#0b1220" : undefined,
-              color: isDark ? theme.palette.text.primary : undefined,
-              "& .MuiSelect-select": {
-                color: isDark ? theme.palette.text.primary : undefined,
-              },
-            }}
           >
-            {fields.map((f) => (
-              <MenuItem key={f.value} value={f.value} sx={{ bgcolor: isDark ? "#0b1220" : undefined }}>
-                {f.label}
+            {fields.map((field) => (
+              <MenuItem key={field.value} value={field.value}>
+                {field.label}
               </MenuItem>
             ))}
           </Select>
@@ -98,53 +93,19 @@ export default function AdvancedSearchBar({
             control={
               <Checkbox
                 checked={value.text === "true"}
-                onChange={(e) =>
-                  onChange({
-                    field: value.field,
-                    text: e.target.checked ? "true" : "",
-                  })
-                }
-                color="primary"
+                onChange={(e) => onChange({ field: value.field, text: e.target.checked ? "true" : "false" })}
               />
             }
             label="Ativo"
             sx={{ width: controlWidth }}
           />
-        ) : value.field === "role" ? (
-          <FormControl size="small" sx={{ width: controlWidth }}>
-            <InputLabel id="adv-role-label">Qual é o papel?</InputLabel>
-            <Select
-              labelId="adv-role-label"
-              value={value.text || ""}
-              onChange={(e) => onChange({ field: value.field, text: e.target.value as string })}
-              sx={{
-                width: controlWidth,
-                bgcolor: isDark ? "#0b1220" : undefined,
-                color: isDark ? theme.palette.text.primary : undefined,
-              }}
-              MenuProps={{
-                PaperProps: {
-                  sx: {
-                    maxWidth: 280,
-                  },
-                },
-              }}
-            >
-              <MenuItem value="Técnico">Técnico</MenuItem>
-              <MenuItem value="Admin">Admin</MenuItem>
-            </Select>
-          </FormControl>
         ) : (
           <TextField
             size="small"
-            label="Valor"
+            label="Pesquisar"
             value={value.text}
             onChange={(e) => onChange({ field: value.field, text: e.target.value })}
-            sx={{
-              width: controlWidth,
-              bgcolor: isDark ? "#0b1220" : undefined,
-              input: { color: isDark ? theme.palette.text.primary : undefined },
-            }}
+            sx={{ width: controlWidth }}
             disabled={!value.field}
           />
         )}

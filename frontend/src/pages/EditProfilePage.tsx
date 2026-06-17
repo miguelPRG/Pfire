@@ -16,6 +16,14 @@ import UserInfoForm from "./editProfile/UserInfoForm";
 import { companySchema, userInfoSchema, userPasswordSchema } from "./editProfile/schemas";
 import type { CompanyFormType, UserInfoFormType, UserPasswordFormType } from "./editProfile/schemas";
 import { formatStripeDate, isPaymentMethodExpired, normalizePaymentMethods } from "./editProfile/paymentUtils";
+export {
+  getPaymentBrandImage,
+  getPaymentBrandKey,
+  getPaymentBrandName,
+  getPaymentExpiryLabel,
+  isPaymentMethodExpired,
+  normalizePaymentMethods,
+} from "./editProfile/paymentUtils";
 import type {
   CancelSubscriptionResponseType,
   MessageType,

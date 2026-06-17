@@ -2,7 +2,7 @@ import { Container, Typography, Paper, TextField, Button, Box } from "@mui/mater
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
-import logo from "../assets/images/logo.png";
+import logo from "../../assets/images/logo.png";
 
 // Esquema de validação com Zod
 const empresaSchema = z.object({

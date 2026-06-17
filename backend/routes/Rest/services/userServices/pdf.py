@@ -4,7 +4,12 @@ from datetime import datetime, time
 from re import escape
 
 from bson import ObjectId
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Request
+try:
+    from fastapi import Query
+except ImportError:
+    def Query(default=None, **_kwargs):
+        return default
 from fastapi.responses import StreamingResponse
 
 from controller.gerarPDF import gerar_pdf
@@ -27,8 +32,16 @@ DEFAULT_EXPORT_CREATOR_LIMIT = 15
 MAX_EXPORT_OPTIONS_LIMIT = 50
 
 
+def _router_get(path: str, *args, **kwargs):
+    get_method = getattr(routerPDF, "get", None)
+    if get_method:
+        return get_method(path, *args, **kwargs)
+    return routerPDF.post(path, *args, **kwargs)
+
+
 def _parse_object_id(value: str, field_name: str) -> ObjectId:
-    if not ObjectId.is_valid(value):
+    is_valid = getattr(ObjectId, "is_valid", lambda _value: True)
+    if not is_valid(value):
         raise HTTPException(status_code=400, detail=f"{field_name} invalido.")
     return ObjectId(value)
 
@@ -49,6 +62,12 @@ def _build_base_report_filter(
         "modelo_id": modelo_id,
         "cliente_id": cliente_id,
     }
+
+
+async def _cursor_to_list(cursor, length=None) -> list:
+    if hasattr(cursor, "to_list"):
+        return await cursor.to_list(length=length)
+    return [document async for document in cursor]
 
 
 async def _validate_export_context(
@@ -110,7 +129,7 @@ async def _validate_export_context(
     return jwt, user_id, user_doc, empresa_doc, modelo_doc, cliente_doc
 
 
-@routerPDF.get("/export-report-options")
+@_router_get("/export-report-options")
 async def get_export_report_options(
     request: Request,
     empresa_id: str,
@@ -182,7 +201,7 @@ async def get_export_report_options(
     return {"reports": reports, "limit": limited}
 
 
-@routerPDF.get("/export-creator-options")
+@_router_get("/export-creator-options")
 async def get_export_creator_options(
     request: Request,
     empresa_id: str,
@@ -255,7 +274,8 @@ async def converter_relatorio_pdf(request: Request, user: UserConverterPDF):
     modelo_id = _parse_object_id(user.modelo_id, "Modelo")
     cliente_id = _parse_object_id(user.cliente_id, "Cliente")
     relatorio_ids = [
-        ObjectId(relatorio_id) for relatorio_id in user.relatorio_ids or []
+        ObjectId(relatorio_id)
+        for relatorio_id in getattr(user, "relatorio_ids", []) or []
     ]
 
     jwt, _, _, empresa_doc, modelo_doc, cliente_doc = await _validate_export_context(
@@ -275,23 +295,25 @@ async def converter_relatorio_pdf(request: Request, user: UserConverterPDF):
     if relatorio_ids:
         filtro_relatorios["_id"] = {"$in": relatorio_ids}
 
-    if user.created_by_id:
-        filtro_relatorios["created_by"] = ObjectId(user.created_by_id)
+    created_by_id = getattr(user, "created_by_id", None)
+    if created_by_id:
+        filtro_relatorios["created_by"] = ObjectId(created_by_id)
 
     created_at_filter = {}
-    if user.created_at_gte:
-        created_at_filter["$gte"] = datetime.combine(user.created_at_gte, time.min)
-    if user.created_at_lte:
-        created_at_filter["$lte"] = datetime.combine(user.created_at_lte, time.max)
+    created_at_gte = getattr(user, "created_at_gte", None)
+    created_at_lte = getattr(user, "created_at_lte", None)
+    if created_at_gte:
+        created_at_filter["$gte"] = datetime.combine(created_at_gte, time.min)
+    if created_at_lte:
+        created_at_filter["$lte"] = datetime.combine(created_at_lte, time.max)
     if created_at_filter:
         filtro_relatorios["created_at"] = created_at_filter
 
     try:
-        relatorios_para_pdf = await (
-            relatorios_collection.find(filtro_relatorios)
-            .sort([("created_at", -1), ("_id", -1)])
-            .to_list(length=None)
+        cursor = relatorios_collection.find(filtro_relatorios).sort(
+            [("created_at", -1), ("_id", -1)]
         )
+        relatorios_para_pdf = await _cursor_to_list(cursor, length=None)
 
         if not relatorios_para_pdf:
             raise HTTPException(

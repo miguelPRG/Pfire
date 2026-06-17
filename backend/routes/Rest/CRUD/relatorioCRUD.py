@@ -5,7 +5,6 @@ from datetime import datetime
 from asyncio import gather
 from models.relatorioModels import RelatorioCreate, RelatorioActivation
 from database import (
-    empresas_collection,
     relatorios_collection,
     clientes_collection,
     modelos_collection,

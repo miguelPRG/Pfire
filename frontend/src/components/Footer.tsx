@@ -11,16 +11,14 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import { styled } from "@mui/system";
-import {
-  ArrowUpward as ArrowUpwardIcon,
-  FacebookOutlined as FacebookOutlinedIcon,
-  Instagram as InstagramIcon,
-  LinkedIn as LinkedInIcon,
-  LocalPhoneOutlined as LocalPhoneOutlinedIcon,
-  LocationOnOutlined as LocationOnOutlinedIcon,
-  MailOutline as MailOutlineIcon,
-  X as XIcon,
-} from "@mui/icons-material";
+import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
+import FacebookOutlinedIcon from "@mui/icons-material/FacebookOutlined";
+import InstagramIcon from "@mui/icons-material/Instagram";
+import LinkedInIcon from "@mui/icons-material/LinkedIn";
+import LocalPhoneOutlinedIcon from "@mui/icons-material/LocalPhoneOutlined";
+import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
+import MailOutlineIcon from "@mui/icons-material/MailOutlineOutlined";
+import XIcon from "@mui/icons-material/Twitter";
 
 const FooterContainer = styled("footer")(({ theme }) => ({
   backgroundColor: theme.palette.primary.main,

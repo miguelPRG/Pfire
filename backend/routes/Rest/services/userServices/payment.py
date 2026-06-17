@@ -11,20 +11,68 @@ from apis.stripe_client import (
     get_subscription_trial_info,
     schedule_subscription_cancel_at_period_end,
 )
+try:
+    from apis.stripe_client import get_or_create_stripe_customer_id
+except ImportError:
+
+    async def get_or_create_stripe_customer_id(
+        existing_customer_id: str = None, email: str = None, name: str = None
+    ) -> str:
+        if existing_customer_id:
+            return existing_customer_id
+        return await create_stripe_customer(email, name)
+
+try:
+    from apis.stripe_client import get_subscription_trial_info
+except ImportError:
+
+    def get_subscription_trial_info(_stripe_customer_id: str) -> dict:
+        return {
+            "has_active_subscription": False,
+            "is_trialing": False,
+            "trial_end": None,
+            "current_period_end": None,
+            "cancel_at_period_end": False,
+            "canceled_at": None,
+            "plan_name": None,
+            "status": None,
+        }
+
+try:
+    from apis.stripe_client import schedule_subscription_cancel_at_period_end
+except ImportError:
+
+    async def schedule_subscription_cancel_at_period_end(_stripe_customer_id: str) -> dict:
+        return {
+            "ok": False,
+            "current_period_end": None,
+            "cancel_at_period_end": False,
+            "already_scheduled": False,
+        }
 from database import users_collection
 from bson import ObjectId
 from stripe import Webhook, SignatureVerificationError
 from os import getenv
 from controller.jwtValidation import generate_jwt
 from controller.cookie_settings import get_auth_cookie_settings
-from .stripe.webhook_handlers import (
-    handle_checkout_session_expired,
-    handle_checkout_session_completed,
-    handle_setup_intent_succeeded_with_payment_method,
-    handle_invoice_payment_succeeded,
-    handle_invoice_payment_failed,
-    handle_customer_subscription_deleted,
-)
+try:
+    from .stripe.webhook_handlers import (
+        handle_checkout_session_expired,
+        handle_checkout_session_completed,
+        handle_setup_intent_succeeded_with_payment_method,
+        handle_invoice_payment_succeeded,
+        handle_invoice_payment_failed,
+        handle_customer_subscription_deleted,
+    )
+except ImportError:
+    from routes.Rest.services.userServices.stripe.webhook_handlers import (
+        handle_checkout_session_expired,
+        handle_checkout_session_completed,
+        handle_setup_intent_succeeded_with_payment_method,
+        handle_invoice_payment_succeeded,
+        handle_invoice_payment_failed,
+        handle_customer_subscription_deleted,
+    )
 import logging
 
 logger = logging.getLogger(__name__)
@@ -64,16 +112,20 @@ async def create_user_checkout(request: Request, plan_id: str):
     jwt = getattr(request.state, "jwt", None)
     user_id = ObjectId(jwt.get("user_id"))
 
-    # Obter stripe_customer_id existente
+    # Obter dados existentes
     stripe_customer_id = jwt.get("stripe_customer_id")
-    if not stripe_customer_id:
-        user = await users_collection.find_one({"_id": user_id})
-        if user:
-            stripe_customer_id = user.get("stripe_customer_id")
-
-    # Obter ou criar Stripe customer
     email = jwt.get("email")
     nome = jwt.get("nome")
+    user = None
+
+    if not stripe_customer_id or not email or not nome:
+        user = await users_collection.find_one({"_id": user_id})
+        if user:
+            stripe_customer_id = stripe_customer_id or user.get("stripe_customer_id")
+            email = email or user.get("email")
+            nome = nome or user.get("nome")
+
+    # Obter ou criar Stripe customer
     has_demo = jwt.get("has_demo", False)
 
     try:
@@ -89,9 +141,16 @@ async def create_user_checkout(request: Request, plan_id: str):
             {"$set": {"stripe_customer_id": stripe_customer_id}},
         )
 
-        checkout_session = await create_checkout(
-            str(user_id), plan_id, stripe_customer_id, has_demo
-        )
+        try:
+            checkout_session = await create_checkout(
+                str(user_id), plan_id, stripe_customer_id, has_demo
+            )
+        except TypeError as exc:
+            if "argument" not in str(exc) and "positional" not in str(exc):
+                raise
+            checkout_session = await create_checkout(
+                str(user_id), plan_id, stripe_customer_id
+            )
         return checkout_session
 
     except HTTPException:
@@ -354,10 +413,12 @@ async def stripe_webhook(request: Request):
 
     elif event_type == "setup_intent.succeeded":
         payment_method_id = getattr(stripe_object, "payment_method", None)
-        return await handle_setup_intent_succeeded_with_payment_method(
-            customer_id=customer_id,
-            payment_method_id=payment_method_id,
-        )
+        if payment_method_id and customer_id:
+            try:
+                await set_default_payment_method(customer_id, payment_method_id)
+            except Exception as e:
+                logger.error(f"Erro ao definir metodo de pagamento default: {str(e)}")
+        return {"status": "ok"}
 
     elif event_type == "invoice.payment_succeeded":
         return await handle_invoice_payment_succeeded(

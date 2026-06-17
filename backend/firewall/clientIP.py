@@ -1,24 +1,24 @@
-import time
+﻿import time
 import asyncio
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
-# Configurações de limitação
-LIMIT = 20  # Máximo de 20 requisições por TIME_FRAME
-TIME_FRAME = 5  # Tempo em segundos para contar as requisições (10 segundos)
+# ConfiguraÃ§Ãµes de limitaÃ§Ã£o
+LIMIT = 20  # MÃ¡ximo de 20 requisiÃ§Ãµes por TIME_FRAME
+TIME_FRAME = 30  # Tempo em segundos para contar as requisicoes
 BLOCK_DURATION = 120  # Tempo em segundos para bloquear o IP (2 minutos)
 
 rate_limiter = {}  # {ip: [timestamps]}
 blocked_ips = {}  # {ip: timestamp}
 
-# ✅ Rotas excluídas do rate limiting
+# âœ… Rotas excluÃ­das do rate limiting
 EXCLUDED_PATHS = {
     "/user/stripe/webhook",  # Webhook Stripe nunca deve ser bloqueado
 }
 
 
 def get_client_ip(request: Request):
-    """Obtém o IP real do cliente"""
+    """ObtÃ©m o IP real do cliente"""
     forwarded_for = request.headers.get("X-Forwarded-For")
     return forwarded_for.split(",")[0] if forwarded_for else request.client.host
 
@@ -29,13 +29,13 @@ async def unblock_ip_after_delay(ip: str):
     if ip in blocked_ips:
         del blocked_ips[ip]
         print(
-            f"IP {ip} foi desbloqueado automaticamente após {BLOCK_DURATION} segundos."
+            f"IP {ip} foi desbloqueado automaticamente apÃ³s {BLOCK_DURATION} segundos."
         )
 
 
 async def rate_limit(request: Request):
     """Verifica e aplica o limite por IP"""
-    # ✅ Ignorar rate limit para rotas específicas
+    # âœ… Ignorar rate limit para rotas especÃ­ficas
     if request.url.path in EXCLUDED_PATHS:
         return None
 
@@ -50,7 +50,7 @@ async def rate_limit(request: Request):
 
     # Limpa timestamps antigos
     timestamps = rate_limiter.get(client_ip, [])
-    timestamps = [ts for ts in timestamps if current_time - ts < TIME_FRAME]
+    timestamps = [ts for ts in timestamps if current_time - ts <= TIME_FRAME]
     timestamps.append(current_time)
     rate_limiter[client_ip] = timestamps
 
@@ -64,4 +64,4 @@ async def rate_limit(request: Request):
             content={"message": f"IP bloqueado por {BLOCK_DURATION} segundos."},
         )
 
-    return None  # Requisição permitida
+    return None  # RequisiÃ§Ã£o permitida

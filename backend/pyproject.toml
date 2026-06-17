@@ -1,6 +1,6 @@
 [project]
 name = "backend"
-version = "1.12.0"
+version = "1.13.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
@@ -21,3 +21,19 @@ dependencies = [
     "stripe>=15.2.0",
     "weasyprint>=69.0",
 ]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.3.5",
+    "httpx>=0.28.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+    "httpx>=0.28.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

@@ -43,8 +43,11 @@ pwd_context = CryptContext(
     argon2__memory_cost=262144,
     argon2__time_cost=5,
 )
-cred = credentials.Certificate("/etc/secrets/serviceAccountKey.json")
-firebase_admin.initialize_app(cred)
+try:
+    firebase_admin.get_app()
+except ValueError:
+    cred = credentials.Certificate("/etc/secrets/serviceAccountKey.json")
+    firebase_admin.initialize_app(cred)
 
 
 async def blacklist_token_after_delay(

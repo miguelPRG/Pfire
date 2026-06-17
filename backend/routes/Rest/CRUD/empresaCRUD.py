@@ -130,7 +130,7 @@ async def update_empresa(empresa: EmpresaUpdate, request: Request, id: str):
 
     empresa_data["updated_by"] = user_id
     empresa_data["updated_at"] = datetime.now()
-    del empresa_data["recaptchaToken"]
+    empresa_data.pop("recaptchaToken", None)
 
     # Construir operações de update: $set e opcionalmente $unset
     update_ops = {"$set": empresa_data}

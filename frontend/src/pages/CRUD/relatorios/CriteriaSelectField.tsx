@@ -32,10 +32,12 @@ export default function CriteriaSelectField({
           label={label}
           onChange={(e) => onChange(e.target.value as string)}
           MenuProps={{
-            PaperProps: {
-              sx: {
-                maxWidth: "300px",
-                width: "75%",
+            slotProps: {
+              paper: {
+                sx: {
+                  maxWidth: "300px",
+                  width: "75%",
+                },
               },
             },
           }}

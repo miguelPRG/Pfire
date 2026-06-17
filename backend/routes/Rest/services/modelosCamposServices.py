@@ -20,10 +20,14 @@ async def clone_report_template(request: Request, data: ModelosCamposClone):
         raise HTTPException(404, detail="Modelo não encontrado")
 
     user_id = ObjectId(jwt.get("user_id"))
+    empresa_id = modelo_found.get("empresa_id")
     if not jwt.get("isSuperAdmin"):
+        if not empresa_id:
+            raise HTTPException(403, detail="Usuario nao autorizado a clonar modelos")
+
         user = await users_empresas_collection.find_one(
             {
-                "empresa_id": modelo_found["empresa_id"],
+                "empresa_id": empresa_id,
                 "user_id": user_id,
                 "isAdmin": True,
             }
@@ -34,9 +38,9 @@ async def clone_report_template(request: Request, data: ModelosCamposClone):
     if await is_model_locked_for_plan(modelo_found, jwt.get("plano")):
         raise HTTPException(403, detail=FREE_MODEL_LOCK_REASON)
 
-    if not jwt.get("isSuperAdmin") and is_free_plan(jwt.get("plano")):
+    if not jwt.get("isSuperAdmin") and empresa_id and is_free_plan(jwt.get("plano")):
         modelos_count = await modelos_collection.count_documents(
-            {"empresa_id": modelo_found["empresa_id"]}
+            {"empresa_id": empresa_id}
         )
         if modelos_count >= 1:
             raise HTTPException(

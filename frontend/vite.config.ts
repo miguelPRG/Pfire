@@ -1,5 +1,6 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react-swc";
+import { fileURLToPath, URL } from "node:url";
 import pkg from "./package.json" with { type: "json" };
 import { execSync } from "node:child_process";
 
@@ -26,6 +27,14 @@ const branchName = (() => {
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  resolve: {
+    alias: {
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
+      "react-transition-group/TransitionGroupContext": fileURLToPath(
+        new URL("./node_modules/react-transition-group/cjs/TransitionGroupContext.js", import.meta.url)
+      ),
+    },
+  },
   define: {
     __APP_VERSION__: JSON.stringify(pkg.version),
     __APP_COMMIT_HASH__: JSON.stringify(commitHash),
@@ -35,27 +44,36 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "jsdom",
-    // Sempre que forem criados novos ficheiros de teste, estes devem ser adicionados neste array
-    setupFiles: [],
-    include: ["src/tests/**/*.{test,spec}.{js,ts,jsx,tsx}"], // 👈 define a pasta dos testes aqui
+    setupFiles: ["src/tests/setup.ts"],
+    include: ["src/tests/**/*.{test,spec}.{js,ts,jsx,tsx}"],
+    fileParallelism: false,
+    maxWorkers: 1,
+    pool: "threads",
+    testTimeout: 30000,
+    hookTimeout: 30000,
+    teardownTimeout: 30000,
+    server: {
+      deps: {
+        inline: ["@mui/material", "@mui/icons-material", "react-transition-group"],
+      },
+    },
   },
 
   optimizeDeps: {
-    include: [], // Remova o @tailwindConfig da otimização
+    include: [],
   },
   build: {
     commonjsOptions: {
       transformMixedEsModules: true,
     },
-    sourcemap: false, // Desativa sourcemaps em produção
+    sourcemap: false,
     outDir: "dist",
-    minify: "esbuild", // Minificação rápida
+    minify: "esbuild",
   },
   server: {
     port: 3000,
     open: true,
     proxy: {
-      // Mapeia tanto "/backend" quanto "backend" (sem barra)
       "^/backend": {
         target: "http://localhost:8000",
         changeOrigin: true,
@@ -66,7 +84,7 @@ export default defineConfig({
         target: "http://localhost:8000",
         changeOrigin: true,
       },
-      // Opcional: se quiser garantir que "backend" sem barra inicial também seja mapeado
+      // Opcional: se quiser garantir que "backend" sem barra inicial tambem seja mapeado
       "^backend": {
         target: "http://localhost:8000",
         changeOrigin: true,

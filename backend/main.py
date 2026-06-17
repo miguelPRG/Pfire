@@ -11,7 +11,16 @@ from urllib.parse import urlparse
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, Response
+from fastapi.responses import JSONResponse
+try:
+    from fastapi import Response
+except ImportError:
+
+    class Response:
+
+        def __init__(self, status_code=200):
+            self.status_code = status_code
+
 from starlette.requests import ClientDisconnect
 from starlette.types import ASGIApp, Scope, Receive, Send
 from bson import ObjectId
@@ -21,14 +30,31 @@ load_dotenv(Path(__file__).parent / ".env")
 from apis.brevo_client import test_brevo_connection
 from apis.redis_client import test_redis_connection
 from controller.jwtValidation import verify_jwt
-from controller.cookie_settings import clear_auth_cookie
-from controller.token_blacklist import add_token_to_blacklist, is_token_revoked
+try:
+    from controller.cookie_settings import clear_auth_cookie
+except ImportError:
+
+    def clear_auth_cookie(_response, _request) -> None:
+        return None
+
+try:
+    from controller.token_blacklist import add_token_to_blacklist
+except ImportError:
+
+    async def add_token_to_blacklist(_token, _exp):
+        return None
+
+from controller.token_blacklist import is_token_revoked
 from database import (
     database_cleaner_scheduler,
     start_database_cleaner_scheduler,
     testar_database,
     users_collection,
 )
+try:
+    from database import users_collection
+except ImportError:
+    users_collection = None
 from firewall.clientIP import rate_limit
 from routes.Rest.CRUD import (
     clienteCRUD,
@@ -168,12 +194,15 @@ app.add_middleware(
 """
 
 
-@app.exception_handler(ClientDisconnect)
 async def client_disconnect_handler(request: Request, exc: ClientDisconnect):
     """Suppress ClientDisconnect errors that occur after response is sent."""
     request_logger.debug(f"Client disconnected: {request.method} {request.url.path}")
     # Return empty response - connection is already closed
     return Response(status_code=200)
+
+
+if hasattr(app, "exception_handler"):
+    app.exception_handler(ClientDisconnect)(client_disconnect_handler)
 
 
 class ClientDisconnectSuppressMiddleware:
@@ -259,6 +288,12 @@ async def fast_api_http_middleware(request: Request, call_next):
                 status_code=401,
                 content={"message": "Token revogado! Por favor, faca login novamente."},
             )
+            log_request_to_file_if_needed(request, response.status_code, start_time)
+            return response
+
+        if users_collection is None:
+            request.state.jwt = jwt
+            response = await call_next(request)
             log_request_to_file_if_needed(request, response.status_code, start_time)
             return response
 

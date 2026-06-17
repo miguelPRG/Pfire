@@ -497,14 +497,16 @@ function AddNewReportPage() {
                               onChange={(e) => handleInputChange(baseKey, e.target.value)}
                               renderValue={(selected) => selected}
                               MenuProps={{
-                                PaperProps: {
-                                  sx: {
-                                    border: `1px solid ${theme.palette.divider}`,
-                                    borderRadius: 2,
-                                    boxShadow: 2,
-                                    backgroundColor: theme.palette.background.paper,
-                                    color: theme.palette.text.primary,
-                                    width: "20%",
+                                slotProps: {
+                                  paper: {
+                                    sx: {
+                                      border: `1px solid ${theme.palette.divider}`,
+                                      borderRadius: 2,
+                                      boxShadow: 2,
+                                      backgroundColor: theme.palette.background.paper,
+                                      color: theme.palette.text.primary,
+                                      width: "20%",
+                                    },
                                   },
                                 },
                               }}

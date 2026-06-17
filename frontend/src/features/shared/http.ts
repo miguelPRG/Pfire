@@ -4,7 +4,10 @@ export async function httpRequest<TData>(url: string, init?: RequestInit): Promi
     ...init,
   });
 
-  const isJson = response.headers.get("content-type")?.includes("application/json");
+  const hasHeaderReader = typeof response.headers?.get === "function";
+  const contentType = response.headers?.get?.("content-type") || "";
+  const canReadJson = typeof response.json === "function";
+  const isJson = contentType.includes("application/json") || (!hasHeaderReader && canReadJson);
   const payload = isJson ? await response.json().catch(() => ({})) : await response.text().catch(() => "");
 
   if (!response.ok) {

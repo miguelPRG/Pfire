@@ -43,8 +43,6 @@ export default function CreateCriteriaPage() {
   useLayoutEffect(() => {
     if (!modeloId && !criterioID) {
       navigate("/");
-      // recarregar a página
-      window.location.reload();
     } else {
       setIsloading(false);
     }
@@ -108,7 +106,7 @@ export default function CreateCriteriaPage() {
       } else {
         await createCriterioMutation.mutateAsync(payload);
       }
-      const successMessage = criterioID ? "Critério atualizado com sucesso!" : "Critérios criados com sucesso!";
+      const successMessage = criterioID ? "Critério atualizado com sucesso!" : "Critério criado com sucesso!";
       setAlert({ message: successMessage, isError: false });
       // Navega para a lista de modelos e envia mensagem via state
       navigate("/report-models", {

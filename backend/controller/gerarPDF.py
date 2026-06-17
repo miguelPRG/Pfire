@@ -3,6 +3,8 @@ from io import BytesIO
 from pathlib import Path
 from datetime import datetime
 
+from weasyprint import HTML
+
 
 WATERMARK_LOGO_PATH = (
     Path(__file__).resolve().parents[1] / "images" / "logo_watermark_bw.png"
@@ -139,16 +141,17 @@ def _build_pdf_html(
         .watermark-container {
             position: fixed;
             right: 30px;
-            bottom: 20px;
+            bottom: 30px;
             display: flex;
             flex-direction: column;
             align-items: center;
             z-index: 0;
         }
         .watermark {
-            width: 180px;
+            width: 140px;
             height: auto;
             object-fit: contain;
+            transform: none;
             opacity: 1;
             margin-bottom: -40px;
         }
@@ -299,9 +302,16 @@ def gerar_pdf(
     cliente: dict,
     empresa_logo: str | None,
     criterios: dict,
-    apply_watermark: bool,
+    apply_watermark: bool | None = None,
+    **kwargs,
 ) -> BytesIO:
-    from weasyprint import HTML
+    if apply_watermark is None:
+        apply_watermark = kwargs.pop("watterMark", False)
+    else:
+        apply_watermark = kwargs.pop("watterMark", apply_watermark)
+    if kwargs:
+        unexpected = next(iter(kwargs))
+        raise TypeError(f"gerar_pdf() got an unexpected keyword argument '{unexpected}'")
 
     html = _build_pdf_html(
         relatorios,
