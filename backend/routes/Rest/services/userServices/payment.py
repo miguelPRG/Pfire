@@ -32,6 +32,7 @@ except ImportError:
             "is_trialing": False,
             "trial_end": None,
             "current_period_end": None,
+            "next_billing_date": None,
             "cancel_at_period_end": False,
             "canceled_at": None,
             "plan_name": None,

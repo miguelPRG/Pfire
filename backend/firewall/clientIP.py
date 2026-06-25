@@ -4,14 +4,14 @@ from fastapi import Request
 from fastapi.responses import JSONResponse
 
 # ConfiguraÃ§Ãµes de limitaÃ§Ã£o
-LIMIT = 20  # MÃ¡ximo de 20 requisiÃ§Ãµes por TIME_FRAME
-TIME_FRAME = 30  # Tempo em segundos para contar as requisicoes
-BLOCK_DURATION = 120  # Tempo em segundos para bloquear o IP (2 minutos)
+LIMIT = 40  # Máximo de 20 requisições por TIME_FRAME
+TIME_FRAME = 15  # Tempo em segundos para contar as requisicoes
+BLOCK_DURATION = 60  # Tempo em segundos para bloquear o IP (2 minutos)
 
 rate_limiter = {}  # {ip: [timestamps]}
 blocked_ips = {}  # {ip: timestamp}
 
-# âœ… Rotas excluÃ­das do rate limiting
+# Rotas excluidas do rate limiting
 EXCLUDED_PATHS = {
     "/user/stripe/webhook",  # Webhook Stripe nunca deve ser bloqueado
 }

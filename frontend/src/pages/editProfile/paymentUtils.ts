@@ -116,6 +116,10 @@ export function getSubscriptionBillingTimestamp(subscriptionInfo: SubscriptionIn
     return null;
   }
 
+  if (subscriptionInfo.next_billing_date) {
+    return subscriptionInfo.next_billing_date;
+  }
+
   if (subscriptionInfo.is_trialing && subscriptionInfo.trial_end) {
     return subscriptionInfo.trial_end;
   }

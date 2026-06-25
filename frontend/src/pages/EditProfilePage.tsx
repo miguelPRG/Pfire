@@ -105,6 +105,20 @@ function EditProfilePage() {
       const data = await billingApi.listPaymentMethods<any>();
       console.log("Dados brutos do método de pagamento:", data);
       setPaymentMethods(normalizePaymentMethods(data));
+      const nextBillingDate = data?.next_billing_date ?? null;
+      if (nextBillingDate) {
+        setSubscriptionInfo((current) => ({
+          has_active_subscription: true,
+          is_trialing: current?.is_trialing ?? false,
+          trial_end: current?.trial_end ?? null,
+          current_period_end: current?.current_period_end ?? nextBillingDate,
+          next_billing_date: nextBillingDate,
+          cancel_at_period_end: current?.cancel_at_period_end ?? false,
+          canceled_at: current?.canceled_at ?? null,
+          plan_name: current?.plan_name ?? null,
+          status: current?.status ?? "active",
+        }));
+      }
     } catch (error) {
       console.error("Erro ao obter método de pagamento:", error);
       setPaymentMethods([]);
@@ -122,7 +136,11 @@ function EditProfilePage() {
     setLoadingSubscriptionInfo(true);
     try {
       const data = await billingApi.getTrialInfo<SubscriptionInfoType>();
-      setSubscriptionInfo(data);
+      console.log("Dados brutos da subscrição:", data);
+      setSubscriptionInfo((current) => ({
+        ...data,
+        next_billing_date: data.next_billing_date ?? current?.next_billing_date ?? null,
+      }));
     } catch (error) {
       console.error("Erro ao obter informação da subscrição:", error);
       setSubscriptionInfo(null);

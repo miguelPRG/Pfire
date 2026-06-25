@@ -35,6 +35,7 @@ import {
   isPaymentMethodExpired,
   normalizePaymentMethods,
 } from "@/pages/EditProfilePage";
+import { getSubscriptionBillingTimestamp } from "@/pages/editProfile/paymentUtils";
 
 // Agrupa os testes de EditProfilePage payment helpers.
 describe("EditProfilePage payment helpers", () => {
@@ -163,5 +164,22 @@ describe("EditProfilePage payment helpers", () => {
         isDefault: false,
       })
     ).toBe("--/--");
+  });
+
+  // Verifica o cen?rio: prefers next billing date from payment methods response.
+  it("prefers next billing date from payment methods response", () => {
+    expect(
+      getSubscriptionBillingTimestamp({
+        has_active_subscription: true,
+        is_trialing: false,
+        trial_end: null,
+        current_period_end: 1710000000,
+        next_billing_date: 1720000000,
+        cancel_at_period_end: false,
+        canceled_at: null,
+        plan_name: "Pro",
+        status: "active",
+      })
+    ).toBe(1720000000);
   });
 });

@@ -104,13 +104,13 @@ def test_rate_limit_discards_old_timestamps_and_allows_request():
     module = load_client_ip_module()
     module.rate_limiter.clear()
     module.blocked_ips.clear()
-    module.rate_limiter["192.0.2.10"] = [10, 40]
+    module.rate_limiter["192.0.2.10"] = [10, 49, 50]
     module.time.time = lambda: 65
 
     response = asyncio.run(module.rate_limit(build_request(client_host="192.0.2.10")))
 
     assert response is None
-    assert module.rate_limiter["192.0.2.10"] == [40, 65]
+    assert module.rate_limiter["192.0.2.10"] == [50, 65]
 
 
 # Verifica o cen?rio em que rate limit blocks ip after exceeding limit.

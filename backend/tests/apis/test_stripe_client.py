@@ -173,6 +173,64 @@ def test_create_checkout_returns_session_url_and_trial_days(monkeypatch):
     }
 
 
+# Verifica o cen?rio em que payment methods returns next billing date.
+def test_get_payment_method_returns_next_billing_date(monkeypatch):
+    module = load_stripe_module(monkeypatch, api_key="sk_test_123")
+    module.stripe.PaymentMethod.list = lambda **_kwargs: make_list_response(
+        [types.SimpleNamespace(id="pm_123", type="card")]
+    )
+    module.stripe.Customer.retrieve = lambda _customer_id: types.SimpleNamespace(
+        invoice_settings=types.SimpleNamespace(default_payment_method="pm_123")
+    )
+    module.stripe.Subscription.list = lambda **_kwargs: make_list_response(
+        [
+            types.SimpleNamespace(
+                id="sub_123",
+                status="active",
+                current_period_end=1710000000,
+                items=types.SimpleNamespace(data=[]),
+            )
+        ]
+    )
+
+    result = module.get_payment_method("cus_123")
+
+    assert result == {
+        "data": [types.SimpleNamespace(id="pm_123", type="card")],
+        "default_payment_method_id": "pm_123",
+        "next_billing_date": 1710000000,
+        "subscription": {
+            "id": "sub_123",
+            "status": "active",
+            "current_period_end": 1710000000,
+            "item_current_period_end": None,
+            "next_billing_date": 1710000000,
+            "cancel_at_period_end": False,
+        },
+        "subscriptions_count": 1,
+    }
+
+
+# Verifica o cen?rio em que next billing date comes from subscription item.
+def test_get_payment_method_reads_next_billing_date_from_subscription_item(monkeypatch):
+    module = load_stripe_module(monkeypatch, api_key="sk_test_123")
+    module.stripe.Subscription.list = lambda **_kwargs: make_list_response(
+        [
+            types.SimpleNamespace(
+                id="sub_123",
+                status="active",
+                items=types.SimpleNamespace(
+                    data=[types.SimpleNamespace(current_period_end=1720000000)]
+                ),
+            )
+        ]
+    )
+
+    result = module.get_payment_method("cus_123")
+
+    assert result["next_billing_date"] == 1720000000
+
+
 # Verifica o cen?rio em que set default payment method attaches orphan method.
 def test_set_default_payment_method_attaches_orphan_method(monkeypatch):
     module = load_stripe_module(monkeypatch, api_key="sk_test_123")

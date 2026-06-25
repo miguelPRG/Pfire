@@ -15,6 +15,7 @@ export type SubscriptionInfoType = {
   is_trialing: boolean;
   trial_end: number | null;
   current_period_end: number | null;
+  next_billing_date?: number | null;
   cancel_at_period_end: boolean;
   canceled_at: number | null;
   plan_name: string | null;

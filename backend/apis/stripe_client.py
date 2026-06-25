@@ -169,6 +169,65 @@ async def create_checkout(
         raise
 
 
+def _stripe_get(obj, key, default=None):
+    if obj is None:
+        return default
+
+    if isinstance(obj, dict) and key in obj:
+        return obj.get(key, default)
+
+    data = getattr(obj, "_data", None)
+    if isinstance(data, dict) and key in data:
+        return data.get(key, default)
+
+    return getattr(obj, key, default)
+
+
+def _stripe_list_data(obj):
+    data = _stripe_get(obj, "data", [])
+    return data or []
+
+
+def _get_subscription_period_end(subscription):
+    if not subscription:
+        return None
+
+    current_period_end = _stripe_get(subscription, "current_period_end")
+    if current_period_end:
+        return current_period_end
+
+    items = _stripe_get(subscription, "items")
+    subscription_items = _stripe_list_data(items)
+    first_item = next(iter(subscription_items or []), None)
+    return _stripe_get(first_item, "current_period_end") if first_item else None
+
+
+def _get_subscription_item_period_end(subscription):
+    if not subscription:
+        return None
+
+    items = _stripe_get(subscription, "items")
+    subscription_items = _stripe_list_data(items)
+    first_item = next(iter(subscription_items or []), None)
+    return _stripe_get(first_item, "current_period_end") if first_item else None
+
+
+def _get_subscription_summary(subscription):
+    if not subscription:
+        return None
+
+    return {
+        "id": _stripe_get(subscription, "id"),
+        "status": _stripe_get(subscription, "status"),
+        "current_period_end": _stripe_get(subscription, "current_period_end"),
+        "item_current_period_end": _get_subscription_item_period_end(subscription),
+        "next_billing_date": _get_subscription_period_end(subscription),
+        "cancel_at_period_end": bool(
+            _stripe_get(subscription, "cancel_at_period_end", False)
+        ),
+    }
+
+
 def get_payment_method(stripe_customer_id: str):
     try:
         payment_methods = stripe.PaymentMethod.list(
@@ -189,9 +248,29 @@ def get_payment_method(stripe_customer_id: str):
                         default_pm.id if hasattr(default_pm, "id") else default_pm
                     )
 
+        subscriptions = stripe.Subscription.list(
+            customer=stripe_customer_id,
+            status="all",
+            limit=10,
+        )
+        active_statuses = {"active", "trialing", "past_due", "unpaid"}
+        subscription_list = list(_stripe_list_data(subscriptions))
+        active_subscription = next(
+            (
+                item
+                for item in subscription_list
+                if _stripe_get(item, "status") in active_statuses
+            ),
+            None,
+        )
+        next_billing_date = _get_subscription_period_end(active_subscription)
+
         return {
             "data": payment_methods.data,
             "default_payment_method_id": default_payment_method_id,
+            "next_billing_date": next_billing_date,
+            "subscription": _get_subscription_summary(active_subscription),
+            "subscriptions_count": len(subscription_list),
         }
     except stripe.error.StripeError as e:
         print(f"Erro Stripe ao listar métodos de pagamento: {str(e)}")
@@ -338,12 +417,12 @@ def get_subscription_trial_info(stripe_customer_id: str) -> dict:
             limit=10,
         )
         active_statuses = {"active", "trialing", "past_due", "unpaid"}
-        subscription_list = list(getattr(subscriptions, "data", []) or [])
+        subscription_list = list(_stripe_list_data(subscriptions))
         sub = next(
             (
                 item
                 for item in subscription_list
-                if getattr(item, "status", None) in active_statuses
+                if _stripe_get(item, "status") in active_statuses
             ),
             subscription_list[0] if subscription_list else None,
         )
@@ -354,29 +433,31 @@ def get_subscription_trial_info(stripe_customer_id: str) -> dict:
                 "is_trialing": False,
                 "trial_end": None,
                 "current_period_end": None,
+                "next_billing_date": None,
                 "cancel_at_period_end": False,
                 "canceled_at": None,
                 "plan_name": None,
                 "status": None,
             }
 
-        trial_end = getattr(sub, "trial_end", None)
-        current_period_end = getattr(sub, "current_period_end", None)
-        cancel_at_period_end = bool(getattr(sub, "cancel_at_period_end", False))
-        canceled_at = getattr(sub, "canceled_at", None)
-        status = getattr(sub, "status", None)
+        trial_end = _stripe_get(sub, "trial_end")
+        current_period_end = _get_subscription_period_end(sub)
+        cancel_at_period_end = bool(_stripe_get(sub, "cancel_at_period_end", False))
+        canceled_at = _stripe_get(sub, "canceled_at")
+        status = _stripe_get(sub, "status")
 
         # Obter nome do plano
         plan_name = None
-        items = getattr(sub, "items", None)
-        if items and items.data:
-            price = getattr(items.data[0], "price", None)
+        items = _stripe_get(sub, "items")
+        item_data = _stripe_list_data(items)
+        if item_data:
+            price = _stripe_get(item_data[0], "price")
             if price:
-                product_id = getattr(price, "product", None)
+                product_id = _stripe_get(price, "product")
                 if product_id:
                     try:
                         product = stripe.Product.retrieve(product_id)
-                        plan_name = getattr(product, "name", None)
+                        plan_name = _stripe_get(product, "name")
                     except:
                         raise Exception(
                             f"Produto do plano não encontrado: {product_id}"
@@ -387,6 +468,7 @@ def get_subscription_trial_info(stripe_customer_id: str) -> dict:
             "is_trialing": status == "trialing",
             "trial_end": trial_end,
             "current_period_end": current_period_end,
+            "next_billing_date": current_period_end,
             "cancel_at_period_end": cancel_at_period_end,
             "canceled_at": canceled_at,
             "plan_name": plan_name,
@@ -399,6 +481,7 @@ def get_subscription_trial_info(stripe_customer_id: str) -> dict:
             "is_trialing": False,
             "trial_end": None,
             "current_period_end": None,
+            "next_billing_date": None,
             "cancel_at_period_end": False,
             "canceled_at": None,
             "plan_name": None,
