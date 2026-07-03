@@ -95,7 +95,6 @@ export default function ReportModelListPage() {
   // Estado para pesquisa, paginação e campos expandidos
   const [page, setPage] = useState(0);
   const rowsPerPage = 1;
-  const [isAdvancedActive, setIsAdvancedActive] = useState(false);
   const [advValue, setAdvValue] = useState<{ field: string; text: string }>({ field: "", text: "" });
   const [alert, setAlert] = useState<{ message: string; isError: boolean; onConfirm?: () => void } | null>(null);
   const [cloningId, setCloningId] = useState<string | null>(null);
@@ -122,8 +121,7 @@ export default function ReportModelListPage() {
       start: page * rowsPerPage,
       name: serverSearch || undefined,
     },
-    Boolean(empresa?.id),
-    `${page}-${serverSearch}`
+    Boolean(empresa?.id)
   );
 
   const modelos: any[] = data?.getModelos?.modelos || [];
@@ -566,12 +564,11 @@ export default function ReportModelListPage() {
           sx={{ mb: 3, backgroundColor: "background.paper", maxWidth: "200px", borderRadius: 5, padding: 0.5 }}
         >
           <StyledBreadcrumb
-            component="a"
             sx={{ cursor: "pointer" }}
             onClick={() => navigate("/")}
             icon={<HomeIcon fontSize="small" sx={{ fontSize: "1.8rem" }} />}
           />
-          <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} component="span" label="Modelos" />
+          <StyledBreadcrumb sx={{ fontSize: "0.9rem" }} label="Modelos" />
         </Breadcrumbs>
         {/* Fim Breadcrumbs */}
         {/* Cabeçalho com título e botão de adicionar */}
@@ -590,19 +587,16 @@ export default function ReportModelListPage() {
                 onChange={(next) => setAdvValue(next)}
                 onApply={() => {
                   if ((advValue.text || "").trim() === "") {
-                    setIsAdvancedActive(false);
                     setPage(0);
                     setServerSearch("");
                     refetch?.();
                   } else {
-                    setIsAdvancedActive(true);
                     setPage(0);
                     setServerSearch(advValue.text);
                   }
                 }}
                 onClear={() => {
                   setAdvValue({ field: "", text: "" });
-                  setIsAdvancedActive(false);
                   setPage(0);
                   setServerSearch("");
                   refetch?.();
@@ -637,9 +631,11 @@ export default function ReportModelListPage() {
           sx={{
             mt: 2,
             overflowX: "auto",
+            overflowY: "hidden",
             borderRadius: 2,
             border: `1px solid ${theme.palette.divider}`,
             width: "fit-content",
+            maxWidth: "100%",
             mx: "auto",
           }}
         >

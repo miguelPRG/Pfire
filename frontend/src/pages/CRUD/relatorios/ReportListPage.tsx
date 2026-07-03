@@ -22,7 +22,7 @@ import {
 } from "@mui/material";
 import { Add } from "@mui/icons-material";
 import HomeIcon from "@mui/icons-material/Home";
-import { useNavigate, useLocation, data } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useTheme } from "@mui/material/styles";
 import { useAuth } from "../../../hooks/AuthContext";
 import { useClientesQuery } from "../../../features/clientes/hooks";
@@ -831,8 +831,11 @@ export default function ReportListPage() {
           </Paper>
         ) : (
           // Tabela com colunas fixas e colunas dinâmicas para campos personalizados
-          <TableContainer component={Paper}>
-            <Table sx={{ minWidth: 650 }} size="small" aria-label="a dense table">
+          <TableContainer
+            component={Paper}
+            sx={{ width: "fit-content", maxWidth: "100%", mx: "auto", overflowX: "auto" }}
+          >
+            <Table sx={{ minWidth: 650, margin: "0 auto" }} size="small" aria-label="a dense table">
               {/* Cabeçalho em duas linhas: 1) nomes dos campos pais (colSpan = nº subcampos ou 1) 2) nomes dos subcampos */}
               <TableHead sx={{ background: "#070707d4" }}>
                 <TableRow>
@@ -1048,7 +1051,7 @@ export default function ReportListPage() {
               <Pagination
                 count={pageCount}
                 page={page + 1}
-                onChange={(e, val) => setPage(val - 1)}
+                onChange={(_, val) => setPage(val - 1)}
                 color="primary"
                 shape="rounded"
               />

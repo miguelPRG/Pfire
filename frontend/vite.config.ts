@@ -79,17 +79,6 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/?backend/, ""),
       },
-      // Proxy para rotas de /user (payment, etc)
-      "^/user": {
-        target: "http://localhost:8000",
-        changeOrigin: true,
-      },
-      // Opcional: se quiser garantir que "backend" sem barra inicial tambem seja mapeado
-      "^backend": {
-        target: "http://localhost:8000",
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^backend/, ""),
-      },
     },
     watch: {
       usePolling: true,

@@ -89,12 +89,17 @@ export default function UserManagementTable() {
   ];
 
   const [serverFilter, setServerFilter] = useState<Record<string, unknown>>({});
+  const isAdmin = Boolean(empresa?.isAdmin) || Boolean(user?.isSuperAdmin);
   const usersQueryVars = {
     empresaId: empresa?.id || "",
     start: page * rowsPerPage,
     ...(Object.keys(serverFilter).length ? { filter: serverFilter } : {}),
   };
-  const { data, isLoading: loading, refetch } = useUsersQuery<returnedData>(usersQueryVars, Boolean(empresa?.id));
+  const {
+    data,
+    isLoading: loading,
+    refetch,
+  } = useUsersQuery<returnedData>(usersQueryVars, Boolean(empresa?.id) && isAdmin);
   const users = data?.getUsers?.users || [];
   const totalUsers = data?.getUsers?.totalUsers || 0;
 
@@ -211,7 +216,7 @@ export default function UserManagementTable() {
     setSelectedUserId(null);
   };
 
-  if (loading) return <LoadingAnimation />;
+  if (loading || !isAdmin) return <LoadingAnimation />;
 
   const columns: { key: keyof User; label: string }[] = [
     { key: "nome", label: "Nome" },
@@ -275,9 +280,11 @@ export default function UserManagementTable() {
       <Box
         sx={{
           overflowX: "auto",
+          overflowY: "hidden",
           borderRadius: 2,
           border: `1px solid ${theme.palette.divider}`,
           width: "fit-content",
+          maxWidth: "100%",
           mx: "auto",
         }}
       >

@@ -24,7 +24,6 @@ import {
 } from "../../../features/clientes/hooks";
 import { useTheme } from "@mui/material/styles";
 import { useAuth } from "../../../hooks/AuthContext";
-import { usePlanLimits } from "../../../hooks/usePlanLimits";
 import Notification from "../../../components/Notification";
 import LoadingAnimation from "../../../components/LoadingAnimation";
 import StyledBreadcrumb from "../../../components/StyledBreadCrumbs";
@@ -87,7 +86,6 @@ export default function ClientManagementTable() {
     ...(Object.keys(serverFilter).length ? { filter: serverFilter } : {}),
   };
   const { data, isLoading: loading, error, refetch } = useClientesQuery<returnedData>(queryVars, Boolean(empresa?.id));
-  const [isAdvancedSearch, setIsAdvancedSearch] = useState(false);
   const activateClienteMutation = useActivateClienteMutation<any>();
   const deactivateClienteMutation = useDeactivateClienteMutation<any>();
   const hardDeleteClienteMutation = useHardDeleteClienteMutation<any>();
@@ -111,13 +109,11 @@ export default function ClientManagementTable() {
   }, [data, initialLoaded]);
 
   const applyAdvancedFilter = () => {
-    setIsAdvancedSearch(true);
     setPage(0);
     setServerFilter(advValue.text.trim() ? { [advValue.field]: advValue.text.trim() } : {});
   };
 
   const clearAdvancedFilter = async () => {
-    setIsAdvancedSearch(false);
     setAdvValue({ field: "", text: "" });
     setPage(0);
     setServerFilter({});
@@ -145,7 +141,6 @@ export default function ClientManagementTable() {
         empresa_id: empresa?.id,
       });
       setAlert({ message: json.message || "Cliente apagado com sucesso!", isError: false });
-      setIsAdvancedSearch(false);
       setAdvValue({ field: "", text: "" });
       setPage(0);
 
@@ -198,7 +193,7 @@ export default function ClientManagementTable() {
     }
   };
 
-  const canManageClientActions = empresa?.isAdmin === true;
+  const isAdmin = empresa?.isAdmin === true;
 
   if (!initialLoaded && loading) return <LoadingAnimation />;
   if (error) return <Typography>Erro ao carregar clientes: {error.message}</Typography>;
@@ -248,9 +243,11 @@ export default function ClientManagementTable() {
         <Box
           sx={{
             overflowX: "auto",
+            overflowY: "hidden",
             borderRadius: 2,
             border: `1px solid ${theme.palette.divider}`,
             width: "fit-content",
+            maxWidth: "100%",
             mx: "auto", // centraliza horizontalmente
             // garante que a tabela ocupe toda a largura disponível
           }}
@@ -279,7 +276,7 @@ export default function ClientManagementTable() {
                   "morada",
                   "codigoPostal",
                   "createdAt",
-                  ...(canManageClientActions ? ["estado", ""] : []),
+                  ...(isAdmin ? ["estado", ""] : []),
                 ].map((key) => {
                   const isSortable = [
                     "nome",
@@ -338,7 +335,7 @@ export default function ClientManagementTable() {
             <tbody>
               {filteredRows.length === 0 ? (
                 <tr>
-                  <td colSpan={canManageClientActions ? 10 : 8} style={{ padding: "16px" }}>
+                  <td colSpan={isAdmin ? 10 : 8} style={{ padding: "16px" }}>
                     <Paper sx={{ p: 4, display: "flex", justifyContent: "center" }}>
                       <NoDataMessage nome="clientes" />
                     </Paper>
@@ -375,13 +372,17 @@ export default function ClientManagementTable() {
                             color: theme.palette.text.primary,
                           }}
                         >
-                          <Link
-                            component="button"
-                            onClick={() => navigate("/add-client", { state: { cliente } })}
-                            sx={{ cursor: "pointer" }}
-                          >
-                            {cliente.nome}
-                          </Link>
+                          {isAdmin ? (
+                            <Link
+                              component="button"
+                              onClick={() => navigate("/add-client", { state: { cliente } })}
+                              sx={{ cursor: "pointer" }}
+                            >
+                              {cliente.nome}
+                            </Link>
+                          ) : (
+                            cliente.nome
+                          )}
                         </td>
                         <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>
                           {cliente.email}
@@ -417,7 +418,7 @@ export default function ClientManagementTable() {
                         <td style={{ padding: "16px", textAlign: "center", color: theme.palette.text.secondary }}>
                           {cliente.createdAt ? new Date(cliente.createdAt).toLocaleDateString("pt-PT") : ""}
                         </td>
-                        {canManageClientActions ? (
+                        {isAdmin ? (
                           <>
                             <td style={{ padding: "4px 16px", textAlign: "center" }}>
                               <Button
@@ -489,7 +490,7 @@ export default function ClientManagementTable() {
             <Pagination
               count={pageCount}
               page={page + 1}
-              onChange={(e, val) => setPage(val - 1)}
+              onChange={(_, val) => setPage(val - 1)}
               color="primary"
               shape="rounded"
             />
