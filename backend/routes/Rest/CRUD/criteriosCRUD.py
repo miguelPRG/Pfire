@@ -8,6 +8,10 @@ from pymongo.errors import DuplicateKeyError
 routerCriterio = APIRouter(prefix="/criterio")
 
 
+def _is_super_admin(jwt: dict | None) -> bool:
+    return bool(jwt and jwt.get("isSuperAdmin", False))
+
+
 @routerCriterio.post("/")
 async def create_criterio(criterio: CriterioCreate, request: Request):
 
@@ -16,7 +20,7 @@ async def create_criterio(criterio: CriterioCreate, request: Request):
     user_id = ObjectId(jwt["user_id"])
     criterio.modelo_id = ObjectId(criterio.modelo_id)
 
-    if not jwt["isSuperAdmin"]:
+    if not _is_super_admin(jwt):
         user_empresa = await users_empresas_collection.find_one(
             {"user_id": user_id, "isAdmin": True}
         )
@@ -61,7 +65,7 @@ async def update_criterio(criterio_id: str, criterio: CriterioUpdate, request: R
     if not existing_criterio:
         raise HTTPException(status_code=404, detail="Criterio não encontrado")
 
-    if not jwt["isSuperAdmin"]:
+    if not _is_super_admin(jwt):
         user_empresa = await users_empresas_collection.find_one(
             {"user_id": user_id, "isAdmin": True}
         )
@@ -104,7 +108,7 @@ async def delete_criterio(criterio_id: str, request: Request):
     user_id = ObjectId(jwt["user_id"])
     criterio_id_obj = ObjectId(criterio_id)
 
-    if not jwt["isSuperAdmin"]:
+    if not _is_super_admin(jwt):
         user_empresa = await users_empresas_collection.find_one(
             {"user_id": user_id, "isAdmin": True}
         )

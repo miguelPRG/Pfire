@@ -6,6 +6,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 // Mant?m o estado dos mocks hoisted para que a su?te possa reconfigur?-los entre os casos.
 const newPasswordMocks = vi.hoisted(() => ({
   navigateMock: vi.fn(),
+  generateTokenMock: vi.fn(),
+}));
+
+vi.mock("@/hooks/RecaptchaContext", () => ({
+  useRecaptcha: () => ({ generateToken: newPasswordMocks.generateTokenMock }),
 }));
 
 // Substitui react-router-dom por um dubl? de teste focado nesta su?te.
@@ -57,6 +62,8 @@ describe("NewPasswordPage", () => {
   // Reinicia os mocks e globais compartilhados antes de cada cen?rio.
   beforeEach(() => {
     newPasswordMocks.navigateMock.mockReset();
+    newPasswordMocks.generateTokenMock.mockReset();
+    newPasswordMocks.generateTokenMock.mockResolvedValue("captcha-token");
   });
 
   // Verifica o cen?rio: shows validation error when passwords do not match.
@@ -75,7 +82,7 @@ describe("NewPasswordPage", () => {
 
     render(<NewPasswordPage />);
 
-    fireEvent.change(screen.getByLabelText(/Nova Palavra-Passe/i), {
+    fireEvent.change(await screen.findByLabelText(/Nova Palavra-Passe/i), {
       target: { value: "Password123" },
     });
     fireEvent.change(screen.getByLabelText(/Confirmar Palavra-Passe/i), {
@@ -90,8 +97,8 @@ describe("NewPasswordPage", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  // Verifica o cen?rio: redirects to login when the global id is invalid or expired.
-  it("redirects to login when the global id is invalid or expired", async () => {
+  // Verifica o cen?rio: shows the validation error without treating every failure as an expired session.
+  it("shows an error when the global id cannot be validated", async () => {
     const fetchMock = vi.fn(() =>
       Promise.resolve(
         createResponse({
@@ -106,14 +113,8 @@ describe("NewPasswordPage", () => {
 
     render(<NewPasswordPage />);
 
-    await waitFor(() => {
-      expect(newPasswordMocks.navigateMock).toHaveBeenCalledWith("/login", {
-        state: {
-          isConfirmed: false,
-          message: "Operação Expirada! O botão que foi enviado no email já não funciona.",
-        },
-      });
-    });
+    expect(await screen.findByText("Erro na comunicação com o servidor.")).toBeInTheDocument();
+    expect(newPasswordMocks.navigateMock).not.toHaveBeenCalled();
   });
 
   // Verifica o cen?rio: submits the new password and redirects with success state.
@@ -131,7 +132,7 @@ describe("NewPasswordPage", () => {
         );
       }
 
-      if (url === "/backend/user/email/change-password/") {
+      if (url === "/backend/user/email/change-password") {
         return Promise.resolve(
           createResponse({
             ok: true,
@@ -148,7 +149,7 @@ describe("NewPasswordPage", () => {
 
     render(<NewPasswordPage />);
 
-    fireEvent.change(screen.getByLabelText(/Nova Palavra-Passe/i), {
+    fireEvent.change(await screen.findByLabelText(/Nova Palavra-Passe/i), {
       target: { value: "Password123" },
     });
     fireEvent.change(screen.getByLabelText(/Confirmar Palavra-Passe/i), {
@@ -165,11 +166,13 @@ describe("NewPasswordPage", () => {
       });
     });
 
-    const updatePasswordCall = fetchMock.mock.calls.find(([url]) => url === "/backend/user/email/change-password/");
+    const updatePasswordCall = fetchMock.mock.calls.find(([url]) => url === "/backend/user/email/change-password");
     expect(JSON.parse(String(updatePasswordCall?.[1]?.body))).toEqual({
       password: "Password123",
       confirmPassword: "Password123",
       global_id: "global-id-123",
+      recaptchaToken: "captcha-token",
     });
+    expect(newPasswordMocks.generateTokenMock).toHaveBeenCalledWith("update");
   });
 });

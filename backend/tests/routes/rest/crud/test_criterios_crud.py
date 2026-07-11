@@ -151,6 +151,23 @@ def test_create_criterio_requires_admin_for_non_superadmin():
     assert "administradores" in exc_info.value.detail
 
 
+# Verifica o cenário em que create criterio aceita JWT sem a claim isSuperAdmin.
+def test_create_criterio_handles_missing_is_super_admin_flag():
+    module = load_criterios_crud_module()
+    module.users_empresas_collection.find_one_results = [None]
+
+    with pytest.raises(HTTPException) as exc_info:
+        asyncio.run(
+            module.create_criterio(
+                valid_criterio_create(),
+                build_request({"user_id": str(ObjectId())}),
+            )
+        )
+
+    assert exc_info.value.status_code == 403
+    assert "administradores" in exc_info.value.detail
+
+
 # Verifica o cen?rio em que create criterio maps duplicate name per model.
 def test_create_criterio_maps_duplicate_name_per_model():
     module = load_criterios_crud_module()

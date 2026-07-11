@@ -33,7 +33,7 @@ function ForgotPassword() {
 
   async function onSubmit(data: ForgotPasswordFormInputs) {
     try {
-      const recaptchaToken = await generateToken("forgot-password");
+      const recaptchaToken = await generateToken("forgot_password");
 
       await forgotPasswordMutation.mutateAsync({
         email: data.email,

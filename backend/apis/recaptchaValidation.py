@@ -39,7 +39,7 @@ async def validar_recaptcha_token(token: str, action: str):
     thresholds = {
         "login": 0.5,
         "register": 0.7,
-        "forgot-password": 0.6,
+        "forgot_password": 0.6,
         "update": 0.5,
     }
 

@@ -60,7 +60,7 @@ export const usersApi = {
   getGlobalIdInfo: <TData>(globalId: string) => httpRequest<TData>(`/backend/user/get-global-id/${globalId}`),
 
   changePasswordByEmail: <TData>(payload: Record<string, unknown>) =>
-    httpRequest<TData>("/backend/user/email/change-password/", {
+    httpRequest<TData>("/backend/user/email/change-password", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),

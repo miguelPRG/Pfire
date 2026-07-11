@@ -161,6 +161,32 @@ def test_validate_custom_fields_rejects_missing_required_fields():
     )
 
 
+# Verifica o cenário em que validate custom fields aceita campos booleanos.
+def test_validate_custom_fields_accepts_bool_fields():
+    module = load_relatorio_crud_module()
+
+    module.validate_custom_fields(
+        {"custom_flag": True},
+        {"custom_flag": {"datatype": "bool", "required": True}},
+    )
+
+
+# Verifica o cenário em que validate custom fields aceita subcampos booleanos em object.
+def test_validate_custom_fields_accepts_bool_subfields_in_object():
+    module = load_relatorio_crud_module()
+
+    module.validate_custom_fields(
+        {"custom_bloco": {"custom_activo": False}},
+        {
+            "custom_bloco": {
+                "datatype": "object",
+                "required": True,
+                "custom_activo": {"datatype": "bool", "required": False},
+            }
+        },
+    )
+
+
 # Verifica o cen?rio em que create relatorio populates metadata and inserts.
 def test_create_relatorio_populates_metadata_and_inserts():
     module = load_relatorio_crud_module()

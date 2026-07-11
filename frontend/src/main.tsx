@@ -41,7 +41,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           <AuthProvider>
             <App />
           </AuthProvider>
-          {/**/} {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+          {/*import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />*/}
         </QueryClientProvider>
       </RecaptchaProvider>
     </TemaProvider>

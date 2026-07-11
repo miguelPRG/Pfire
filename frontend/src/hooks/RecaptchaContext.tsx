@@ -13,7 +13,7 @@ declare global {
 const RECAPTCHA_SITE_KEY = import.meta.env.VITE_RECAPTCHA_SITE_KEY as string;
 
 // Tipos para as ações disponíveis
-export type RecaptchaAction = "login" | "register" | "update" | "delete" | "invite" | "forgot-password";
+export type RecaptchaAction = "login" | "register" | "update" | "delete" | "invite" | "forgot_password";
 
 interface RecaptchaContextType {
   generateToken: (action: RecaptchaAction) => Promise<string>;

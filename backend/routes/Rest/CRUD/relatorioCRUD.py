@@ -46,6 +46,11 @@ def validate_custom_fields(relatorio_data: dict, modelo: dict):
                 raise HTTPException(
                     status_code=400, detail=f"O campo {key} deve ser texto"
                 )
+        elif datatype == "bool":
+            if not isinstance(value, bool):
+                raise HTTPException(
+                    status_code=400, detail=f"O campo {key} deve ser booleano"
+                )
         elif datatype == "number":
             if not isinstance(value, (int, float)):
                 raise HTTPException(
@@ -96,6 +101,11 @@ def validate_custom_fields(relatorio_data: dict, modelo: dict):
                         raise HTTPException(
                             status_code=400,
                             detail=f"O subcampo {sub_key} deve ser texto",
+                        )
+                    elif sub_type == "bool" and not isinstance(sub_value, bool):
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"O subcampo {sub_key} deve ser booleano",
                         )
                     elif sub_type == "number" and not isinstance(
                         sub_value, (int, float)

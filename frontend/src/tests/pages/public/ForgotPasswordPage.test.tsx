@@ -69,7 +69,7 @@ describe("ForgotPasswordPage", () => {
       expect(screen.getByText(/Foi enviado um email para poder confirmar o pedido/i)).toBeInTheDocument();
     });
 
-    expect(forgotPageMocks.generateTokenMock).toHaveBeenCalledWith("forgot-password");
+    expect(forgotPageMocks.generateTokenMock).toHaveBeenCalledWith("forgot_password");
     expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body))).toEqual({
       email: "miguel@example.com",
       recaptchaToken: "captcha-token",

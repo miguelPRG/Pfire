@@ -558,7 +558,7 @@ async def forgot_password(request: Request, user: UserForgotPassword):
     """
 
     # Validar Recaptcha token
-    await validar_recaptcha_token(user.recaptchaToken, "forgot-password")
+    await validar_recaptcha_token(user.recaptchaToken, "forgot_password")
 
     # Verifica se o usuário existe
     user_found = await users_collection.find_one(

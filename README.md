@@ -1,5 +1,7 @@
 # PFire
 
+![PFire dashboard](image.jpeg)
+
 **This application helps companies eliminate manual work in safety inspections** of emergency equipment, such as fire extinguishers, exits, and hydrants, among others, generating standardized, traceable reports per client, ready in minutes, not hours of spreadsheets and paperwork.
 
 The core of the application is a **reusable template system**: each template defines a report's fields and is reused across every inspection of that type. From a single template, teams generate multiple client-specific reports, and templates can be cloned to create variations without starting from scratch. Both templates and reports are highly customizable, adapting to each company's specific needs.
