@@ -1,20 +1,20 @@
-Copyright © 2025 [Miguel Pinto Ribeiro Gonçalves]. Todos os direitos reservados.
+Open Source License & Copyright Terms
 
-Este código-fonte é propriedade exclusiva do autor e está protegido por leis nacionais e internacionais de direitos de autor, incluindo o Código do Direito de Autor e dos Direitos Conexos (Portugal) e a Convenção de Berna.
+Copyright &copy; <script>document.write(new Date().getFullYear());</script> [Miguel Pinto Ribeiro Gonçalves] and co-authors. All rights reserved.
 
-Este repositório é privado. O acesso ao seu conteúdo está restrito às pessoas autorizadas pelo autor.
+This software is released as open-source software under the terms of the MIT License. The source code and associated resources are protected by national and international copyright laws, including the Portuguese Copyright and Related Rights Code (Código do Direito de Autor e dos Direitos Conexos) and the Berne Convention.
 
-É estritamente proibida qualquer forma de:
-- Reprodução total ou parcial
-- Redistribuição
-- Modificação
-- Comercialização
-- Publicação
+--------------------------------------------------------------------------------
 
-Sem autorização expressa e por escrito do autor.
+THE MIT LICENSE (MIT)
 
-Quaisquer violações podem resultar em ações legais.
+Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 
-Autor: [Miguel Pinto Ribeiro Gonçalves]  
-Email de contacto: [miguel@psafe365.com]
+The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
 
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+--------------------------------------------------------------------------------
+
+Lead Author: [Miguel Pinto Ribeiro Gonçalves]
+Contact Email: [miguel@psafe365.com]
